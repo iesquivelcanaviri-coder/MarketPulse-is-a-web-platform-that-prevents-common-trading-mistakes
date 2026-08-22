@@ -1,0 +1,1 @@
+# MarketPulse-is-a-web-platform-that-prevents-common-trading-mistakes
