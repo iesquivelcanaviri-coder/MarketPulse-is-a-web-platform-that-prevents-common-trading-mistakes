@@ -26,3 +26,77 @@ MarketPulse is a web application that prevents common trading mistakes by acting
 
 1. Clone the repository:
 ```bash
+```
+
+
+## Project Structure
+marketpulse/
+├── manage.py
+├── requirements.txt
+├── README.md
+├── .env.example
+├── marketpulse/
+│   ├── __init__.py
+│   ├── settings.py
+│   ├── urls.py
+│   ├── wsgi.py
+│   └── asgi.py
+├── accounts/
+│   ├── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py
+│   ├── views.py
+│   ├── urls.py
+│   ├── forms.py
+│   └── templates/
+│       └── accounts/
+├── data_management/
+│   ├── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py
+│   ├── views.py
+│   ├── urls.py
+│   ├── tasks.py
+│   └── utils.py
+├── strategy_builder/
+│   ├── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py
+│   ├── views.py
+│   ├── urls.py
+│   ├── forms.py
+│   ├── backtesting.py
+│   └── templates/
+│       └── strategy_builder/
+├── risk_management/
+│   ├── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py
+│   ├── views.py
+│   ├── urls.py
+│   ├── calculators.py
+│   └── templates/
+│       └── risk_management/
+├── analysis_tools/
+│   ├── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py
+│   ├── views.py
+│   ├── urls.py
+│   ├── analyzers.py
+│   └── templates/
+│       └── analysis_tools/
+├── core/
+│   ├── __init__.py
+│   ├── models.py
+│   ├── utils.py
+│   └── exceptions.py
+└── templates/
+    ├── base.html
+    ├── home.html
+    └── dashboard.html
