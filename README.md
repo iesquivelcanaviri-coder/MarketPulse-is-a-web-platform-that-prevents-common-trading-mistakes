@@ -25,7 +25,7 @@ MarketPulse is a web application that prevents common trading mistakes by acting
 ## Installation
 
 1. Clone the repository:
-```bash
+```bash https://github.com/iesquivelcanaviri-coder/MarketPulse-is-a-web-platform-that-prevents-common-trading-mistakes.git
 ```
 
 
