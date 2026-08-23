@@ -1,0 +1,14 @@
+Django==5.0.2
+psycopg2-binary==2.9.9
+celery==5.3.4
+redis==5.0.1
+requests==2.31.0
+pandas==2.2.0
+numpy==1.26.3
+yfinance==0.2.28
+plotly==5.17.0
+django-bootstrap5==23.4
+django-extensions==3.2.3
+python-decouple==3.8
+gunicorn==21.2.0
+whitenoise==6.6.0

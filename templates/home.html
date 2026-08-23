@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+<!-- 
+TEMPLATE INHERITANCE EXPLANATION:
+This line tells Django to extend the base.html template, which contains:
+- The HTML head section with CSS links
+- The navigation bar
+- The footer
+- The overall page structure
+
+This allows us to only define the content specific to this page while reusing
+common elements across all pages. It's a key DRY (Don't Repeat Yourself) principle.
+-->
+
+{% block title %}MarketPulse - Home{% endblock %}
+<!-- 
+TITLE BLOCK EXPLANATION:
+This overrides the title block defined in base.html.
+The title appears in the browser tab and helps with SEO.
+We're customizing it to be specific to the home page.
+-->
+
+{% block content %}
+<!-- 
+CONTENT BLOCK EXPLANATION:
+This is where we define the main content that will be inserted into the base template.
+Everything between this tag and the corresponding {% endblock %} will replace
+the content block placeholder in base.html.
+-->
+
+<!-- 
+HERO SECTION EXPLANATION:
+This is the main banner section that appears at the top of the page.
+It uses Bootstrap's jumbotron component (now called "hero" in Bootstrap 5) 
+to create a prominent, attention-grabbing introduction to the application.
+-->
+<div class="jumbotron bg-primary text-white rounded p-5 mb-4">
+    <!-- 
+    CONTAINER EXPLANATION:
+    The container class provides a responsive fixed-width container.
+    It centers content and provides appropriate padding on different screen sizes.
+    This ensures our content looks good on mobile, tablet, and desktop.
+    -->
+    <div class="container">
+        <!-- 
+        HEADING EXPLANATION:
+        display-4 is a Bootstrap typography class that creates a large, 
+        prominent heading suitable for hero sections.
+        -->
+        <h1 class="display-4">MarketPulse</h1>
+        
+        <!-- 
+        LEAD PARAGRAPH EXPLANATION:
+        The lead class makes this paragraph stand out with larger font size
+        and lighter weight, making it perfect for a subtitle or tagline.
+        -->
+        <p class="lead">A web platform that prevents common trading mistakes by acting as a smart assistant for traders.</p>
+        
+        <!-- 
+        HORIZONTAL RULE EXPLANATION:
+        Creates a thematic break between content sections.
+        The my-4 class adds vertical margin (top and bottom) for spacing.
+        -->
+        <hr class="my-4">
+        
+        <!-- 
+        VALUE PROPOSITION EXPLANATION:
+        This paragraph explains what makes MarketPulse different from competitors.
+        It's a key marketing message that addresses pain points of target users.
+        -->
+        <p>Unlike typical charting tools that just show data, we focus on the real reasons traders lose money - overfitting, poor risk management, and emotional decisions.</p>
+        
+        <!-- 
+        CONDITIONAL BUTTON EXPLANATION:
+        This is a Django template tag that checks if the user is authenticated.
+        It demonstrates how we personalize the user experience based on login status.
+        If not logged in, show registration button; if logged in, show dashboard button.
+        -->
+        {% if not user.is_authenticated %}
+        <!-- 
+        CALL TO ACTION BUTTON (UNAUTHENTICATED):
+        This button encourages new users to register.
+        btn-light creates a light-colored button that stands out against the dark background.
+        btn-lg makes the button larger for emphasis.
+        The href attribute uses Django's URL template tag to generate the proper URL.
+        -->
+        <a class="btn btn-light btn-lg" href="{% url 'accounts:register' %}" role="button">Get Started</a>
+        {% else %}
+        <!-- 
+        CALL TO ACTION BUTTON (AUTHENTICATED):
+        For existing users, we direct them to the dashboard where they can use the application.
+        This provides a clear next step for returning visitors.
+        -->
+        <a class="btn btn-light btn-lg" href="{% url 'dashboard' %}" role="button">Go to Dashboard</a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 
+FEATURES SECTION EXPLANATION:
+This section highlights the key features of the application.
+It uses Bootstrap's grid system to create a responsive layout.
+-->
+<div class="container">
+    <!-- 
+    FIRST ROW OF FEATURES:
+    This row contains three feature cards displayed side by side on medium screens and above.
+    On smaller screens, they stack vertically.
+    -->
+    <div class="row">
+        <!-- 
+        FIRST FEATURE CARD:
+        col-md-4 means this column takes up 4 out of 12 grid units on medium screens and larger.
+        This creates a three-column layout (4+4+4=12).
+        h-100 makes the card fill the full height of its container, ensuring equal height cards.
+        -->
+        <div class="col-md-4">
+            <div class="card h-100">
+                <!-- 
+                CARD BODY EXPLANATION:
+                The card-body class provides padding for the card content.
+                This is where we place the feature title, description, and any other content.
+                -->
+                <div class="card-body">
+                    <!-- 
+                    FEATURE TITLE WITH ICON:
+                    We use Font Awesome icons to add visual interest to the feature titles.
+                    text-primary colors the icon blue to match the theme.
+                    me-2 adds margin to the right of the icon for spacing.
+                    -->
+                    <h5 class="card-title"><i class="fas fa-chart-line text-primary me-2"></i>Smart Model Testing</h5>
+                    
+                    <!-- 
+                    FEATURE DESCRIPTION:
+                    card-text is a Bootstrap class that provides appropriate styling for text within cards.
+                    This description explains the value proposition of the feature in simple terms.
+                    -->
+                    <p class="card-text">Cross-validation across different time periods with automatic warnings when models appear "too perfect".</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 
+        SECOND FEATURE CARD:
+        Same structure as the first card but with different content and icon.
+        The shield icon represents security and protection, which aligns with risk management.
+        -->
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <!-- 
+                    ICON COLOR EXPLANATION:
+                    text-success colors the icon green, which often represents positive outcomes
+                    like safety, security, or growth in financial applications.
+                    -->
+                    <h5 class="card-title"><i class="fas fa-shield-alt text-success me-2"></i>Risk Management</h5>
+                    <p class="card-text">Automatic position sizing calculator, maximum daily loss limits, and volatility-adjusted risk rules.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 
+        THIRD FEATURE CARD:
+        The robot icon represents automation and technology, fitting for the backtesting feature.
+        -->
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-robot text-warning me-2"></i>Realistic Backtesting</h5>
+                    <p class="card-text">Transaction cost simulation, overnight gap modeling, and market-hours constraints for accurate testing.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 
+    SECOND ROW OF FEATURES:
+    mt-4 adds margin to the top of this row to create space between the rows.
+    This row contains two larger feature cards (6 columns each).
+    -->
+    <div class="row mt-4">
+        <!-- 
+        MARKET CHANGE DETECTION FEATURE:
+        col-md-6 means this column takes up half the width on medium screens and larger.
+        This creates a two-column layout (6+6=12).
+        -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <!-- 
+                    EXCHANGE ICON EXPLANATION:
+                    The exchange-alt icon represents market changes and transitions,
+                    which aligns with the market change detection feature.
+                    -->
+                    <h5 class="card-title"><i class="fas fa-exchange-alt text-info me-2"></i>Market Change Detection</h5>
+                    <p class="card-text">Bull/bear/sideways market identification with volatility regime alerts and automatic strategy adjustment suggestions.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 
+        ALERT SYSTEM FEATURE:
+        The bell icon is universally recognized for notifications and alerts.
+        -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-bell text-danger me-2"></i>Alert System</h5>
+                    <p class="card-text">Rule-based notifications with email/dashboard alerts and custom alert conditions to keep you informed.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+<!-- 
+END BLOCK EXPLANATION:
+This tag closes the content block that we opened at the beginning.
+Everything after this tag will not be included in the content block.
+-->
