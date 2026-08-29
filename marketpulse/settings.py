@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECRET_KEY is used for cryptographic signing in Django (like for sessions and CSRF tokens).
 # In production, this should be a long, random, and secret value.
 # We're using decouple to read it from environment variables for security.
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-me-in-production')
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-8Kr9rHFmKC1QLfy7iKdoKAsKLQVKfGdhX4a3Y5aCYsrNYa50L3KiJT42NKu_CggCd6k')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG controls whether Django shows detailed error pages.
