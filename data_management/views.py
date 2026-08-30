@@ -1,10 +1,7 @@
-"""
-============================================================
+""" ============================================================
 DATA MANAGEMENT - VIEWS
 ============================================================
-
 FRAMEWORK MAPPING:
-
 Yahoo Finance
     ↓
 data_management/utils.py
@@ -20,51 +17,231 @@ data_management/views.py
 templates/data_management/import.html
     ↓
 Historical OHLCV table
+    +
+Strategy & Model selector
 
-PURPOSE:
+STRATEGY / MODEL FLOW:
+StrategyLibraryItem
+    ↓
+strategy_builder/library.py
+    ↓
+data_management/views.py
+    ↓
+templates/data_management/import.html
+    ↓
+User selects imported dataset
+    +
+User selects model
+    ↓
+Future Model Runner
 
+PURPOSE OF THE DATA TAB:
 The Data tab is responsible for:
-
 1. Importing historical market data.
-2. Saving the imported data into MarketData.
-3. Showing the imported OHLCV data.
+2. Saving imported data into core.MarketData.
+3. Displaying historical OHLCV data:
+   - Date
+   - Open
+   - High
+   - Low
+   - Close
+   - Volume
+
 4. Remembering the most recently imported symbol.
-5. Providing data to strategies, backtesting,
-   risk management and analysis tools.
-
-============================================================
-"""
-
-
+5. Allowing the user to switch between imported symbols.
+6. Displaying recent import history.
+7. Loading the MarketPulse Strategy & Model Library.
+8. Allowing the user to select a quantitative model
+   against the currently selected dataset.
+9. Providing historical data to:
+   - Strategy Builder
+   - Backtesting
+   - Risk Management
+   - Overfitting Detection
+   - Market Regime Detection
+   - Stress Testing
+   - Model Runner
+============================================================"""
 # ============================================================
-# 1. IMPORTS
+# 1. DJANGO IMPORTS
 # ============================================================
 
+# Django settings are used to determine whether Celery
+# should run imports asynchronously.
 from django.conf import settings
+
+
+# Django messages allow success, information and error
+# messages to appear in the shared base.html template.
 from django.contrib import messages
+
+
+# Only authenticated users should be able to import,
+# inspect and test market data.
 from django.contrib.auth.decorators import login_required
+
+
+# redirect:
+# Sends the browser to another URL.
+#
+# render:
+# Combines a Django template with context data.
 from django.shortcuts import redirect, render
+
+
+# reverse converts a named Django URL into its actual path.
+#
+# Example:
+#
+# data_management:import
+#
+# becomes:
+#
+# /data/import/
 from django.urls import reverse
 
+
+# ============================================================
+# 2. CORE MARKET DATA IMPORT
+# ============================================================
+
+# MarketData stores the historical OHLCV observations
+# downloaded from Yahoo Finance.
 from core.models import MarketData
 
+
+# ============================================================
+# 3. DATA MANAGEMENT IMPORTS
+# ============================================================
+
+# DataImportForm validates:
+#
+# - Source
+# - Symbol
+# - Start date
+# - End date
 from .forms import DataImportForm
+
+
+# DataSource:
+# Stores external market-data providers.
+#
+# DataImport:
+# Stores an audit/history record for every import request.
 from .models import DataImport, DataSource
+
+
+# process_data_import connects the import request to:
+#
+# Yahoo Finance
+#     ↓
+# data_management/utils.py
+#     ↓
+# core.MarketData
 from .tasks import process_data_import
 
 
 # ============================================================
-# 2. HISTORICAL MARKET DATA IMPORT VIEW
+# 4. STRATEGY & MODEL LIBRARY IMPORTS
+# ============================================================
+
+# This service groups all library entries by their
+# academic/model category.
+#
+# Examples:
+#
+# Stochastic Models
+# Time-Series Models
+# Machine Learning Models
+# Factor Models
+# Portfolio Optimisation
+# Derivatives Pricing
+# Simulation & Monte Carlo
+from strategy_builder.library import (
+    get_grouped_strategy_library,
+)
+
+
+# StrategyLibraryItem stores the metadata for each
+# quantitative model available in MarketPulse.
+from strategy_builder.models import (
+    StrategyLibraryItem,
+)
+
+
+# ============================================================
+# 5. HISTORICAL MARKET DATA IMPORT VIEW
 # ============================================================
 
 @login_required
 def data_import(request):
+    """
+    ============================================================
+    HISTORICAL MARKET DATA + MODEL SELECTION
+    ============================================================
+
+    FRAMEWORK FLOW:
+
+    Browser
+        ↓
+    DataImportForm
+        ↓
+    data_import()
+        ↓
+    DataImport database record
+        ↓
+    process_data_import()
+        ↓
+    Yahoo Finance
+        ↓
+    core.MarketData
+        ↓
+    import.html
+        ↓
+    Historical OHLCV table
+
+
+    MODEL SELECTION FLOW:
+
+    StrategyLibraryItem
+        ↓
+    get_grouped_strategy_library()
+        ↓
+    data_import()
+        ↓
+    import.html
+        ↓
+    User selects model
+        ↓
+    selected_model
+        ↓
+    Future Model Runner
+
+
+    OHLCV means:
+
+    O = Open
+    H = High
+    L = Low
+    C = Close
+    V = Volume
+
+    ============================================================
+    """
+
 
     # ========================================================
-    # 2.1 MAKE SURE YAHOO FINANCE EXISTS
+    # 5.1 MAKE SURE YAHOO FINANCE EXISTS
     # ========================================================
 
-    yahoo_source, _ = DataSource.objects.update_or_create(
+    # update_or_create() makes this self-healing.
+    #
+    # If Yahoo Finance does not exist:
+    #     it is created.
+    #
+    # If it already exists:
+    #     its URL and active status are refreshed.
+    DataSource.objects.update_or_create(
 
         name="Yahoo Finance",
 
@@ -77,19 +254,29 @@ def data_import(request):
 
 
     # ========================================================
-    # 2.2 BUILD IMPORT FORM
+    # 5.2 BUILD HISTORICAL DATA IMPORT FORM
     # ========================================================
 
+    # GET request:
+    #     Shows an empty form.
+    #
+    # POST request:
+    #     request.POST contains the user's submitted values.
     form = DataImportForm(
         request.POST or None
     )
 
 
     # ========================================================
-    # 2.3 HANDLE NEW IMPORT
+    # 5.3 HANDLE NEW HISTORICAL DATA IMPORT
     # ========================================================
 
     if request.method == "POST" and form.is_valid():
+
+
+        # ----------------------------------------------------
+        # Create DataImport without saving immediately
+        # ----------------------------------------------------
 
         import_job = form.save(
             commit=False
@@ -97,7 +284,7 @@ def data_import(request):
 
 
         # ----------------------------------------------------
-        # Connect import to logged-in user
+        # Associate import with logged-in user
         # ----------------------------------------------------
 
         import_job.user = request.user
@@ -107,6 +294,14 @@ def data_import(request):
         # Standardise ticker symbol
         # ----------------------------------------------------
 
+        # Examples:
+        #
+        # aapl
+        # Aapl
+        #
+        # become:
+        #
+        # AAPL
         import_job.symbol = (
             import_job.symbol
             .strip()
@@ -115,14 +310,14 @@ def data_import(request):
 
 
         # ----------------------------------------------------
-        # Save import request
+        # Save DataImport audit/history record
         # ----------------------------------------------------
 
         import_job.save()
 
 
         # ====================================================
-        # 2.4 RUN YAHOO FINANCE IMPORT
+        # 5.4 RUN THE HISTORICAL DATA IMPORT
         # ====================================================
 
         if getattr(
@@ -132,9 +327,10 @@ def data_import(request):
         ):
 
             # ------------------------------------------------
-            # Background mode
+            # CELERY / BACKGROUND MODE
             # ------------------------------------------------
 
+            # Production can run this in the background.
             process_data_import.delay(
                 import_job.pk
             )
@@ -152,22 +348,25 @@ def data_import(request):
         else:
 
             # ------------------------------------------------
-            # Local development / lecturer demonstration
+            # LOCAL DEVELOPMENT / COLLEGE DEMO MODE
             # ------------------------------------------------
 
-            # Run immediately so imported values can appear
-            # in the table after the redirect.
+            # Run synchronously so the imported values are
+            # immediately available when the page reloads.
             process_data_import(
                 import_job.pk
             )
 
 
-            # Reload updated DataImport status.
+            # ------------------------------------------------
+            # Reload job because task changed its fields
+            # ------------------------------------------------
+
             import_job.refresh_from_db()
 
 
             # ------------------------------------------------
-            # Successful import
+            # SUCCESSFUL IMPORT
             # ------------------------------------------------
 
             if import_job.status == "completed":
@@ -183,7 +382,7 @@ def data_import(request):
 
 
             # ------------------------------------------------
-            # Failed import
+            # FAILED IMPORT
             # ------------------------------------------------
 
             else:
@@ -198,31 +397,43 @@ def data_import(request):
 
 
         # ====================================================
-        # 2.5 REDIRECT BACK TO DATA PAGE
+        # 5.5 REDIRECT BACK TO DATA PAGE
         # ====================================================
 
-        # Example:
+        # Named URL:
         #
-        # /data/import/?symbol=AAPL
-
-        url = reverse(
+        # data_management:import
+        #
+        # becomes:
+        #
+        # /data/import/
+        data_page_url = reverse(
             "data_management:import"
         )
 
+
+        # Redirect example:
+        #
+        # /data/import/?symbol=AAPL
+        #
+        # This tells the Data page which dataset should be
+        # displayed immediately after importing.
         return redirect(
-            f"{url}?symbol={import_job.symbol}"
+            f"{data_page_url}?symbol={import_job.symbol}"
         )
 
 
     # ========================================================
-    # 3. FIND WHICH SYMBOL SHOULD BE DISPLAYED
+    # 6. DETERMINE WHICH SYMBOL SHOULD BE DISPLAYED
     # ========================================================
 
     # First preference:
     #
-    # URL:
+    # Read ticker from URL.
+    #
+    # Example:
+    #
     # /data/import/?symbol=AAPL
-
     selected_symbol = (
         request.GET
         .get(
@@ -235,7 +446,7 @@ def data_import(request):
 
 
     # ========================================================
-    # 4. IF NO SYMBOL IS IN URL, USE MOST RECENT IMPORT
+    # 7. IF NO SYMBOL IN URL, USE MOST RECENT IMPORT
     # ========================================================
 
     if not selected_symbol:
@@ -263,7 +474,7 @@ def data_import(request):
 
 
     # ========================================================
-    # 5. IF STILL EMPTY, USE MOST RECENT MARKETDATA SYMBOL
+    # 8. IF STILL EMPTY, USE LATEST MARKETDATA SYMBOL
     # ========================================================
 
     if not selected_symbol:
@@ -287,23 +498,36 @@ def data_import(request):
 
 
     # ========================================================
-    # 6. PREPARE MARKET DATA VALUES
+    # 9. PREPARE EMPTY MARKET DATA VALUES
     # ========================================================
 
+    # Empty QuerySet avoids returning unrelated market data
+    # when no symbol has been selected.
     market_data = MarketData.objects.none()
 
+
+    # Total number of stored rows for selected asset.
     total_records = 0
 
+
+    # Oldest stored historical record.
     earliest_record = None
 
+
+    # Latest stored historical record.
     latest_record = None
 
 
     # ========================================================
-    # 7. LOAD HISTORICAL OHLCV DATA
+    # 10. LOAD HISTORICAL OHLCV DATA
     # ========================================================
 
     if selected_symbol:
+
+
+        # ----------------------------------------------------
+        # Retrieve every stored observation for selected asset
+        # ----------------------------------------------------
 
         all_symbol_data = (
             MarketData.objects
@@ -314,7 +538,7 @@ def data_import(request):
 
 
         # ----------------------------------------------------
-        # Total number of stored observations
+        # Count total observations
         # ----------------------------------------------------
 
         total_records = (
@@ -324,7 +548,7 @@ def data_import(request):
 
 
         # ----------------------------------------------------
-        # Oldest historical row
+        # Earliest stored observation
         # ----------------------------------------------------
 
         earliest_record = (
@@ -337,7 +561,7 @@ def data_import(request):
 
 
         # ----------------------------------------------------
-        # Most recent historical row
+        # Latest stored observation
         # ----------------------------------------------------
 
         latest_record = (
@@ -350,14 +574,21 @@ def data_import(request):
 
 
         # ----------------------------------------------------
-        # Table data
+        # Historical table rows
         # ----------------------------------------------------
 
-        # Show the newest 250 rows on the Data page.
+        # Display newest 250 rows.
         #
-        # All imported records remain stored in the database
-        # even though only 250 are displayed at once.
-
+        # IMPORTANT:
+        # This does NOT delete or limit the underlying database.
+        #
+        # Every imported observation remains available for:
+        #
+        # - Backtesting
+        # - Forecasting
+        # - Machine learning
+        # - Risk analysis
+        # - Stress testing
         market_data = (
             all_symbol_data
             .order_by(
@@ -367,12 +598,15 @@ def data_import(request):
 
 
     # ========================================================
-    # 8. GET ALL AVAILABLE SYMBOLS
+    # 11. FIND ALL AVAILABLE IMPORTED SYMBOLS
     # ========================================================
 
+    # Used to create symbol-selection buttons on the Data page.
     available_symbols = (
         MarketData.objects
-        .order_by("symbol")
+        .order_by(
+            "symbol"
+        )
         .values_list(
             "symbol",
             flat=True,
@@ -382,7 +616,7 @@ def data_import(request):
 
 
     # ========================================================
-    # 9. IMPORT HISTORY
+    # 12. RECENT DATA IMPORT HISTORY
     # ========================================================
 
     recent_imports = (
@@ -400,19 +634,126 @@ def data_import(request):
 
 
     # ========================================================
-    # 10. SEND EVERYTHING TO IMPORT.HTML
+    # 13. LOAD COMPLETE STRATEGY & MODEL LIBRARY
+    # ========================================================
+
+    # Returns data structured approximately as:
+    #
+    # [
+    #     {
+    #         "code": "stochastic",
+    #         "label": "1. Stochastic Models",
+    #         "items": [...]
+    #     },
+    #     {
+    #         "code": "time_series",
+    #         "label": "2. Time-Series Models",
+    #         "items": [...]
+    #     },
+    # ]
+    #
+    # This lets the template display HTML <optgroup>
+    # sections grouped by category.
+    strategy_categories = (
+        get_grouped_strategy_library()
+    )
+
+
+    # ========================================================
+    # 14. READ SELECTED MODEL FROM URL
+    # ========================================================
+
+    # Example:
+    #
+    # /data/import/?symbol=AAPL&model=gbm
+    selected_model_code = (
+        request.GET
+        .get(
+            "model",
+            "",
+        )
+        .strip()
+    )
+
+
+    # Default:
+    #
+    # No model selected.
+    selected_model = None
+
+
+    # ========================================================
+    # 15. LOAD SELECTED MODEL
+    # ========================================================
+
+    if selected_model_code:
+
+        selected_model = (
+            StrategyLibraryItem.objects
+            .filter(
+                code=selected_model_code,
+                is_active=True,
+            )
+            .first()
+        )
+
+
+    # ========================================================
+    # 16. MODEL + DATASET COMPATIBILITY INFORMATION
+    # ========================================================
+
+    # This does not execute the model yet.
+    #
+    # It gives the template useful information about whether
+    # a dataset is currently available.
+    dataset_available = (
+        selected_symbol
+        and total_records > 0
+    )
+
+
+    # Minimum general flag for the next phase.
+    #
+    # Some advanced models will later require:
+    #
+    # - multiple assets
+    # - factor data
+    # - option inputs
+    # - interest-rate data
+    # - fundamental data
+    #
+    # Therefore selecting a model does not automatically mean
+    # it is executable against single-asset Yahoo OHLCV data.
+    model_selected = (
+        selected_model is not None
+    )
+
+
+    # ========================================================
+    # 17. SEND EVERYTHING TO IMPORT.HTML
     # ========================================================
 
     context = {
-
+        # ====================================================
+        # IMPORT FORM
+        # ====================================================
         "form":
             form,
-
+        # ====================================================
+        # SELECTED MARKET DATASET
+        # ====================================================
         "selected_symbol":
             selected_symbol,
-
+        # ====================================================
+        # HISTORICAL OHLCV ROWS
+        # ====================================================
         "market_data":
             market_data,
+
+
+        # ====================================================
+        # DATASET SUMMARY
+        # ====================================================
 
         "total_records":
             total_records,
@@ -423,13 +764,55 @@ def data_import(request):
         "latest_record":
             latest_record,
 
+
+        # ====================================================
+        # AVAILABLE IMPORTED SYMBOLS
+        # ====================================================
+
         "available_symbols":
             available_symbols,
 
+
+        # ====================================================
+        # RECENT IMPORTS
+        # ====================================================
+
         "recent_imports":
             recent_imports,
+
+
+        # ====================================================
+        # STRATEGY / MODEL LIBRARY
+        # ===================================================
+        "strategy_categories":
+            strategy_categories,
+        # ====================================================
+        # SELECTED MODEL
+        # ====================================================
+        "selected_model":
+            selected_model,
+
+
+        # ====================================================
+        # MODEL SELECTION STATUS
+        # ====================================================
+
+        "model_selected":
+            model_selected,
+
+
+        # ====================================================
+        # DATASET STATUS
+        # ====================================================
+
+        "dataset_available":
+            dataset_available,
     }
 
+
+    # ========================================================
+    # 18. RENDER DATA PAGE
+    # ========================================================
 
     return render(
         request,
@@ -439,11 +822,42 @@ def data_import(request):
 
 
 # ============================================================
-# 11. IMPORT HISTORY VIEW
+# 19. IMPORT HISTORY VIEW
 # ============================================================
 
 @login_required
 def import_history(request):
+    """
+    ============================================================
+    MARKET DATA IMPORT HISTORY
+    ============================================================
+
+    FRAMEWORK FLOW:
+
+    DataImport
+        ↓
+    import_history()
+        ↓
+    templates/data_management/history.html
+
+    The page displays:
+
+    - Symbol
+    - Source
+    - Start date
+    - End date
+    - Status
+    - Number of imported records
+    - Import date/time
+    - Failed import information
+
+    ============================================================
+    """
+
+
+    # ========================================================
+    # 19.1 LOAD LOGGED-IN USER'S IMPORTS
+    # ========================================================
 
     imports = (
         DataImport.objects
@@ -459,16 +873,30 @@ def import_history(request):
     )
 
 
+    # ========================================================
+    # 19.2 BUILD TEMPLATE CONTEXT
+    # ========================================================
+
     context = {
 
+
+        # Preferred variable for current history.html.
         "imports":
             imports,
 
-        # Compatibility with an older history template.
+
+        # Compatibility with an older version of history.html
+        # that may still contain:
+        #
+        # {% for job in jobs %}
         "jobs":
             imports,
     }
 
+
+    # ========================================================
+    # 19.3 RENDER IMPORT HISTORY PAGE
+    # ========================================================
 
     return render(
         request,
