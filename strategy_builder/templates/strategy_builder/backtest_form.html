@@ -1,0 +1,2 @@
+{% extends 'base.html' %}<!-- ======================================================== BACKTEST FORM: dates/capital → realistic engine. -->
+{% block title %}Backtest | MarketPulse{% endblock %}{% block content %}<h1 class="h3">Backtest {{ strategy.name }}</h1><div class="alert alert-info">Includes commissions, slippage, overnight gaps, session-open execution and volume capacity.</div><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Run Backtest</button></form>{% endblock %}

@@ -1,0 +1,2 @@
+{% extends 'base.html' %}<!-- ======================================================== STRATEGY CREATE: user form → Strategy + IF/THEN rules. -->
+{% block title %}Create Strategy | MarketPulse{% endblock %}{% block content %}<h1 class="h3">Create IF/THEN Strategy</h1><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Create</button></form>{% endblock %}
