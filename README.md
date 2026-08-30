@@ -1,105 +1,61 @@
-# MarketPulse: A Smart Trading Platform
+# MarketPulse: Smart Trading Analysis Platform
 
-MarketPulse is a web application that prevents common trading mistakes by acting as a smart assistant for traders. Unlike typical charting tools that just show data, our platform focuses on the real reasons traders lose money - overfitting, poor risk management, and emotional decisions.
+MarketPulse is an educational full-stack finance application built with **Python 3.13.5, Django 5.2, PostgreSQL, Django REST Framework, React, Bootstrap, Chart.js, yfinance, Celery/Redis and MATLAB integration**.
 
-## Features
+> Backtests and risk calculations are educational simulations, not investment advice or guarantees of future performance.
 
-### Core Features
-- **Smart Model Testing**: Cross-validation across different time periods with automatic warnings when models appear "too perfect"
-- **Risk Management Tools**: Automatic position sizing calculator, maximum daily loss limits, and volatility-adjusted risk rules
-- **Realistic Backtesting**: Transaction cost simulation, overnight gap modeling, and market-hours constraints
-- **Market Change Detection**: Bull/bear/sideways market identification with volatility regime alerts
+## Implemented features
+- Registration, login, logout and editable user risk profile.
+- PostgreSQL/Neon database configuration through `DATABASE_URL`.
+- Historical OHLCV import through yfinance.
+- IF/THEN moving-average strategy builder.
+- Backtesting with transaction costs, slippage, next-session-open execution, overnight gap exposure, market-session constraints, volume-capacity limits and partial fills.
+- Position sizing, stop loss, risk/reward and volatility-adjusted risk.
+- Overfitting checks across multiple historical windows.
+- Bull/bear/sideways/high-volatility regime identification.
+- Crash, volatility-spike, liquidity-crisis and regime-change stress tests.
+- Django REST Framework API and separate React/Vite frontend.
+- Optional Celery/Redis background tasks.
+- Optional MATLAB execution bridge that does not prevent Django from running when MATLAB is disabled.
+- Render/Gunicorn/WhiteNoise deployment support.
 
-### Secondary Features
-- **Execution Simulation**: Slippage modeling, bid-ask spread simulation, and partial fill probability
-- **Rule Automation**: IF/THEN rule builder with continuous monitoring and emotional bias prevention
-
-## Technology Stack
-
-- **Backend**: Django 5.0.2
-- **Frontend**: Bootstrap 5, Chart.js
-- **Database**: PostgreSQL
-- **Task Queue**: Celery with Redis
-- **Data Source**: Yahoo Finance API
-
-## Installation
-
-1. Clone the repository:
+## Local setup on macOS
 ```bash
-https://github.com/iesquivelcanaviri-coder/MarketPulse-is-a-web-platform-that-prevents-common-trading-mistakes.git
+python3.13 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+cp .env.example .env
+```
+For the fastest local demo, leave `DATABASE_URL=` blank and Django uses SQLite. For PostgreSQL/Neon, set your private `DATABASE_URL`. Set a proper `SECRET_KEY`, then:
+```bash
+python manage.py check
+python manage.py makemigrations
+python manage.py migrate
+python manage.py seed_marketpulse
+python manage.py createsuperuser
+python manage.py runserver
+```
+Open `http://127.0.0.1:8000/`.
+
+## React
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Open `http://localhost:5173/`.
+
+## MATLAB
+Set `MATLAB_ENABLED=True` and ensure the `matlab` command is available. Django calls scripts in `/matlab` through `core/matlab_bridge.py`.
+
+## Tests
+```bash
+python manage.py test
 ```
 
+See `FRAMEWORK_MAP.md` for the complete file interaction map.
 
-## Project Structure
-```
-marketpulse/
-├── manage.py
-├── requirements.txt
-├── README.md
-├── .env.example
-├── marketpulse/
-│   ├── __init__.py
-│   ├── settings.py
-│   ├── urls.py
-│   ├── wsgi.py
-│   └── asgi.py
-├── accounts/
-│   ├── __init__.py
-│   ├── admin.py
-│   ├── apps.py
-│   ├── models.py
-│   ├── views.py
-│   ├── urls.py
-│   ├── forms.py
-│   └── templates/
-│       └── accounts/
-├── data_management/
-│   ├── __init__.py
-│   ├── admin.py
-│   ├── apps.py
-│   ├── models.py
-│   ├── views.py
-│   ├── urls.py
-│   ├── tasks.py
-│   └── utils.py
-├── strategy_builder/
-│   ├── __init__.py
-│   ├── admin.py
-│   ├── apps.py
-│   ├── models.py
-│   ├── views.py
-│   ├── urls.py
-│   ├── forms.py
-│   ├── backtesting.py
-│   └── templates/
-│       └── strategy_builder/
-├── risk_management/
-│   ├── __init__.py
-│   ├── admin.py
-│   ├── apps.py
-│   ├── models.py
-│   ├── views.py
-│   ├── urls.py
-│   ├── calculators.py
-│   └── templates/
-│       └── risk_management/
-├── analysis_tools/
-│   ├── __init__.py
-│   ├── admin.py
-│   ├── apps.py
-│   ├── models.py
-│   ├── views.py
-│   ├── urls.py
-│   ├── analyzers.py
-│   └── templates/
-│       └── analysis_tools/
-├── core/
-│   ├── __init__.py
-│   ├── models.py
-│   ├── utils.py
-│   └── exceptions.py
-└── templates/
-    ├── base.html
-    ├── home.html
-    └── dashboard.html
-```
+
+## Local database fallback
+For reliable classroom testing, MarketPulse uses SQLite only when `DATABASE_URL` is blank. The production architecture remains PostgreSQL/Neon: as soon as a PostgreSQL `DATABASE_URL` is supplied, Django switches to PostgreSQL automatically.
