@@ -1,0 +1,3 @@
+{% extends 'base.html' %}
+<!-- ======================================================== PROFILE TEMPLATE: edits risk preferences used across MarketPulse. -->
+{% block title %}Profile | MarketPulse{% endblock %}{% block content %}<h1 class="h3">Trading & Risk Profile</h1><div class="card shadow-sm"><div class="card-body"><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Save</button></form></div></div>{% endblock %}

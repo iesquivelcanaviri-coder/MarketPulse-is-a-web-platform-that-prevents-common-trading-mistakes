@@ -1,0 +1,2 @@
+{% extends 'base.html' %}<!-- ======================================================== DATA IMPORT: form → data_management/views.py → yfinance → PostgreSQL. -->
+{% block title %}Import Data | MarketPulse{% endblock %}{% block content %}<h1 class="h3">Import Historical Market Data</h1><div class="card shadow-sm"><div class="card-body"><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Import</button></form></div></div>{% endblock %}

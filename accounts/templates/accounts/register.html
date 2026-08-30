@@ -1,0 +1,3 @@
+{% extends 'base.html' %}
+<!-- ======================================================== REGISTER TEMPLATE: accounts/views.py passes UserRegistrationForm here. -->
+{% block title %}Register | MarketPulse{% endblock %}{% block content %}<div class="row justify-content-center"><div class="col-lg-7"><div class="card shadow-sm"><div class="card-body"><h2>Create Account</h2><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Register</button></form></div></div></div></div>{% endblock %}

@@ -1,0 +1,2 @@
+// ========================================================== API STATUS: proves React ↔ Django connectivity through `/api/health/`. ==========================================================
+import {useEffect,useState} from 'react';import {get} from '../api.js';export default function Status(){const[ok,setOk]=useState(false);useEffect(()=>{get('/health/').then(()=>setOk(true)).catch(()=>setOk(false))},[]);return <span className={`badge ${ok?'bg-success':'bg-warning text-dark'}`}>{ok?'Django API connected':'API offline'}</span>}

@@ -1,0 +1,5 @@
+/* ==========================================================
+GLOBAL MARKETPULSE STYLES
+Framework mapping: loaded by base.html after Bootstrap.
+========================================================== */
+body{background:#f6f8fb}.hero{background:linear-gradient(135deg,#0d6efd,#123c7c);color:#fff}.glass-card{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);padding:1.5rem;border-radius:1rem}.metric-card{background:#fff;border:1px solid #e5e8ef;border-radius:.9rem;padding:1rem;box-shadow:0 .25rem .8rem rgba(0,0,0,.04)}.metric-card small{display:block;color:#6c757d;text-transform:uppercase;font-size:.72rem}.metric-card strong{display:block;font-size:1.6rem}.card{border:0}

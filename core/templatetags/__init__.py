@@ -1,0 +1,1 @@
+"""Custom MarketPulse template tags."""
