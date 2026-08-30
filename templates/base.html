@@ -1,10 +1,479 @@
 <!doctype html>
-<!-- ========================================================
-MARKETPULSE BASE TEMPLATE
-Framework mapping: every Django page extends this single Bootstrap shell.
-There is intentionally only one Django content block to avoid duplicate-block errors.
-========================================================= -->
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{% block title %}MarketPulse{% endblock %}</title>{% load bootstrap5 static %}{% bootstrap_css %}{% bootstrap_javascript %}<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"><link rel="stylesheet" href="{% static 'css/styles.css' %}">{% block extra_css %}{% endblock %}</head><body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary"><div class="container-fluid"><a class="navbar-brand fw-bold" href="{% url 'home' %}"><i class="fa-solid fa-chart-line me-2"></i>MarketPulse</a><button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#mainNav"><span class="navbar-toggler-icon"></span></button><div class="collapse navbar-collapse" id="mainNav"><ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="{% url 'home' %}">Home</a></li>{% if user.is_authenticated %}<li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a></li><li class="nav-item"><a class="nav-link" href="{% url 'data_management:import' %}">Data</a></li><li class="nav-item"><a class="nav-link" href="{% url 'strategy_builder:list' %}">Strategies</a></li><li class="nav-item"><a class="nav-link" href="{% url 'risk_management:calculator' %}">Risk</a></li><li class="nav-item dropdown"><a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#">Analysis</a><ul class="dropdown-menu"><li><a class="dropdown-item" href="{% url 'analysis_tools:overfitting' %}">Overfitting</a></li><li><a class="dropdown-item" href="{% url 'analysis_tools:regime' %}">Market Regime</a></li><li><a class="dropdown-item" href="{% url 'analysis_tools:stress' %}">Stress Testing</a></li></ul></li>{% endif %}</ul><ul class="navbar-nav">{% if user.is_authenticated %}<li class="nav-item"><a class="nav-link" href="{% url 'accounts:profile' %}">{{ user.username }}</a></li><li class="nav-item"><form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button class="btn btn-link nav-link" type="submit">Logout</button></form></li>{% else %}<li class="nav-item"><a class="nav-link" href="{% url 'accounts:login' %}">Login</a></li><li class="nav-item"><a class="nav-link" href="{% url 'accounts:register' %}">Register</a></li>{% endif %}</ul></div></div></nav>
-<main class="container py-4">{% if messages %}{% for message in messages %}<div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}{% endif %}{% block content %}{% endblock %}</main>
-<footer class="border-top py-4 mt-5"><div class="container small text-muted">MarketPulse educational project — simulated analysis, not investment advice.</div></footer><script src="{% static 'js/app.js' %}"></script>{% block extra_js %}{% endblock %}</body></html>
+
+{# ======================================================== #}
+{# MARKETPULSE BASE TEMPLATE                                #}
+{# ======================================================== #}
+
+{#
+Framework mapping:
+
+This is the main shared layout for every Django page.
+
+It connects:
+- Django template inheritance
+- django-bootstrap5
+- Django static files
+- Authentication navigation
+- Django messages
+- MarketPulse application URLs
+- Shared CSS and JavaScript
+
+IMPORTANT:
+This template contains only ONE real content block.
+Django template syntax is not written inside HTML comments.
+#}
+
+<html lang="en">
+
+
+{# ======================================================== #}
+{# 1. HEAD                                                  #}
+{# ======================================================== #}
+
+<head>
+
+    <meta charset="utf-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <title>
+        {% block title %}
+            MarketPulse
+        {% endblock %}
+    </title>
+
+
+    {# ---------------------------------------------------- #}
+    {# Django Bootstrap 5 and Static Files                 #}
+    {# ---------------------------------------------------- #}
+
+    {% load django_bootstrap5 static %}
+
+    {% bootstrap_css %}
+
+
+    {# ---------------------------------------------------- #}
+    {# Font Awesome                                        #}
+    {# ---------------------------------------------------- #}
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    >
+
+
+    {# ---------------------------------------------------- #}
+    {# MarketPulse Custom CSS                              #}
+    {# ---------------------------------------------------- #}
+
+    <link
+        rel="stylesheet"
+        href="{% static 'css/styles.css' %}"
+    >
+
+
+    {# ---------------------------------------------------- #}
+    {# Optional Page-Specific CSS                          #}
+    {# ---------------------------------------------------- #}
+
+    {% block extra_css %}
+    {% endblock %}
+
+</head>
+
+
+{# ======================================================== #}
+{# 2. BODY                                                  #}
+{# ======================================================== #}
+
+<body>
+
+
+{# ======================================================== #}
+{# 3. NAVIGATION BAR                                        #}
+{# ======================================================== #}
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+
+    <div class="container-fluid">
+
+
+        {# ------------------------------------------------ #}
+        {# MarketPulse Brand                               #}
+        {# ------------------------------------------------ #}
+
+        <a
+            class="navbar-brand fw-bold"
+            href="{% url 'home' %}"
+        >
+
+            <i class="fa-solid fa-chart-line me-2"></i>
+
+            MarketPulse
+
+        </a>
+
+
+        {# ------------------------------------------------ #}
+        {# Mobile Navigation Toggle                       #}
+        {# ------------------------------------------------ #}
+
+        <button
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#mainNav"
+            aria-controls="mainNav"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+        >
+
+            <span class="navbar-toggler-icon"></span>
+
+        </button>
+
+
+        {# ------------------------------------------------ #}
+        {# Navigation Content                             #}
+        {# ------------------------------------------------ #}
+
+        <div
+            class="collapse navbar-collapse"
+            id="mainNav"
+        >
+
+
+            {# ============================================ #}
+            {# LEFT NAVIGATION                             #}
+            {# ============================================ #}
+
+            <ul class="navbar-nav me-auto">
+
+
+                {# ---------------- Home ------------------ #}
+
+                <li class="nav-item">
+
+                    <a
+                        class="nav-link"
+                        href="{% url 'home' %}"
+                    >
+                        Home
+                    </a>
+
+                </li>
+
+
+                {% if user.is_authenticated %}
+
+
+                    {# -------------- Dashboard ------------ #}
+
+                    <li class="nav-item">
+
+                        <a
+                            class="nav-link"
+                            href="{% url 'dashboard' %}"
+                        >
+                            Dashboard
+                        </a>
+
+                    </li>
+
+
+                    {# -------------- Data ----------------- #}
+
+                    <li class="nav-item">
+
+                        <a
+                            class="nav-link"
+                            href="{% url 'data_management:import' %}"
+                        >
+                            Data
+                        </a>
+
+                    </li>
+
+
+                    {# -------------- Strategies ----------- #}
+
+                    <li class="nav-item">
+
+                        <a
+                            class="nav-link"
+                            href="{% url 'strategy_builder:list' %}"
+                        >
+                            Strategies
+                        </a>
+
+                    </li>
+
+
+                    {# -------------- Risk ----------------- #}
+
+                    <li class="nav-item">
+
+                        <a
+                            class="nav-link"
+                            href="{% url 'risk_management:calculator' %}"
+                        >
+                            Risk
+                        </a>
+
+                    </li>
+
+
+                    {# ==================================== #}
+                    {# ANALYSIS DROPDOWN                    #}
+                    {# ==================================== #}
+
+                    <li class="nav-item dropdown">
+
+                        <a
+                            class="nav-link dropdown-toggle"
+                            href="#"
+                            role="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                        >
+                            Analysis
+                        </a>
+
+
+                        <ul class="dropdown-menu">
+
+
+                            {# ---------- Overfitting ------- #}
+
+                            <li>
+
+                                <a
+                                    class="dropdown-item"
+                                    href="{% url 'analysis_tools:overfitting' %}"
+                                >
+                                    Overfitting
+                                </a>
+
+                            </li>
+
+
+                            {# ---------- Market Regime ----- #}
+
+                            <li>
+
+                                <a
+                                    class="dropdown-item"
+                                    href="{% url 'analysis_tools:regime' %}"
+                                >
+                                    Market Regime
+                                </a>
+
+                            </li>
+
+
+                            {# ---------- Stress Testing ---- #}
+
+                            <li>
+
+                                <a
+                                    class="dropdown-item"
+                                    href="{% url 'analysis_tools:stress' %}"
+                                >
+                                    Stress Testing
+                                </a>
+
+                            </li>
+
+
+                        </ul>
+
+                    </li>
+
+
+                {% endif %}
+
+            </ul>
+
+
+            {# ============================================ #}
+            {# RIGHT AUTHENTICATION NAVIGATION             #}
+            {# ============================================ #}
+
+            <ul class="navbar-nav">
+
+
+                {% if user.is_authenticated %}
+
+
+                    {# ---------------- Profile ------------ #}
+
+                    <li class="nav-item">
+
+                        <a
+                            class="nav-link"
+                            href="{% url 'accounts:profile' %}"
+                        >
+                            {{ user.username }}
+                        </a>
+
+                    </li>
+
+
+                    {# ---------------- Logout ------------- #}
+
+                    <li class="nav-item">
+
+                        <form
+                            method="post"
+                            action="{% url 'accounts:logout' %}"
+                        >
+
+                            {% csrf_token %}
+
+                            <button
+                                class="btn btn-link nav-link"
+                                type="submit"
+                            >
+                                Logout
+                            </button>
+
+                        </form>
+
+                    </li>
+
+
+                {% else %}
+
+
+                    {# ---------------- Login -------------- #}
+
+                    <li class="nav-item">
+
+                        <a
+                            class="nav-link"
+                            href="{% url 'accounts:login' %}"
+                        >
+                            Login
+                        </a>
+
+                    </li>
+
+
+                    {# ---------------- Register ----------- #}
+
+                    <li class="nav-item">
+
+                        <a
+                            class="nav-link"
+                            href="{% url 'accounts:register' %}"
+                        >
+                            Register
+                        </a>
+
+                    </li>
+
+
+                {% endif %}
+
+            </ul>
+
+
+        </div>
+
+    </div>
+
+</nav>
+
+
+{# ======================================================== #}
+{# 4. MAIN PAGE CONTENT                                      #}
+{# ======================================================== #}
+
+<main class="container py-4">
+
+
+    {# ---------------------------------------------------- #}
+    {# Django Messages                                     #}
+    {# ---------------------------------------------------- #}
+
+    {% if messages %}
+
+        {% for message in messages %}
+
+            <div
+                class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show"
+                role="alert"
+            >
+
+                {{ message }}
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Close"
+                >
+                </button>
+
+            </div>
+
+        {% endfor %}
+
+    {% endif %}
+
+
+    {# ==================================================== #}
+    {# SINGLE CONTENT BLOCK                                 #}
+    {# ==================================================== #}
+
+    {% block content %}
+    {% endblock %}
+
+
+</main>
+
+
+{# ======================================================== #}
+{# 5. FOOTER                                                 #}
+{# ======================================================== #}
+
+<footer class="border-top py-4 mt-5">
+
+    <div class="container small text-muted">
+
+        MarketPulse educational project —
+        simulated analysis, not investment advice.
+
+    </div>
+
+</footer>
+
+
+{# ======================================================== #}
+{# 6. BOOTSTRAP JAVASCRIPT                                   #}
+{# ======================================================== #}
+
+{% bootstrap_javascript %}
+
+
+{# ======================================================== #}
+{# 7. MARKETPULSE JAVASCRIPT                                 #}
+{# ======================================================== #}
+
+<script src="{% static 'js/app.js' %}"></script>
+
+
+{# ======================================================== #}
+{# 8. OPTIONAL PAGE-SPECIFIC JAVASCRIPT                      #}
+{# ======================================================== #}
+
+{% block extra_js %}
+{% endblock %}
+
+
+</body>
+
+</html>
