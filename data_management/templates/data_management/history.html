@@ -1,2 +1,252 @@
-{% extends 'base.html' %}<!-- ======================================================== IMPORT HISTORY: DataImport query → table. -->
-{% block title %}Import History | MarketPulse{% endblock %}{% block content %}<h1 class="h3">Import History</h1><table class="table table-striped"><thead><tr><th>Symbol</th><th>Source</th><th>Status</th><th>Rows</th><th>Error</th></tr></thead><tbody>{% for x in imports %}<tr><td>{{ x.symbol }}</td><td>{{ x.source }}</td><td>{{ x.get_status_display }}</td><td>{{ x.records_imported }}</td><td>{{ x.error_message }}</td></tr>{% empty %}<tr><td colspan="5">No imports yet.</td></tr>{% endfor %}</tbody></table>{% endblock %}
+{% extends "base.html" %}
+
+
+{% comment %}
+============================================================
+MARKETPULSE - DATA IMPORT HISTORY
+============================================================
+
+Framework mapping:
+
+data_management/views.py
+    -> import_history()
+
+DataImport model
+    -> supplies historical import records
+
+This template
+    -> displays those records to the user
+============================================================
+{% endcomment %}
+
+
+{% block title %}
+Import History | MarketPulse
+{% endblock %}
+
+
+{% block content %}
+
+
+<!-- ====================================================== -->
+<!-- 1. PAGE HEADER                                         -->
+<!-- ====================================================== -->
+
+<div class="mb-4">
+
+    <h1 class="h2">
+        Market Data Import History
+    </h1>
+
+    <p class="text-muted">
+
+        Review previous historical market-data imports
+        stored by MarketPulse.
+
+    </p>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- 2. IMPORT HISTORY TABLE                                -->
+<!-- ====================================================== -->
+
+<div class="card shadow-sm">
+
+    <div class="card-body">
+
+
+        <div class="table-responsive">
+
+            <table
+                class="table
+                       table-striped
+                       table-hover
+                       align-middle"
+            >
+
+
+                <!-- -------------------------------------- -->
+                <!-- Table Header                           -->
+                <!-- -------------------------------------- -->
+
+                <thead class="table-dark">
+
+                    <tr>
+
+                        <th>
+                            Symbol
+                        </th>
+
+                        <th>
+                            Source
+                        </th>
+
+                        <th>
+                            Start Date
+                        </th>
+
+                        <th>
+                            End Date
+                        </th>
+
+                        <th>
+                            Status
+                        </th>
+
+                        <th class="text-end">
+                            Records
+                        </th>
+
+                        <th>
+                            Created
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <!-- -------------------------------------- -->
+                <!-- Table Data                             -->
+                <!-- -------------------------------------- -->
+
+                <tbody>
+
+
+                    {% for item in imports %}
+
+                    <tr>
+
+                        <td class="fw-bold">
+
+                            {{ item.symbol }}
+
+                        </td>
+
+
+                        <td>
+
+                            {{ item.source.name }}
+
+                        </td>
+
+
+                        <td>
+
+                            {{ item.start_date|date:"d/m/Y" }}
+
+                        </td>
+
+
+                        <td>
+
+                            {{ item.end_date|date:"d/m/Y" }}
+
+                        </td>
+
+
+                        <td>
+
+                            {% if item.status == "completed" %}
+
+                                <span class="badge bg-success">
+
+                                    Completed
+
+                                </span>
+
+                            {% elif item.status == "failed" %}
+
+                                <span class="badge bg-danger">
+
+                                    Failed
+
+                                </span>
+
+                            {% elif item.status == "processing" %}
+
+                                <span class="badge bg-warning text-dark">
+
+                                    Processing
+
+                                </span>
+
+                            {% else %}
+
+                                <span class="badge bg-secondary">
+
+                                    {{ item.status|title }}
+
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <td class="text-end">
+
+                            {{ item.records_imported }}
+
+                        </td>
+
+
+                        <td>
+
+                            {{ item.created_at|date:"d/m/Y H:i" }}
+
+                        </td>
+
+                    </tr>
+
+
+                    {% empty %}
+
+
+                    <tr>
+
+                        <td
+                            colspan="7"
+                            class="text-center text-muted py-4"
+                        >
+
+                            No market-data imports have been
+                            completed yet.
+
+                        </td>
+
+                    </tr>
+
+
+                    {% endfor %}
+
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+        <!-- ---------------------------------------------- -->
+        <!-- Return to Import Page                          -->
+        <!-- ---------------------------------------------- -->
+
+        <a
+            href="{% url 'data_management:import' %}"
+            class="btn btn-primary mt-3"
+        >
+
+            Import Market Data
+
+        </a>
+
+
+    </div>
+
+</div>
+
+
+{% endblock %}

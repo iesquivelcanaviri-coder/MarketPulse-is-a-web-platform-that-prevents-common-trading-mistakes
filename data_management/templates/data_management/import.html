@@ -1,2 +1,842 @@
-{% extends 'base.html' %}<!-- ======================================================== DATA IMPORT: form → data_management/views.py → yfinance → PostgreSQL. -->
-{% block title %}Import Data | MarketPulse{% endblock %}{% block content %}<h1 class="h3">Import Historical Market Data</h1><div class="card shadow-sm"><div class="card-body"><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Import</button></form></div></div>{% endblock %}
+{% extends "base.html" %}
+
+
+{% comment %}
+============================================================
+MARKETPULSE - HISTORICAL MARKET DATA PAGE
+============================================================
+
+FRAMEWORK MAPPING:
+
+Yahoo Finance
+    ↓
+data_management/utils.py
+    ↓
+data_management/tasks.py
+    ↓
+core.MarketData
+    ↓
+data_management/views.py
+    ↓
+This template
+
+PURPOSE:
+
+This page allows the user to:
+
+- Import historical market data
+- See available imported symbols
+- View date ranges
+- View Open prices
+- View High prices
+- View Low prices
+- View Close prices
+- View trading volume
+- Review recent data imports
+
+The stored MarketData is later reused by:
+
+- Strategy Builder
+- Backtesting
+- Risk Management
+- Overfitting Detection
+- Market Regime Detection
+- Stress Testing
+
+============================================================
+{% endcomment %}
+
+
+{% block title %}
+Market Data | MarketPulse
+{% endblock %}
+
+
+{% block content %}
+
+
+<!-- ====================================================== -->
+<!-- 1. PAGE HEADER                                         -->
+<!-- ====================================================== -->
+
+<div class="mb-4">
+
+    <h1 class="h2">
+        Historical Market Data
+    </h1>
+
+    <p class="text-muted">
+
+        Import and inspect historical OHLCV market data
+        used throughout MarketPulse.
+
+    </p>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- 2. IMPORT HISTORICAL DATA                              -->
+<!-- ====================================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-body">
+
+
+        <h2 class="h4 mb-4">
+
+            Import Historical Market Data
+
+        </h2>
+
+
+        <form method="post">
+
+            {% csrf_token %}
+
+
+            <!-- ------------------------------------------ -->
+            <!-- SOURCE                                     -->
+            <!-- ------------------------------------------ -->
+
+            <div class="mb-3">
+
+                <label
+                    for="{{ form.source.id_for_label }}"
+                    class="form-label"
+                >
+                    Source
+                </label>
+
+                {{ form.source }}
+
+            </div>
+
+
+            <!-- ------------------------------------------ -->
+            <!-- SYMBOL                                     -->
+            <!-- ------------------------------------------ -->
+
+            <div class="mb-3">
+
+                <label
+                    for="{{ form.symbol.id_for_label }}"
+                    class="form-label"
+                >
+                    Symbol
+                </label>
+
+                {{ form.symbol }}
+
+
+                <div class="form-text">
+
+                    Examples:
+                    AAPL,
+                    MSFT,
+                    NVDA,
+                    SPY,
+                    BTC-USD
+
+                </div>
+
+            </div>
+
+
+            <!-- ------------------------------------------ -->
+            <!-- START DATE                                 -->
+            <!-- ------------------------------------------ -->
+
+            <div class="mb-3">
+
+                <label
+                    for="{{ form.start_date.id_for_label }}"
+                    class="form-label"
+                >
+                    Start date
+                </label>
+
+                {{ form.start_date }}
+
+            </div>
+
+
+            <!-- ------------------------------------------ -->
+            <!-- END DATE                                   -->
+            <!-- ------------------------------------------ -->
+
+            <div class="mb-3">
+
+                <label
+                    for="{{ form.end_date.id_for_label }}"
+                    class="form-label"
+                >
+                    End date
+                </label>
+
+                {{ form.end_date }}
+
+            </div>
+
+
+            <!-- ------------------------------------------ -->
+            <!-- VALIDATION ERRORS                          -->
+            <!-- ------------------------------------------ -->
+
+            {% if form.errors %}
+
+                <div class="alert alert-danger">
+
+                    {{ form.errors }}
+
+                </div>
+
+            {% endif %}
+
+
+            <!-- ------------------------------------------ -->
+            <!-- IMPORT BUTTON                              -->
+            <!-- ------------------------------------------ -->
+
+            <button
+                type="submit"
+                class="btn btn-primary"
+            >
+
+                <i class="fa-solid fa-download me-2"></i>
+
+                Import Historical Data
+
+            </button>
+
+
+            <a
+                href="{% url 'data_management:history' %}"
+                class="btn btn-outline-secondary ms-2"
+            >
+                Import History
+            </a>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- 3. AVAILABLE IMPORTED SYMBOLS                           -->
+<!-- ====================================================== -->
+
+{% if available_symbols %}
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-body">
+
+
+        <h2 class="h5 mb-3">
+
+            Imported Symbols
+
+        </h2>
+
+
+        <div class="d-flex flex-wrap gap-2">
+
+            {% for symbol in available_symbols %}
+
+                <a
+                    href="{% url 'data_management:import' %}?symbol={{ symbol }}"
+                    class="
+                        btn
+                        {% if symbol == selected_symbol %}
+                            btn-primary
+                        {% else %}
+                            btn-outline-primary
+                        {% endif %}
+                    "
+                >
+
+                    {{ symbol }}
+
+                </a>
+
+            {% endfor %}
+
+        </div>
+
+
+    </div>
+
+</div>
+
+{% endif %}
+
+
+<!-- ====================================================== -->
+<!-- 4. SELECTED SYMBOL SUMMARY                              -->
+<!-- ====================================================== -->
+
+{% if selected_symbol %}
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-body">
+
+
+        <div
+            class="d-flex
+                   justify-content-between
+                   align-items-center
+                   flex-wrap"
+        >
+
+
+            <div>
+
+                <h2 class="h4 mb-1">
+
+                    {{ selected_symbol }}
+                    Historical Market Data
+
+                </h2>
+
+
+                <p class="text-muted mb-0">
+
+                    Data currently stored in MarketPulse.
+
+                </p>
+
+            </div>
+
+
+            <span class="badge bg-primary fs-6">
+
+                Yahoo Finance
+
+            </span>
+
+
+        </div>
+
+
+        <hr>
+
+
+        <!-- ============================================== -->
+        <!-- SUMMARY METRICS                                -->
+        <!-- ============================================== -->
+
+        <div class="row g-3">
+
+
+            <!-- Total Records -->
+
+            <div class="col-md-4">
+
+                <div class="border rounded p-3">
+
+                    <div class="text-muted small">
+
+                        Stored Observations
+
+                    </div>
+
+                    <div class="fs-4 fw-bold">
+
+                        {{ total_records }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- Earliest Date -->
+
+            <div class="col-md-4">
+
+                <div class="border rounded p-3">
+
+                    <div class="text-muted small">
+
+                        Earliest Date
+
+                    </div>
+
+                    <div class="fs-5 fw-bold">
+
+                        {% if earliest_record %}
+
+                            {{ earliest_record.date|date:"d/m/Y" }}
+
+                        {% else %}
+
+                            —
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- Latest Date -->
+
+            <div class="col-md-4">
+
+                <div class="border rounded p-3">
+
+                    <div class="text-muted small">
+
+                        Latest Date
+
+                    </div>
+
+                    <div class="fs-5 fw-bold">
+
+                        {% if latest_record %}
+
+                            {{ latest_record.date|date:"d/m/Y" }}
+
+                        {% else %}
+
+                            —
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+</div>
+
+{% endif %}
+
+
+<!-- ====================================================== -->
+<!-- 5. HISTORICAL OHLCV TABLE                               -->
+<!-- ====================================================== -->
+
+{% if market_data %}
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-body">
+
+
+        <div
+            class="d-flex
+                   justify-content-between
+                   align-items-center
+                   mb-3"
+        >
+
+
+            <div>
+
+                <h2 class="h4 mb-1">
+
+                    Historical OHLCV Data
+
+                </h2>
+
+
+                <p class="text-muted mb-0">
+
+                    Latest
+                    {{ market_data|length }}
+                    observations shown.
+
+                </p>
+
+            </div>
+
+
+            <span class="badge bg-dark fs-6">
+
+                {{ selected_symbol }}
+
+            </span>
+
+
+        </div>
+
+
+        <div class="table-responsive">
+
+
+            <table
+                class="
+                    table
+                    table-striped
+                    table-hover
+                    table-bordered
+                    align-middle
+                "
+            >
+
+
+                <!-- ====================================== -->
+                <!-- TABLE HEADER                           -->
+                <!-- ====================================== -->
+
+                <thead class="table-dark">
+
+                    <tr>
+
+                        <th>
+                            Date
+                        </th>
+
+                        <th class="text-end">
+                            Open
+                        </th>
+
+                        <th class="text-end">
+                            High
+                        </th>
+
+                        <th class="text-end">
+                            Low
+                        </th>
+
+                        <th class="text-end">
+                            Close
+                        </th>
+
+                        <th class="text-end">
+                            Volume
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <!-- ====================================== -->
+                <!-- TABLE BODY                             -->
+                <!-- ====================================== -->
+
+                <tbody>
+
+
+                    {% for row in market_data %}
+
+                    <tr>
+
+
+                        <!-- Date -->
+
+                        <td class="text-nowrap">
+
+                            {{ row.date|date:"d/m/Y" }}
+
+                        </td>
+
+
+                        <!-- Open -->
+
+                        <td class="text-end">
+
+                            {{ row.open_price|floatformat:2 }}
+
+                        </td>
+
+
+                        <!-- High -->
+
+                        <td class="text-end">
+
+                            {{ row.high_price|floatformat:2 }}
+
+                        </td>
+
+
+                        <!-- Low -->
+
+                        <td class="text-end">
+
+                            {{ row.low_price|floatformat:2 }}
+
+                        </td>
+
+
+                        <!-- Close -->
+
+                        <td class="text-end fw-bold">
+
+                            {{ row.close_price|floatformat:2 }}
+
+                        </td>
+
+
+                        <!-- Volume -->
+
+                        <td class="text-end">
+
+                            {{ row.volume }}
+
+                        </td>
+
+
+                    </tr>
+
+                    {% endfor %}
+
+
+                </tbody>
+
+
+            </table>
+
+
+        </div>
+
+
+    </div>
+
+</div>
+
+
+{% elif selected_symbol %}
+
+
+<!-- ====================================================== -->
+<!-- 6. SYMBOL SELECTED BUT NO DATA                          -->
+<!-- ====================================================== -->
+
+<div class="alert alert-warning">
+
+    <h4 class="alert-heading">
+
+        No historical data found
+
+    </h4>
+
+
+    <p class="mb-0">
+
+        No stored historical market data was found for
+
+        <strong>
+            {{ selected_symbol }}
+        </strong>.
+
+        Import the symbol using the form above.
+
+    </p>
+
+</div>
+
+
+{% else %}
+
+
+<!-- ====================================================== -->
+<!-- 7. NO DATA HAS BEEN IMPORTED                            -->
+<!-- ====================================================== -->
+
+<div class="card shadow-sm">
+
+    <div class="card-body text-center py-5">
+
+
+        <i
+            class="
+                fa-solid
+                fa-database
+                fa-3x
+                text-muted
+                mb-3
+            "
+        >
+        </i>
+
+
+        <h2 class="h4">
+
+            No historical market data yet
+
+        </h2>
+
+
+        <p class="text-muted mb-0">
+
+            Import a market symbol above and its historical
+            Open, High, Low, Close and Volume records will
+            appear here automatically.
+
+        </p>
+
+
+    </div>
+
+</div>
+
+
+{% endif %}
+
+
+<!-- ====================================================== -->
+<!-- 8. RECENT IMPORTS                                       -->
+<!-- ====================================================== -->
+
+{% if recent_imports %}
+
+<div class="card shadow-sm mt-4">
+
+    <div class="card-body">
+
+
+        <h2 class="h4 mb-3">
+
+            Recent Imports
+
+        </h2>
+
+
+        <div class="table-responsive">
+
+
+            <table class="table table-sm align-middle">
+
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Symbol
+                        </th>
+
+                        <th>
+                            Source
+                        </th>
+
+                        <th>
+                            Status
+                        </th>
+
+                        <th>
+                            Records
+                        </th>
+
+                        <th>
+                            Imported
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+
+                    {% for item in recent_imports %}
+
+                    <tr>
+
+
+                        <td>
+
+                            <a
+                                href="{% url 'data_management:import' %}?symbol={{ item.symbol }}"
+                            >
+
+                                {{ item.symbol }}
+
+                            </a>
+
+                        </td>
+
+
+                        <td>
+
+                            {{ item.source.name }}
+
+                        </td>
+
+
+                        <td>
+
+                            {% if item.status == "completed" %}
+
+                                <span class="badge bg-success">
+
+                                    Completed
+
+                                </span>
+
+                            {% elif item.status == "failed" %}
+
+                                <span class="badge bg-danger">
+
+                                    Failed
+
+                                </span>
+
+                            {% else %}
+
+                                <span class="badge bg-secondary">
+
+                                    {{ item.status|title }}
+
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <td>
+
+                            {{ item.records_imported }}
+
+                        </td>
+
+
+                        <td>
+
+                            {{ item.created_at|date:"d/m/Y H:i" }}
+
+                        </td>
+
+
+                    </tr>
+
+                    {% endfor %}
+
+
+                </tbody>
+
+
+            </table>
+
+
+        </div>
+
+
+    </div>
+
+</div>
+
+{% endif %}
+
+
+{% endblock %}
