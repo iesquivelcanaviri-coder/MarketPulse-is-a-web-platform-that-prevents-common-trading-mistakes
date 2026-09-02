@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}Market Regime Analysis{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Market Regime Analysis</h4>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Market regimes are distinct market conditions that require different trading strategies.
+                    Our tool analyzes market data to identify the current regime and helps you adjust your strategy accordingly.
+                </p>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="symbol" class="form-label">Symbol</label>
+                        <input type="text" class="form-control" id="symbol" name="symbol" placeholder="AAPL" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Analyze Market Regime</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

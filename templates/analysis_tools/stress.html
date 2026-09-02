@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block title %}Stress Testing{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Stress Testing</h4>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Stress testing evaluates how your strategy performs under extreme market conditions.
+                    This helps you understand the risks and potential weaknesses of your strategy.
+                </p>
+                
+                <form method="post" id="stressForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="strategy" class="form-label">Select Strategy</label>
+                        <select class="form-select" id="strategy" name="strategy" required>
+                            <option value="" selected disabled>-- Choose a strategy --</option>
+                            {% for strategy in strategies %}
+                            <option value="{{ strategy.id }}">{{ strategy.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="symbol" class="form-label">Symbol</label>
+                        <input type="text" class="form-control" id="symbol" name="symbol" placeholder="AAPL" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="test_type" class="form-label">Test Type</label>
+                        <select class="form-select" id="test_type" name="test_type" required>
+                            <option value="" selected disabled>-- Choose a test type --</option>
+                            <option value="crash">Market Crash</option>
+                            <option value="volatility_spike">Volatility Spike</option>
+                            <option value="liquidity_crisis">Liquidity Crisis</option>
+                            <option value="regime_change">Regime Change</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Market Crash Parameters -->
+                    <div id="crash_params" class="test-params" style="display: none;">
+                        <h5>Market Crash Parameters</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="crash_start" class="form-label">Crash Start (% of period)</label>
+                                <input type="number" class="form-control" id="crash_start" name="crash_start" value="0.7" min="0" max="1" step="0.1">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="crash_magnitude" class="form-label">Crash Magnitude (% drop)</label>
+                                <input type="number" class="form-control" id="crash_magnitude" name="crash_magnitude" value="0.3" min="0.1" max="0.5" step="0.05">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Volatility Spike Parameters -->
+                    <div id="volatility_spike_params" class="test-params" style="display: none;">
+                        <h5>Volatility Spike Parameters</h5>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="spike_start" class="form-label">Spike Start (% of period)</label>
+                                <input type="number" class="form-control" id="spike_start" name="spike_start" value="0.5" min="0" max="1" step="0.1">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="spike_duration" class="form-label">Spike Duration (% of period)</label>
+                                <input type="number" class="form-control" id="spike_duration" name="spike_duration" value="0.1" min="0.05" max="0.3" step="0.05">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="spike_magnitude" class="form-label">Spike Magnitude (multiplier)</label>
+                                <input type="number" class="form-control" id="spike_magnitude" name="spike_magnitude" value="3.0" min="1.5" max="5" step="0.5">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Liquidity Crisis Parameters -->
+                    <div id="liquidity_crisis_params" class="test-params" style="display: none;">
+                        <h5>Liquidity Crisis Parameters</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="crisis_start" class="form-label">Crisis Start (% of period)</label>
+                                <input type="number" class="form-control" id="crisis_start" name="crisis_start" value="0.6" min="0" max="1" step="0.1">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="volume_reduction" class="form-label">Volume Reduction (%)</label>
+                                <input type="number" class="form-control" id="volume_reduction" name="volume_reduction" value="0.7" min="0.3" max="0.9" step="0.1">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Regime Change Parameters -->
+                    <div id="regime_change_params" class="test-params" style="display: none;">
+                        <h5>Regime Change Parameters</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="change_point" class="form-label">Change Point (% of period)</label>
+                                <input type="number" class="form-control" id="change_point" name="change_point" value="0.5" min="0" max="1" step="0.1">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="new_trend" class="form-label">New Trend (daily change)</label>
+                                <input type="number" class="form-control" id="new_trend" name="new_trend" value="-0.01" min="-0.05" max="0.05" step="0.005">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Run Stress Test</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('test_type').addEventListener('change', function() {
+    // Hide all parameter sections
+    const paramSections = document.querySelectorAll('.test-params');
+    paramSections.forEach(section => {
+        section.style.display = 'none';
+    });
+    
+    // Show the selected parameter section
+    const selectedParams = document.getElementById(this.value + '_params');
+    if (selectedParams) {
+        selectedParams.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

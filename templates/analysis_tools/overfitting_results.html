@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Overfitting Detection Results{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-10 offset-md-1">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Overfitting Detection Results</h4>
+            </div>
+            <div class="card-body">
+                {% if tests %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Strategy</th>
+                                <th>Symbol</th>
+                                <th>Test Period</th>
+                                <th>In-Sample Return</th>
+                                <th>Out-Sample Return</th>
+                                <th>Overfitting Score</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for test in tests %}
+                            <tr>
+                                <td>{{ test.strategy_name }}</td>
+                                <td>{{ test.symbol }}</td>
+                                <td>{{ test.test_period }}</td>
+                                <td>{{ test.in_sample_return|floatformat:4 }}</td>
+                                <td>{{ test.out_sample_return|floatformat:4 }}</td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar {% if test.overfitting_score > 0.3 %}bg-danger{% elif test.overfitting_score > 0.1 %}bg-warning{% else %}bg-success{% endif %}" 
+                                             style="width: {{ test.overfitting_score|mul:100 }}%">
+                                            {{ test.overfitting_score|floatformat:2 }}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if test.is_overfitted %}
+                                    <span class="badge bg-danger">Overfitted</span>
+                                    {% else %}
+                                    <span class="badge bg-success">Robust</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#recommendationsModal{{ test.id }}">
+                                        View Recommendations
+                                    </button>
+                                </td>
+                            </tr>
+                            
+                            <!-- Modal for recommendations -->
+                            <div class="modal fade" id="recommendationsModal{{ test.id }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Recommendations</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <pre>{{ test.recommendations }}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p>No overfitting tests found. <a href="{% url 'analysis_tools:overfitting' %}">Run a test</a> to see results here.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

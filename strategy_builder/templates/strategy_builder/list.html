@@ -1,2 +1,2519 @@
-{% extends 'base.html' %}<!-- ======================================================== STRATEGY LIST: ORM strategies/rules → template. -->
-{% block title %}Strategies | MarketPulse{% endblock %}{% block content %}<div class="d-flex justify-content-between"><h1 class="h3">Strategy Builder</h1><a class="btn btn-primary" href="{% url 'strategy_builder:create' %}">New Strategy</a></div>{% for s in strategies %}<div class="card shadow-sm my-3"><div class="card-body"><h5>{{ s.name }}</h5><p>{{ s.description }}</p><ul>{% for r in s.rules.all %}<li>{{ r.name }} ({{ r.symbol }})</li>{% endfor %}</ul><a class="btn btn-outline-primary" href="{% url 'strategy_builder:backtest' s.id %}">Backtest</a></div></div>{% empty %}<p>No strategies yet.</p>{% endfor %}{% endblock %}
+{% extends "base.html" %}
+
+
+{% comment %}
+============================================================
+MARKETPULSE - STRATEGY & MODEL RESEARCH WORKSPACE
+============================================================
+
+Framework mapping:
+
+StrategyLibraryItem
+        ↓
+37 quantitative models
+        ↓
+Search / Category Filter / Status Filter
+        ↓
+Model Comparison
+        ↓
+Use with imported MarketData
+
+
+core.Strategy
+        ↓
+StrategyRule
+        ↓
+User-created strategies
+        ↓
+Backtest
+        ↓
+Performance analysis
+
+
+PURPOSE:
+
+This page combines two different concepts:
+
+1. MARKETPULSE MODEL LIBRARY
+   - Stochastic models
+   - Time-series models
+   - Machine-learning models
+   - Factor models
+   - Portfolio models
+   - Derivatives models
+   - Monte Carlo models
+
+2. MY STRATEGIES
+   - Strategies created by the logged-in user
+   - Strategy rules
+   - Historical backtesting
+
+This is an educational quantitative research environment.
+It does not provide investment advice.
+============================================================
+{% endcomment %}
+
+
+{% block title %}
+Strategies | MarketPulse
+{% endblock %}
+
+
+{% block content %}
+
+
+<!-- ====================================================== -->
+<!-- 1. PAGE HEADER                                         -->
+<!-- ====================================================== -->
+
+<div
+    class="
+        d-flex
+        justify-content-between
+        align-items-start
+        flex-wrap
+        gap-3
+        mb-4
+    "
+>
+
+    <div>
+
+        <h1 class="h2 mb-1">
+            Strategy & Model Research
+        </h1>
+
+        <p class="text-muted mb-0">
+
+            Explore, compare, create and test quantitative
+            strategies and financial models.
+
+        </p>
+
+    </div>
+
+
+    <div class="d-flex gap-2 flex-wrap">
+
+        <!-- Existing custom strategy creation route -->
+
+        <a
+            class="btn btn-primary"
+            href="{% url 'strategy_builder:create' %}"
+        >
+            New Strategy
+        </a>
+
+
+        <!-- Additional library model -->
+
+        <a
+            class="btn btn-outline-primary"
+            href="/strategy/library/add/"
+        >
+            Add Library Model
+        </a>
+
+    </div>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- 2. STRATEGY RESEARCH SUMMARY                           -->
+<!-- ====================================================== -->
+
+<div class="row g-3 mb-4">
+
+
+    <!-- Library Models -->
+
+    <div class="col-sm-6 col-xl-3">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body">
+
+                <div class="text-muted small">
+                    Library Models
+                </div>
+
+                <div class="fs-2 fw-bold">
+
+                    {{ total_library_models|default:"0" }}
+
+                </div>
+
+                <div class="small text-muted">
+
+                    Quantitative models available
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- Categories -->
+
+    <div class="col-sm-6 col-xl-3">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body">
+
+                <div class="text-muted small">
+                    Model Categories
+                </div>
+
+                <div class="fs-2 fw-bold">
+                    7
+                </div>
+
+                <div class="small text-muted">
+
+                    Research families
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- Ready to Run -->
+
+    <div class="col-sm-6 col-xl-3">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body">
+
+                <div class="text-muted small">
+                    Ready to Run
+                </div>
+
+                <div class="fs-2 fw-bold">
+
+                    {{ ready_models|default:"0" }}
+
+                </div>
+
+                <div class="small text-muted">
+
+                    Execution engines implemented
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- My Strategies -->
+
+    <div class="col-sm-6 col-xl-3">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body">
+
+                <div class="text-muted small">
+                    My Strategies
+                </div>
+
+                <div class="fs-2 fw-bold">
+
+                    {{ my_strategy_count|default:"0" }}
+
+                </div>
+
+                <div class="small text-muted">
+
+                    Custom strategies created
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- 3. MODEL CATEGORIES                                    -->
+<!-- ====================================================== -->
+
+<div class="mb-4">
+
+    <div class="mb-3">
+
+        <h2 class="h4 mb-1">
+            Model Categories
+        </h2>
+
+        <p class="text-muted mb-0">
+
+            Select a category to filter the quantitative
+            model library.
+
+        </p>
+
+    </div>
+
+
+    <div class="row g-3">
+
+
+        {% for category in category_cards %}
+
+
+            <div class="col-sm-6 col-lg-4 col-xl-3">
+
+
+                <button
+                    type="button"
+                    class="
+                        card
+                        category-card
+                        text-start
+                        w-100
+                        h-100
+                        border
+                        bg-white
+                    "
+                    data-category="{{ category.code }}"
+                >
+
+
+                    <div class="card-body">
+
+
+                        <div class="fw-semibold mb-1">
+
+                            {{ category.label }}
+
+                        </div>
+
+
+                        <div class="text-muted small">
+
+                            {{ category.count }}
+
+                            model{{ category.count|pluralize }}
+
+                        </div>
+
+
+                    </div>
+
+
+                </button>
+
+
+            </div>
+
+
+        {% empty %}
+
+
+            <!-- Fallback display if category_cards has not
+                 yet been supplied by the view. -->
+
+
+            <div class="col-sm-6 col-lg-4 col-xl-3">
+
+                <div class="card h-100">
+
+                    <div class="card-body">
+
+                        <strong>
+                            Stochastic Models
+                        </strong>
+
+                        <div class="text-muted small">
+                            Price dynamics and simulation
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-sm-6 col-lg-4 col-xl-3">
+
+                <div class="card h-100">
+
+                    <div class="card-body">
+
+                        <strong>
+                            Time-Series Models
+                        </strong>
+
+                        <div class="text-muted small">
+                            Forecasting and volatility
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-sm-6 col-lg-4 col-xl-3">
+
+                <div class="card h-100">
+
+                    <div class="card-body">
+
+                        <strong>
+                            Machine Learning
+                        </strong>
+
+                        <div class="text-muted small">
+                            Predictive modelling
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-sm-6 col-lg-4 col-xl-3">
+
+                <div class="card h-100">
+
+                    <div class="card-body">
+
+                        <strong>
+                            Factor Models
+                        </strong>
+
+                        <div class="text-muted small">
+                            Academic return factors
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-sm-6 col-lg-4 col-xl-3">
+
+                <div class="card h-100">
+
+                    <div class="card-body">
+
+                        <strong>
+                            Portfolio Optimisation
+                        </strong>
+
+                        <div class="text-muted small">
+                            Portfolio allocation models
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-sm-6 col-lg-4 col-xl-3">
+
+                <div class="card h-100">
+
+                    <div class="card-body">
+
+                        <strong>
+                            Derivatives Pricing
+                        </strong>
+
+                        <div class="text-muted small">
+                            Option valuation models
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-sm-6 col-lg-4 col-xl-3">
+
+                <div class="card h-100">
+
+                    <div class="card-body">
+
+                        <strong>
+                            Simulation & Monte Carlo
+                        </strong>
+
+                        <div class="text-muted small">
+                            Risk and scenario simulation
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+        {% endfor %}
+
+
+    </div>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- 4. SEARCH AND FILTER CONTROLS                           -->
+<!-- ====================================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-body">
+
+
+        <h2 class="h5 mb-3">
+            Find a Strategy or Model
+        </h2>
+
+
+        <div class="row g-3">
+
+
+            <!-- Search -->
+
+            <div class="col-lg-6">
+
+                <label
+                    for="modelSearch"
+                    class="form-label"
+                >
+                    Search
+                </label>
+
+
+                <input
+                    type="search"
+                    id="modelSearch"
+                    class="form-control"
+                    placeholder="Search ARIMA, Heston, Random Forest, Monte Carlo..."
+                >
+
+            </div>
+
+
+            <!-- Category -->
+
+            <div class="col-md-6 col-lg-3">
+
+                <label
+                    for="categoryFilter"
+                    class="form-label"
+                >
+                    Category
+                </label>
+
+
+                <select
+                    id="categoryFilter"
+                    class="form-select"
+                >
+
+                    <option value="">
+                        All Categories
+                    </option>
+
+
+                    {% for category in category_cards %}
+
+                        <option value="{{ category.code }}">
+
+                            {{ category.label }}
+
+                        </option>
+
+                    {% endfor %}
+
+
+                </select>
+
+            </div>
+
+
+            <!-- Implementation Status -->
+
+            <div class="col-md-6 col-lg-3">
+
+                <label
+                    for="statusFilter"
+                    class="form-label"
+                >
+                    Implementation
+                </label>
+
+
+                <select
+                    id="statusFilter"
+                    class="form-select"
+                >
+
+                    <option value="">
+                        All Statuses
+                    </option>
+
+                    <option value="ready">
+                        Ready to Run
+                    </option>
+
+                    <option value="experimental">
+                        Experimental
+                    </option>
+
+                    <option value="catalogued">
+                        Catalogued
+                    </option>
+
+                </select>
+
+            </div>
+
+
+        </div>
+
+
+        <div class="mt-3">
+
+            <button
+                type="button"
+                id="clearFilters"
+                class="btn btn-sm btn-outline-secondary"
+            >
+                Clear Filters
+            </button>
+
+        </div>
+
+
+    </div>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- 5. STRATEGY & MODEL LIBRARY                            -->
+<!-- ====================================================== -->
+
+<div class="mb-5">
+
+
+    <div class="mb-3">
+
+        <h2 class="h4 mb-1">
+            Strategy & Model Library
+        </h2>
+
+        <p class="text-muted mb-0">
+
+            Browse the MarketPulse model catalogue.
+            Select between two and four models to compare
+            their purpose, required data and outputs.
+
+        </p>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- MODEL COMPARISON FORM                              -->
+    <!-- ================================================== -->
+
+    <form
+        method="get"
+        id="compareForm"
+    >
+
+
+        <div
+            class="
+                d-flex
+                align-items-center
+                gap-3
+                flex-wrap
+                mb-3
+            "
+        >
+
+            <button
+                type="submit"
+                class="btn btn-dark"
+                id="compareButton"
+            >
+                Compare Selected
+            </button>
+
+
+            <span
+                id="compareCounter"
+                class="text-muted"
+            >
+                Select 2–4 models
+            </span>
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- MODEL CARDS                                       -->
+        <!-- ================================================= -->
+
+        <div
+            id="strategyLibrary"
+            class="row g-3"
+        >
+
+
+            {% for item in library_items %}
+
+
+                <div
+                    class="
+                        col-md-6
+                        col-xl-4
+                        model-card-wrapper
+                    "
+
+                    data-name="{{ item.name|lower }} {{ item.description|lower }} {{ item.purpose|lower }}"
+
+                    data-category="{{ item.category }}"
+
+                    data-status="{{ item.implementation_status }}"
+                >
+
+
+                    <div class="card shadow-sm h-100">
+
+
+                        <div class="card-body d-flex flex-column">
+
+
+                            <!-- ============================= -->
+                            <!-- MODEL HEADER                  -->
+                            <!-- ============================= -->
+
+                            <div
+                                class="
+                                    d-flex
+                                    justify-content-between
+                                    align-items-start
+                                    gap-3
+                                "
+                            >
+
+
+                                <div>
+
+
+                                    <h3 class="h5 mb-1">
+
+                                        {{ item.name }}
+
+                                    </h3>
+
+
+                                    <div class="text-muted small">
+
+                                        {{ item.get_category_display }}
+
+                                    </div>
+
+
+                                </div>
+
+
+                                <!-- Compare checkbox -->
+
+                                <div class="form-check">
+
+                                    <input
+                                        type="checkbox"
+                                        class="
+                                            form-check-input
+                                            model-compare-checkbox
+                                        "
+                                        name="compare"
+                                        value="{{ item.code }}"
+                                        aria-label="Compare {{ item.name }}"
+
+                                        {% if item.code in compare_codes %}
+                                            checked
+                                        {% endif %}
+                                    >
+
+                                </div>
+
+
+                            </div>
+
+
+                            <hr>
+
+
+                            <!-- ============================= -->
+                            <!-- DESCRIPTION                   -->
+                            <!-- ============================= -->
+
+                            <p class="small">
+
+                                {{ item.description }}
+
+                            </p>
+
+
+                            <!-- ============================= -->
+                            <!-- PURPOSE                       -->
+                            <!-- ============================= -->
+
+                            {% if item.purpose %}
+
+
+                                <div class="small mb-3">
+
+
+                                    <strong>
+                                        Purpose:
+                                    </strong>
+
+
+                                    {{ item.purpose }}
+
+
+                                </div>
+
+
+                            {% endif %}
+
+
+                            <!-- ============================= -->
+                            <!-- DATA REQUIREMENTS             -->
+                            <!-- ============================= -->
+
+                            <div class="mb-3">
+
+
+                                <div class="small fw-semibold mb-1">
+
+                                    Data Required
+
+                                </div>
+
+
+                                {% for requirement in item.data_requirements %}
+
+
+                                    <span
+                                        class="
+                                            badge
+                                            bg-light
+                                            text-dark
+                                            border
+                                            me-1
+                                            mb-1
+                                        "
+                                    >
+
+                                        {{ requirement }}
+
+                                    </span>
+
+
+                                {% empty %}
+
+
+                                    <span class="text-muted small">
+
+                                        No additional data requirements
+
+                                    </span>
+
+
+                                {% endfor %}
+
+
+                            </div>
+
+
+                            <!-- ============================= -->
+                            <!-- EXPECTED OUTPUT               -->
+                            <!-- ============================= -->
+
+                            {% if item.output_type %}
+
+
+                                <div class="small mb-3">
+
+
+                                    <strong>
+                                        Output:
+                                    </strong>
+
+
+                                    {{ item.output_type }}
+
+
+                                </div>
+
+
+                            {% endif %}
+
+
+                            <!-- ============================= -->
+                            <!-- IMPLEMENTATION STATUS         -->
+                            <!-- ============================= -->
+
+                            <div class="mb-3">
+
+
+                                {% if item.implementation_status == "ready" %}
+
+
+                                    <span class="badge bg-success">
+
+                                        Ready to Run
+
+                                    </span>
+
+
+                                {% elif item.implementation_status == "experimental" %}
+
+
+                                    <span class="badge bg-warning text-dark">
+
+                                        Experimental
+
+                                    </span>
+
+
+                                {% else %}
+
+
+                                    <span class="badge bg-secondary">
+
+                                        Catalogued
+
+                                    </span>
+
+
+                                {% endif %}
+
+
+                            </div>
+
+
+                            <!-- ============================= -->
+                            <!-- PARAMETERS                    -->
+                            <!-- ============================= -->
+
+                            <details class="mb-3">
+
+
+                                <summary class="small fw-semibold">
+
+                                    View Default Parameters
+
+                                </summary>
+
+
+                                <div class="mt-2">
+
+
+                                    {% for key, value in item.default_parameters.items %}
+
+
+                                        <div
+                                            class="
+                                                d-flex
+                                                justify-content-between
+                                                gap-3
+                                                border-bottom
+                                                py-1
+                                                small
+                                            "
+                                        >
+
+                                            <span>
+
+                                                {{ key }}
+
+                                            </span>
+
+
+                                            <strong>
+
+                                                {{ value }}
+
+                                            </strong>
+
+
+                                        </div>
+
+
+                                    {% empty %}
+
+
+                                        <span class="text-muted small">
+
+                                            No configurable default parameters.
+
+                                        </span>
+
+
+                                    {% endfor %}
+
+
+                                </div>
+
+
+                            </details>
+
+
+                            <!-- ============================= -->
+                            <!-- ACTIONS                       -->
+                            <!-- ============================= -->
+
+                            <div
+                                class="
+                                    mt-auto
+                                    d-flex
+                                    gap-2
+                                    flex-wrap
+                                "
+                            >
+
+
+                                <a
+                                    href="{% url 'data_management:import' %}?model={{ item.code }}"
+                                    class="btn btn-sm btn-outline-primary"
+                                >
+
+                                    Use with Data
+
+                                </a>
+
+
+                            </div>
+
+
+                        </div>
+
+
+                    </div>
+
+
+                </div>
+
+
+            {% empty %}
+
+
+                <div class="col-12">
+
+
+                    <div class="alert alert-warning">
+
+
+                        <h3 class="h6">
+                            No strategy library models found
+                        </h3>
+
+
+                        <p class="mb-2">
+
+                            The Strategy Library is currently empty.
+
+                        </p>
+
+
+                        <p class="mb-0">
+
+                            Populate the initial MarketPulse
+                            model library by running:
+
+                            <code>
+                                python manage.py seed_strategy_library
+                            </code>
+
+                        </p>
+
+
+                    </div>
+
+
+                </div>
+
+
+            {% endfor %}
+
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- NO SEARCH RESULTS                                 -->
+        <!-- ================================================= -->
+
+        <div
+            id="noModelResults"
+            class="alert alert-info mt-3 d-none"
+        >
+
+            No strategy or model matches the selected filters.
+
+        </div>
+
+
+    </form>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- 6. MODEL COMPARISON                                    -->
+<!-- ====================================================== -->
+
+{% if comparison_message %}
+
+
+    <div class="alert alert-info">
+
+        {{ comparison_message }}
+
+    </div>
+
+
+{% endif %}
+
+
+{% if compare_items|length >= 2 %}
+
+
+<div class="card shadow-sm mb-5">
+
+    <div class="card-body">
+
+
+        <h2 class="h4 mb-1">
+
+            Model Comparison
+
+        </h2>
+
+
+        <p class="text-muted">
+
+            Compare model design, purpose, data requirements
+            and expected outputs.
+
+            Performance metrics will be compared after the
+            models are executed on the same dataset.
+
+        </p>
+
+
+        <div class="table-responsive">
+
+
+            <table class="table table-bordered align-middle">
+
+
+                <tbody>
+
+
+                    <!-- =================================== -->
+                    <!-- MODEL NAME                          -->
+                    <!-- =================================== -->
+
+                    <tr>
+
+
+                        <th style="min-width: 180px;">
+
+                            Model
+
+                        </th>
+
+
+                        {% for item in compare_items %}
+
+
+                            <th style="min-width: 220px;">
+
+                                {{ item.name }}
+
+                            </th>
+
+
+                        {% endfor %}
+
+
+                    </tr>
+
+
+                    <!-- =================================== -->
+                    <!-- CATEGORY                            -->
+                    <!-- =================================== -->
+
+                    <tr>
+
+
+                        <th>
+                            Category
+                        </th>
+
+
+                        {% for item in compare_items %}
+
+
+                            <td>
+
+                                {{ item.get_category_display }}
+
+                            </td>
+
+
+                        {% endfor %}
+
+
+                    </tr>
+
+
+                    <!-- =================================== -->
+                    <!-- PURPOSE                             -->
+                    <!-- =================================== -->
+
+                    <tr>
+
+
+                        <th>
+                            Purpose
+                        </th>
+
+
+                        {% for item in compare_items %}
+
+
+                            <td>
+
+                                {{ item.purpose|default:"—" }}
+
+                            </td>
+
+
+                        {% endfor %}
+
+
+                    </tr>
+
+
+                    <!-- =================================== -->
+                    <!-- DATA REQUIREMENTS                   -->
+                    <!-- =================================== -->
+
+                    <tr>
+
+
+                        <th>
+                            Data Required
+                        </th>
+
+
+                        {% for item in compare_items %}
+
+
+                            <td>
+
+
+                                {% for requirement in item.data_requirements %}
+
+
+                                    <span
+                                        class="
+                                            badge
+                                            bg-light
+                                            text-dark
+                                            border
+                                            mb-1
+                                        "
+                                    >
+
+                                        {{ requirement }}
+
+                                    </span>
+
+
+                                {% empty %}
+
+
+                                    —
+
+
+                                {% endfor %}
+
+
+                            </td>
+
+
+                        {% endfor %}
+
+
+                    </tr>
+
+
+                    <!-- =================================== -->
+                    <!-- PARAMETERS                          -->
+                    <!-- =================================== -->
+
+                    <tr>
+
+
+                        <th>
+                            Number of Default Parameters
+                        </th>
+
+
+                        {% for item in compare_items %}
+
+
+                            <td>
+
+                                {{ item.default_parameters|length }}
+
+                            </td>
+
+
+                        {% endfor %}
+
+
+                    </tr>
+
+
+                    <!-- =================================== -->
+                    <!-- OUTPUT                              -->
+                    <!-- =================================== -->
+
+                    <tr>
+
+
+                        <th>
+                            Expected Output
+                        </th>
+
+
+                        {% for item in compare_items %}
+
+
+                            <td>
+
+                                {{ item.output_type|default:"—" }}
+
+                            </td>
+
+
+                        {% endfor %}
+
+
+                    </tr>
+
+
+                    <!-- =================================== -->
+                    <!-- IMPLEMENTATION STATUS               -->
+                    <!-- =================================== -->
+
+                    <tr>
+
+
+                        <th>
+                            Implementation
+                        </th>
+
+
+                        {% for item in compare_items %}
+
+
+                            <td>
+
+                                {{ item.get_implementation_status_display }}
+
+                            </td>
+
+
+                        {% endfor %}
+
+
+                    </tr>
+
+
+                    <!-- =================================== -->
+                    <!-- TEST                                -->
+                    <!-- =================================== -->
+
+                    <tr>
+
+
+                        <th>
+                            Dataset Testing
+                        </th>
+
+
+                        {% for item in compare_items %}
+
+
+                            <td>
+
+
+                                <a
+                                    href="{% url 'data_management:import' %}?model={{ item.code }}"
+                                    class="btn btn-sm btn-primary"
+                                >
+
+                                    Use with Data
+
+                                </a>
+
+
+                            </td>
+
+
+                        {% endfor %}
+
+
+                    </tr>
+
+
+                </tbody>
+
+
+            </table>
+
+
+        </div>
+
+
+    </div>
+
+</div>
+
+
+{% endif %}
+
+
+<!-- ====================================================== -->
+<!-- 7. MY CUSTOM STRATEGIES                                -->
+<!-- ====================================================== -->
+
+<div class="card shadow-sm mb-5">
+
+    <div class="card-body">
+
+
+        <div
+            class="
+                d-flex
+                justify-content-between
+                align-items-center
+                flex-wrap
+                gap-3
+                mb-3
+            "
+        >
+
+
+            <div>
+
+
+                <h2 class="h4 mb-1">
+
+                    My Strategies
+
+                </h2>
+
+
+                <p class="text-muted mb-0">
+
+                    Trading strategies created using the
+                    MarketPulse Strategy Builder.
+
+                </p>
+
+
+            </div>
+
+
+            <a
+                class="btn btn-primary"
+                href="{% url 'strategy_builder:create' %}"
+            >
+
+                New Strategy
+
+            </a>
+
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- NEW VIEW STRUCTURE                                -->
+        <!-- ================================================= -->
+
+        {% if my_strategy_rows %}
+
+
+            {% for row in my_strategy_rows %}
+
+
+                <div class="card border mb-3">
+
+
+                    <div class="card-body">
+
+
+                        <div
+                            class="
+                                d-flex
+                                justify-content-between
+                                align-items-start
+                                flex-wrap
+                                gap-3
+                            "
+                        >
+
+
+                            <div>
+
+
+                                <h3 class="h5 mb-1">
+
+                                    {{ row.strategy.name }}
+
+                                </h3>
+
+
+                                <p class="text-muted mb-2">
+
+                                    {{ row.strategy.description }}
+
+                                </p>
+
+
+                            </div>
+
+
+                            {% if row.strategy.is_active %}
+
+
+                                <span class="badge bg-success">
+
+                                    Active
+
+                                </span>
+
+
+                            {% else %}
+
+
+                                <span class="badge bg-secondary">
+
+                                    Inactive
+
+                                </span>
+
+
+                            {% endif %}
+
+
+                        </div>
+
+
+                        <!-- =============================== -->
+                        <!-- STRATEGY RULES                  -->
+                        <!-- =============================== -->
+
+                        <div class="mb-3">
+
+
+                            <div class="small fw-semibold">
+
+                                Strategy Rules
+
+                            </div>
+
+
+                            <ul class="mb-0">
+
+
+                                {% for rule in row.strategy.rules.all %}
+
+
+                                    <li>
+
+                                        {{ rule.name }}
+
+                                        {% if rule.symbol %}
+
+                                            ({{ rule.symbol }})
+
+                                        {% endif %}
+
+                                    </li>
+
+
+                                {% empty %}
+
+
+                                    <li class="text-muted">
+
+                                        No rules configured.
+
+                                    </li>
+
+
+                                {% endfor %}
+
+
+                            </ul>
+
+
+                        </div>
+
+
+                        <!-- =============================== -->
+                        <!-- BACKTEST SUMMARY                -->
+                        <!-- =============================== -->
+
+                        {% if row.latest_backtest %}
+
+
+                            <div class="row g-2 mb-3">
+
+
+                                <div class="col-6 col-md-3">
+
+
+                                    <div class="border rounded p-2">
+
+
+                                        <div class="small text-muted">
+
+                                            Return
+
+                                        </div>
+
+
+                                        <strong>
+
+                                            {{ row.latest_backtest.total_return|floatformat:2 }}
+
+                                        </strong>
+
+
+                                    </div>
+
+
+                                </div>
+
+
+                                <div class="col-6 col-md-3">
+
+
+                                    <div class="border rounded p-2">
+
+
+                                        <div class="small text-muted">
+
+                                            Sharpe Ratio
+
+                                        </div>
+
+
+                                        <strong>
+
+                                            {{ row.latest_backtest.sharpe_ratio|floatformat:2 }}
+
+                                        </strong>
+
+
+                                    </div>
+
+
+                                </div>
+
+
+                                <div class="col-6 col-md-3">
+
+
+                                    <div class="border rounded p-2">
+
+
+                                        <div class="small text-muted">
+
+                                            Max Drawdown
+
+                                        </div>
+
+
+                                        <strong>
+
+                                            {{ row.latest_backtest.max_drawdown|floatformat:2 }}
+
+                                        </strong>
+
+
+                                    </div>
+
+
+                                </div>
+
+
+                                <div class="col-6 col-md-3">
+
+
+                                    <div class="border rounded p-2">
+
+
+                                        <div class="small text-muted">
+
+                                            Backtests
+
+                                        </div>
+
+
+                                        <strong>
+
+                                            {{ row.backtest_count }}
+
+                                        </strong>
+
+
+                                    </div>
+
+
+                                </div>
+
+
+                            </div>
+
+
+                        {% endif %}
+
+
+                        <!-- =============================== -->
+                        <!-- STRATEGY ACTIONS                -->
+                        <!-- =============================== -->
+
+                        <div class="d-flex gap-2 flex-wrap">
+
+
+                            <a
+                                class="btn btn-outline-primary"
+                                href="{% url 'strategy_builder:backtest' row.strategy.id %}"
+                            >
+
+                                Backtest
+
+                            </a>
+
+
+                        </div>
+
+
+                    </div>
+
+
+                </div>
+
+
+            {% endfor %}
+
+
+        <!-- ================================================= -->
+        <!-- COMPATIBILITY WITH YOUR ORIGINAL VIEW             -->
+        <!-- ================================================= -->
+
+        {% elif strategies %}
+
+
+            {% for s in strategies %}
+
+
+                <div class="card border mb-3">
+
+
+                    <div class="card-body">
+
+
+                        <h3 class="h5">
+
+                            {{ s.name }}
+
+                        </h3>
+
+
+                        <p>
+
+                            {{ s.description }}
+
+                        </p>
+
+
+                        <div class="small fw-semibold">
+
+                            Strategy Rules
+
+                        </div>
+
+
+                        <ul>
+
+
+                            {% for r in s.rules.all %}
+
+
+                                <li>
+
+                                    {{ r.name }}
+
+                                    {% if r.symbol %}
+
+                                        ({{ r.symbol }})
+
+                                    {% endif %}
+
+                                </li>
+
+
+                            {% empty %}
+
+
+                                <li class="text-muted">
+
+                                    No rules configured.
+
+                                </li>
+
+
+                            {% endfor %}
+
+
+                        </ul>
+
+
+                        <a
+                            class="btn btn-outline-primary"
+                            href="{% url 'strategy_builder:backtest' s.id %}"
+                        >
+
+                            Backtest
+
+                        </a>
+
+
+                    </div>
+
+
+                </div>
+
+
+            {% endfor %}
+
+
+        {% else %}
+
+
+            <div class="alert alert-light border mb-0">
+
+
+                <h3 class="h6">
+
+                    No custom strategies yet
+
+                </h3>
+
+
+                <p class="mb-2">
+
+                    You have not created a custom trading
+                    strategy yet.
+
+                </p>
+
+
+                <a
+                    href="{% url 'strategy_builder:create' %}"
+                    class="btn btn-sm btn-primary"
+                >
+
+                    Create First Strategy
+
+                </a>
+
+
+            </div>
+
+
+        {% endif %}
+
+
+    </div>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- 8. STRATEGY VALIDATION WORKFLOW                        -->
+<!-- ====================================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-body">
+
+
+        <h2 class="h4 mb-1">
+
+            Strategy Validation
+
+        </h2>
+
+
+        <p class="text-muted">
+
+            A profitable historical backtest does not
+            automatically mean that a strategy is robust.
+
+            MarketPulse can evaluate strategies through
+            several additional validation stages.
+
+        </p>
+
+
+        <div class="row g-3">
+
+
+            <!-- Backtesting -->
+
+            <div class="col-md-6 col-xl-3">
+
+
+                <div class="border rounded p-3 h-100">
+
+
+                    <h3 class="h6">
+
+                        Historical Backtest
+
+                    </h3>
+
+
+                    <p class="small text-muted">
+
+                        Measure historical return, drawdown,
+                        Sharpe ratio, win rate and trades.
+
+                    </p>
+
+
+                </div>
+
+
+            </div>
+
+
+            <!-- Overfitting -->
+
+            <div class="col-md-6 col-xl-3">
+
+
+                <div class="border rounded p-3 h-100">
+
+
+                    <h3 class="h6">
+
+                        Overfitting Analysis
+
+                    </h3>
+
+
+                    <p class="small text-muted">
+
+                        Investigate whether apparently strong
+                        historical results generalise to unseen data.
+
+                    </p>
+
+
+                </div>
+
+
+            </div>
+
+
+            <!-- Market Regime -->
+
+            <div class="col-md-6 col-xl-3">
+
+
+                <div class="border rounded p-3 h-100">
+
+
+                    <h3 class="h6">
+
+                        Market Regime
+
+                    </h3>
+
+
+                    <p class="small text-muted">
+
+                        Investigate how strategy behaviour changes
+                        between trending, falling, sideways and
+                        volatile markets.
+
+                    </p>
+
+
+                </div>
+
+
+            </div>
+
+
+            <!-- Stress Testing -->
+
+            <div class="col-md-6 col-xl-3">
+
+
+                <div class="border rounded p-3 h-100">
+
+
+                    <h3 class="h6">
+
+                        Stress Testing
+
+                    </h3>
+
+
+                    <p class="small text-muted">
+
+                        Examine strategy behaviour under severe
+                        hypothetical market conditions.
+
+                    </p>
+
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- 9. MODEL LIBRARY JAVASCRIPT                            -->
+<!-- ====================================================== -->
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+
+        // ====================================================
+        // 9.1 ELEMENT REFERENCES
+        // ====================================================
+
+        const searchInput =
+            document.getElementById(
+                "modelSearch"
+            );
+
+
+        const categoryFilter =
+            document.getElementById(
+                "categoryFilter"
+            );
+
+
+        const statusFilter =
+            document.getElementById(
+                "statusFilter"
+            );
+
+
+        const clearFilters =
+            document.getElementById(
+                "clearFilters"
+            );
+
+
+        const modelCards =
+            document.querySelectorAll(
+                ".model-card-wrapper"
+            );
+
+
+        const categoryCards =
+            document.querySelectorAll(
+                ".category-card"
+            );
+
+
+        const compareCheckboxes =
+            document.querySelectorAll(
+                ".model-compare-checkbox"
+            );
+
+
+        const compareCounter =
+            document.getElementById(
+                "compareCounter"
+            );
+
+
+        const compareButton =
+            document.getElementById(
+                "compareButton"
+            );
+
+
+        const noResults =
+            document.getElementById(
+                "noModelResults"
+            );
+
+
+        // ====================================================
+        // 9.2 FILTER MODELS
+        // ====================================================
+
+        function filterModels() {
+
+
+            const searchText =
+                searchInput
+                    ? searchInput.value
+                        .trim()
+                        .toLowerCase()
+                    : "";
+
+
+            const category =
+                categoryFilter
+                    ? categoryFilter.value
+                    : "";
+
+
+            const status =
+                statusFilter
+                    ? statusFilter.value
+                    : "";
+
+
+            let visibleCount = 0;
+
+
+            modelCards.forEach(
+                function (card) {
+
+
+                    const modelName =
+                        card.dataset.name || "";
+
+
+                    const modelCategory =
+                        card.dataset.category || "";
+
+
+                    const modelStatus =
+                        card.dataset.status || "";
+
+
+                    const matchesSearch =
+                        (
+                            !searchText
+                            ||
+                            modelName.includes(
+                                searchText
+                            )
+                        );
+
+
+                    const matchesCategory =
+                        (
+                            !category
+                            ||
+                            modelCategory === category
+                        );
+
+
+                    const matchesStatus =
+                        (
+                            !status
+                            ||
+                            modelStatus === status
+                        );
+
+
+                    const shouldShow =
+                        (
+                            matchesSearch
+                            &&
+                            matchesCategory
+                            &&
+                            matchesStatus
+                        );
+
+
+                    card.classList.toggle(
+                        "d-none",
+                        !shouldShow
+                    );
+
+
+                    if (shouldShow) {
+
+                        visibleCount += 1;
+
+                    }
+
+
+                }
+            );
+
+
+            if (noResults) {
+
+                noResults.classList.toggle(
+                    "d-none",
+                    visibleCount !== 0
+                );
+
+            }
+
+
+        }
+
+
+        // ====================================================
+        // 9.3 MODEL COMPARISON COUNTER
+        // ====================================================
+
+        function updateCompareCounter() {
+
+
+            const selected =
+                Array.from(
+                    compareCheckboxes
+                )
+                .filter(
+                    function (checkbox) {
+
+                        return checkbox.checked;
+
+                    }
+                );
+
+
+            const selectedCount =
+                selected.length;
+
+
+            if (compareCounter) {
+
+
+                if (selectedCount === 0) {
+
+                    compareCounter.textContent =
+                        "Select 2–4 models";
+
+                }
+
+                else {
+
+                    compareCounter.textContent =
+                        selectedCount
+                        +
+                        " model"
+                        +
+                        (
+                            selectedCount === 1
+                            ? ""
+                            : "s"
+                        )
+                        +
+                        " selected";
+
+                }
+
+            }
+
+
+            // ------------------------------------------------
+            // Maximum four comparison models
+            // ------------------------------------------------
+
+            compareCheckboxes.forEach(
+                function (checkbox) {
+
+
+                    if (
+                        selectedCount >= 4
+                        &&
+                        !checkbox.checked
+                    ) {
+
+                        checkbox.disabled =
+                            true;
+
+                    }
+
+                    else {
+
+                        checkbox.disabled =
+                            false;
+
+                    }
+
+
+                }
+            );
+
+
+            // ------------------------------------------------
+            // Require at least two models
+            // ------------------------------------------------
+
+            if (compareButton) {
+
+                compareButton.disabled =
+                    selectedCount < 2;
+
+            }
+
+
+        }
+
+
+        // ====================================================
+        // 9.4 SEARCH EVENT
+        // ====================================================
+
+        if (searchInput) {
+
+
+            searchInput.addEventListener(
+                "input",
+                filterModels
+            );
+
+
+        }
+
+
+        // ====================================================
+        // 9.5 CATEGORY FILTER EVENT
+        // ====================================================
+
+        if (categoryFilter) {
+
+
+            categoryFilter.addEventListener(
+                "change",
+                filterModels
+            );
+
+
+        }
+
+
+        // ====================================================
+        // 9.6 STATUS FILTER EVENT
+        // ====================================================
+
+        if (statusFilter) {
+
+
+            statusFilter.addEventListener(
+                "change",
+                filterModels
+            );
+
+
+        }
+
+
+        // ====================================================
+        // 9.7 CATEGORY CARD BUTTONS
+        // ====================================================
+
+        categoryCards.forEach(
+            function (card) {
+
+
+                card.addEventListener(
+                    "click",
+                    function () {
+
+
+                        if (categoryFilter) {
+
+                            categoryFilter.value =
+                                card.dataset.category;
+
+                        }
+
+
+                        filterModels();
+
+
+                        const library =
+                            document.getElementById(
+                                "strategyLibrary"
+                            );
+
+
+                        if (library) {
+
+
+                            library.scrollIntoView(
+                                {
+                                    behavior:
+                                        "smooth",
+
+                                    block:
+                                        "start",
+                                }
+                            );
+
+
+                        }
+
+
+                    }
+                );
+
+
+            }
+        );
+
+
+        // ====================================================
+        // 9.8 CLEAR FILTERS
+        // ====================================================
+
+        if (clearFilters) {
+
+
+            clearFilters.addEventListener(
+                "click",
+                function () {
+
+
+                    if (searchInput) {
+
+                        searchInput.value =
+                            "";
+
+                    }
+
+
+                    if (categoryFilter) {
+
+                        categoryFilter.value =
+                            "";
+
+                    }
+
+
+                    if (statusFilter) {
+
+                        statusFilter.value =
+                            "";
+
+                    }
+
+
+                    filterModels();
+
+
+                }
+            );
+
+
+        }
+
+
+        // ====================================================
+        // 9.9 COMPARISON CHECKBOXES
+        // ====================================================
+
+        compareCheckboxes.forEach(
+            function (checkbox) {
+
+
+                checkbox.addEventListener(
+                    "change",
+                    updateCompareCounter
+                );
+
+
+            }
+        );
+
+
+        // ====================================================
+        // 9.10 INITIAL PAGE STATE
+        // ====================================================
+
+        filterModels();
+
+        updateCompareCounter();
+
+
+    }
+);
+
+</script>
+
+
+{% endblock %}

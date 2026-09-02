@@ -1,2 +1,4298 @@
-{% extends 'base.html' %}<!-- ======================================================== RISK CALCULATOR: form → server calculations → persisted snapshot. -->
-{% block title %}Risk Calculator | MarketPulse{% endblock %}{% block content %}<h1 class="h3">Risk Calculator</h1><div class="row"><div class="col-lg-6"><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Calculate</button></form></div><div class="col-lg-6">{% if result %}<div class="card shadow-sm"><div class="card-body"><p>Position size: <strong>{{ result.position_size|floatformat:2 }}</strong></p><p>Stop loss: <strong>{{ result.stop_loss|floatformat:2 }}</strong></p><p>Volatility: <strong>{{ result.volatility|floatformat:4 }}</strong></p><p>Adjusted risk: <strong>{{ result.adjusted_risk_pct|floatformat:2 }}%</strong></p><p>Risk/reward: <strong>{{ result.risk_reward|default:'N/A' }}</strong></p></div></div>{% endif %}</div></div>{% endblock %}
+{% extends "base.html" %}
+
+
+{% comment %}
+============================================================
+MARKETPULSE - TRADE & PORTFOLIO RISK
+============================================================
+
+ALPACA
+    ↓
+Active US-Equity Asset Universe
+    ↓
+Asset Search
+    ↓
+Latest Trade / Quote / Daily Snapshot
+    ↓
+Trade Risk Planner
+
+MarketPulse Historical Database
+    ↓
+ATR / Volatility / Drawdown / Historical Range
+    ↓
+Additional Risk Context
+
+The Alpaca API credentials NEVER enter this template.
+The browser only communicates with MarketPulse's Django API.
+============================================================
+{% endcomment %}
+
+
+{% block title %}
+Risk | MarketPulse
+{% endblock %}
+
+
+{% block content %}
+
+
+<!-- ====================================================== -->
+<!-- 1. PAGE HEADER                                         -->
+<!-- ====================================================== -->
+
+<div class="mb-4">
+
+    <h1 class="h2 mb-1">
+        Trade & Portfolio Risk
+    </h1>
+
+    <p class="text-muted mb-0">
+
+        Search Alpaca market data, define your maximum
+        acceptable loss, and calculate a risk-constrained
+        position before testing a strategy.
+
+    </p>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- 2. DATA SOURCE / WORKFLOW EXPLANATION                  -->
+<!-- ====================================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-body">
+
+
+        <div
+            class="
+                d-flex
+                justify-content-between
+                align-items-start
+                flex-wrap
+                gap-3
+            "
+        >
+
+
+            <div>
+
+                <h2 class="h5 mb-1">
+                    MarketPulse Risk Workflow
+                </h2>
+
+                <p class="text-muted mb-0">
+
+                    Current market information comes from
+                    Alpaca. Historical risk analytics use
+                    market observations stored by MarketPulse.
+
+                </p>
+
+            </div>
+
+
+            <div class="d-flex gap-2 flex-wrap">
+
+                <span class="badge bg-success">
+                    Alpaca Market Data
+                </span>
+
+                <span class="badge bg-light text-dark border">
+                    IEX Feed
+                </span>
+
+                <span class="badge bg-light text-dark border">
+                    MarketPulse Analytics
+                </span>
+
+            </div>
+
+
+        </div>
+
+
+        <hr>
+
+
+        <div class="row g-3 small">
+
+
+            <div class="col-md-4">
+
+                <strong>
+                    Alpaca
+                </strong>
+
+                <div class="text-muted">
+
+                    Asset universe, company information,
+                    exchange, tradability, latest trade,
+                    bid/ask and daily market snapshot.
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <strong>
+                    MarketPulse Database
+                </strong>
+
+                <div class="text-muted">
+
+                    Stored historical OHLCV observations used
+                    for reproducible quantitative analysis.
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <strong>
+                    MarketPulse Calculations
+                </strong>
+
+                <div class="text-muted">
+
+                    ATR, volatility, drawdown, position sizing,
+                    stop-loss and reward-to-risk.
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- 3. MAIN WORKSPACE                                      -->
+<!-- ====================================================== -->
+
+<div class="row g-4">
+
+
+    <!-- ================================================== -->
+    <!-- LEFT COLUMN                                        -->
+    <!-- ================================================== -->
+
+    <div class="col-xl-7">
+
+
+        <div class="card shadow-sm">
+
+            <div class="card-body">
+
+
+                <h2 class="h4 mb-4">
+                    Trade Risk Planner
+                </h2>
+
+
+                <form method="post">
+
+                    {% csrf_token %}
+
+
+                    <!-- ================================== -->
+                    <!-- STEP 1                             -->
+                    <!-- ================================== -->
+
+                    <div class="mb-4">
+
+                        <div
+                            class="
+                                text-primary
+                                fw-semibold
+                                small
+                                mb-1
+                            "
+                        >
+                            STEP 1
+                        </div>
+
+
+                        <h3 class="h5">
+                            Search the Market
+                        </h3>
+
+
+                        <p class="text-muted small">
+
+                            Search Alpaca's active US-equity
+                            universe rather than only stocks
+                            previously imported into MarketPulse.
+
+                        </p>
+
+
+                        <!-- ============================== -->
+                        <!-- ALPACA ASSET SEARCH             -->
+                        <!-- ============================== -->
+
+                        <div class="mb-3">
+
+                            <label
+                                for="id_symbol"
+                                class="form-label fw-semibold"
+                            >
+                                Asset / Symbol
+                            </label>
+
+
+                            <div class="position-relative">
+
+                                {{ form.symbol }}
+
+
+                                <!-- Search results -->
+
+                                <div
+                                    id="alpacaSearchResults"
+                                    class="
+                                        list-group
+                                        position-absolute
+                                        w-100
+                                        shadow
+                                        d-none
+                                    "
+                                    style="
+                                        z-index: 1050;
+                                        max-height: 340px;
+                                        overflow-y: auto;
+                                    "
+                                >
+                                </div>
+
+                            </div>
+
+
+                            <div class="form-text">
+
+                                Try AAPL, Microsoft, NVIDIA,
+                                Tesla or another US-listed equity.
+
+                            </div>
+
+
+                            <div
+                                id="alpacaSearchStatus"
+                                class="small text-muted mt-2"
+                                aria-live="polite"
+                            >
+                            </div>
+
+                        </div>
+
+
+                        <!-- Alpaca uses USD for this equity workflow. -->
+
+                        <input
+                            type="hidden"
+                            name="currency"
+                            value="USD"
+                        >
+
+
+                        <!-- ============================== -->
+                        <!-- ALPACA SNAPSHOT PANEL          -->
+                        <!-- ============================== -->
+
+                        <div
+                            id="alpacaMarketPanel"
+                            class="card border mb-3 d-none"
+                        >
+
+                            <div class="card-body">
+
+
+                                <!-- Asset heading -->
+
+                                <div
+                                    class="
+                                        d-flex
+                                        justify-content-between
+                                        align-items-start
+                                        flex-wrap
+                                        gap-3
+                                        mb-3
+                                    "
+                                >
+
+
+                                    <div>
+
+                                        <h4
+                                            id="alpacaAssetName"
+                                            class="h5 mb-1"
+                                        >
+                                            —
+                                        </h4>
+
+
+                                        <div class="text-muted">
+
+                                            <strong
+                                                id="alpacaSymbol"
+                                            >
+                                                —
+                                            </strong>
+
+                                            <span class="mx-1">
+                                                ·
+                                            </span>
+
+                                            <span
+                                                id="alpacaExchange"
+                                            >
+                                                —
+                                            </span>
+
+                                        </div>
+
+                                    </div>
+
+
+                                    <div class="text-end">
+
+                                        <span
+                                            class="badge bg-success"
+                                        >
+                                            Alpaca
+                                        </span>
+
+                                        <span
+                                            id="alpacaFeed"
+                                            class="
+                                                badge
+                                                bg-light
+                                                text-dark
+                                                border
+                                            "
+                                        >
+                                            IEX
+                                        </span>
+
+                                    </div>
+
+
+                                </div>
+
+
+                                <!-- ====================== -->
+                                <!-- LATEST PRICE           -->
+                                <!-- ====================== -->
+
+                                <div class="row g-2">
+
+
+                                    <div class="col-6 col-lg-3">
+
+                                        <div
+                                            class="
+                                                border
+                                                rounded
+                                                p-2
+                                                h-100
+                                            "
+                                        >
+
+                                            <div
+                                                class="
+                                                    small
+                                                    text-muted
+                                                "
+                                            >
+                                                Latest Trade
+                                            </div>
+
+                                            <strong
+                                                id="alpacaLatestPrice"
+                                            >
+                                                —
+                                            </strong>
+
+                                        </div>
+
+                                    </div>
+
+
+                                    <div class="col-6 col-lg-3">
+
+                                        <div
+                                            class="
+                                                border
+                                                rounded
+                                                p-2
+                                                h-100
+                                            "
+                                        >
+
+                                            <div
+                                                class="
+                                                    small
+                                                    text-muted
+                                                "
+                                            >
+                                                Bid
+                                            </div>
+
+                                            <strong
+                                                id="alpacaBid"
+                                            >
+                                                —
+                                            </strong>
+
+                                        </div>
+
+                                    </div>
+
+
+                                    <div class="col-6 col-lg-3">
+
+                                        <div
+                                            class="
+                                                border
+                                                rounded
+                                                p-2
+                                                h-100
+                                            "
+                                        >
+
+                                            <div
+                                                class="
+                                                    small
+                                                    text-muted
+                                                "
+                                            >
+                                                Ask
+                                            </div>
+
+                                            <strong
+                                                id="alpacaAsk"
+                                            >
+                                                —
+                                            </strong>
+
+                                        </div>
+
+                                    </div>
+
+
+                                    <div class="col-6 col-lg-3">
+
+                                        <div
+                                            class="
+                                                border
+                                                rounded
+                                                p-2
+                                                h-100
+                                            "
+                                        >
+
+                                            <div
+                                                class="
+                                                    small
+                                                    text-muted
+                                                "
+                                            >
+                                                Bid / Ask Spread
+                                            </div>
+
+                                            <strong
+                                                id="alpacaSpread"
+                                            >
+                                                —
+                                            </strong>
+
+                                        </div>
+
+                                    </div>
+
+
+                                </div>
+
+
+                                <!-- ====================== -->
+                                <!-- DAILY CHANGE           -->
+                                <!-- ====================== -->
+
+                                <div class="row g-2 mt-1">
+
+
+                                    <div class="col-6">
+
+                                        <div
+                                            class="
+                                                border
+                                                rounded
+                                                p-2
+                                            "
+                                        >
+
+                                            <div class="small text-muted">
+                                                Previous Close
+                                            </div>
+
+                                            <strong
+                                                id="alpacaPreviousClose"
+                                            >
+                                                —
+                                            </strong>
+
+                                        </div>
+
+                                    </div>
+
+
+                                    <div class="col-6">
+
+                                        <div
+                                            class="
+                                                border
+                                                rounded
+                                                p-2
+                                            "
+                                        >
+
+                                            <div class="small text-muted">
+                                                Change vs Previous Close
+                                            </div>
+
+                                            <strong
+                                                id="alpacaDailyChange"
+                                            >
+                                                —
+                                            </strong>
+
+                                        </div>
+
+                                    </div>
+
+
+                                </div>
+
+
+                                <!-- ====================== -->
+                                <!-- DAILY BAR              -->
+                                <!-- ====================== -->
+
+                                <div class="row g-2 mt-1">
+
+
+                                    <div class="col-6 col-lg-3">
+
+                                        <div class="border rounded p-2">
+
+                                            <div class="small text-muted">
+                                                Day Open
+                                            </div>
+
+                                            <strong
+                                                id="alpacaDayOpen"
+                                            >
+                                                —
+                                            </strong>
+
+                                        </div>
+
+                                    </div>
+
+
+                                    <div class="col-6 col-lg-3">
+
+                                        <div class="border rounded p-2">
+
+                                            <div class="small text-muted">
+                                                Day High
+                                            </div>
+
+                                            <strong
+                                                id="alpacaDayHigh"
+                                            >
+                                                —
+                                            </strong>
+
+                                        </div>
+
+                                    </div>
+
+
+                                    <div class="col-6 col-lg-3">
+
+                                        <div class="border rounded p-2">
+
+                                            <div class="small text-muted">
+                                                Day Low
+                                            </div>
+
+                                            <strong
+                                                id="alpacaDayLow"
+                                            >
+                                                —
+                                            </strong>
+
+                                        </div>
+
+                                    </div>
+
+
+                                    <div class="col-6 col-lg-3">
+
+                                        <div class="border rounded p-2">
+
+                                            <div class="small text-muted">
+                                                Day Volume
+                                            </div>
+
+                                            <strong
+                                                id="alpacaDayVolume"
+                                            >
+                                                —
+                                            </strong>
+
+                                        </div>
+
+                                    </div>
+
+
+                                </div>
+
+
+                                <!-- ====================== -->
+                                <!-- ASSET CAPABILITIES     -->
+                                <!-- ====================== -->
+
+                                <div class="mt-3">
+
+                                    <span
+                                        id="alpacaTradable"
+                                        class="
+                                            badge
+                                            bg-light
+                                            text-dark
+                                            border
+                                            me-1
+                                            mb-1
+                                        "
+                                    >
+                                        —
+                                    </span>
+
+
+                                    <span
+                                        id="alpacaFractionable"
+                                        class="
+                                            badge
+                                            bg-light
+                                            text-dark
+                                            border
+                                            me-1
+                                            mb-1
+                                        "
+                                    >
+                                        —
+                                    </span>
+
+
+                                    <span
+                                        id="alpacaShortable"
+                                        class="
+                                            badge
+                                            bg-light
+                                            text-dark
+                                            border
+                                            me-1
+                                            mb-1
+                                        "
+                                    >
+                                        —
+                                    </span>
+
+
+                                    <span
+                                        id="alpacaMarginable"
+                                        class="
+                                            badge
+                                            bg-light
+                                            text-dark
+                                            border
+                                            me-1
+                                            mb-1
+                                        "
+                                    >
+                                        —
+                                    </span>
+
+                                </div>
+
+
+                                <!-- ====================== -->
+                                <!-- MARKET ACTIONS         -->
+                                <!-- ====================== -->
+
+                                <div
+                                    class="
+                                        d-flex
+                                        gap-2
+                                        flex-wrap
+                                        mt-3
+                                    "
+                                >
+
+                                    <button
+                                        type="button"
+                                        id="useAlpacaPrice"
+                                        class="
+                                            btn
+                                            btn-sm
+                                            btn-primary
+                                        "
+                                    >
+                                        Use Latest Price as Entry
+                                    </button>
+
+
+                                    <button
+                                        type="button"
+                                        id="refreshAlpacaPrice"
+                                        class="
+                                            btn
+                                            btn-sm
+                                            btn-outline-primary
+                                        "
+                                    >
+                                        Refresh Snapshot
+                                    </button>
+
+                                </div>
+
+
+                                <!-- ====================== -->
+                                <!-- PROVENANCE             -->
+                                <!-- ====================== -->
+
+                                <div class="small text-muted mt-3">
+
+                                    Provider:
+
+                                    <strong>
+                                        Alpaca
+                                    </strong>
+
+                                    · Feed:
+
+                                    <strong
+                                        id="alpacaFeedText"
+                                    >
+                                        IEX
+                                    </strong>
+
+                                    · Latest trade timestamp:
+
+                                    <span
+                                        id="alpacaUpdated"
+                                    >
+                                        —
+                                    </span>
+
+                                </div>
+
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <hr>
+
+
+                    <!-- ================================== -->
+                    <!-- STEP 2                             -->
+                    <!-- ================================== -->
+
+                    <div class="my-4">
+
+                        <div
+                            class="
+                                text-primary
+                                fw-semibold
+                                small
+                                mb-1
+                            "
+                        >
+                            STEP 2
+                        </div>
+
+
+                        <h3 class="h5">
+                            Define Your Risk Budget
+                        </h3>
+
+
+                        <div class="mb-3">
+
+                            <label
+                                class="form-label fw-semibold"
+                                for="{{ form.trading_capital.id_for_label }}"
+                            >
+                                Trading Capital / Portfolio Value
+                            </label>
+
+
+                            {{ form.trading_capital }}
+
+
+                            <div class="form-text">
+
+                                Total hypothetical capital
+                                available for the simulation.
+
+                                This is not automatically the
+                                amount invested in the selected
+                                stock.
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="mb-2">
+
+                            <label
+                                class="form-label fw-semibold"
+                                for="{{ form.risk_percentage.id_for_label }}"
+                            >
+                                Maximum Risk per Trade
+                            </label>
+
+
+                            <div class="input-group">
+
+                                {{ form.risk_percentage }}
+
+                                <span class="input-group-text">
+                                    %
+                                </span>
+
+                            </div>
+
+
+                            <div class="form-text">
+
+                                For example, 1% of $10,000
+                                represents a maximum planned
+                                risk budget of $100.
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- Risk presets -->
+
+                        <div class="d-flex gap-2 flex-wrap mt-2">
+
+                            <span class="small text-muted me-1">
+                                Example simulation presets:
+                            </span>
+
+
+                            <button
+                                type="button"
+                                class="
+                                    btn
+                                    btn-sm
+                                    btn-outline-secondary
+                                    risk-preset
+                                "
+                                data-risk="0.5"
+                            >
+                                0.5%
+                            </button>
+
+
+                            <button
+                                type="button"
+                                class="
+                                    btn
+                                    btn-sm
+                                    btn-outline-secondary
+                                    risk-preset
+                                "
+                                data-risk="1"
+                            >
+                                1%
+                            </button>
+
+
+                            <button
+                                type="button"
+                                class="
+                                    btn
+                                    btn-sm
+                                    btn-outline-secondary
+                                    risk-preset
+                                "
+                                data-risk="2"
+                            >
+                                2%
+                            </button>
+
+                        </div>
+
+
+                        <!-- Live budget -->
+
+                        <div
+                            class="
+                                border
+                                rounded
+                                p-3
+                                mt-3
+                                bg-light
+                            "
+                        >
+
+                            <div class="small text-muted">
+                                Maximum Planned Risk
+                            </div>
+
+                            <div
+                                class="fs-4 fw-bold"
+                                id="liveRiskAmount"
+                            >
+                                —
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <hr>
+
+
+                    <!-- ================================== -->
+                    <!-- STEP 3                             -->
+                    <!-- ================================== -->
+
+                    <div class="my-4">
+
+                        <div
+                            class="
+                                text-primary
+                                fw-semibold
+                                small
+                                mb-1
+                            "
+                        >
+                            STEP 3
+                        </div>
+
+
+                        <h3 class="h5">
+                            Define the Trade
+                        </h3>
+
+
+                        <!-- Direction -->
+
+                        <div class="mb-3">
+
+                            <label
+                                class="form-label fw-semibold"
+                                for="{{ form.direction.id_for_label }}"
+                            >
+                                Trade Direction
+                            </label>
+
+                            {{ form.direction }}
+
+                        </div>
+
+
+                        <!-- Entry Price -->
+
+                        <div class="mb-3">
+
+                            <label
+                                class="form-label fw-semibold"
+                                for="{{ form.entry_price.id_for_label }}"
+                            >
+                                Planned Entry Price
+                            </label>
+
+
+                            {{ form.entry_price }}
+
+
+                            <div
+                                class="
+                                    d-flex
+                                    gap-2
+                                    align-items-center
+                                    flex-wrap
+                                    mt-2
+                                "
+                            >
+
+                                <button
+                                    type="button"
+                                    id="useLatestClose"
+                                    class="
+                                        btn
+                                        btn-sm
+                                        btn-outline-secondary
+                                    "
+                                >
+                                    Use Stored Historical Close
+                                </button>
+
+
+                                <span class="small text-muted">
+
+                                    Entry is the price of one
+                                    share/unit, not the total
+                                    position value.
+
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- Stop Method -->
+
+                        <div class="mb-3">
+
+                            <label
+                                class="form-label fw-semibold"
+                                for="{{ form.stop_method.id_for_label }}"
+                            >
+                                Stop-Loss Method
+                            </label>
+
+                            {{ form.stop_method }}
+
+                        </div>
+
+
+                        <!-- Percentage Stop -->
+
+                        <div
+                            id="percentageStopSection"
+                            class="mb-3"
+                        >
+
+                            <label
+                                class="form-label fw-semibold"
+                                for="{{ form.stop_loss_percentage.id_for_label }}"
+                            >
+                                Stop-Loss Distance
+                            </label>
+
+
+                            <div class="input-group">
+
+                                {{ form.stop_loss_percentage }}
+
+                                <span class="input-group-text">
+                                    %
+                                </span>
+
+                            </div>
+
+
+                            <div class="form-text">
+
+                                Example: a 5% stop on a
+                                $100 long entry calculates a
+                                $95 stop price.
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- ATR Stop -->
+
+                        <div
+                            id="atrStopSection"
+                            class="mb-3 d-none"
+                        >
+
+                            <label
+                                class="form-label fw-semibold"
+                                for="{{ form.atr_multiplier.id_for_label }}"
+                            >
+                                ATR Multiplier
+                            </label>
+
+
+                            {{ form.atr_multiplier }}
+
+
+                            <div class="form-text">
+
+                                ATR uses stored historical High,
+                                Low and Close observations.
+
+                                If this stock has not yet been
+                                imported, import its history first.
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- Fixed Stop -->
+
+                        <div
+                            id="fixedStopSection"
+                            class="mb-3 d-none"
+                        >
+
+                            <label
+                                class="form-label fw-semibold"
+                                for="{{ form.stop_price.id_for_label }}"
+                            >
+                                Fixed Stop Price
+                            </label>
+
+                            {{ form.stop_price }}
+
+                        </div>
+
+
+                        <!-- Profit Target -->
+
+                        <div class="mb-3">
+
+                            <label
+                                class="form-label fw-semibold"
+                                for="{{ form.target_price.id_for_label }}"
+                            >
+
+                                Profit Target
+
+                                <span class="text-muted">
+                                    (optional)
+                                </span>
+
+                            </label>
+
+                            {{ form.target_price }}
+
+
+                            <div class="form-text">
+
+                                Used to calculate potential
+                                reward and reward-to-risk.
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- ============================== -->
+                        <!-- LIVE TRADE PREVIEW             -->
+                        <!-- ============================== -->
+
+                        <div
+                            class="
+                                border
+                                rounded
+                                p-3
+                                bg-light
+                            "
+                        >
+
+                            <h4 class="h6">
+                                Live Risk Preview
+                            </h4>
+
+
+                            <div class="row g-3 small">
+
+
+                                <div class="col-md-6">
+
+                                    <div class="text-muted">
+                                        Calculated Stop
+                                    </div>
+
+                                    <strong
+                                        id="liveStopPrice"
+                                    >
+                                        —
+                                    </strong>
+
+                                </div>
+
+
+                                <div class="col-md-6">
+
+                                    <div class="text-muted">
+                                        Risk per Share / Unit
+                                    </div>
+
+                                    <strong
+                                        id="liveRiskPerUnit"
+                                    >
+                                        —
+                                    </strong>
+
+                                </div>
+
+
+                                <div class="col-md-6">
+
+                                    <div class="text-muted">
+                                        Risk-Constrained Position
+                                    </div>
+
+                                    <strong
+                                        id="livePositionSize"
+                                    >
+                                        —
+                                    </strong>
+
+                                </div>
+
+
+                                <div class="col-md-6">
+
+                                    <div class="text-muted">
+                                        Reward / Risk
+                                    </div>
+
+                                    <strong
+                                        id="liveRewardRisk"
+                                    >
+                                        —
+                                    </strong>
+
+                                </div>
+
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- ================================== -->
+                    <!-- ERRORS                             -->
+                    <!-- ================================== -->
+
+                    {% if form.errors %}
+
+                        <div class="alert alert-danger">
+
+                            <strong>
+                                Please correct the following:
+                            </strong>
+
+                            {{ form.errors }}
+
+                        </div>
+
+                    {% endif %}
+
+
+                    <!-- ================================== -->
+                    <!-- CALCULATE                          -->
+                    <!-- ================================== -->
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary btn-lg"
+                    >
+                        Calculate Risk Plan
+                    </button>
+
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- RIGHT COLUMN                                       -->
+    <!-- ================================================== -->
+
+    <div class="col-xl-5">
+
+
+        <!-- ============================================== -->
+        <!-- HISTORICAL MARKET CONTEXT                     -->
+        <!-- ============================================== -->
+
+        <div class="card shadow-sm mb-4">
+
+            <div class="card-body">
+
+
+                <div
+                    class="
+                        d-flex
+                        justify-content-between
+                        align-items-start
+                        gap-2
+                    "
+                >
+
+                    <div>
+
+                        <h2 class="h4 mb-1">
+                            Historical Risk Context
+                        </h2>
+
+                        <p class="text-muted small">
+
+                            Quantitative metrics calculated
+                            from historical observations stored
+                            in MarketPulse.
+
+                        </p>
+
+                    </div>
+
+
+                    <span
+                        class="
+                            badge
+                            bg-light
+                            text-dark
+                            border
+                        "
+                    >
+                        Stored Data
+                    </span>
+
+                </div>
+
+
+                <!-- No historical data warning -->
+
+                <div
+                    id="historicalDataWarning"
+                    class="alert alert-warning py-2 d-none"
+                >
+
+                    Historical data for this symbol is not yet
+                    stored in MarketPulse.
+
+                    Percentage and fixed-price risk calculations
+                    can still be used, but ATR and historical
+                    analytics require imported OHLCV data.
+
+                </div>
+
+
+                <div class="row g-3">
+
+
+                    <div class="col-6">
+
+                        <div class="border rounded p-3">
+
+                            <div class="small text-muted">
+                                Latest Stored Close
+                            </div>
+
+                            <div
+                                class="fw-bold"
+                                id="contextLatestClose"
+                            >
+                                —
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="col-6">
+
+                        <div class="border rounded p-3">
+
+                            <div class="small text-muted">
+                                14-Day ATR
+                            </div>
+
+                            <div
+                                class="fw-bold"
+                                id="contextAtr"
+                            >
+                                —
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="col-6">
+
+                        <div class="border rounded p-3">
+
+                            <div class="small text-muted">
+
+                                20-Day Annualised Volatility
+
+                            </div>
+
+                            <div
+                                class="fw-bold"
+                                id="contextVolatility"
+                            >
+                                —
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="col-6">
+
+                        <div class="border rounded p-3">
+
+                            <div class="small text-muted">
+
+                                Historical Max Drawdown
+
+                            </div>
+
+                            <div
+                                class="fw-bold"
+                                id="contextDrawdown"
+                            >
+                                —
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="col-6">
+
+                        <div class="border rounded p-3">
+
+                            <div class="small text-muted">
+                                30-Day High
+                            </div>
+
+                            <div
+                                class="fw-bold"
+                                id="contextHigh"
+                            >
+                                —
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="col-6">
+
+                        <div class="border rounded p-3">
+
+                            <div class="small text-muted">
+                                30-Day Low
+                            </div>
+
+                            <div
+                                class="fw-bold"
+                                id="contextLow"
+                            >
+                                —
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                </div>
+
+
+                <hr>
+
+
+                <div class="small text-muted">
+
+                    <strong>
+                        Historical observations:
+                    </strong>
+
+                    <span id="contextObservations">
+                        —
+                    </span>
+
+                </div>
+
+
+                <div class="small text-muted">
+
+                    <strong>
+                        Latest stored date:
+                    </strong>
+
+                    <span id="contextDate">
+                        —
+                    </span>
+
+                </div>
+
+
+                <div class="mt-3">
+
+                    <a
+                        id="importHistoricalDataLink"
+                        href="{% url 'data_management:import' %}"
+                        class="btn btn-sm btn-outline-primary"
+                    >
+                        Open Historical Data
+                    </a>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+
+        <!-- ============================================== -->
+        <!-- TERMINOLOGY                                   -->
+        <!-- ============================================== -->
+
+        <div class="card shadow-sm">
+
+            <div class="card-body">
+
+
+                <h2 class="h5">
+                    What do these inputs mean?
+                </h2>
+
+
+                <div
+                    class="accordion"
+                    id="riskHelp"
+                >
+
+
+                    <!-- Trading Capital -->
+
+                    <div class="accordion-item">
+
+                        <h3 class="accordion-header">
+
+                            <button
+                                class="accordion-button"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#capitalHelp"
+                            >
+                                Trading Capital
+                            </button>
+
+                        </h3>
+
+
+                        <div
+                            id="capitalHelp"
+                            class="
+                                accordion-collapse
+                                collapse
+                                show
+                            "
+                        >
+
+                            <div class="accordion-body small">
+
+                                Total hypothetical capital
+                                available to the trading account.
+
+                                It is not automatically the amount
+                                used to purchase this particular
+                                stock.
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Maximum Risk -->
+
+                    <div class="accordion-item">
+
+                        <h3 class="accordion-header">
+
+                            <button
+                                class="
+                                    accordion-button
+                                    collapsed
+                                "
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#riskHelpText"
+                            >
+                                Maximum Risk
+                            </button>
+
+                        </h3>
+
+
+                        <div
+                            id="riskHelpText"
+                            class="
+                                accordion-collapse
+                                collapse
+                            "
+                        >
+
+                            <div class="accordion-body small">
+
+                                If capital is $10,000 and the
+                                risk budget is 1%, MarketPulse
+                                limits the planned trade loss
+                                to approximately $100.
+
+                                It does not mean only $100 is
+                                invested.
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Entry -->
+
+                    <div class="accordion-item">
+
+                        <h3 class="accordion-header">
+
+                            <button
+                                class="
+                                    accordion-button
+                                    collapsed
+                                "
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#entryHelp"
+                            >
+                                Entry Price
+                            </button>
+
+                        </h3>
+
+
+                        <div
+                            id="entryHelp"
+                            class="
+                                accordion-collapse
+                                collapse
+                            "
+                        >
+
+                            <div class="accordion-body small">
+
+                                The assumed price of one share
+                                when the hypothetical position
+                                begins.
+
+                                MarketPulse can populate this
+                                using Alpaca's latest available
+                                trade price.
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Stop -->
+
+                    <div class="accordion-item">
+
+                        <h3 class="accordion-header">
+
+                            <button
+                                class="
+                                    accordion-button
+                                    collapsed
+                                "
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#stopHelp"
+                            >
+                                Stop-Loss
+                            </button>
+
+                        </h3>
+
+
+                        <div
+                            id="stopHelp"
+                            class="
+                                accordion-collapse
+                                collapse
+                            "
+                        >
+
+                            <div class="accordion-body small">
+
+                                A predefined level where the
+                                simulation assumes the position
+                                is exited when price moves
+                                unfavourably.
+
+                                Actual market execution may
+                                differ because of gaps,
+                                liquidity and slippage.
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Target -->
+
+                    <div class="accordion-item">
+
+                        <h3 class="accordion-header">
+
+                            <button
+                                class="
+                                    accordion-button
+                                    collapsed
+                                "
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#targetHelp"
+                            >
+                                Profit Target
+                            </button>
+
+                        </h3>
+
+
+                        <div
+                            id="targetHelp"
+                            class="
+                                accordion-collapse
+                                collapse
+                            "
+                        >
+
+                            <div class="accordion-body small">
+
+                                Optional favourable exit price.
+
+                                It lets MarketPulse compare
+                                potential reward with the
+                                amount placed at risk.
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- 4. SERVER-SIDE RESULT                                  -->
+<!-- ====================================================== -->
+
+{% if result %}
+
+
+<div class="card shadow-sm mt-4">
+
+    <div class="card-body">
+
+
+        <div
+            class="
+                d-flex
+                justify-content-between
+                align-items-start
+                flex-wrap
+                gap-3
+                mb-4
+            "
+        >
+
+
+            <div>
+
+                <h2 class="h3 mb-1">
+                    Risk Plan Result
+                </h2>
+
+
+                <p class="text-muted mb-0">
+
+                    {{ result.symbol }}
+
+                    ·
+
+                    {{ result.direction|title }}
+
+                    ·
+
+                    USD
+
+                </p>
+
+            </div>
+
+
+            <span class="badge bg-primary fs-6">
+
+                {{ result.risk_percentage|floatformat:2 }}%
+                Risk Budget
+
+            </span>
+
+
+        </div>
+
+
+        <!-- ============================================== -->
+        <!-- MAIN METRICS                                  -->
+        <!-- ============================================== -->
+
+        <div class="row g-3">
+
+
+            <div class="col-md-6 col-xl-3">
+
+                <div class="border rounded p-3 h-100">
+
+                    <div class="small text-muted">
+                        Maximum Risk Budget
+                    </div>
+
+                    <div class="fs-4 fw-bold">
+
+                        ${{ result.maximum_risk_amount|floatformat:2 }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-6 col-xl-3">
+
+                <div class="border rounded p-3 h-100">
+
+                    <div class="small text-muted">
+
+                        Risk-Constrained Position
+
+                    </div>
+
+                    <div class="fs-4 fw-bold">
+
+                        {{ result.quantity }}
+                        units
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-6 col-xl-3">
+
+                <div class="border rounded p-3 h-100">
+
+                    <div class="small text-muted">
+                        Position Value
+                    </div>
+
+                    <div class="fs-4 fw-bold">
+
+                        ${{ result.position_value|floatformat:2 }}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-6 col-xl-3">
+
+                <div class="border rounded p-3 h-100">
+
+                    <div class="small text-muted">
+                        Capital Allocated
+                    </div>
+
+                    <div class="fs-4 fw-bold">
+
+                        {{ result.capital_allocation_pct|floatformat:2 }}%
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- Entry / stop -->
+
+        <div class="row g-3 mt-1">
+
+
+            <div class="col-md-4">
+
+                <div class="border rounded p-3">
+
+                    <div class="small text-muted">
+                        Entry Price
+                    </div>
+
+                    <strong>
+                        ${{ result.entry_price|floatformat:4 }}
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <div class="border rounded p-3">
+
+                    <div class="small text-muted">
+                        Calculated Stop
+                    </div>
+
+                    <strong>
+                        ${{ result.stop_price|floatformat:4 }}
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <div class="border rounded p-3">
+
+                    <div class="small text-muted">
+                        Risk per Unit
+                    </div>
+
+                    <strong>
+                        ${{ result.risk_per_unit|floatformat:4 }}
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- Loss / Reward -->
+
+        <div class="row g-3 mt-1">
+
+
+            <div class="col-md-4">
+
+                <div class="border rounded p-3">
+
+                    <div class="small text-muted">
+                        Planned Loss if Stop Reached
+                    </div>
+
+                    <strong>
+
+                        ${{ result.planned_loss|floatformat:2 }}
+
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <div class="border rounded p-3">
+
+                    <div class="small text-muted">
+                        Potential Reward
+                    </div>
+
+                    <strong>
+
+                        {% if result.potential_reward != None %}
+
+                            ${{ result.potential_reward|floatformat:2 }}
+
+                        {% else %}
+
+                            Not calculated
+
+                        {% endif %}
+
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <div class="border rounded p-3">
+
+                    <div class="small text-muted">
+                        Reward / Risk
+                    </div>
+
+                    <strong>
+
+                        {% if result.reward_risk_ratio != None %}
+
+                            {{ result.reward_risk_ratio|floatformat:2 }}
+                            : 1
+
+                        {% else %}
+
+                            Add a target price
+
+                        {% endif %}
+
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- ============================================== -->
+        <!-- MARKETPULSE CHECKS                            -->
+        <!-- ============================================== -->
+
+        <div class="mt-4">
+
+            <h3 class="h5">
+                MarketPulse Risk Checks
+            </h3>
+
+
+            <div class="list-group">
+
+
+                <div class="list-group-item">
+
+                    Maximum requested risk:
+
+                    <strong>
+
+                        ${{ result.maximum_risk_amount|floatformat:2 }}
+
+                    </strong>
+
+                </div>
+
+
+                <div class="list-group-item">
+
+                    Actual planned loss after whole-unit
+                    position sizing:
+
+                    <strong>
+
+                        ${{ result.planned_loss|floatformat:2 }}
+
+                    </strong>
+
+                </div>
+
+
+                {% if result.capital_cap_applied %}
+
+                    <div
+                        class="
+                            list-group-item
+                            list-group-item-warning
+                        "
+                    >
+
+                        Position size was limited by available
+                        trading capital rather than by the
+                        risk budget alone.
+
+                    </div>
+
+                {% endif %}
+
+
+                {% if result.stop_atr_multiple != None %}
+
+                    <div class="list-group-item">
+
+                        Stop distance equals approximately
+
+                        <strong>
+
+                            {{ result.stop_atr_multiple|floatformat:2 }}
+                            ATR
+
+                        </strong>.
+
+                    </div>
+
+                {% endif %}
+
+
+            </div>
+
+        </div>
+
+
+        <!-- Next workflow -->
+
+        <div class="d-flex gap-2 flex-wrap mt-4">
+
+
+            <a
+                href="{% url 'data_management:import' %}?symbol={{ result.symbol }}"
+                class="btn btn-outline-primary"
+            >
+                View Historical Data
+            </a>
+
+
+            <a
+                href="{% url 'strategy_builder:list' %}"
+                class="btn btn-outline-dark"
+            >
+                Compare Strategies
+            </a>
+
+
+        </div>
+
+
+    </div>
+
+</div>
+
+
+{% endif %}
+
+
+<!-- ====================================================== -->
+<!-- 5. HISTORICAL MARKET DATA JSON                         -->
+<!-- ====================================================== -->
+
+{{ market_context_map|json_script:"market-context-data" }}
+
+
+<!-- ====================================================== -->
+<!-- 6. CLIENT-SIDE MARKET + RISK WORKFLOW                  -->
+<!-- ====================================================== -->
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+
+        // ====================================================
+        // 6.1 HISTORICAL MARKET DATA
+        // ====================================================
+
+        const dataElement =
+            document.getElementById(
+                "market-context-data"
+            );
+
+
+        let parsedMarketData = {};
+
+
+        if (dataElement) {
+
+            try {
+
+                parsedMarketData =
+                    JSON.parse(
+                        dataElement.textContent
+                    )
+                    ||
+                    {};
+
+            }
+
+            catch (error) {
+
+                parsedMarketData = {};
+
+            }
+
+        }
+
+
+        const marketData =
+            parsedMarketData;
+
+
+        // ====================================================
+        // 6.2 API ROUTES
+        // ====================================================
+
+        const ALPACA_SEARCH_URL =
+            "/api/alpaca/assets/search/";
+
+
+        const ALPACA_SNAPSHOT_PREFIX =
+            "/api/alpaca/stocks/";
+
+
+        // ====================================================
+        // 6.3 FORM ELEMENTS
+        // ====================================================
+
+        const symbolField =
+            document.getElementById(
+                "id_symbol"
+            );
+
+
+        const capitalField =
+            document.getElementById(
+                "id_trading_capital"
+            );
+
+
+        const riskField =
+            document.getElementById(
+                "id_risk_percentage"
+            );
+
+
+        const directionField =
+            document.getElementById(
+                "id_direction"
+            );
+
+
+        const entryField =
+            document.getElementById(
+                "id_entry_price"
+            );
+
+
+        const stopMethodField =
+            document.getElementById(
+                "id_stop_method"
+            );
+
+
+        const stopPercentageField =
+            document.getElementById(
+                "id_stop_loss_percentage"
+            );
+
+
+        const atrMultiplierField =
+            document.getElementById(
+                "id_atr_multiplier"
+            );
+
+
+        const fixedStopField =
+            document.getElementById(
+                "id_stop_price"
+            );
+
+
+        const targetField =
+            document.getElementById(
+                "id_target_price"
+            );
+
+
+        // ====================================================
+        // 6.4 ALPACA ELEMENTS
+        // ====================================================
+
+        const searchResults =
+            document.getElementById(
+                "alpacaSearchResults"
+            );
+
+
+        const searchStatus =
+            document.getElementById(
+                "alpacaSearchStatus"
+            );
+
+
+        const marketPanel =
+            document.getElementById(
+                "alpacaMarketPanel"
+            );
+
+
+        const useAlpacaPriceButton =
+            document.getElementById(
+                "useAlpacaPrice"
+            );
+
+
+        const refreshAlpacaButton =
+            document.getElementById(
+                "refreshAlpacaPrice"
+            );
+
+
+        // ====================================================
+        // 6.5 STOP SECTIONS
+        // ====================================================
+
+        const percentageSection =
+            document.getElementById(
+                "percentageStopSection"
+            );
+
+
+        const atrSection =
+            document.getElementById(
+                "atrStopSection"
+            );
+
+
+        const fixedSection =
+            document.getElementById(
+                "fixedStopSection"
+            );
+
+
+        // ====================================================
+        // 6.6 STATE
+        // ====================================================
+
+        let latestAlpacaPrice =
+            null;
+
+
+        let searchTimer =
+            null;
+
+
+        let currentSnapshotSymbol =
+            null;
+
+
+        // ====================================================
+        // 6.7 BASIC FORMATTERS
+        // ====================================================
+
+        function money(value) {
+
+            if (
+                value === null
+                ||
+                value === undefined
+                ||
+                value === ""
+            ) {
+
+                return "—";
+
+            }
+
+
+            const number =
+                Number(value);
+
+
+            if (!Number.isFinite(number)) {
+
+                return "—";
+
+            }
+
+
+            return (
+                "$"
+                +
+                number.toFixed(2)
+            );
+
+        }
+
+
+        function numberValue(field) {
+
+            if (!field) {
+
+                return null;
+
+            }
+
+
+            const value =
+                parseFloat(
+                    field.value
+                );
+
+
+            return Number.isFinite(value)
+                ?
+                value
+                :
+                null;
+
+        }
+
+
+        function setText(
+            id,
+            value
+        ) {
+
+            const element =
+                document.getElementById(
+                    id
+                );
+
+
+            if (element) {
+
+                element.textContent =
+                    value;
+
+            }
+
+        }
+
+
+        // ====================================================
+        // 6.8 CURRENT HISTORICAL CONTEXT
+        // ====================================================
+
+        function currentMarketContext() {
+
+            if (!symbolField) {
+
+                return null;
+
+            }
+
+
+            const symbol =
+                symbolField.value
+                .trim()
+                .toUpperCase();
+
+
+            return (
+                marketData[symbol]
+                ||
+                null
+            );
+
+        }
+
+
+        // ====================================================
+        // 6.9 UPDATE HISTORICAL CONTEXT
+        // ====================================================
+
+        function updateMarketContext() {
+
+            const context =
+                currentMarketContext();
+
+
+            const warning =
+                document.getElementById(
+                    "historicalDataWarning"
+                );
+
+
+            if (context) {
+
+                setText(
+                    "contextLatestClose",
+                    money(
+                        context.latest_close
+                    )
+                );
+
+
+                setText(
+                    "contextAtr",
+                    context.atr_14 !== null
+                    &&
+                    context.atr_14 !== undefined
+                    ?
+                    money(
+                        context.atr_14
+                    )
+                    :
+                    "—"
+                );
+
+
+                setText(
+                    "contextVolatility",
+                    context.annualised_volatility_pct !== null
+                    &&
+                    context.annualised_volatility_pct !== undefined
+                    ?
+                    Number(
+                        context.annualised_volatility_pct
+                    ).toFixed(2)
+                    +
+                    "%"
+                    :
+                    "—"
+                );
+
+
+                setText(
+                    "contextDrawdown",
+                    context.maximum_drawdown_pct !== null
+                    &&
+                    context.maximum_drawdown_pct !== undefined
+                    ?
+                    Number(
+                        context.maximum_drawdown_pct
+                    ).toFixed(2)
+                    +
+                    "%"
+                    :
+                    "—"
+                );
+
+
+                setText(
+                    "contextHigh",
+                    money(
+                        context.high_30
+                    )
+                );
+
+
+                setText(
+                    "contextLow",
+                    money(
+                        context.low_30
+                    )
+                );
+
+
+                setText(
+                    "contextObservations",
+                    context.observations
+                    ??
+                    "—"
+                );
+
+
+                setText(
+                    "contextDate",
+                    context.latest_date
+                    ??
+                    "—"
+                );
+
+
+                if (warning) {
+
+                    warning.classList.add(
+                        "d-none"
+                    );
+
+                }
+
+            }
+
+            else {
+
+                setText(
+                    "contextLatestClose",
+                    "—"
+                );
+
+                setText(
+                    "contextAtr",
+                    "—"
+                );
+
+                setText(
+                    "contextVolatility",
+                    "—"
+                );
+
+                setText(
+                    "contextDrawdown",
+                    "—"
+                );
+
+                setText(
+                    "contextHigh",
+                    "—"
+                );
+
+                setText(
+                    "contextLow",
+                    "—"
+                );
+
+                setText(
+                    "contextObservations",
+                    "No stored history"
+                );
+
+                setText(
+                    "contextDate",
+                    "—"
+                );
+
+
+                if (
+                    warning
+                    &&
+                    symbolField
+                    &&
+                    symbolField.value.trim()
+                ) {
+
+                    warning.classList.remove(
+                        "d-none"
+                    );
+
+                }
+
+            }
+
+
+            // Update historical import link.
+
+            const importLink =
+                document.getElementById(
+                    "importHistoricalDataLink"
+                );
+
+
+            if (importLink) {
+
+                const symbol =
+                    symbolField
+                    ?
+                    symbolField.value
+                        .trim()
+                        .toUpperCase()
+                    :
+                    "";
+
+
+                importLink.href =
+                    symbol
+                    ?
+                    "{% url 'data_management:import' %}?symbol="
+                    +
+                    encodeURIComponent(
+                        symbol
+                    )
+                    :
+                    "{% url 'data_management:import' %}";
+
+            }
+
+        }
+
+
+        // ====================================================
+        // 6.10 SAFE ALPACA SEARCH RESULT ELEMENT
+        // ====================================================
+
+        function createSearchResult(
+            asset
+        ) {
+
+            const button =
+                document.createElement(
+                    "button"
+                );
+
+
+            button.type =
+                "button";
+
+
+            button.className =
+                "list-group-item "
+                +
+                "list-group-item-action";
+
+
+            const outer =
+                document.createElement(
+                    "div"
+                );
+
+
+            outer.className =
+                "d-flex "
+                +
+                "justify-content-between "
+                +
+                "align-items-start "
+                +
+                "gap-3";
+
+
+            const left =
+                document.createElement(
+                    "div"
+                );
+
+
+            const symbol =
+                document.createElement(
+                    "strong"
+                );
+
+
+            symbol.textContent =
+                asset.symbol
+                ||
+                "";
+
+
+            const name =
+                document.createElement(
+                    "div"
+                );
+
+
+            name.className =
+                "small text-muted";
+
+
+            name.textContent =
+                asset.name
+                ||
+                "";
+
+
+            left.appendChild(
+                symbol
+            );
+
+
+            left.appendChild(
+                name
+            );
+
+
+            const right =
+                document.createElement(
+                    "div"
+                );
+
+
+            right.className =
+                "text-end small";
+
+
+            const exchange =
+                document.createElement(
+                    "div"
+                );
+
+
+            exchange.textContent =
+                asset.exchange
+                ||
+                "";
+
+
+            const tradable =
+                document.createElement(
+                    "div"
+                );
+
+
+            tradable.className =
+                "text-muted";
+
+
+            tradable.textContent =
+                asset.tradable
+                ?
+                "Tradable"
+                :
+                "Not tradable";
+
+
+            right.appendChild(
+                exchange
+            );
+
+
+            right.appendChild(
+                tradable
+            );
+
+
+            outer.appendChild(
+                left
+            );
+
+
+            outer.appendChild(
+                right
+            );
+
+
+            button.appendChild(
+                outer
+            );
+
+
+            button.addEventListener(
+                "click",
+                function () {
+
+                    if (!symbolField) {
+
+                        return;
+
+                    }
+
+
+                    symbolField.value =
+                        asset.symbol;
+
+
+                    searchResults.classList.add(
+                        "d-none"
+                    );
+
+
+                    searchStatus.textContent =
+                        "";
+
+
+                    updateMarketContext();
+
+
+                    loadAlpacaSnapshot(
+                        asset.symbol
+                    );
+
+
+                    updateLivePreview();
+
+                }
+            );
+
+
+            return button;
+
+        }
+
+
+        // ====================================================
+        // 6.11 SEARCH ALPACA
+        // ====================================================
+
+        async function searchAlpacaAssets(
+            query
+        ) {
+
+            query =
+                query.trim();
+
+
+            if (query.length < 1) {
+
+                searchResults.classList.add(
+                    "d-none"
+                );
+
+                searchStatus.textContent =
+                    "";
+
+                return;
+
+            }
+
+
+            searchStatus.textContent =
+                "Searching Alpaca...";
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        ALPACA_SEARCH_URL
+                        +
+                        "?q="
+                        +
+                        encodeURIComponent(
+                            query
+                        ),
+                        {
+                            headers: {
+                                "Accept":
+                                    "application/json",
+                            },
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                searchResults.innerHTML =
+                    "";
+
+
+                if (
+                    !response.ok
+                    ||
+                    data.error
+                ) {
+
+                    throw new Error(
+                        data.error
+                        ||
+                        "Alpaca search request failed."
+                    );
+
+                }
+
+
+                searchStatus.textContent =
+                    data.count
+                    +
+                    " result"
+                    +
+                    (
+                        data.count === 1
+                        ?
+                        ""
+                        :
+                        "s"
+                    )
+                    +
+                    " from Alpaca";
+
+
+                if (
+                    !data.results
+                    ||
+                    data.results.length === 0
+                ) {
+
+                    const empty =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    empty.className =
+                        "list-group-item "
+                        +
+                        "text-muted";
+
+
+                    empty.textContent =
+                        "No matching Alpaca assets found.";
+
+
+                    searchResults.appendChild(
+                        empty
+                    );
+
+
+                    searchResults.classList.remove(
+                        "d-none"
+                    );
+
+
+                    return;
+
+                }
+
+
+                data.results.forEach(
+                    function (asset) {
+
+                        searchResults.appendChild(
+                            createSearchResult(
+                                asset
+                            )
+                        );
+
+                    }
+                );
+
+
+                searchResults.classList.remove(
+                    "d-none"
+                );
+
+            }
+
+            catch (error) {
+
+                searchResults.classList.add(
+                    "d-none"
+                );
+
+
+                searchStatus.textContent =
+                    "MarketPulse could not search Alpaca: "
+                    +
+                    error.message;
+
+            }
+
+        }
+
+
+        // ====================================================
+        // 6.12 LOAD ALPACA SNAPSHOT
+        // ====================================================
+
+        async function loadAlpacaSnapshot(
+            symbol
+        ) {
+
+            symbol =
+                symbol
+                .trim()
+                .toUpperCase();
+
+
+            if (!symbol) {
+
+                return;
+
+            }
+
+
+            searchStatus.textContent =
+                "Loading latest Alpaca snapshot...";
+
+
+            if (refreshAlpacaButton) {
+
+                refreshAlpacaButton.disabled =
+                    true;
+
+            }
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        ALPACA_SNAPSHOT_PREFIX
+                        +
+                        encodeURIComponent(
+                            symbol
+                        )
+                        +
+                        "/snapshot/",
+                        {
+                            headers: {
+                                "Accept":
+                                    "application/json",
+                            },
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                if (
+                    !response.ok
+                    ||
+                    data.error
+                ) {
+
+                    throw new Error(
+                        data.error
+                        ||
+                        "Alpaca snapshot request failed."
+                    );
+
+                }
+
+
+                const asset =
+                    data.asset
+                    ||
+                    {};
+
+
+                const snapshot =
+                    data.snapshot
+                    ||
+                    {};
+
+
+                const daily =
+                    snapshot.daily_bar
+                    ||
+                    {};
+
+
+                latestAlpacaPrice =
+                    snapshot.latest_price
+                    !== null
+                    &&
+                    snapshot.latest_price
+                    !== undefined
+                    ?
+                    Number(
+                        snapshot.latest_price
+                    )
+                    :
+                    null;
+
+
+                currentSnapshotSymbol =
+                    symbol;
+
+
+                // Identification
+
+                setText(
+                    "alpacaAssetName",
+                    asset.name
+                    ||
+                    asset.symbol
+                    ||
+                    symbol
+                );
+
+
+                setText(
+                    "alpacaSymbol",
+                    asset.symbol
+                    ||
+                    symbol
+                );
+
+
+                setText(
+                    "alpacaExchange",
+                    asset.exchange
+                    ||
+                    "—"
+                );
+
+
+                // Latest prices
+
+                setText(
+                    "alpacaLatestPrice",
+                    money(
+                        snapshot.latest_price
+                    )
+                );
+
+
+                setText(
+                    "alpacaBid",
+                    money(
+                        snapshot.bid_price
+                    )
+                );
+
+
+                setText(
+                    "alpacaAsk",
+                    money(
+                        snapshot.ask_price
+                    )
+                );
+
+
+                setText(
+                    "alpacaSpread",
+                    money(
+                        snapshot.spread
+                    )
+                );
+
+
+                setText(
+                    "alpacaPreviousClose",
+                    money(
+                        snapshot.previous_close
+                    )
+                );
+
+
+                // Daily change
+
+                let dailyChangeText =
+                    "—";
+
+
+                if (
+                    snapshot.daily_change !== null
+                    &&
+                    snapshot.daily_change !== undefined
+                    &&
+                    snapshot.daily_change_pct !== null
+                    &&
+                    snapshot.daily_change_pct !== undefined
+                ) {
+
+                    const change =
+                        Number(
+                            snapshot.daily_change
+                        );
+
+
+                    const percentage =
+                        Number(
+                            snapshot.daily_change_pct
+                        );
+
+
+                    dailyChangeText =
+                        (
+                            change >= 0
+                            ?
+                            "+"
+                            :
+                            ""
+                        )
+                        +
+                        change.toFixed(2)
+                        +
+                        " ("
+                        +
+                        (
+                            percentage >= 0
+                            ?
+                            "+"
+                            :
+                            ""
+                        )
+                        +
+                        percentage.toFixed(2)
+                        +
+                        "%)";
+
+                }
+
+
+                setText(
+                    "alpacaDailyChange",
+                    dailyChangeText
+                );
+
+
+                // Daily bar
+
+                setText(
+                    "alpacaDayOpen",
+                    money(
+                        daily.open
+                    )
+                );
+
+
+                setText(
+                    "alpacaDayHigh",
+                    money(
+                        daily.high
+                    )
+                );
+
+
+                setText(
+                    "alpacaDayLow",
+                    money(
+                        daily.low
+                    )
+                );
+
+
+                setText(
+                    "alpacaDayVolume",
+                    daily.volume !== null
+                    &&
+                    daily.volume !== undefined
+                    ?
+                    Number(
+                        daily.volume
+                    ).toLocaleString()
+                    :
+                    "—"
+                );
+
+
+                // Asset properties
+
+                setText(
+                    "alpacaTradable",
+                    asset.tradable
+                    ?
+                    "Tradable"
+                    :
+                    "Not Tradable"
+                );
+
+
+                setText(
+                    "alpacaFractionable",
+                    asset.fractionable
+                    ?
+                    "Fractional Trading"
+                    :
+                    "Whole Units"
+                );
+
+
+                setText(
+                    "alpacaShortable",
+                    asset.shortable
+                    ?
+                    "Shortable"
+                    :
+                    "Not Shortable"
+                );
+
+
+                setText(
+                    "alpacaMarginable",
+                    asset.marginable
+                    ?
+                    "Marginable"
+                    :
+                    "Not Marginable"
+                );
+
+
+                // Provider provenance
+
+                setText(
+                    "alpacaFeed",
+                    snapshot.feed
+                    ||
+                    "IEX"
+                );
+
+
+                setText(
+                    "alpacaFeedText",
+                    snapshot.feed
+                    ||
+                    "IEX"
+                );
+
+
+                setText(
+                    "alpacaUpdated",
+                    snapshot.latest_trade_timestamp
+                    ||
+                    "—"
+                );
+
+
+                if (marketPanel) {
+
+                    marketPanel.classList.remove(
+                        "d-none"
+                    );
+
+                }
+
+
+                searchStatus.textContent =
+                    "Latest Alpaca market snapshot loaded.";
+
+
+                updateLivePreview();
+
+            }
+
+            catch (error) {
+
+                latestAlpacaPrice =
+                    null;
+
+
+                currentSnapshotSymbol =
+                    null;
+
+
+                if (marketPanel) {
+
+                    marketPanel.classList.add(
+                        "d-none"
+                    );
+
+                }
+
+
+                searchStatus.textContent =
+                    "MarketPulse could not load Alpaca data: "
+                    +
+                    error.message;
+
+            }
+
+            finally {
+
+                if (refreshAlpacaButton) {
+
+                    refreshAlpacaButton.disabled =
+                        false;
+
+                }
+
+            }
+
+        }
+
+
+        // ====================================================
+        // 6.13 STOP METHOD UI
+        // ====================================================
+
+        function updateStopMethod() {
+
+            const method =
+                stopMethodField
+                ?
+                stopMethodField.value
+                :
+                "percentage";
+
+
+            if (percentageSection) {
+
+                percentageSection.classList.toggle(
+                    "d-none",
+                    method !== "percentage"
+                );
+
+            }
+
+
+            if (atrSection) {
+
+                atrSection.classList.toggle(
+                    "d-none",
+                    method !== "atr"
+                );
+
+            }
+
+
+            if (fixedSection) {
+
+                fixedSection.classList.toggle(
+                    "d-none",
+                    method !== "fixed"
+                );
+
+            }
+
+
+            updateLivePreview();
+
+        }
+
+
+        // ====================================================
+        // 6.14 LIVE RISK PREVIEW
+        // ====================================================
+
+        function updateLivePreview() {
+
+            const capital =
+                numberValue(
+                    capitalField
+                );
+
+
+            const riskPct =
+                numberValue(
+                    riskField
+                );
+
+
+            let entry =
+                numberValue(
+                    entryField
+                );
+
+
+            const context =
+                currentMarketContext();
+
+
+            // Priority:
+            //
+            // 1. User-entered entry
+            // 2. Alpaca latest price
+            // 3. Stored historical close
+
+            if (
+                entry === null
+                &&
+                latestAlpacaPrice !== null
+            ) {
+
+                entry =
+                    latestAlpacaPrice;
+
+            }
+
+
+            if (
+                entry === null
+                &&
+                context
+            ) {
+
+                entry =
+                    Number(
+                        context.latest_close
+                    );
+
+            }
+
+
+            const maximumRisk =
+                (
+                    capital !== null
+                    &&
+                    riskPct !== null
+                )
+                ?
+                capital
+                *
+                riskPct
+                /
+                100
+                :
+                null;
+
+
+            setText(
+                "liveRiskAmount",
+                maximumRisk !== null
+                ?
+                "$"
+                +
+                maximumRisk.toFixed(2)
+                :
+                "—"
+            );
+
+
+            if (
+                entry === null
+                ||
+                entry <= 0
+            ) {
+
+                setText(
+                    "liveStopPrice",
+                    "—"
+                );
+
+                setText(
+                    "liveRiskPerUnit",
+                    "—"
+                );
+
+                setText(
+                    "livePositionSize",
+                    "—"
+                );
+
+                setText(
+                    "liveRewardRisk",
+                    "—"
+                );
+
+                return;
+
+            }
+
+
+            const direction =
+                directionField
+                ?
+                directionField.value
+                :
+                "long";
+
+
+            const method =
+                stopMethodField
+                ?
+                stopMethodField.value
+                :
+                "percentage";
+
+
+            let stop =
+                null;
+
+
+            // Percentage method
+
+            if (method === "percentage") {
+
+                const percentage =
+                    numberValue(
+                        stopPercentageField
+                    );
+
+
+                if (
+                    percentage !== null
+                    &&
+                    percentage > 0
+                ) {
+
+                    const distance =
+                        entry
+                        *
+                        percentage
+                        /
+                        100;
+
+
+                    stop =
+                        direction === "long"
+                        ?
+                        entry - distance
+                        :
+                        entry + distance;
+
+                }
+
+            }
+
+
+            // ATR method
+
+            else if (
+                method === "atr"
+                &&
+                context
+            ) {
+
+                const atr =
+                    Number(
+                        context.atr_14
+                    );
+
+
+                const multiplier =
+                    numberValue(
+                        atrMultiplierField
+                    );
+
+
+                if (
+                    Number.isFinite(atr)
+                    &&
+                    atr > 0
+                    &&
+                    multiplier !== null
+                    &&
+                    multiplier > 0
+                ) {
+
+                    const distance =
+                        atr
+                        *
+                        multiplier;
+
+
+                    stop =
+                        direction === "long"
+                        ?
+                        entry - distance
+                        :
+                        entry + distance;
+
+                }
+
+            }
+
+
+            // Fixed price method
+
+            else if (
+                method === "fixed"
+            ) {
+
+                stop =
+                    numberValue(
+                        fixedStopField
+                    );
+
+            }
+
+
+            if (
+                stop === null
+                ||
+                !Number.isFinite(stop)
+            ) {
+
+                setText(
+                    "liveStopPrice",
+                    "—"
+                );
+
+                setText(
+                    "liveRiskPerUnit",
+                    "—"
+                );
+
+                setText(
+                    "livePositionSize",
+                    "—"
+                );
+
+                setText(
+                    "liveRewardRisk",
+                    "—"
+                );
+
+                return;
+
+            }
+
+
+            const riskPerUnit =
+                Math.abs(
+                    entry
+                    -
+                    stop
+                );
+
+
+            setText(
+                "liveStopPrice",
+                money(
+                    stop
+                )
+            );
+
+
+            setText(
+                "liveRiskPerUnit",
+                money(
+                    riskPerUnit
+                )
+            );
+
+
+            let quantity =
+                null;
+
+
+            if (
+                maximumRisk !== null
+                &&
+                riskPerUnit > 0
+                &&
+                capital !== null
+            ) {
+
+                const riskQuantity =
+                    Math.floor(
+                        maximumRisk
+                        /
+                        riskPerUnit
+                    );
+
+
+                const capitalQuantity =
+                    Math.floor(
+                        capital
+                        /
+                        entry
+                    );
+
+
+                quantity =
+                    Math.min(
+                        riskQuantity,
+                        capitalQuantity
+                    );
+
+            }
+
+
+            setText(
+                "livePositionSize",
+                quantity !== null
+                ?
+                quantity
+                +
+                " units"
+                :
+                "—"
+            );
+
+
+            const target =
+                numberValue(
+                    targetField
+                );
+
+
+            if (
+                target !== null
+                &&
+                riskPerUnit > 0
+            ) {
+
+                const rewardPerUnit =
+                    direction === "long"
+                    ?
+                    target - entry
+                    :
+                    entry - target;
+
+
+                if (rewardPerUnit > 0) {
+
+                    const ratio =
+                        rewardPerUnit
+                        /
+                        riskPerUnit;
+
+
+                    setText(
+                        "liveRewardRisk",
+                        ratio.toFixed(2)
+                        +
+                        " : 1"
+                    );
+
+                }
+
+                else {
+
+                    setText(
+                        "liveRewardRisk",
+                        "Invalid target"
+                    );
+
+                }
+
+            }
+
+            else {
+
+                setText(
+                    "liveRewardRisk",
+                    "Add target"
+                );
+
+            }
+
+        }
+
+
+        // ====================================================
+        // 6.15 SYMBOL SEARCH EVENTS
+        // ====================================================
+
+        if (symbolField) {
+
+            symbolField.addEventListener(
+                "input",
+                function () {
+
+                    // A typed symbol is no longer guaranteed
+                    // to match the currently displayed snapshot.
+
+                    if (
+                        currentSnapshotSymbol
+                        !==
+                        symbolField.value
+                            .trim()
+                            .toUpperCase()
+                    ) {
+
+                        latestAlpacaPrice =
+                            null;
+
+                    }
+
+
+                    updateMarketContext();
+
+                    updateLivePreview();
+
+
+                    clearTimeout(
+                        searchTimer
+                    );
+
+
+                    const query =
+                        symbolField.value
+                            .trim();
+
+
+                    searchTimer =
+                        setTimeout(
+                            function () {
+
+                                searchAlpacaAssets(
+                                    query
+                                );
+
+                            },
+                            300
+                        );
+
+                }
+            );
+
+        }
+
+
+        // ====================================================
+        // 6.16 USE ALPACA PRICE
+        // ====================================================
+
+        if (useAlpacaPriceButton) {
+
+            useAlpacaPriceButton.addEventListener(
+                "click",
+                function () {
+
+                    if (
+                        latestAlpacaPrice !== null
+                        &&
+                        entryField
+                    ) {
+
+                        entryField.value =
+                            latestAlpacaPrice;
+
+
+                        entryField.dispatchEvent(
+                            new Event(
+                                "input",
+                                {
+                                    bubbles: true,
+                                }
+                            )
+                        );
+
+                    }
+
+                }
+            );
+
+        }
+
+
+        // ====================================================
+        // 6.17 REFRESH ALPACA SNAPSHOT
+        // ====================================================
+
+        if (refreshAlpacaButton) {
+
+            refreshAlpacaButton.addEventListener(
+                "click",
+                function () {
+
+                    if (
+                        symbolField
+                        &&
+                        symbolField.value.trim()
+                    ) {
+
+                        loadAlpacaSnapshot(
+                            symbolField.value
+                        );
+
+                    }
+
+                }
+            );
+
+        }
+
+
+        // ====================================================
+        // 6.18 STORED HISTORICAL CLOSE
+        // ====================================================
+
+        const latestStoredButton =
+            document.getElementById(
+                "useLatestClose"
+            );
+
+
+        if (latestStoredButton) {
+
+            latestStoredButton.addEventListener(
+                "click",
+                function () {
+
+                    const context =
+                        currentMarketContext();
+
+
+                    if (
+                        context
+                        &&
+                        entryField
+                    ) {
+
+                        entryField.value =
+                            context.latest_close;
+
+
+                        updateLivePreview();
+
+                    }
+
+                }
+            );
+
+        }
+
+
+        // ====================================================
+        // 6.19 RISK PRESETS
+        // ====================================================
+
+        document
+            .querySelectorAll(
+                ".risk-preset"
+            )
+            .forEach(
+                function (button) {
+
+                    button.addEventListener(
+                        "click",
+                        function () {
+
+                            if (riskField) {
+
+                                riskField.value =
+                                    button.dataset.risk;
+
+
+                                updateLivePreview();
+
+                            }
+
+                        }
+                    );
+
+                }
+            );
+
+
+        // ====================================================
+        // 6.20 GENERAL RISK FIELD EVENTS
+        // ====================================================
+
+        [
+
+            capitalField,
+            riskField,
+            directionField,
+            entryField,
+            stopPercentageField,
+            atrMultiplierField,
+            fixedStopField,
+            targetField,
+
+        ]
+        .forEach(
+            function (field) {
+
+                if (!field) {
+
+                    return;
+
+                }
+
+
+                field.addEventListener(
+                    "input",
+                    updateLivePreview
+                );
+
+
+                field.addEventListener(
+                    "change",
+                    updateLivePreview
+                );
+
+            }
+        );
+
+
+        if (stopMethodField) {
+
+            stopMethodField.addEventListener(
+                "change",
+                updateStopMethod
+            );
+
+        }
+
+
+        // ====================================================
+        // 6.21 CLOSE SEARCH RESULTS
+        // ====================================================
+
+        document.addEventListener(
+            "click",
+            function (event) {
+
+                if (
+                    searchResults
+                    &&
+                    symbolField
+                    &&
+                    !searchResults.contains(
+                        event.target
+                    )
+                    &&
+                    event.target !==
+                    symbolField
+                ) {
+
+                    searchResults.classList.add(
+                        "d-none"
+                    );
+
+                }
+
+            }
+        );
+
+
+        // ====================================================
+        // 6.22 INITIAL PAGE STATE
+        // ====================================================
+
+        updateMarketContext();
+
+        updateStopMethod();
+
+        updateLivePreview();
+
+
+        // If a symbol is already present following a POST,
+        // reload its Alpaca snapshot automatically.
+
+        if (
+            symbolField
+            &&
+            symbolField.value.trim()
+        ) {
+
+            loadAlpacaSnapshot(
+                symbolField.value
+            );
+
+        }
+
+
+    }
+);
+
+</script>
+
+
+{% endblock %}
