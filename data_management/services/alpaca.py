@@ -3,224 +3,317 @@
 MARKETPULSE - ALPACA MARKET DATA SERVICE
 ============================================================
 
-Framework mapping:
+PURPOSE:
 
-Browser / JavaScript / React
+This module provides one central service layer between
+MarketPulse and Alpaca.
+
+The rest of the application should NOT communicate with
+Alpaca directly.
+
+Instead:
+
+Browser / React / Django Views
         ↓
-MarketPulse Django API
+MarketPulse API / Business Logic
         ↓
 data_management.services.alpaca
         ↓
-Alpaca REST APIs
+Alpaca API
         ↓
-Normalised MarketPulse market data
+Normalised Python dictionaries
+        ↓
+PostgreSQL / MarketPulse Interface
 
 
-PURPOSE:
+MAIN RESPONSIBILITIES:
 
-This service isolates MarketPulse from Alpaca-specific API
-implementation details.
-
-It provides:
-
-1. Active US-equity universe
-2. Search by ticker or company name
-3. Individual asset metadata
-4. Latest stock snapshot
-5. Latest trade
-6. Latest bid / ask
-7. Bid-ask spread
-8. Current daily OHLCV
-9. Previous daily OHLCV
-10. Asset capabilities
-11. Combined asset + market overview
+1. Validate Alpaca configuration
+2. Authenticate server-side requests
+3. Search Alpaca's active US-equity universe
+4. Retrieve asset information
+5. Retrieve current stock snapshots
+6. Retrieve multiple stock snapshots
+7. Retrieve historical OHLCV bars
+8. Retrieve US market clock information
+9. Build the Dashboard market overview
+10. Retrieve market history for Dashboard charts
 
 
-IMPORTANT SECURITY RULE:
+SECURITY:
 
-Alpaca credentials must remain on the Django server.
+The browser NEVER receives:
 
-They must never be exposed through:
+- ALPACA_API_KEY_ID
+- ALPACA_API_SECRET_KEY
 
-- HTML
-- JavaScript
-- React
-- API JSON responses
-- GitHub
-- screenshots
-- browser developer tools
+Credentials remain inside Django settings and environment
+variables.
 
-The frontend communicates with MarketPulse.
-
-MarketPulse communicates with Alpaca.
 ============================================================
 """
 
-from __future__ import annotations
-
 
 # ============================================================
-# 1. IMPORTS
+# 1. STANDARD LIBRARY IMPORTS
 # ============================================================
+
+from datetime import timedelta
 
 from urllib.parse import quote
 
+
+# ============================================================
+# 2. THIRD-PARTY IMPORTS
+# ============================================================
+
 import requests
 
+
+# ============================================================
+# 3. DJANGO IMPORTS
+# ============================================================
+
 from django.conf import settings
+
 from django.core.cache import cache
 
+from django.utils import timezone
+
 
 # ============================================================
-# 2. CUSTOM SERVICE EXCEPTION
+# 4. CUSTOM EXCEPTION
 # ============================================================
+
 
 class AlpacaServiceError(Exception):
     """
     Raised when MarketPulse cannot successfully communicate
-    with Alpaca or receives invalid Alpaca configuration.
+    with Alpaca or when the Alpaca configuration is invalid.
+
+    Views can catch this exception and display a friendly
+    message instead of exposing raw API errors to the user.
     """
 
     pass
 
 
 # ============================================================
-# 3. BASE URL NORMALISATION
+# 5. SUPPORTED MARKET-DATA FEEDS
 # ============================================================
 
-def _normalise_base_url(
-    base_url,
-):
+ALLOWED_DATA_FEEDS = {
+    "iex",
+    "sip",
+    "delayed_sip",
+    "boats",
+    "overnight",
+    "otc",
+}
+
+
+# ============================================================
+# 6. CONFIGURATION HELPERS
+# ============================================================
+
+
+def _normalise_base_url(url):
     """
     ------------------------------------------------------------
     NORMALISE ALPACA BASE URL
     ------------------------------------------------------------
 
-    MarketPulse expects base URLs such as:
+    MarketPulse settings should ideally contain:
 
         https://paper-api.alpaca.markets
 
+    and:
+
         https://data.alpaca.markets
 
-    However, this helper also safely handles configuration such
-    as:
+    However, if /v2 or /v3 was accidentally included in the
+    environment variable, this helper removes it.
 
-        https://paper-api.alpaca.markets/v2
-
-    This prevents MarketPulse accidentally constructing:
+    This prevents URLs such as:
 
         /v2/v2/assets
 
-    The service itself is responsible for adding API versions.
+    from being created.
     ------------------------------------------------------------
     """
 
-
-    if not base_url:
+    if not url:
 
         return ""
 
 
-    base_url = (
-        str(base_url)
+    cleaned_url = (
+        str(url)
         .strip()
         .rstrip("/")
     )
 
 
-    if base_url.endswith(
-        "/v2"
+    for ending in (
+        "/v2",
+        "/v3",
     ):
 
-        base_url = (
-            base_url[:-3]
-            .rstrip("/")
-        )
+        if cleaned_url.endswith(
+            ending
+        ):
+
+            cleaned_url = (
+                cleaned_url[
+                    :-len(ending)
+                ]
+            )
 
 
-    return base_url
+    return cleaned_url.rstrip("/")
 
 
 # ============================================================
-# 4. TRADING API BASE URL
+# 7. TRADING API BASE URL
 # ============================================================
+
 
 def _trading_base_url():
     """
-    Return the configured Alpaca paper/live trading API root.
-
-    For this student project the intended value is:
-
-        https://paper-api.alpaca.markets
+    Return the configured Alpaca Trading API base URL.
     """
 
-
-    base_url = (
-        _normalise_base_url(
-            settings.ALPACA_TRADING_BASE_URL
+    url = _normalise_base_url(
+        getattr(
+            settings,
+            "ALPACA_TRADING_BASE_URL",
+            "https://paper-api.alpaca.markets",
         )
     )
 
 
-    if not base_url:
+    if not url:
 
         raise AlpacaServiceError(
             "ALPACA_TRADING_BASE_URL is not configured."
         )
 
 
-    return base_url
+    return url
 
 
 # ============================================================
-# 5. MARKET DATA API BASE URL
+# 8. MARKET DATA API BASE URL
 # ============================================================
+
 
 def _data_base_url():
     """
-    Return the Alpaca market-data API root.
-
-    Expected:
-
-        https://data.alpaca.markets
+    Return the configured Alpaca Market Data API base URL.
     """
 
-
-    base_url = (
-        _normalise_base_url(
-            settings.ALPACA_DATA_BASE_URL
+    url = _normalise_base_url(
+        getattr(
+            settings,
+            "ALPACA_DATA_BASE_URL",
+            "https://data.alpaca.markets",
         )
     )
 
 
-    if not base_url:
+    if not url:
 
         raise AlpacaServiceError(
             "ALPACA_DATA_BASE_URL is not configured."
         )
 
 
-    return base_url
+    return url
 
 
 # ============================================================
-# 6. AUTHENTICATION HEADERS
+# 9. MARKET DATA FEED
 # ============================================================
+
+
+def _data_feed():
+    """
+    Return the configured stock market-data feed.
+
+    For the current MarketPulse educational project this will
+    normally be:
+
+        iex
+    """
+
+    feed = (
+        getattr(
+            settings,
+            "ALPACA_DATA_FEED",
+            "iex",
+        )
+        or
+        "iex"
+    )
+
+
+    feed = (
+        str(feed)
+        .strip()
+        .lower()
+    )
+
+
+    if feed not in ALLOWED_DATA_FEEDS:
+
+        raise AlpacaServiceError(
+            (
+                "Invalid ALPACA_DATA_FEED configuration: "
+                f"{feed}"
+            )
+        )
+
+
+    return feed
+
+
+# ============================================================
+# 10. REQUEST TIMEOUT
+# ============================================================
+
+
+def _request_timeout():
+    """
+    Return the maximum number of seconds an Alpaca HTTP
+    request should wait before failing.
+    """
+
+    return int(
+        getattr(
+            settings,
+            "ALPACA_REQUEST_TIMEOUT",
+            8,
+        )
+    )
+
+
+# ============================================================
+# 11. ALPACA AUTHENTICATION HEADERS
+# ============================================================
+
 
 def _alpaca_headers():
     """
     ------------------------------------------------------------
-    ALPACA AUTHENTICATION
+    BUILD ALPACA AUTHENTICATION HEADERS
     ------------------------------------------------------------
 
-    Credentials come from Django settings.
+    Credentials are read from Django settings.
 
-    Django settings should load them from the private .env file.
-
-    They are never returned to the frontend.
+    They should originate from private environment variables,
+    not from source code.
     ------------------------------------------------------------
     """
-
 
     api_key = (
         getattr(
@@ -228,7 +321,8 @@ def _alpaca_headers():
             "ALPACA_API_KEY_ID",
             "",
         )
-        .strip()
+        or
+        ""
     )
 
 
@@ -238,6 +332,19 @@ def _alpaca_headers():
             "ALPACA_API_SECRET_KEY",
             "",
         )
+        or
+        ""
+    )
+
+
+    api_key = (
+        str(api_key)
+        .strip()
+    )
+
+
+    secret_key = (
+        str(secret_key)
         .strip()
     )
 
@@ -257,7 +364,6 @@ def _alpaca_headers():
 
 
     return {
-
         "APCA-API-KEY-ID":
             api_key,
 
@@ -270,11 +376,13 @@ def _alpaca_headers():
 
 
 # ============================================================
-# 7. GENERIC ALPACA GET REQUEST
+# 12. GENERIC ALPACA GET REQUEST
 # ============================================================
 
+
 def _alpaca_get(
-    url,
+    base_url,
+    path,
     params=None,
 ):
     """
@@ -282,15 +390,26 @@ def _alpaca_get(
     PERFORM AUTHENTICATED ALPACA GET REQUEST
     ------------------------------------------------------------
 
-    Features:
+    All GET requests from this service pass through this
+    function.
 
-    - authentication headers
-    - timeout protection
-    - HTTP validation
-    - JSON validation
-    - useful MarketPulse error messages
+    This gives MarketPulse one place to manage:
+
+    - authentication
+    - timeouts
+    - HTTP errors
+    - connection failures
+    - JSON decoding
     ------------------------------------------------------------
     """
+
+    url = (
+        base_url.rstrip("/")
+        +
+        "/"
+        +
+        path.lstrip("/")
+    )
 
 
     try:
@@ -299,186 +418,264 @@ def _alpaca_get(
             url,
             headers=_alpaca_headers(),
             params=params or {},
-            timeout=10,
+            timeout=_request_timeout(),
         )
-
-
-        response.raise_for_status()
-
-
-        try:
-
-            return response.json()
-
-
-        except ValueError as exc:
-
-            raise AlpacaServiceError(
-                "Alpaca returned a response that was not valid JSON."
-            ) from exc
 
 
     except requests.Timeout as exc:
 
         raise AlpacaServiceError(
-            "Alpaca did not respond before the request timed out."
+            (
+                "The Alpaca request timed out. "
+                "Please try again."
+            )
         ) from exc
 
 
     except requests.ConnectionError as exc:
 
         raise AlpacaServiceError(
-            "MarketPulse could not connect to Alpaca."
-        ) from exc
-
-
-    except requests.HTTPError as exc:
-
-        status_code = None
-
-
-        if (
-            exc.response
-            is not None
-        ):
-
-            status_code = (
-                exc.response.status_code
+            (
+                "MarketPulse could not connect to Alpaca. "
+                "Check the internet connection and try again."
             )
-
-
-        error_message = (
-            "MarketPulse could not retrieve data from Alpaca."
-        )
-
-
-        if status_code == 401:
-
-            error_message = (
-                "Alpaca rejected the API credentials. "
-                "Check that the Alpaca key ID and secret key "
-                "are valid."
-            )
-
-
-        elif status_code == 403:
-
-            error_message = (
-                "Alpaca denied access to this market-data "
-                "resource. Check the selected data feed and "
-                "your Alpaca subscription."
-            )
-
-
-        elif status_code == 404:
-
-            error_message = (
-                "The requested Alpaca asset or endpoint "
-                "could not be found."
-            )
-
-
-        elif status_code == 429:
-
-            error_message = (
-                "The Alpaca API rate limit was reached. "
-                "Please wait briefly and try again."
-            )
-
-
-        elif (
-            exc.response
-            is not None
-        ):
-
-            try:
-
-                alpaca_error = (
-                    exc.response.json()
-                )
-
-
-                api_message = (
-                    alpaca_error.get(
-                        "message"
-                    )
-                )
-
-
-                if api_message:
-
-                    error_message = (
-                        f"Alpaca error: {api_message}"
-                    )
-
-
-            except ValueError:
-
-                pass
-
-
-        raise AlpacaServiceError(
-            error_message
         ) from exc
 
 
     except requests.RequestException as exc:
 
         raise AlpacaServiceError(
-            "An unexpected network error occurred "
-            "while communicating with Alpaca."
+            (
+                "An unexpected network error occurred while "
+                "communicating with Alpaca."
+            )
+        ) from exc
+
+
+    # ========================================================
+    # HTTP ERROR HANDLING
+    # ========================================================
+
+    if not response.ok:
+
+        message = ""
+
+
+        try:
+
+            error_data = (
+                response.json()
+                or
+                {}
+            )
+
+
+            if isinstance(
+                error_data,
+                dict,
+            ):
+
+                message = (
+                    error_data.get(
+                        "message"
+                    )
+                    or
+                    error_data.get(
+                        "error"
+                    )
+                    or
+                    ""
+                )
+
+        except ValueError:
+
+            message = ""
+
+
+        if response.status_code == 401:
+
+            friendly_message = (
+                "Alpaca authentication failed. "
+                "Check the configured API credentials."
+            )
+
+
+        elif response.status_code == 403:
+
+            friendly_message = (
+                "Alpaca rejected this request because the "
+                "account is not entitled to the requested "
+                "market-data resource or feed."
+            )
+
+
+        elif response.status_code == 404:
+
+            friendly_message = (
+                "The requested Alpaca resource was not found."
+            )
+
+
+        elif response.status_code == 429:
+
+            friendly_message = (
+                "The Alpaca API rate limit was reached. "
+                "Please wait briefly and try again."
+            )
+
+
+        elif response.status_code >= 500:
+
+            friendly_message = (
+                "Alpaca is temporarily unavailable. "
+                "Please try again later."
+            )
+
+
+        else:
+
+            friendly_message = (
+                f"Alpaca returned HTTP "
+                f"{response.status_code}."
+            )
+
+
+        if message:
+
+            friendly_message += (
+                f" {message}"
+            )
+
+
+        raise AlpacaServiceError(
+            friendly_message
+        )
+
+
+    # ========================================================
+    # JSON RESPONSE
+    # ========================================================
+
+    try:
+
+        return response.json()
+
+
+    except ValueError as exc:
+
+        raise AlpacaServiceError(
+            (
+                "Alpaca returned a response that MarketPulse "
+                "could not interpret as JSON."
+            )
         ) from exc
 
 
 # ============================================================
-# 8. NORMALISE ASSET DATA
+# 13. VALUE NORMALISATION HELPERS
 # ============================================================
 
-def _normalise_asset(
-    asset,
-):
+
+def _to_float(value):
     """
-    Convert Alpaca's Asset object into the smaller,
-    consistent structure used by MarketPulse.
+    Convert an API value into a float when possible.
     """
 
-
-    if not asset:
+    if value is None:
 
         return None
 
 
-    return {
+    try:
 
+        return float(value)
+
+
+    except (
+        TypeError,
+        ValueError,
+    ):
+
+        return None
+
+
+# ============================================================
+
+
+def _to_int(value):
+    """
+    Convert an API value into an integer when possible.
+    """
+
+    if value is None:
+
+        return None
+
+
+    try:
+
+        return int(value)
+
+
+    except (
+        TypeError,
+        ValueError,
+    ):
+
+        return None
+
+
+# ============================================================
+# 14. NORMALISE ALPACA ASSET
+# ============================================================
+
+
+def _normalise_asset(asset):
+    """
+    Convert Alpaca's raw asset response into a predictable
+    MarketPulse dictionary.
+    """
+
+    if not isinstance(
+        asset,
+        dict,
+    ):
+
+        return {}
+
+
+    return {
         "id":
-            asset.get(
-                "id"
-            ),
+            asset.get("id"),
 
         "symbol":
-            asset.get(
-                "symbol"
-            ),
+            (
+                asset.get("symbol")
+                or
+                ""
+            ).upper(),
 
         "name":
-            asset.get(
-                "name"
-            ),
+            asset.get("name")
+            or
+            "",
 
         "exchange":
-            asset.get(
-                "exchange"
-            ),
-
-        "status":
-            asset.get(
-                "status"
-            ),
+            asset.get("exchange")
+            or
+            "",
 
         "asset_class":
-            asset.get(
-                "class"
-            ),
+            asset.get("class")
+            or
+            asset.get("asset_class")
+            or
+            "",
+
+        "status":
+            asset.get("status")
+            or
+            "",
 
         "tradable":
             bool(
@@ -504,14 +701,6 @@ def _normalise_asset(
                 )
             ),
 
-        "easy_to_borrow":
-            bool(
-                asset.get(
-                    "easy_to_borrow",
-                    False,
-                )
-            ),
-
         "fractionable":
             bool(
                 asset.get(
@@ -520,152 +709,462 @@ def _normalise_asset(
                 )
             ),
 
-        "maintenance_margin_requirement":
-            asset.get(
-                "maintenance_margin_requirement"
-            ),
-
-        "initial_margin_requirement":
-            asset.get(
-                "initial_margin_requirement"
-            ),
-
         "borrow_status":
-            asset.get(
-                "borrow_status"
-            ),
-
-        "attributes":
-            asset.get(
-                "attributes",
-                [],
+            (
+                asset.get(
+                    "borrow_status"
+                )
+                or
+                ""
             ),
     }
 
 
 # ============================================================
-# 9. GET ACTIVE US EQUITY UNIVERSE
+# 15. NORMALISE ALPACA BAR
 # ============================================================
 
-def get_active_us_equities(
-    force_refresh=False,
+
+def _normalise_bar(
+    bar,
+    symbol=None,
 ):
     """
     ------------------------------------------------------------
-    GET ALPACA ACTIVE US EQUITIES
+    NORMALISE ALPACA OHLCV BAR
     ------------------------------------------------------------
 
-    Alpaca's assets endpoint acts as the master instrument
-    catalogue.
+    Alpaca normally returns compact field names:
 
-    MarketPulse retrieves active US equities and caches the
-    complete result for 30 minutes.
+        t = timestamp
+        o = open
+        h = high
+        l = low
+        c = close
+        v = volume
+        n = trade count
+        vw = volume-weighted average price
 
-    This is considerably more efficient than sending an
-    external Alpaca request every time somebody types one
-    character into the Risk asset search.
+    MarketPulse converts these into readable field names.
     ------------------------------------------------------------
     """
 
+    if not isinstance(
+        bar,
+        dict,
+    ):
+
+        return None
+
+
+    timestamp = (
+        bar.get("t")
+        or
+        bar.get("timestamp")
+    )
+
+
+    date_value = None
+
+
+    if timestamp:
+
+        date_value = (
+            str(timestamp)[:10]
+        )
+
+
+    return {
+        "symbol":
+            (
+                symbol.upper()
+                if symbol
+                else None
+            ),
+
+        "timestamp":
+            timestamp,
+
+        "date":
+            date_value,
+
+        "open":
+            _to_float(
+                bar.get("o")
+                if "o" in bar
+                else bar.get("open")
+            ),
+
+        "high":
+            _to_float(
+                bar.get("h")
+                if "h" in bar
+                else bar.get("high")
+            ),
+
+        "low":
+            _to_float(
+                bar.get("l")
+                if "l" in bar
+                else bar.get("low")
+            ),
+
+        "close":
+            _to_float(
+                bar.get("c")
+                if "c" in bar
+                else bar.get("close")
+            ),
+
+        "volume":
+            _to_int(
+                bar.get("v")
+                if "v" in bar
+                else bar.get("volume")
+            ),
+
+        "trade_count":
+            _to_int(
+                bar.get("n")
+                if "n" in bar
+                else bar.get(
+                    "trade_count"
+                )
+            ),
+
+        "vwap":
+            _to_float(
+                bar.get("vw")
+                if "vw" in bar
+                else bar.get("vwap")
+            ),
+    }
+
+
+# ============================================================
+# 16. NORMALISE ALPACA SNAPSHOT
+# ============================================================
+
+
+def _normalise_snapshot(
+    raw_snapshot,
+    feed=None,
+):
+    """
+    Convert the Alpaca snapshot response into data that the
+    Dashboard and Risk tab can consume consistently.
+    """
+
+    if not isinstance(
+        raw_snapshot,
+        dict,
+    ):
+
+        raw_snapshot = {}
+
+
+    latest_trade = (
+        raw_snapshot.get(
+            "latestTrade"
+        )
+        or
+        raw_snapshot.get(
+            "latest_trade"
+        )
+        or
+        {}
+    )
+
+
+    latest_quote = (
+        raw_snapshot.get(
+            "latestQuote"
+        )
+        or
+        raw_snapshot.get(
+            "latest_quote"
+        )
+        or
+        {}
+    )
+
+
+    minute_bar_raw = (
+        raw_snapshot.get(
+            "minuteBar"
+        )
+        or
+        raw_snapshot.get(
+            "minute_bar"
+        )
+        or
+        {}
+    )
+
+
+    daily_bar_raw = (
+        raw_snapshot.get(
+            "dailyBar"
+        )
+        or
+        raw_snapshot.get(
+            "daily_bar"
+        )
+        or
+        {}
+    )
+
+
+    previous_daily_bar_raw = (
+        raw_snapshot.get(
+            "prevDailyBar"
+        )
+        or
+        raw_snapshot.get(
+            "previous_daily_bar"
+        )
+        or
+        {}
+    )
+
+
+    latest_price = _to_float(
+        latest_trade.get("p")
+        if "p" in latest_trade
+        else latest_trade.get(
+            "price"
+        )
+    )
+
+
+    bid_price = _to_float(
+        latest_quote.get("bp")
+        if "bp" in latest_quote
+        else latest_quote.get(
+            "bid_price"
+        )
+    )
+
+
+    ask_price = _to_float(
+        latest_quote.get("ap")
+        if "ap" in latest_quote
+        else latest_quote.get(
+            "ask_price"
+        )
+    )
+
+
+    spread = None
+
+
+    if (
+        bid_price is not None
+        and
+        ask_price is not None
+    ):
+
+        spread = (
+            ask_price
+            -
+            bid_price
+        )
+
+
+    daily_bar = _normalise_bar(
+        daily_bar_raw
+    )
+
+
+    previous_daily_bar = (
+        _normalise_bar(
+            previous_daily_bar_raw
+        )
+    )
+
+
+    minute_bar = (
+        _normalise_bar(
+            minute_bar_raw
+        )
+    )
+
+
+    previous_close = (
+        previous_daily_bar.get(
+            "close"
+        )
+        if previous_daily_bar
+        else None
+    )
+
+
+    daily_change = None
+
+    daily_change_pct = None
+
+
+    if (
+        latest_price is not None
+        and
+        previous_close is not None
+        and
+        previous_close != 0
+    ):
+
+        daily_change = (
+            latest_price
+            -
+            previous_close
+        )
+
+
+        daily_change_pct = (
+            daily_change
+            /
+            previous_close
+            *
+            100
+        )
+
+
+    return {
+        "feed":
+            feed
+            or
+            _data_feed(),
+
+        "latest_price":
+            latest_price,
+
+        "latest_trade_timestamp":
+            latest_trade.get("t")
+            or
+            latest_trade.get(
+                "timestamp"
+            ),
+
+        "bid_price":
+            bid_price,
+
+        "ask_price":
+            ask_price,
+
+        "spread":
+            spread,
+
+        "previous_close":
+            previous_close,
+
+        "daily_change":
+            daily_change,
+
+        "daily_change_pct":
+            daily_change_pct,
+
+        "minute_bar":
+            minute_bar,
+
+        "daily_bar":
+            daily_bar,
+
+        "previous_daily_bar":
+            previous_daily_bar,
+    }
+
+
+# ============================================================
+# 17. GET ACTIVE US EQUITIES
+# ============================================================
+
+
+def get_active_us_equities():
+    """
+    ------------------------------------------------------------
+    GET ALPACA ACTIVE US EQUITY UNIVERSE
+    ------------------------------------------------------------
+
+    The complete universe is cached because downloading the
+    full asset list for every search keystroke would be
+    inefficient.
+    ------------------------------------------------------------
+    """
 
     cache_key = (
         "marketpulse_alpaca_active_us_equities"
     )
 
 
-    if not force_refresh:
-
-        cached_assets = (
-            cache.get(
-                cache_key
-            )
-        )
-
-
-        if (
-            cached_assets
-            is not None
-        ):
-
-            return cached_assets
-
-
-    url = (
-        f"{_trading_base_url()}"
-        f"/v2/assets"
+    cached_assets = cache.get(
+        cache_key
     )
 
 
-    raw_assets = (
-        _alpaca_get(
-            url,
-            params={
-                "status":
-                    "active",
+    if cached_assets is not None:
 
-                "asset_class":
-                    "us_equity",
-            },
-        )
+        return cached_assets
+
+
+    response = _alpaca_get(
+        _trading_base_url(),
+        "/v2/assets",
+        params={
+            "status":
+                "active",
+
+            "asset_class":
+                "us_equity",
+        },
     )
 
 
     if not isinstance(
-        raw_assets,
+        response,
         list,
     ):
 
         raise AlpacaServiceError(
-            "Alpaca returned an unexpected asset-list response."
+            (
+                "Alpaca returned an unexpected asset "
+                "response."
+            )
         )
 
 
     assets = []
 
 
-    for raw_asset in raw_assets:
+    for raw_asset in response:
 
-        asset = (
-            _normalise_asset(
-                raw_asset
-            )
+        asset = _normalise_asset(
+            raw_asset
         )
 
 
         if (
-            not asset
-            or
-            not asset.get(
-                "symbol"
-            )
+            asset
+            and
+            asset.get("symbol")
         ):
 
-            continue
+            assets.append(
+                asset
+            )
 
 
-        assets.append(
-            asset
+    cache_seconds = int(
+        getattr(
+            settings,
+            "ALPACA_ASSET_CACHE_SECONDS",
+            1800,
         )
-
-
-    # --------------------------------------------------------
-    # Sort alphabetically for predictable searches
-    # --------------------------------------------------------
-
-    assets.sort(
-        key=lambda asset:
-            asset["symbol"]
     )
 
-
-    # --------------------------------------------------------
-    # Cache master universe for 30 minutes
-    # --------------------------------------------------------
 
     cache.set(
         cache_key,
         assets,
-        60 * 30,
+        cache_seconds,
     )
 
 
@@ -673,8 +1172,9 @@ def get_active_us_equities(
 
 
 # ============================================================
-# 10. SEARCH ALPACA ASSETS
+# 18. SEARCH ALPACA ASSETS
 # ============================================================
+
 
 def search_assets(
     query,
@@ -685,37 +1185,27 @@ def search_assets(
     SEARCH ACTIVE ALPACA ASSETS
     ------------------------------------------------------------
 
-    Search using:
+    Search by:
 
     - exact ticker
-    - ticker prefix
-    - ticker contains
-    - company / asset name
+    - ticker beginning
+    - ticker containing query
+    - company name beginning
+    - company name containing query
 
-    Examples:
-
-        AAPL
-            → Apple
-
-        MICROSOFT
-            → MSFT
-
-        MICRO
-            → Microsoft and other matching names
-
-
-    Search ranking:
-
-    1. exact symbol
-    2. symbol prefix
-    3. company name prefix
-    4. symbol/name contains
+    Results are ranked so the most obvious match appears first.
     ------------------------------------------------------------
     """
 
+    query = (
+        query
+        or
+        ""
+    )
+
 
     query = (
-        str(query or "")
+        str(query)
         .strip()
         .upper()
     )
@@ -728,9 +1218,7 @@ def search_assets(
 
     try:
 
-        limit = int(
-            limit
-        )
+        limit = int(limit)
 
     except (
         TypeError,
@@ -754,13 +1242,7 @@ def search_assets(
     )
 
 
-    exact_symbol = []
-
-    symbol_prefix = []
-
-    name_prefix = []
-
-    contains = []
+    ranked = []
 
 
     for asset in assets:
@@ -768,7 +1250,7 @@ def search_assets(
         symbol = (
             asset.get(
                 "symbol",
-                "",
+                ""
             )
             .upper()
         )
@@ -777,92 +1259,106 @@ def search_assets(
         name = (
             asset.get(
                 "name",
-                "",
+                ""
             )
             .upper()
         )
 
 
+        score = None
+
+
         if symbol == query:
 
-            exact_symbol.append(
-                asset
-            )
+            score = 0
 
 
         elif symbol.startswith(
             query
         ):
 
-            symbol_prefix.append(
-                asset
-            )
+            score = 1
+
+
+        elif query in symbol:
+
+            score = 2
 
 
         elif name.startswith(
             query
         ):
 
-            name_prefix.append(
-                asset
+            score = 3
+
+
+        elif query in name:
+
+            score = 4
+
+
+        if score is None:
+
+            continue
+
+
+        # Tradable assets receive a small ranking preference.
+
+        tradable_penalty = (
+            0
+            if asset.get(
+                "tradable"
             )
+            else 1
+        )
 
 
-        elif (
-            query in symbol
-            or
-            query in name
-        ):
-
-            contains.append(
-                asset
+        ranked.append(
+            (
+                score,
+                tradable_penalty,
+                len(symbol),
+                symbol,
+                asset,
             )
+        )
 
 
-    results = (
-
-        exact_symbol
-        +
-        symbol_prefix
-        +
-        name_prefix
-        +
-        contains
+    ranked.sort(
+        key=lambda row: (
+            row[0],
+            row[1],
+            row[2],
+            row[3],
+        )
     )
 
 
-    return results[:limit]
+    return [
+        row[4]
+        for row in ranked[:limit]
+    ]
 
 
 # ============================================================
-# 11. GET ONE ALPACA ASSET
+# 19. GET ONE ALPACA ASSET
 # ============================================================
 
-def get_asset(
-    symbol,
-    force_refresh=False,
-):
-    """
-    ------------------------------------------------------------
-    GET INDIVIDUAL ASSET METADATA
-    ------------------------------------------------------------
 
-    Returns information such as:
-
-    - symbol
-    - company / asset name
-    - exchange
-    - active status
-    - tradability
-    - marginability
-    - shortability
-    - fractional availability
-    ------------------------------------------------------------
+def get_asset(symbol):
     """
+    Retrieve metadata for one Alpaca asset.
+    """
+
+    symbol = (
+        symbol
+        or
+        ""
+    )
 
 
     symbol = (
-        str(symbol or "")
+        str(symbol)
         .strip()
         .upper()
     )
@@ -871,79 +1367,59 @@ def get_asset(
     if not symbol:
 
         raise AlpacaServiceError(
-            "A stock symbol is required."
+            "A symbol is required."
         )
 
 
     cache_key = (
-        f"marketpulse_alpaca_asset_{symbol}"
+        "marketpulse_alpaca_asset_"
+        +
+        symbol
     )
 
 
-    if not force_refresh:
+    cached_asset = cache.get(
+        cache_key
+    )
 
-        cached_asset = (
-            cache.get(
-                cache_key
+
+    if cached_asset is not None:
+
+        return cached_asset
+
+
+    response = _alpaca_get(
+        _trading_base_url(),
+        (
+            "/v2/assets/"
+            +
+            quote(
+                symbol,
+                safe="",
+            )
+        ),
+    )
+
+
+    asset = _normalise_asset(
+        response
+    )
+
+
+    if not asset:
+
+        raise AlpacaServiceError(
+            (
+                f"Alpaca returned no asset information "
+                f"for {symbol}."
             )
         )
 
 
-        if (
-            cached_asset
-            is not None
-        ):
-
-            return cached_asset
-
-
-    encoded_symbol = quote(
-        symbol,
-        safe="",
-    )
-
-
-    url = (
-        f"{_trading_base_url()}"
-        f"/v2/assets/"
-        f"{encoded_symbol}"
-    )
-
-
-    raw_asset = (
-        _alpaca_get(
-            url
-        )
-    )
-
-
-    asset = (
-        _normalise_asset(
-            raw_asset
-        )
-    )
-
-
-    if (
-        not asset
-        or
-        not asset.get(
-            "symbol"
-        )
-    ):
-
-        raise AlpacaServiceError(
-            f"Alpaca returned no valid asset information "
-            f"for {symbol}."
-        )
-
-
-    # Asset metadata changes much less frequently
-    # than market prices.
     cache.set(
         cache_key,
         asset,
-        60 * 30,
+        1800,
     )
 
 
@@ -951,97 +1427,41 @@ def get_asset(
 
 
 # ============================================================
-# 12. NORMALISE MARKET BAR
+# 20. GET ONE STOCK SNAPSHOT
 # ============================================================
 
-def _normalise_bar(
-    bar,
-):
-    """
-    Convert Alpaca's compact bar field names into descriptive
-    MarketPulse field names.
-    """
-
-
-    bar = (
-        bar
-        or {}
-    )
-
-
-    return {
-
-        "open":
-            bar.get(
-                "o"
-            ),
-
-        "high":
-            bar.get(
-                "h"
-            ),
-
-        "low":
-            bar.get(
-                "l"
-            ),
-
-        "close":
-            bar.get(
-                "c"
-            ),
-
-        "volume":
-            bar.get(
-                "v"
-            ),
-
-        "trade_count":
-            bar.get(
-                "n"
-            ),
-
-        "vwap":
-            bar.get(
-                "vw"
-            ),
-
-        "timestamp":
-            bar.get(
-                "t"
-            ),
-    }
-
-
-# ============================================================
-# 13. GET LATEST STOCK SNAPSHOT
-# ============================================================
 
 def get_stock_snapshot(
     symbol,
-    force_refresh=False,
 ):
     """
     ------------------------------------------------------------
     GET ALPACA STOCK SNAPSHOT
     ------------------------------------------------------------
 
-    One Alpaca snapshot request can provide:
+    Returns current/latest information including:
 
     - latest trade
     - latest quote
+    - bid
+    - ask
+    - spread
     - minute bar
-    - current daily bar
+    - daily bar
     - previous daily bar
-
-    This is more efficient than making separate API calls for
-    each of those items.
+    - daily price change
     ------------------------------------------------------------
     """
 
+    symbol = (
+        symbol
+        or
+        ""
+    )
+
 
     symbol = (
-        str(symbol or "")
+        str(symbol)
         .strip()
         .upper()
     )
@@ -1050,467 +1470,80 @@ def get_stock_snapshot(
     if not symbol:
 
         raise AlpacaServiceError(
-            "A stock symbol is required."
+            "A symbol is required."
         )
 
 
-    data_feed = (
-        getattr(
-            settings,
-            "ALPACA_DATA_FEED",
-            "iex",
-        )
-        .strip()
-        .lower()
-    )
-
-
-    allowed_feeds = {
-        "iex",
-        "sip",
-        "delayed_sip",
-        "boats",
-        "overnight",
-        "otc",
-    }
-
-
-    if (
-        data_feed
-        not in allowed_feeds
-    ):
-
-        raise AlpacaServiceError(
-            (
-                "Invalid ALPACA_DATA_FEED configuration: "
-                f"{data_feed}"
-            )
-        )
+    feed = _data_feed()
 
 
     cache_key = (
         "marketpulse_alpaca_snapshot_"
-        f"{data_feed}_{symbol}"
+        +
+        feed
+        +
+        "_"
+        +
+        symbol
     )
 
 
-    if not force_refresh:
-
-        cached_snapshot = (
-            cache.get(
-                cache_key
-            )
-        )
-
-
-        if (
-            cached_snapshot
-            is not None
-        ):
-
-            return cached_snapshot
-
-
-    encoded_symbol = quote(
-        symbol,
-        safe="",
+    cached_snapshot = cache.get(
+        cache_key
     )
 
 
-    url = (
-        f"{_data_base_url()}"
-        f"/v2/stocks/"
-        f"{encoded_symbol}"
-        f"/snapshot"
-    )
+    if cached_snapshot is not None:
+
+        return cached_snapshot
 
 
-    raw = (
-        _alpaca_get(
-            url,
-            params={
-                "feed":
-                    data_feed,
-
-                "currency":
-                    "USD",
-            },
-        )
-    )
-
-
-    if not isinstance(
-        raw,
-        dict,
-    ):
-
-        raise AlpacaServiceError(
-            "Alpaca returned an unexpected snapshot response."
-        )
-
-
-    # ========================================================
-    # ALPACA RESPONSE SECTIONS
-    # ========================================================
-
-    latest_trade = (
-        raw.get(
-            "latestTrade"
-        )
-        or {}
-    )
-
-
-    latest_quote = (
-        raw.get(
-            "latestQuote"
-        )
-        or {}
-    )
-
-
-    minute_bar = (
-        raw.get(
-            "minuteBar"
-        )
-        or {}
-    )
-
-
-    daily_bar = (
-        raw.get(
-            "dailyBar"
-        )
-        or {}
-    )
-
-
-    previous_daily_bar = (
-        raw.get(
-            "prevDailyBar"
-        )
-        or {}
-    )
-
-
-    # ========================================================
-    # LATEST TRADE
-    # ========================================================
-
-    latest_price = (
-        latest_trade.get(
-            "p"
-        )
-    )
-
-
-    # ========================================================
-    # BID / ASK
-    # ========================================================
-
-    bid_price = (
-        latest_quote.get(
-            "bp"
-        )
-    )
-
-
-    ask_price = (
-        latest_quote.get(
-            "ap"
-        )
-    )
-
-
-    bid_size = (
-        latest_quote.get(
-            "bs"
-        )
-    )
-
-
-    ask_size = (
-        latest_quote.get(
-            "as"
-        )
-    )
-
-
-    spread = None
-
-    spread_percentage = None
-
-    midpoint = None
-
-
-    if (
-        bid_price is not None
-        and
-        ask_price is not None
-    ):
-
-        bid_price_float = float(
-            bid_price
-        )
-
-        ask_price_float = float(
-            ask_price
-        )
-
-
-        spread = (
-            ask_price_float
-            -
-            bid_price_float
-        )
-
-
-        midpoint = (
-
-            bid_price_float
+    response = _alpaca_get(
+        _data_base_url(),
+        (
+            "/v2/stocks/"
             +
-            ask_price_float
-
-        ) / 2
-
-
-        if midpoint > 0:
-
-            spread_percentage = (
-
-                spread
-                /
-                midpoint
-                *
-                100
+            quote(
+                symbol,
+                safe="",
             )
+            +
+            "/snapshot"
+        ),
+        params={
+            "feed":
+                feed,
+
+            "currency":
+                "USD",
+        },
+    )
 
 
-    # ========================================================
-    # DAILY CHANGE
-    # ========================================================
-
-    previous_close = (
-        previous_daily_bar.get(
-            "c"
+    snapshot = (
+        _normalise_snapshot(
+            response,
+            feed=feed,
         )
     )
 
 
-    daily_change = None
-
-    daily_change_pct = None
+    snapshot["symbol"] = symbol
 
 
-    if (
-        latest_price is not None
-        and
-        previous_close not in (
-            None,
-            0,
+    cache_seconds = int(
+        getattr(
+            settings,
+            "ALPACA_SNAPSHOT_CACHE_SECONDS",
+            15,
         )
-    ):
+    )
 
-        latest_price_float = (
-            float(
-                latest_price
-            )
-        )
-
-
-        previous_close_float = (
-            float(
-                previous_close
-            )
-        )
-
-
-        daily_change = (
-
-            latest_price_float
-            -
-            previous_close_float
-        )
-
-
-        daily_change_pct = (
-
-            daily_change
-            /
-            previous_close_float
-            *
-            100
-        )
-
-
-    # ========================================================
-    # NORMALISED MARKETPULSE SNAPSHOT
-    # ========================================================
-
-    snapshot = {
-
-        # ----------------------------------------------------
-        # Provenance
-        # ----------------------------------------------------
-
-        "symbol":
-            symbol,
-
-        "provider":
-            "Alpaca",
-
-        "feed":
-            data_feed.upper(),
-
-        "currency":
-            "USD",
-
-
-        # ----------------------------------------------------
-        # Latest trade
-        # ----------------------------------------------------
-
-        "latest_price":
-            latest_price,
-
-        "latest_trade_size":
-            latest_trade.get(
-                "s"
-            ),
-
-        "latest_trade_timestamp":
-            latest_trade.get(
-                "t"
-            ),
-
-        "latest_trade_exchange":
-            latest_trade.get(
-                "x"
-            ),
-
-
-        # ----------------------------------------------------
-        # Latest quote
-        # ----------------------------------------------------
-
-        "bid_price":
-            bid_price,
-
-        "bid_size":
-            bid_size,
-
-        "ask_price":
-            ask_price,
-
-        "ask_size":
-            ask_size,
-
-        "quote_timestamp":
-            latest_quote.get(
-                "t"
-            ),
-
-        "quote_exchange_bid":
-            latest_quote.get(
-                "bx"
-            ),
-
-        "quote_exchange_ask":
-            latest_quote.get(
-                "ax"
-            ),
-
-        "spread":
-            (
-                round(
-                    spread,
-                    6,
-                )
-                if spread is not None
-                else None
-            ),
-
-        "spread_percentage":
-            (
-                round(
-                    spread_percentage,
-                    4,
-                )
-                if spread_percentage
-                is not None
-                else None
-            ),
-
-        "midpoint":
-            (
-                round(
-                    midpoint,
-                    6,
-                )
-                if midpoint is not None
-                else None
-            ),
-
-
-        # ----------------------------------------------------
-        # Current movement
-        # ----------------------------------------------------
-
-        "previous_close":
-            previous_close,
-
-        "daily_change":
-            (
-                round(
-                    daily_change,
-                    4,
-                )
-                if daily_change
-                is not None
-                else None
-            ),
-
-        "daily_change_pct":
-            (
-                round(
-                    daily_change_pct,
-                    2,
-                )
-                if daily_change_pct
-                is not None
-                else None
-            ),
-
-
-        # ----------------------------------------------------
-        # OHLCV
-        # ----------------------------------------------------
-
-        "minute_bar":
-            _normalise_bar(
-                minute_bar
-            ),
-
-        "daily_bar":
-            _normalise_bar(
-                daily_bar
-            ),
-
-        "previous_daily_bar":
-            _normalise_bar(
-                previous_daily_bar
-            ),
-    }
-
-
-    # --------------------------------------------------------
-    # Keep price data relatively fresh
-    # --------------------------------------------------------
 
     cache.set(
         cache_key,
         snapshot,
-        15,
+        cache_seconds,
     )
 
 
@@ -1518,128 +1551,1010 @@ def get_stock_snapshot(
 
 
 # ============================================================
-# 14. GET COMPLETE ASSET MARKET OVERVIEW
+# 21. GET MULTIPLE STOCK SNAPSHOTS
 # ============================================================
 
-def get_asset_market_overview(
-    symbol,
-    force_refresh=False,
+
+def get_stock_snapshots(
+    symbols,
 ):
     """
     ------------------------------------------------------------
-    COMPLETE MARKETPULSE ASSET OVERVIEW
+    GET MULTIPLE ALPACA STOCK SNAPSHOTS
     ------------------------------------------------------------
 
-    Combines:
-
-        Alpaca Asset API
-                +
-        Alpaca Market Data Snapshot
-                ↓
-        One MarketPulse object
-
-
-    This is especially useful for:
-
-    - Risk tab
-    - Data tab
-    - Strategy selection
-    - dashboards
-    - React components
+    This is useful for the Dashboard because SPY, QQQ, DIA
+    and IWM can be requested together rather than requiring
+    four separate HTTP requests.
     ------------------------------------------------------------
     """
 
+    if isinstance(
+        symbols,
+        str,
+    ):
+
+        symbols = (
+            symbols.split(",")
+        )
+
+
+    cleaned_symbols = []
+
+
+    for symbol in symbols or []:
+
+        symbol = (
+            str(symbol)
+            .strip()
+            .upper()
+        )
+
+
+        if (
+            symbol
+            and
+            symbol not in cleaned_symbols
+        ):
+
+            cleaned_symbols.append(
+                symbol
+            )
+
+
+    if not cleaned_symbols:
+
+        return {}
+
+
+    # Prevent an accidentally huge request.
+
+    cleaned_symbols = (
+        cleaned_symbols[:50]
+    )
+
+
+    feed = _data_feed()
+
+
+    response = _alpaca_get(
+        _data_base_url(),
+        "/v2/stocks/snapshots",
+        params={
+            "symbols":
+                ",".join(
+                    cleaned_symbols
+                ),
+
+            "feed":
+                feed,
+
+            "currency":
+                "USD",
+        },
+    )
+
+
+    if not isinstance(
+        response,
+        dict,
+    ):
+
+        raise AlpacaServiceError(
+            (
+                "Alpaca returned an unexpected multi-symbol "
+                "snapshot response."
+            )
+        )
+
+
+    snapshots = {}
+
+
+    for symbol in cleaned_symbols:
+
+        raw_snapshot = (
+            response.get(symbol)
+            or
+            response.get(
+                symbol.upper()
+            )
+        )
+
+
+        if raw_snapshot is None:
+
+            continue
+
+
+        snapshot = _normalise_snapshot(
+            raw_snapshot,
+            feed=feed,
+        )
+
+
+        snapshot["symbol"] = (
+            symbol
+        )
+
+
+        snapshots[symbol] = (
+            snapshot
+        )
+
+
+    return snapshots
+
+
+# ============================================================
+# 22. GET HISTORICAL BARS
+# ============================================================
+
+
+def get_historical_bars(
+    symbol,
+    start_date,
+    end_date,
+    timeframe="1Day",
+    adjustment="raw",
+    limit=10000,
+):
+    """
+    ------------------------------------------------------------
+    GET ALPACA HISTORICAL OHLCV DATA
+    ------------------------------------------------------------
+
+    This function replaces the Yahoo Finance data-retrieval
+    responsibility in MarketPulse.
+
+    It can be used by:
+
+        data_management/utils.py
+            ↓
+        MarketData
+            ↓
+        Data tab
+        Strategies
+        Market Condition
+        Risk analytics
+        Stress testing
+
+
+    PARAMETERS:
+
+    symbol
+        Example:
+            AAPL
+
+    start_date
+        Example:
+            2025-01-01
+
+    end_date
+        Example:
+            2026-09-04
+
+    timeframe
+        Default:
+            1Day
+
+    adjustment
+        Default:
+            raw
+
+    limit
+        Maximum bars requested per Alpaca page.
+
+
+    PAGINATION:
+
+    If Alpaca returns more data than one response can contain,
+    next_page_token is followed automatically.
+    ------------------------------------------------------------
+    """
 
     symbol = (
-        str(symbol or "")
+        symbol
+        or
+        ""
+    )
+
+
+    symbol = (
+        str(symbol)
         .strip()
         .upper()
     )
 
 
-    asset = (
-        get_asset(
-            symbol,
-            force_refresh=force_refresh,
+    if not symbol:
+
+        raise AlpacaServiceError(
+            "A symbol is required."
         )
+
+
+    if not start_date:
+
+        raise AlpacaServiceError(
+            (
+                "A start date is required for "
+                "historical data."
+            )
+        )
+
+
+    if not end_date:
+
+        raise AlpacaServiceError(
+            (
+                "An end date is required for "
+                "historical data."
+            )
+        )
+
+
+    start_value = (
+        start_date.isoformat()
+        if hasattr(
+            start_date,
+            "isoformat",
+        )
+        else str(start_date)
     )
 
 
-    snapshot = (
-        get_stock_snapshot(
-            symbol,
-            force_refresh=force_refresh,
+    end_value = (
+        end_date.isoformat()
+        if hasattr(
+            end_date,
+            "isoformat",
         )
+        else str(end_date)
     )
-
-
-    return {
-
-        "asset":
-            asset,
-
-        "market":
-            snapshot,
-
-        "source":
-            {
-                "provider":
-                    "Alpaca",
-
-                "feed":
-                    snapshot.get(
-                        "feed"
-                    ),
-
-                "asset_api":
-                    "Trading API",
-
-                "market_data_api":
-                    "Market Data API",
-            },
-    }
-
-
-# ============================================================
-# 15. CONNECTION TEST
-# ============================================================
-
-def test_alpaca_connection():
-    """
-    ------------------------------------------------------------
-    SAFE CONNECTION TEST
-    ------------------------------------------------------------
-
-    Tests the Alpaca integration without exposing API keys.
-
-    AAPL is used simply because it is a widely available
-    US-equity symbol.
-
-    Returns only safe diagnostic information.
-    ------------------------------------------------------------
-    """
 
 
     try:
 
-        asset = (
-            get_asset(
-                "AAPL",
-                force_refresh=True,
+        limit = int(limit)
+
+    except (
+        TypeError,
+        ValueError,
+    ):
+
+        limit = 10000
+
+
+    limit = max(
+        1,
+        min(
+            limit,
+            10000,
+        ),
+    )
+
+
+    feed = _data_feed()
+
+
+    all_bars = []
+
+    page_token = None
+
+    page_count = 0
+
+    max_pages = 100
+
+
+    while True:
+
+        page_count += 1
+
+
+        if page_count > max_pages:
+
+            raise AlpacaServiceError(
+                (
+                    "Historical-data pagination exceeded "
+                    "the MarketPulse safety limit."
+                )
             )
+
+
+        params = {
+            "timeframe":
+                timeframe,
+
+            "start":
+                start_value,
+
+            "end":
+                end_value,
+
+            "limit":
+                limit,
+
+            "adjustment":
+                adjustment,
+
+            "feed":
+                feed,
+
+            "sort":
+                "asc",
+        }
+
+
+        if page_token:
+
+            params[
+                "page_token"
+            ] = page_token
+
+
+        response = _alpaca_get(
+            _data_base_url(),
+            (
+                "/v2/stocks/"
+                +
+                quote(
+                    symbol,
+                    safe="",
+                )
+                +
+                "/bars"
+            ),
+            params=params,
+        )
+
+
+        if not isinstance(
+            response,
+            dict,
+        ):
+
+            raise AlpacaServiceError(
+                (
+                    "Alpaca returned an unexpected "
+                    "historical-bars response."
+                )
+            )
+
+
+        raw_bars = (
+            response.get(
+                "bars"
+            )
+            or
+            []
+        )
+
+
+        for raw_bar in raw_bars:
+
+            bar = _normalise_bar(
+                raw_bar,
+                symbol=symbol,
+            )
+
+
+            if bar:
+
+                bar["provider"] = (
+                    "Alpaca"
+                )
+
+
+                bar["feed"] = (
+                    feed
+                )
+
+
+                bar["timeframe"] = (
+                    timeframe
+                )
+
+
+                all_bars.append(
+                    bar
+                )
+
+
+        page_token = (
+            response.get(
+                "next_page_token"
+            )
+        )
+
+
+        if not page_token:
+
+            break
+
+
+    return all_bars
+
+
+# ============================================================
+# 23. GET US MARKET CLOCK
+# ============================================================
+
+
+def get_market_clock():
+    """
+    ------------------------------------------------------------
+    GET US MARKET CLOCK
+    ------------------------------------------------------------
+
+    Returns:
+
+    - current Alpaca market timestamp
+    - whether the US market is open
+    - next market open
+    - next market close
+
+    This is useful for the live Dashboard header.
+    ------------------------------------------------------------
+    """
+
+    cache_key = (
+        "marketpulse_alpaca_market_clock"
+    )
+
+
+    cached_clock = cache.get(
+        cache_key
+    )
+
+
+    if cached_clock is not None:
+
+        return cached_clock
+
+
+    response = _alpaca_get(
+        _trading_base_url(),
+        "/v2/clock",
+    )
+
+
+    if not isinstance(
+        response,
+        dict,
+    ):
+
+        raise AlpacaServiceError(
+            (
+                "Alpaca returned an unexpected market "
+                "clock response."
+            )
+        )
+
+
+    market_clock = {
+        "timestamp":
+            response.get(
+                "timestamp"
+            ),
+
+        "is_open":
+            bool(
+                response.get(
+                    "is_open",
+                    False,
+                )
+            ),
+
+        "next_open":
+            response.get(
+                "next_open"
+            ),
+
+        "next_close":
+            response.get(
+                "next_close"
+            ),
+    }
+
+
+    # The market clock can be refreshed frequently while still
+    # avoiding an unnecessary request on every page render.
+
+    cache.set(
+        cache_key,
+        market_clock,
+        30,
+    )
+
+
+    return market_clock
+
+
+# ============================================================
+# 24. DASHBOARD MARKET OVERVIEW
+# ============================================================
+
+
+def get_dashboard_market_overview(
+    symbols=None,
+):
+    """
+    ------------------------------------------------------------
+    BUILD DASHBOARD MARKET OVERVIEW
+    ------------------------------------------------------------
+
+    The Dashboard uses a small benchmark set to give the user
+    immediate context about the US equity market.
+
+    Default benchmarks:
+
+        SPY
+            Broad large-cap US equities
+
+        QQQ
+            Nasdaq-100 / technology-heavy equities
+
+        DIA
+            Dow Jones large-cap equities
+
+        IWM
+            US small-cap equities
+    ------------------------------------------------------------
+    """
+
+    if symbols is None:
+
+        symbols = [
+            "SPY",
+            "QQQ",
+            "DIA",
+            "IWM",
+        ]
+
+
+    snapshots = (
+        get_stock_snapshots(
+            symbols
+        )
+    )
+
+
+    benchmark_names = {
+        "SPY":
+            "S&P 500 ETF",
+
+        "QQQ":
+            "Nasdaq-100 ETF",
+
+        "DIA":
+            "Dow Jones ETF",
+
+        "IWM":
+            "Russell 2000 ETF",
+    }
+
+
+    benchmarks = []
+
+
+    for symbol in symbols:
+
+        symbol = (
+            str(symbol)
+            .strip()
+            .upper()
         )
 
 
         snapshot = (
-            get_stock_snapshot(
-                "AAPL",
-                force_refresh=True,
+            snapshots.get(
+                symbol
             )
         )
 
 
-        return {
+        if not snapshot:
 
+            benchmarks.append(
+                {
+                    "symbol":
+                        symbol,
+
+                    "name":
+                        benchmark_names.get(
+                            symbol,
+                            symbol,
+                        ),
+
+                    "available":
+                        False,
+
+                    "latest_price":
+                        None,
+
+                    "previous_close":
+                        None,
+
+                    "change":
+                        None,
+
+                    "change_pct":
+                        None,
+
+                    "day_open":
+                        None,
+
+                    "day_high":
+                        None,
+
+                    "day_low":
+                        None,
+
+                    "day_volume":
+                        None,
+                }
+            )
+
+
+            continue
+
+
+        daily_bar = (
+            snapshot.get(
+                "daily_bar"
+            )
+            or
+            {}
+        )
+
+
+        benchmarks.append(
+            {
+                "symbol":
+                    symbol,
+
+                "name":
+                    benchmark_names.get(
+                        symbol,
+                        symbol,
+                    ),
+
+                "available":
+                    True,
+
+                "latest_price":
+                    snapshot.get(
+                        "latest_price"
+                    ),
+
+                "previous_close":
+                    snapshot.get(
+                        "previous_close"
+                    ),
+
+                "change":
+                    snapshot.get(
+                        "daily_change"
+                    ),
+
+                "change_pct":
+                    snapshot.get(
+                        "daily_change_pct"
+                    ),
+
+                "day_open":
+                    daily_bar.get(
+                        "open"
+                    ),
+
+                "day_high":
+                    daily_bar.get(
+                        "high"
+                    ),
+
+                "day_low":
+                    daily_bar.get(
+                        "low"
+                    ),
+
+                "day_volume":
+                    daily_bar.get(
+                        "volume"
+                    ),
+            }
+        )
+
+
+    try:
+
+        market_clock = (
+            get_market_clock()
+        )
+
+
+    except AlpacaServiceError:
+
+        market_clock = {
+            "timestamp":
+                None,
+
+            "is_open":
+                False,
+
+            "next_open":
+                None,
+
+            "next_close":
+                None,
+        }
+
+
+    return {
+        "provider":
+            "Alpaca",
+
+        "feed":
+            _data_feed()
+            .upper(),
+
+        "market_clock":
+            market_clock,
+
+        "benchmarks":
+            benchmarks,
+
+        "updated_at":
+            timezone.now()
+            .isoformat(),
+    }
+
+
+# ============================================================
+# 25. DASHBOARD CHART HISTORY
+# ============================================================
+
+
+def get_chart_history(
+    symbol="SPY",
+    period="1M",
+):
+    """
+    ------------------------------------------------------------
+    GET DASHBOARD PRICE-CHART HISTORY
+    ------------------------------------------------------------
+
+    Supported periods:
+
+        1D
+        5D
+        1M
+        3M
+
+    MarketPulse chooses a sensible Alpaca timeframe for each
+    period so the graph remains readable.
+    ------------------------------------------------------------
+    """
+
+    symbol = (
+        symbol
+        or
+        "SPY"
+    )
+
+
+    symbol = (
+        str(symbol)
+        .strip()
+        .upper()
+    )
+
+
+    period = (
+        period
+        or
+        "1M"
+    )
+
+
+    period = (
+        str(period)
+        .strip()
+        .upper()
+    )
+
+
+    period_config = {
+
+        "1D": {
+            "days":
+                1,
+
+            "timeframe":
+                "5Min",
+        },
+
+        "5D": {
+            "days":
+                7,
+
+            "timeframe":
+                "30Min",
+        },
+
+        "1M": {
+            "days":
+                35,
+
+            "timeframe":
+                "1Day",
+        },
+
+        "3M": {
+            "days":
+                100,
+
+            "timeframe":
+                "1Day",
+        },
+    }
+
+
+    config = (
+        period_config.get(
+            period
+        )
+    )
+
+
+    if config is None:
+
+        raise AlpacaServiceError(
+            (
+                "Unsupported chart period. "
+                "Use 1D, 5D, 1M or 3M."
+            )
+        )
+
+
+    end_time = (
+        timezone.now()
+    )
+
+
+    start_time = (
+        end_time
+        -
+        timedelta(
+            days=config[
+                "days"
+            ]
+        )
+    )
+
+
+    bars = get_historical_bars(
+        symbol=symbol,
+        start_date=start_time,
+        end_date=end_time,
+        timeframe=config[
+            "timeframe"
+        ],
+        adjustment="raw",
+    )
+
+
+    chart_points = []
+
+
+    for bar in bars:
+
+        if (
+            bar.get(
+                "timestamp"
+            )
+            and
+            bar.get(
+                "close"
+            )
+            is not None
+        ):
+
+            chart_points.append(
+                {
+                    "timestamp":
+                        bar.get(
+                            "timestamp"
+                        ),
+
+                    "date":
+                        bar.get(
+                            "date"
+                        ),
+
+                    "open":
+                        bar.get(
+                            "open"
+                        ),
+
+                    "high":
+                        bar.get(
+                            "high"
+                        ),
+
+                    "low":
+                        bar.get(
+                            "low"
+                        ),
+
+                    "close":
+                        bar.get(
+                            "close"
+                        ),
+
+                    "volume":
+                        bar.get(
+                            "volume"
+                        ),
+                }
+            )
+
+
+    return {
+        "symbol":
+            symbol,
+
+        "period":
+            period,
+
+        "timeframe":
+            config[
+                "timeframe"
+            ],
+
+        "provider":
+            "Alpaca",
+
+        "feed":
+            _data_feed()
+            .upper(),
+
+        "points":
+            chart_points,
+
+        "count":
+            len(
+                chart_points
+            ),
+    }
+
+
+# ============================================================
+# 26. TEST ALPACA CONNECTION
+# ============================================================
+
+
+def test_alpaca_connection():
+    """
+    ------------------------------------------------------------
+    TEST ALPACA CONFIGURATION AND CONNECTION
+    ------------------------------------------------------------
+
+    This helper deliberately does not expose API credentials.
+
+    It simply confirms whether MarketPulse can authenticate
+    with Alpaca and retrieve the US market clock.
+    ------------------------------------------------------------
+    """
+
+    try:
+
+        market_clock = (
+            get_market_clock()
+        )
+
+
+        return {
             "success":
                 True,
 
@@ -1647,42 +2562,37 @@ def test_alpaca_connection():
                 "Alpaca",
 
             "feed":
-                snapshot.get(
-                    "feed"
+                _data_feed()
+                .upper(),
+
+            "market_open":
+                market_clock.get(
+                    "is_open"
                 ),
 
-            "symbol":
-                asset.get(
-                    "symbol"
-                ),
-
-            "asset_name":
-                asset.get(
-                    "name"
-                ),
-
-            "exchange":
-                asset.get(
-                    "exchange"
-                ),
-
-            "latest_price_available":
+            "message":
                 (
-                    snapshot.get(
-                        "latest_price"
-                    )
-                    is not None
+                    "MarketPulse connected successfully "
+                    "to Alpaca."
                 ),
         }
 
 
-    except AlpacaServiceError as error:
+    except AlpacaServiceError as exc:
 
         return {
-
             "success":
                 False,
 
-            "error":
-                str(error),
+            "provider":
+                "Alpaca",
+
+            "feed":
+                None,
+
+            "market_open":
+                None,
+
+            "message":
+                str(exc),
         }

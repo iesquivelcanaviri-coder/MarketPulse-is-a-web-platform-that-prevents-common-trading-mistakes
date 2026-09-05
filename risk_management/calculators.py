@@ -5,45 +5,51 @@ MARKETPULSE - RISK CALCULATORS
 
 Framework mapping:
 
-Data tab
-    ↓
+Historical Market Data
+        ↓
 core.MarketData
-    ↓
+        ↓
 risk_management/calculators.py
-    ↓
+        ↓
 risk_management/views.py
-    ↓
-Trade & Portfolio Risk Planner
+        ↓
+Trade & Portfolio Risk
+        ↓
+Position Sizing / Stops / Reward-Risk
 
 
 PURPOSE:
 
-This module contains the calculation logic used by the
-MarketPulse Risk area.
+This module contains reusable financial-risk calculations
+for the MarketPulse Risk area.
 
-It deliberately keeps financial calculations outside the
-Django templates so that the same functions can later be
-reused by:
+Keeping these calculations outside Django templates and views
+means they can later be reused by:
 
 - Django views
 - REST API endpoints
+- React components
 - Backtesting
 - Strategy testing
 - Portfolio analysis
-- React components
-- Stress testing
+- Stress-testing workflows
 
 
-IMPORTANT:
+IMPORTANT ARCHITECTURE:
 
-Two groups of functions are kept in this file:
+This file is responsible for NORMAL RISK CALCULATIONS.
 
-1. ORIGINAL / COMPATIBILITY FUNCTIONS
-   These remain available because existing parts of
-   MarketPulse may already import them.
+Stress-test scenario generation remains inside:
 
-2. ENHANCED RISK-PLANNER FUNCTIONS
-   These support the redesigned Trade & Portfolio Risk page.
+    analysis_tools/analyzers.py
+
+This means:
+
+risk_management/calculators.py
+    → position sizing and normal risk
+
+analysis_tools/analyzers.py
+    → stress scenarios and analytical tests
 
 ============================================================
 """
@@ -61,7 +67,7 @@ from core.models import MarketData
 
 
 # ============================================================
-# 2. ORIGINAL POSITION SIZE CALCULATOR
+# 2. ORIGINAL POSITION-SIZE CALCULATOR
 # ============================================================
 
 def calculate_position_size(
@@ -72,16 +78,15 @@ def calculate_position_size(
 ):
     """
     ============================================================
-    ORIGINAL POSITION SIZE CALCULATOR
+    ORIGINAL POSITION-SIZE CALCULATOR
     ============================================================
 
-    This function is preserved for backward compatibility
-    with existing MarketPulse views and API endpoints.
+    Kept for backward compatibility with existing MarketPulse
+    code.
 
     IMPORTANT:
 
-    This original function expects percentages as decimal
-    proportions.
+    This older helper expects percentages as DECIMALS.
 
     Example:
 
@@ -90,17 +95,22 @@ def calculate_position_size(
         stop_loss_pct = 0.05
         entry_price = 100
 
-    This represents:
+    Meaning:
 
-        1% account risk
-        5% stop-loss
+        1% risk
+        5% stop-loss distance
 
-    The redesigned Trade Risk Planner uses a more explicit
-    calculation function later in this file where the user
-    can enter:
+    Result:
 
-        1 = 1%
-        5 = 5%
+        Maximum loss = 100
+        Risk per share = 5
+        Position size = 20 shares
+
+    The newer calculate_trade_risk_plan() function instead uses
+    human-readable percentages:
+
+        1 means 1%
+        5 means 5%
     ============================================================
     """
 
@@ -125,38 +135,57 @@ def calculate_position_size(
     # Validate inputs
     # --------------------------------------------------------
 
-    if min(
-        account_balance,
-        risk_percentage,
-        stop_loss_pct,
-        entry_price,
-    ) <= 0:
+    if account_balance <= 0:
 
         raise ValueError(
-            "All values must be greater than zero."
+            "Account balance must be greater than zero."
+        )
+
+
+    if risk_percentage <= 0:
+
+        raise ValueError(
+            "Risk percentage must be greater than zero."
+        )
+
+
+    if stop_loss_pct <= 0:
+
+        raise ValueError(
+            "Stop-loss percentage must be greater than zero."
+        )
+
+
+    if entry_price <= 0:
+
+        raise ValueError(
+            "Entry price must be greater than zero."
         )
 
 
     # --------------------------------------------------------
-    # Position-size formula
+    # Position-size calculation
     # --------------------------------------------------------
 
-    position_size = (
-
+    risk_amount = (
         account_balance
         *
         risk_percentage
-
-    ) / (
-
-        entry_price
-        *
-        stop_loss_pct
-
     )
 
 
-    return position_size
+    risk_per_unit = (
+        entry_price
+        *
+        stop_loss_pct
+    )
+
+
+    return (
+        risk_amount
+        /
+        risk_per_unit
+    )
 
 
 # ============================================================
@@ -168,16 +197,19 @@ def calculate_stop_loss(
     stop_loss_pct=0.05,
 ):
     """
-    Calculates a percentage stop-loss below the entry price.
+    ============================================================
+    ORIGINAL LONG-POSITION STOP-LOSS CALCULATOR
+    ============================================================
 
-    This original helper assumes a LONG position.
+    This compatibility helper assumes a LONG position.
 
     Example:
 
-        Entry = 100
-        Stop = 5%
+        Entry price = 100
+        Stop loss = 0.05
 
-        Stop price = 95
+        Result = 95
+    ============================================================
     """
 
     entry_price = float(
@@ -189,8 +221,30 @@ def calculate_stop_loss(
     )
 
 
-    return (
+    if entry_price <= 0:
 
+        raise ValueError(
+            "Entry price must be greater than zero."
+        )
+
+
+    if stop_loss_pct <= 0:
+
+        raise ValueError(
+            "Stop-loss percentage must be greater than zero."
+        )
+
+
+    if stop_loss_pct >= 1:
+
+        raise ValueError(
+            "This compatibility function expects the "
+            "stop-loss as a decimal below 1. "
+            "For example, use 0.05 for 5%."
+        )
+
+
+    return (
         entry_price
         *
         (
@@ -211,7 +265,9 @@ def calculate_risk_reward_ratio(
     target,
 ):
     """
-    Calculates the reward-to-risk ratio.
+    ============================================================
+    REWARD / RISK RATIO
+    ============================================================
 
     Example:
 
@@ -223,6 +279,7 @@ def calculate_risk_reward_ratio(
         Reward = 10
 
         Reward / Risk = 2.0
+    ============================================================
     """
 
     entry = float(
@@ -254,10 +311,10 @@ def calculate_risk_reward_ratio(
 
     if risk == 0:
 
-        return 0
+        return 0.0
 
 
-    return (
+    return float(
         reward
         /
         risk
@@ -265,7 +322,7 @@ def calculate_risk_reward_ratio(
 
 
 # ============================================================
-# 5. ORIGINAL HISTORICAL VOLATILITY CALCULATOR
+# 5. HISTORICAL VOLATILITY
 # ============================================================
 
 def calculate_volatility(
@@ -277,16 +334,29 @@ def calculate_volatility(
     HISTORICAL VOLATILITY
     ============================================================
 
-    Reads Close prices from core.MarketData.
+    Uses stored MarketPulse historical closing prices.
+
+    Data flow:
+
+        Historical provider
+            ↓
+        Data tab
+            ↓
+        core.MarketData
+            ↓
+        calculate_volatility()
 
     Steps:
 
     1. Retrieve historical closing prices.
     2. Calculate daily percentage returns.
-    3. Calculate daily return standard deviation.
+    3. Calculate standard deviation.
     4. Annualise using sqrt(252).
 
-    The returned value is a DECIMAL.
+
+    RETURNS:
+
+        Decimal volatility.
 
     Example:
 
@@ -294,12 +364,42 @@ def calculate_volatility(
     ============================================================
     """
 
+    symbol = (
+        str(symbol)
+        .strip()
+        .upper()
+    )
+
+
+    try:
+
+        period = int(
+            period
+        )
+
+    except (
+        TypeError,
+        ValueError,
+    ):
+
+        period = 60
+
+
+    period = max(
+        period,
+        2,
+    )
+
+
+    # --------------------------------------------------------
+    # Retrieve most recent observations
+    # --------------------------------------------------------
 
     close_prices = list(
 
         MarketData.objects
         .filter(
-            symbol=symbol.upper()
+            symbol=symbol
         )
         .order_by(
             "-date"
@@ -313,22 +413,25 @@ def calculate_volatility(
 
 
     # --------------------------------------------------------
-    # Need sufficient observations
+    # Need enough observations
     # --------------------------------------------------------
 
-    if len(close_prices) < 3:
+    if len(
+        close_prices
+    ) < 3:
 
         return 0.0
 
 
     # --------------------------------------------------------
-    # Convert Decimal database values to floats
+    # Convert Decimal → float and restore chronological order
     # --------------------------------------------------------
 
     prices = np.array(
 
         [
             float(price)
+
             for price in reversed(
                 close_prices
             )
@@ -339,21 +442,55 @@ def calculate_volatility(
 
 
     # --------------------------------------------------------
-    # Daily simple returns
+    # Protect against invalid zero prices
+    # --------------------------------------------------------
+
+    previous_prices = (
+        prices[:-1]
+    )
+
+
+    current_prices = (
+        prices[1:]
+    )
+
+
+    valid_mask = (
+        previous_prices
+        >
+        0
+    )
+
+
+    if np.count_nonzero(
+        valid_mask
+    ) < 2:
+
+        return 0.0
+
+
+    # --------------------------------------------------------
+    # Daily returns
     # --------------------------------------------------------
 
     returns = (
 
-        np.diff(
-            prices
-        )
+        current_prices[
+            valid_mask
+        ]
         /
-        prices[:-1]
+        previous_prices[
+            valid_mask
+        ]
+        -
+        1
 
     )
 
 
-    if len(returns) <= 1:
+    if len(
+        returns
+    ) < 2:
 
         return 0.0
 
@@ -381,7 +518,7 @@ def calculate_volatility(
 
 
 # ============================================================
-# 6. ORIGINAL VOLATILITY-ADJUSTED RISK
+# 6. VOLATILITY-ADJUSTED RISK
 # ============================================================
 
 def volatility_adjusted_risk(
@@ -389,10 +526,23 @@ def volatility_adjusted_risk(
     vol,
 ):
     """
-    Reduces a base risk amount when volatility increases.
+    ============================================================
+    VOLATILITY-ADJUSTED RISK
+    ============================================================
 
-    This original function is kept because other parts of
-    MarketPulse may already depend on its behaviour.
+    Reduces an existing risk amount when historical volatility
+    becomes higher.
+
+    This function is retained because existing MarketPulse code
+    may already use it.
+
+    Example:
+
+        base = 100
+        volatility = 0.35
+
+        result = 70
+    ============================================================
     """
 
     base = float(
@@ -402,6 +552,20 @@ def volatility_adjusted_risk(
     vol = float(
         vol
     )
+
+
+    if base < 0:
+
+        raise ValueError(
+            "Base risk cannot be negative."
+        )
+
+
+    if vol < 0:
+
+        raise ValueError(
+            "Volatility cannot be negative."
+        )
 
 
     if vol >= 0.50:
@@ -446,54 +610,55 @@ def get_market_risk_context(
     MARKET RISK CONTEXT
     ============================================================
 
-    Connects historical data imported through the Data tab
-    directly to the Risk tab.
+    Converts historical OHLC data stored by MarketPulse into
+    useful risk information.
 
-    MarketPulse calculates:
+
+    CALCULATED METRICS:
 
     - Latest stored close
     - Latest stored date
-    - Number of observations
-    - 14-day Average True Range (ATR)
+    - Historical observation count
+    - 14-day Average True Range
     - 20-day annualised historical volatility
     - 30-day high
     - 30-day low
     - Historical maximum drawdown
 
 
-    Framework mapping:
+    IMPORTANT:
 
-    Yahoo Finance
-        ↓
-    Data tab
-        ↓
-    core.MarketData
-        ↓
-    get_market_risk_context()
-        ↓
-    Risk Planner
+    These are HISTORICAL metrics calculated by MarketPulse.
+
+    They are different from Alpaca's latest market snapshot.
+
+    Therefore the Risk page can show:
+
+        Alpaca
+            → latest/current market information
+
+        MarketPulse database
+            → historical risk information
 
 
     Parameters
     ----------
 
     symbol:
-        Market ticker such as AAPL, MSFT or SPY.
+        Example: AAPL, MSFT, NVDA
 
 
     Returns
     -------
 
-    Dictionary containing calculated market-risk information.
+    dict:
+        Historical risk metrics.
 
-    Returns None if no historical observations exist.
+    None:
+        If MarketPulse does not contain historical observations
+        for the requested symbol.
     ============================================================
     """
-
-
-    # --------------------------------------------------------
-    # Standardise ticker
-    # --------------------------------------------------------
 
     symbol = (
         str(symbol)
@@ -502,8 +667,13 @@ def get_market_risk_context(
     )
 
 
+    if not symbol:
+
+        return None
+
+
     # --------------------------------------------------------
-    # Retrieve historical data in chronological order
+    # Retrieve historical data chronologically
     # --------------------------------------------------------
 
     data = list(
@@ -525,25 +695,24 @@ def get_market_risk_context(
     )
 
 
-    # --------------------------------------------------------
-    # No data available
-    # --------------------------------------------------------
-
     if not data:
 
         return None
 
 
     # ========================================================
-    # 7.1 CONVERT DATABASE VALUES TO FLOATS
+    # 7.1 CONVERT STORED DECIMAL VALUES TO FLOAT
     # ========================================================
 
     closes = np.array(
 
         [
             float(
-                row["close_price"]
+                row[
+                    "close_price"
+                ]
             )
+
             for row in data
         ],
 
@@ -555,8 +724,11 @@ def get_market_risk_context(
 
         [
             float(
-                row["high_price"]
+                row[
+                    "high_price"
+                ]
             )
+
             for row in data
         ],
 
@@ -568,8 +740,11 @@ def get_market_risk_context(
 
         [
             float(
-                row["low_price"]
+                row[
+                    "low_price"
+                ]
             )
+
             for row in data
         ],
 
@@ -578,7 +753,7 @@ def get_market_risk_context(
 
 
     # ========================================================
-    # 7.2 LATEST CLOSE
+    # 7.2 LATEST STORED CLOSE
     # ========================================================
 
     latest_close = float(
@@ -600,36 +775,41 @@ def get_market_risk_context(
         closes
     ) >= 2:
 
+
         previous_prices = (
             closes[:-1]
         )
+
 
         current_prices = (
             closes[1:]
         )
 
 
-        # Avoid division by zero.
         valid_mask = (
             previous_prices
-            !=
+            >
             0
         )
 
 
-        returns = (
+        if np.any(
+            valid_mask
+        ):
 
-            current_prices[
-                valid_mask
-            ]
-            /
-            previous_prices[
-                valid_mask
-            ]
-            -
-            1
+            returns = (
 
-        )
+                current_prices[
+                    valid_mask
+                ]
+                /
+                previous_prices[
+                    valid_mask
+                ]
+                -
+                1
+
+            )
 
 
     # ========================================================
@@ -643,6 +823,7 @@ def get_market_risk_context(
         returns
     ) >= 2:
 
+
         recent_returns = (
             returns[-20:]
         )
@@ -651,6 +832,7 @@ def get_market_risk_context(
         if len(
             recent_returns
         ) >= 2:
+
 
             daily_volatility = float(
 
@@ -683,17 +865,23 @@ def get_market_risk_context(
 
 
     for index in range(
-        len(data)
+        len(
+            data
+        )
     ):
 
 
         high = float(
-            highs[index]
+            highs[
+                index
+            ]
         )
 
 
         low = float(
-            lows[index]
+            lows[
+                index
+            ]
         )
 
 
@@ -713,15 +901,17 @@ def get_market_risk_context(
 
 
         # ----------------------------------------------------
-        # Remaining observations
+        # Subsequent observations
         # ----------------------------------------------------
 
         else:
 
             previous_close = float(
+
                 closes[
                     index - 1
                 ]
+
             )
 
 
@@ -775,7 +965,7 @@ def get_market_risk_context(
 
 
     # ========================================================
-    # 7.6 30-DAY PRICE RANGE
+    # 7.6 30-DAY HIGH / LOW
     # ========================================================
 
     recent_highs = (
@@ -789,16 +979,20 @@ def get_market_risk_context(
 
 
     high_30 = float(
+
         np.max(
             recent_highs
         )
+
     )
 
 
     low_30 = float(
+
         np.min(
             recent_lows
         )
+
     )
 
 
@@ -822,21 +1016,15 @@ def get_market_risk_context(
         )
 
 
-        # ----------------------------------------------------
-        # Update historical peak
-        # ----------------------------------------------------
-
+        # Update highest observed price.
         running_peak = max(
             running_peak,
             close,
         )
 
 
-        # ----------------------------------------------------
-        # Calculate drawdown from historical peak
-        # ----------------------------------------------------
-
         if running_peak > 0:
+
 
             drawdown = (
 
@@ -855,6 +1043,14 @@ def get_market_risk_context(
             )
 
 
+    # Store drawdown as a positive percentage.
+    #
+    # Example:
+    #
+    # raw drawdown = -0.25
+    #
+    # displayed maximum drawdown = 25%
+
     maximum_drawdown_pct = (
 
         abs(
@@ -867,7 +1063,7 @@ def get_market_risk_context(
 
 
     # ========================================================
-    # 7.8 RETURN MARKET CONTEXT
+    # 7.8 RETURN COMPLETE HISTORICAL CONTEXT
     # ========================================================
 
     return {
@@ -875,21 +1071,25 @@ def get_market_risk_context(
         "symbol":
             symbol,
 
+
         "latest_close":
             round(
                 latest_close,
                 4,
             ),
 
+
         "latest_date":
             data[-1][
                 "date"
             ].isoformat(),
 
+
         "observations":
             len(
                 data
             ),
+
 
         "atr_14":
             (
@@ -897,9 +1097,12 @@ def get_market_risk_context(
                     atr_14,
                     4,
                 )
+
                 if atr_14 is not None
+
                 else None
             ),
+
 
         "annualised_volatility_pct":
             (
@@ -907,10 +1110,12 @@ def get_market_risk_context(
                     annualised_volatility_pct,
                     2,
                 )
-                if annualised_volatility_pct
-                is not None
+
+                if annualised_volatility_pct is not None
+
                 else None
             ),
+
 
         "high_30":
             round(
@@ -918,11 +1123,13 @@ def get_market_risk_context(
                 4,
             ),
 
+
         "low_30":
             round(
                 low_30,
                 4,
             ),
+
 
         "maximum_drawdown_pct":
             round(
@@ -953,15 +1160,15 @@ def calculate_trade_risk_plan(
     TRADE RISK PLAN
     ============================================================
 
-    Main calculation engine used by the redesigned Risk tab.
+    Main risk engine used by the redesigned MarketPulse Risk tab.
 
 
-    USER INPUT EXAMPLE:
+    EXAMPLE USER INPUT:
 
-        Trading Capital:
+        Trading capital:
             10,000
 
-        Maximum Risk:
+        Maximum risk:
             1%
 
         Entry:
@@ -974,58 +1181,65 @@ def calculate_trade_risk_plan(
             110
 
 
-    MARKETPULSE THEN CALCULATES:
+    CALCULATIONS:
 
-        Maximum risk amount
+        Maximum risk budget
+            = 10,000 × 1%
             = 100
 
         Stop price
+            = 100 - 5%
             = 95
 
-        Risk per share
+        Risk per unit
+            = 100 - 95
             = 5
 
         Position size
-            = 20 shares
+            = 100 / 5
+            = 20 units
 
         Position value
+            = 20 × 100
             = 2,000
 
         Potential loss
+            = 20 × 5
             = 100
 
         Potential reward
+            = 20 × 10
             = 200
 
         Reward / Risk
+            = 200 / 100
             = 2 : 1
 
 
     IMPORTANT:
 
-    The risk_percentage parameter uses the human-readable
-    percentage entered on the form:
+    risk_percentage uses HUMAN-READABLE percentages.
 
-        1 means 1%
-        2 means 2%
+        1 = 1%
+        2 = 2%
 
-    This is intentionally different from the older
-    calculate_position_size() helper.
+    stop_loss_percentage also uses human-readable percentages.
+
+        5 = 5%
 
 
-    The calculation also assumes no leverage.
+    POSITION-SIZING CONSTRAINTS:
 
-    Therefore position size is constrained by:
+    1. Risk budget
+    2. Available trading capital
 
-    1. Maximum acceptable risk.
-    2. Total available trading capital.
-
+    This educational implementation assumes no leverage.
     ============================================================
     """
 
 
     # ========================================================
-    # 8.1 CONVERT VALUES
+    # 8.1 NORMALISE VALUES
     # ========================================================
 
     trading_capital = float(
@@ -1058,7 +1272,7 @@ def calculate_trade_risk_plan(
 
 
     # ========================================================
-    # 8.2 VALIDATE BASE VALUES
+    # 8.2 VALIDATE CORE INPUTS
     # ========================================================
 
     if trading_capital <= 0:
@@ -1095,7 +1309,18 @@ def calculate_trade_risk_plan(
     }:
 
         raise ValueError(
-            "Trade direction must be long or short."
+            "Trade direction must be either long or short."
+        )
+
+
+    if stop_method not in {
+        "percentage",
+        "atr",
+        "fixed",
+    }:
+
+        raise ValueError(
+            "Unknown stop-loss method."
         )
 
 
@@ -1128,7 +1353,7 @@ def calculate_trade_risk_plan(
 
 
     # ========================================================
-    # 9.1 PERCENTAGE STOP
+    # 9.1 PERCENTAGE-BASED STOP
     # ========================================================
 
     if stop_method == "percentage":
@@ -1178,10 +1403,6 @@ def calculate_trade_risk_plan(
         )
 
 
-        # ----------------------------------------------------
-        # Long position
-        # ----------------------------------------------------
-
         if direction == "long":
 
             stop_price = (
@@ -1192,10 +1413,6 @@ def calculate_trade_risk_plan(
 
             )
 
-
-        # ----------------------------------------------------
-        # Short position
-        # ----------------------------------------------------
 
         else:
 
@@ -1218,7 +1435,9 @@ def calculate_trade_risk_plan(
         if atr is None:
 
             raise ValueError(
-                "ATR could not be calculated for this dataset."
+                "ATR is unavailable for this asset. "
+                "Import historical OHLCV data first or use "
+                "a percentage/fixed-price stop."
             )
 
 
@@ -1235,9 +1454,13 @@ def calculate_trade_risk_plan(
 
 
         multiplier = float(
+
             atr_multiplier
+
             if atr_multiplier is not None
+
             else 2
+
         )
 
 
@@ -1337,23 +1560,13 @@ def calculate_trade_risk_plan(
 
 
     # ========================================================
-    # 9.4 UNKNOWN METHOD
-    # ========================================================
-
-    else:
-
-        raise ValueError(
-            "Unknown stop-loss method."
-        )
-
-
-    # ========================================================
     # 10. VALIDATE STOP DIRECTION
     # ========================================================
 
     if (
         direction == "long"
-        and stop_price >= entry_price
+        and
+        stop_price >= entry_price
     ):
 
         raise ValueError(
@@ -1364,7 +1577,8 @@ def calculate_trade_risk_plan(
 
     if (
         direction == "short"
-        and stop_price <= entry_price
+        and
+        stop_price <= entry_price
     ):
 
         raise ValueError(
@@ -1417,14 +1631,14 @@ def calculate_trade_risk_plan(
     # 13. CAPITAL-CONSTRAINED POSITION SIZE
     # ========================================================
 
+    # This assumes no leverage.
+    #
     # Example:
     #
     # Capital = 10,000
     # Entry = 100
     #
-    # Maximum affordable position = 100 units.
-    #
-    # This educational version assumes no leverage.
+    # Maximum affordable whole units = 100.
 
     capital_limited_quantity = math.floor(
 
@@ -1442,15 +1656,21 @@ def calculate_trade_risk_plan(
     quantity = min(
 
         risk_based_quantity,
+
         capital_limited_quantity,
 
     )
 
 
-    # --------------------------------------------------------
-    # Identify whether capital, rather than risk, limited
-    # the resulting position.
-    # --------------------------------------------------------
+    quantity = max(
+        quantity,
+        0,
+    )
+
+
+    # ========================================================
+    # 15. IDENTIFY LIMITING CONSTRAINT
+    # ========================================================
 
     capital_cap_applied = (
 
@@ -1462,7 +1682,7 @@ def calculate_trade_risk_plan(
 
 
     # ========================================================
-    # 15. POSITION VALUE
+    # 16. POSITION VALUE
     # ========================================================
 
     position_value = (
@@ -1475,7 +1695,7 @@ def calculate_trade_risk_plan(
 
 
     # ========================================================
-    # 16. CAPITAL ALLOCATION
+    # 17. CAPITAL ALLOCATION
     # ========================================================
 
     capital_allocation_pct = (
@@ -1490,11 +1710,12 @@ def calculate_trade_risk_plan(
 
 
     # ========================================================
-    # 17. ACTUAL PLANNED LOSS
+    # 18. ACTUAL PLANNED LOSS
     # ========================================================
 
-    # Whole-unit rounding means actual planned loss may be
-    # slightly below the maximum requested risk amount.
+    # Because MarketPulse currently uses whole-unit position
+    # sizing, this amount may be slightly smaller than the
+    # requested maximum risk budget.
 
     planned_loss = (
 
@@ -1505,8 +1726,23 @@ def calculate_trade_risk_plan(
     )
 
 
+    actual_risk_percentage = (
+
+        planned_loss
+        /
+        trading_capital
+        *
+        100
+
+        if trading_capital > 0
+
+        else 0
+
+    )
+
+
     # ========================================================
-    # 18. TARGET / POTENTIAL REWARD
+    # 19. TARGET / POTENTIAL REWARD
     # ========================================================
 
     potential_reward = None
@@ -1532,37 +1768,39 @@ def calculate_trade_risk_plan(
 
 
         # ----------------------------------------------------
-        # Validate target for long trade
+        # Validate long target
         # ----------------------------------------------------
 
         if (
             direction == "long"
-            and target_price <= entry_price
+            and
+            target_price <= entry_price
         ):
 
             raise ValueError(
-                "For a long position, the target price "
-                "must be above the entry price."
+                "For a long position, the target price must "
+                "be above the entry price."
             )
 
 
         # ----------------------------------------------------
-        # Validate target for short trade
+        # Validate short target
         # ----------------------------------------------------
 
         if (
             direction == "short"
-            and target_price >= entry_price
+            and
+            target_price >= entry_price
         ):
 
             raise ValueError(
-                "For a short position, the target price "
-                "must be below the entry price."
+                "For a short position, the target price must "
+                "be below the entry price."
             )
 
 
         # ----------------------------------------------------
-        # Reward per unit
+        # Reward per share/unit
         # ----------------------------------------------------
 
         if direction == "long":
@@ -1616,7 +1854,7 @@ def calculate_trade_risk_plan(
 
 
     # ========================================================
-    # 19. STOP DISTANCE IN ATR UNITS
+    # 20. ATR RELATIONSHIP
     # ========================================================
 
     stop_atr_multiple = None
@@ -1642,24 +1880,22 @@ def calculate_trade_risk_plan(
 
 
     # ========================================================
-    # 20. POSITION-SIZING STATUS
+    # 21. POSITION STATUS
     # ========================================================
-
-    # Useful explanatory text for the Risk UI.
 
     if quantity <= 0:
 
         position_status = (
-            "The current risk budget is too small to purchase "
-            "one whole unit at the selected stop distance."
+            "The selected risk budget and stop distance do not "
+            "allow the purchase of one whole unit."
         )
 
 
     elif capital_cap_applied:
 
         position_status = (
-            "The position size is limited by available trading "
-            "capital rather than the risk budget."
+            "Available trading capital is the limiting factor "
+            "for this position size."
         )
 
 
@@ -1672,7 +1908,41 @@ def calculate_trade_risk_plan(
 
 
     # ========================================================
-    # 21. RETURN COMPLETE RISK PLAN
+    # 22. REWARD / RISK INTERPRETATION
+    # ========================================================
+
+    reward_risk_status = None
+
+
+    if reward_risk_ratio is not None:
+
+
+        if reward_risk_ratio >= 2:
+
+            reward_risk_status = (
+                "The potential reward is at least twice the "
+                "planned risk in this simulation."
+            )
+
+
+        elif reward_risk_ratio >= 1:
+
+            reward_risk_status = (
+                "Potential reward exceeds planned risk, but "
+                "the margin is below 2:1."
+            )
+
+
+        else:
+
+            reward_risk_status = (
+                "Potential reward is smaller than the planned "
+                "risk based on the selected target and stop."
+            )
+
+
+    # ========================================================
+    # 23. RETURN COMPLETE PLAN
     # ========================================================
 
     return {
@@ -1684,6 +1954,20 @@ def calculate_trade_risk_plan(
         "maximum_risk_amount":
             round(
                 maximum_risk_amount,
+                2,
+            ),
+
+
+        "requested_risk_percentage":
+            round(
+                risk_percentage,
+                2,
+            ),
+
+
+        "actual_risk_percentage":
+            round(
+                actual_risk_percentage,
                 2,
             ),
 
@@ -1724,6 +2008,18 @@ def calculate_trade_risk_plan(
             ),
 
 
+        "stop_method":
+            stop_method,
+
+
+        # ----------------------------------------------------
+        # Direction
+        # ----------------------------------------------------
+
+        "direction":
+            direction,
+
+
         # ----------------------------------------------------
         # Risk per unit
         # ----------------------------------------------------
@@ -1736,7 +2032,7 @@ def calculate_trade_risk_plan(
 
 
         # ----------------------------------------------------
-        # Quantities
+        # Position quantities
         # ----------------------------------------------------
 
         "risk_based_quantity":
@@ -1794,13 +2090,15 @@ def calculate_trade_risk_plan(
                     target_price,
                     4,
                 )
+
                 if target_price is not None
+
                 else None
             ),
 
 
         # ----------------------------------------------------
-        # Potential reward
+        # Reward
         # ----------------------------------------------------
 
         "reward_per_unit":
@@ -1809,7 +2107,9 @@ def calculate_trade_risk_plan(
                     reward_per_unit,
                     4,
                 )
+
                 if reward_per_unit is not None
+
                 else None
             ),
 
@@ -1820,13 +2120,15 @@ def calculate_trade_risk_plan(
                     potential_reward,
                     2,
                 )
+
                 if potential_reward is not None
+
                 else None
             ),
 
 
         # ----------------------------------------------------
-        # Reward/risk ratio
+        # Reward / Risk
         # ----------------------------------------------------
 
         "reward_risk_ratio":
@@ -1835,13 +2137,19 @@ def calculate_trade_risk_plan(
                     reward_risk_ratio,
                     2,
                 )
+
                 if reward_risk_ratio is not None
+
                 else None
             ),
 
 
+        "reward_risk_status":
+            reward_risk_status,
+
+
         # ----------------------------------------------------
-        # Position constraint information
+        # Constraints
         # ----------------------------------------------------
 
         "capital_cap_applied":
@@ -1853,7 +2161,7 @@ def calculate_trade_risk_plan(
 
 
         # ----------------------------------------------------
-        # ATR relationship
+        # ATR context
         # ----------------------------------------------------
 
         "stop_atr_multiple":
@@ -1862,7 +2170,176 @@ def calculate_trade_risk_plan(
                     stop_atr_multiple,
                     2,
                 )
+
                 if stop_atr_multiple is not None
+
                 else None
+            ),
+    }
+
+
+# ============================================================
+# 24. SIMPLE STRESS-IMPACT CALCULATOR
+# ============================================================
+
+def calculate_position_stress_impact(
+    position_value,
+    trading_capital,
+    shock_percentage,
+):
+    """
+    ============================================================
+    SIMPLE POSITION STRESS IMPACT
+    ============================================================
+
+    Calculates the direct financial effect of a percentage
+    market shock on a hypothetical position.
+
+    This is useful for the Risk tab's simple explanatory
+    stress-test summaries.
+
+    More advanced historical scenario simulation remains in:
+
+        analysis_tools/analyzers.py
+
+
+    Example:
+
+        Position value = 4,000
+        Trading capital = 10,000
+        Shock = 10%
+
+    Result:
+
+        Estimated position loss = 400
+        Portfolio impact = 4%
+    ============================================================
+    """
+
+
+    position_value = float(
+        position_value
+    )
+
+
+    trading_capital = float(
+        trading_capital
+    )
+
+
+    shock_percentage = float(
+        shock_percentage
+    )
+
+
+    if position_value < 0:
+
+        raise ValueError(
+            "Position value cannot be negative."
+        )
+
+
+    if trading_capital <= 0:
+
+        raise ValueError(
+            "Trading capital must be greater than zero."
+        )
+
+
+    if shock_percentage < 0:
+
+        raise ValueError(
+            "Shock percentage cannot be negative."
+        )
+
+
+    if shock_percentage > 100:
+
+        raise ValueError(
+            "Shock percentage cannot exceed 100%."
+        )
+
+
+    # --------------------------------------------------------
+    # Estimated loss
+    # --------------------------------------------------------
+
+    estimated_loss = (
+
+        position_value
+        *
+        (
+            shock_percentage
+            /
+            100
+        )
+
+    )
+
+
+    # --------------------------------------------------------
+    # Stressed position value
+    # --------------------------------------------------------
+
+    stressed_position_value = max(
+
+        position_value
+        -
+        estimated_loss,
+
+        0,
+
+    )
+
+
+    # --------------------------------------------------------
+    # Impact on total capital
+    # --------------------------------------------------------
+
+    portfolio_impact_pct = (
+
+        estimated_loss
+        /
+        trading_capital
+        *
+        100
+
+    )
+
+
+    return {
+
+        "shock_percentage":
+            round(
+                shock_percentage,
+                2,
+            ),
+
+
+        "position_value":
+            round(
+                position_value,
+                2,
+            ),
+
+
+        "stressed_position_value":
+            round(
+                stressed_position_value,
+                2,
+            ),
+
+
+        "estimated_loss":
+            round(
+                estimated_loss,
+                2,
+            ),
+
+
+        "portfolio_impact_pct":
+            round(
+                portfolio_impact_pct,
+                2,
             ),
     }

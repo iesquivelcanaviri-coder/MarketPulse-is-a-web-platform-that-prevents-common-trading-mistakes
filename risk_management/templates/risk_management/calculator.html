@@ -6,6 +6,27 @@
 MARKETPULSE - TRADE & PORTFOLIO RISK
 ============================================================
 
+USER-FACING RESPONSIBILITY:
+
+Risk
+    ↓
+Current Market Information
+    ↓
+Historical Risk Context
+    ↓
+Trade Risk Planning
+    ↓
+Position Sizing
+    ↓
+Stop-Loss Analysis
+    ↓
+Reward / Risk
+    ↓
+Stress Testing
+
+
+DATA SOURCES:
+
 ALPACA
     ↓
 Active US-Equity Asset Universe
@@ -13,17 +34,33 @@ Active US-Equity Asset Universe
 Asset Search
     ↓
 Latest Trade / Quote / Daily Snapshot
-    ↓
-Trade Risk Planner
 
-MarketPulse Historical Database
-    ↓
-ATR / Volatility / Drawdown / Historical Range
-    ↓
-Additional Risk Context
 
-The Alpaca API credentials NEVER enter this template.
-The browser only communicates with MarketPulse's Django API.
+MARKETPULSE DATABASE
+    ↓
+Historical OHLCV
+    ↓
+ATR
+Volatility
+Drawdown
+Historical Range
+
+
+INTERNAL ANALYTICS ENGINE:
+
+analysis_tools
+    ↓
+Stress-test calculations
+
+analysis_tools is NOT presented as a separate
+user-facing section.
+
+The user accesses stress testing through Risk.
+
+IMPORTANT:
+
+Alpaca API credentials must never enter this template.
+The browser communicates only with MarketPulse's Django API.
 ============================================================
 {% endcomment %}
 
@@ -48,9 +85,10 @@ Risk | MarketPulse
 
     <p class="text-muted mb-0">
 
-        Search Alpaca market data, define your maximum
-        acceptable loss, and calculate a risk-constrained
-        position before testing a strategy.
+        Understand how much capital is exposed,
+        calculate a risk-controlled position,
+        and test what could happen if market
+        conditions become significantly worse.
 
     </p>
 
@@ -58,7 +96,112 @@ Risk | MarketPulse
 
 
 <!-- ====================================================== -->
-<!-- 2. DATA SOURCE / WORKFLOW EXPLANATION                  -->
+<!-- 2. SIMPLE USER WORKFLOW                                -->
+<!-- ====================================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-body">
+
+
+        <h2 class="h5 mb-3">
+            How to use the Risk workspace
+        </h2>
+
+
+        <div class="row g-3">
+
+
+            <!-- Step 1 -->
+
+            <div class="col-md-4">
+
+                <div class="border rounded p-3 h-100">
+
+                    <div class="text-primary fw-semibold small">
+                        STEP 1
+                    </div>
+
+                    <div class="fw-semibold mt-1">
+                        Choose a Market
+                    </div>
+
+                    <div class="small text-muted mt-1">
+
+                        Search Alpaca for the asset you
+                        want to investigate and review
+                        its latest market information.
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- Step 2 -->
+
+            <div class="col-md-4">
+
+                <div class="border rounded p-3 h-100">
+
+                    <div class="text-primary fw-semibold small">
+                        STEP 2
+                    </div>
+
+                    <div class="fw-semibold mt-1">
+                        Plan Your Risk
+                    </div>
+
+                    <div class="small text-muted mt-1">
+
+                        Decide how much capital you are
+                        prepared to lose and calculate
+                        a risk-constrained position.
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- Step 3 -->
+
+            <div class="col-md-4">
+
+                <div class="border rounded p-3 h-100">
+
+                    <div class="text-danger fw-semibold small">
+                        STEP 3
+                    </div>
+
+                    <div class="fw-semibold mt-1">
+                        Test Severe Conditions
+                    </div>
+
+                    <div class="small text-muted mt-1">
+
+                        Run a stress test to see how a
+                        strategy could behave during
+                        severe market conditions.
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- 3. DATA SOURCE / PROVENANCE                            -->
 <!-- ====================================================== -->
 
 <div class="card shadow-sm mb-4">
@@ -80,14 +223,14 @@ Risk | MarketPulse
             <div>
 
                 <h2 class="h5 mb-1">
-                    MarketPulse Risk Workflow
+                    Where does the information come from?
                 </h2>
 
                 <p class="text-muted mb-0">
 
-                    Current market information comes from
-                    Alpaca. Historical risk analytics use
-                    market observations stored by MarketPulse.
+                    MarketPulse separates current market
+                    information from historical risk analytics
+                    so the source of every calculation is clear.
 
                 </p>
 
@@ -130,7 +273,7 @@ Risk | MarketPulse
 
                     Asset universe, company information,
                     exchange, tradability, latest trade,
-                    bid/ask and daily market snapshot.
+                    bid/ask and current daily snapshot.
 
                 </div>
 
@@ -145,8 +288,9 @@ Risk | MarketPulse
 
                 <div class="text-muted">
 
-                    Stored historical OHLCV observations used
-                    for reproducible quantitative analysis.
+                    Stored historical OHLCV observations
+                    used for reproducible quantitative
+                    calculations.
 
                 </div>
 
@@ -161,8 +305,9 @@ Risk | MarketPulse
 
                 <div class="text-muted">
 
-                    ATR, volatility, drawdown, position sizing,
-                    stop-loss and reward-to-risk.
+                    ATR, volatility, drawdown,
+                    position sizing, stop-loss,
+                    reward-to-risk and stress analysis.
 
                 </div>
 
@@ -177,7 +322,7 @@ Risk | MarketPulse
 
 
 <!-- ====================================================== -->
-<!-- 3. MAIN WORKSPACE                                      -->
+<!-- 4. MAIN RISK WORKSPACE                                 -->
 <!-- ====================================================== -->
 
 <div class="row g-4">
@@ -195,9 +340,18 @@ Risk | MarketPulse
             <div class="card-body">
 
 
-                <h2 class="h4 mb-4">
+                <h2 class="h4 mb-1">
                     Trade Risk Planner
                 </h2>
+
+
+                <p class="text-muted mb-4">
+
+                    Calculate how large a hypothetical
+                    position can be while staying within
+                    your chosen maximum loss.
+
+                </p>
 
 
                 <form method="post">
@@ -231,8 +385,9 @@ Risk | MarketPulse
                         <p class="text-muted small">
 
                             Search Alpaca's active US-equity
-                            universe rather than only stocks
-                            previously imported into MarketPulse.
+                            universe rather than being limited
+                            to stocks already stored in
+                            MarketPulse.
 
                         </p>
 
@@ -256,8 +411,6 @@ Risk | MarketPulse
                                 {{ form.symbol }}
 
 
-                                <!-- Search results -->
-
                                 <div
                                     id="alpacaSearchResults"
                                     class="
@@ -280,8 +433,10 @@ Risk | MarketPulse
 
                             <div class="form-text">
 
-                                Try AAPL, Microsoft, NVIDIA,
-                                Tesla or another US-listed equity.
+                                Search by ticker or company name.
+
+                                Examples:
+                                AAPL, Microsoft, NVIDIA or Tesla.
 
                             </div>
 
@@ -296,7 +451,9 @@ Risk | MarketPulse
                         </div>
 
 
-                        <!-- Alpaca uses USD for this equity workflow. -->
+                        <!-- ================================== -->
+                        <!-- USD WORKFLOW                       -->
+                        <!-- ================================== -->
 
                         <input
                             type="hidden"
@@ -343,9 +500,7 @@ Risk | MarketPulse
 
                                         <div class="text-muted">
 
-                                            <strong
-                                                id="alpacaSymbol"
-                                            >
+                                            <strong id="alpacaSymbol">
                                                 —
                                             </strong>
 
@@ -353,9 +508,7 @@ Risk | MarketPulse
                                                 ·
                                             </span>
 
-                                            <span
-                                                id="alpacaExchange"
-                                            >
+                                            <span id="alpacaExchange">
                                                 —
                                             </span>
 
@@ -366,9 +519,7 @@ Risk | MarketPulse
 
                                     <div class="text-end">
 
-                                        <span
-                                            class="badge bg-success"
-                                        >
+                                        <span class="badge bg-success">
                                             Alpaca
                                         </span>
 
@@ -391,7 +542,7 @@ Risk | MarketPulse
 
 
                                 <!-- ====================== -->
-                                <!-- LATEST PRICE           -->
+                                <!-- LATEST MARKET DATA     -->
                                 <!-- ====================== -->
 
                                 <div class="row g-2">
@@ -408,18 +559,11 @@ Risk | MarketPulse
                                             "
                                         >
 
-                                            <div
-                                                class="
-                                                    small
-                                                    text-muted
-                                                "
-                                            >
+                                            <div class="small text-muted">
                                                 Latest Trade
                                             </div>
 
-                                            <strong
-                                                id="alpacaLatestPrice"
-                                            >
+                                            <strong id="alpacaLatestPrice">
                                                 —
                                             </strong>
 
@@ -439,18 +583,11 @@ Risk | MarketPulse
                                             "
                                         >
 
-                                            <div
-                                                class="
-                                                    small
-                                                    text-muted
-                                                "
-                                            >
+                                            <div class="small text-muted">
                                                 Bid
                                             </div>
 
-                                            <strong
-                                                id="alpacaBid"
-                                            >
+                                            <strong id="alpacaBid">
                                                 —
                                             </strong>
 
@@ -470,18 +607,11 @@ Risk | MarketPulse
                                             "
                                         >
 
-                                            <div
-                                                class="
-                                                    small
-                                                    text-muted
-                                                "
-                                            >
+                                            <div class="small text-muted">
                                                 Ask
                                             </div>
 
-                                            <strong
-                                                id="alpacaAsk"
-                                            >
+                                            <strong id="alpacaAsk">
                                                 —
                                             </strong>
 
@@ -501,18 +631,11 @@ Risk | MarketPulse
                                             "
                                         >
 
-                                            <div
-                                                class="
-                                                    small
-                                                    text-muted
-                                                "
-                                            >
+                                            <div class="small text-muted">
                                                 Bid / Ask Spread
                                             </div>
 
-                                            <strong
-                                                id="alpacaSpread"
-                                            >
+                                            <strong id="alpacaSpread">
                                                 —
                                             </strong>
 
@@ -525,7 +648,7 @@ Risk | MarketPulse
 
 
                                 <!-- ====================== -->
-                                <!-- DAILY CHANGE           -->
+                                <!-- PREVIOUS CLOSE         -->
                                 <!-- ====================== -->
 
                                 <div class="row g-2 mt-1">
@@ -533,21 +656,13 @@ Risk | MarketPulse
 
                                     <div class="col-6">
 
-                                        <div
-                                            class="
-                                                border
-                                                rounded
-                                                p-2
-                                            "
-                                        >
+                                        <div class="border rounded p-2">
 
                                             <div class="small text-muted">
                                                 Previous Close
                                             </div>
 
-                                            <strong
-                                                id="alpacaPreviousClose"
-                                            >
+                                            <strong id="alpacaPreviousClose">
                                                 —
                                             </strong>
 
@@ -558,21 +673,13 @@ Risk | MarketPulse
 
                                     <div class="col-6">
 
-                                        <div
-                                            class="
-                                                border
-                                                rounded
-                                                p-2
-                                            "
-                                        >
+                                        <div class="border rounded p-2">
 
                                             <div class="small text-muted">
                                                 Change vs Previous Close
                                             </div>
 
-                                            <strong
-                                                id="alpacaDailyChange"
-                                            >
+                                            <strong id="alpacaDailyChange">
                                                 —
                                             </strong>
 
@@ -599,9 +706,7 @@ Risk | MarketPulse
                                                 Day Open
                                             </div>
 
-                                            <strong
-                                                id="alpacaDayOpen"
-                                            >
+                                            <strong id="alpacaDayOpen">
                                                 —
                                             </strong>
 
@@ -618,9 +723,7 @@ Risk | MarketPulse
                                                 Day High
                                             </div>
 
-                                            <strong
-                                                id="alpacaDayHigh"
-                                            >
+                                            <strong id="alpacaDayHigh">
                                                 —
                                             </strong>
 
@@ -637,9 +740,7 @@ Risk | MarketPulse
                                                 Day Low
                                             </div>
 
-                                            <strong
-                                                id="alpacaDayLow"
-                                            >
+                                            <strong id="alpacaDayLow">
                                                 —
                                             </strong>
 
@@ -656,9 +757,7 @@ Risk | MarketPulse
                                                 Day Volume
                                             </div>
 
-                                            <strong
-                                                id="alpacaDayVolume"
-                                            >
+                                            <strong id="alpacaDayVolume">
                                                 —
                                             </strong>
 
@@ -754,11 +853,7 @@ Risk | MarketPulse
                                     <button
                                         type="button"
                                         id="useAlpacaPrice"
-                                        class="
-                                            btn
-                                            btn-sm
-                                            btn-primary
-                                        "
+                                        class="btn btn-sm btn-primary"
                                     >
                                         Use Latest Price as Entry
                                     </button>
@@ -767,11 +862,7 @@ Risk | MarketPulse
                                     <button
                                         type="button"
                                         id="refreshAlpacaPrice"
-                                        class="
-                                            btn
-                                            btn-sm
-                                            btn-outline-primary
-                                        "
+                                        class="btn btn-sm btn-outline-primary"
                                     >
                                         Refresh Snapshot
                                     </button>
@@ -780,7 +871,7 @@ Risk | MarketPulse
 
 
                                 <!-- ====================== -->
-                                <!-- PROVENANCE             -->
+                                <!-- DATA PROVENANCE        -->
                                 <!-- ====================== -->
 
                                 <div class="small text-muted mt-3">
@@ -793,17 +884,13 @@ Risk | MarketPulse
 
                                     · Feed:
 
-                                    <strong
-                                        id="alpacaFeedText"
-                                    >
+                                    <strong id="alpacaFeedText">
                                         IEX
                                     </strong>
 
                                     · Latest trade timestamp:
 
-                                    <span
-                                        id="alpacaUpdated"
-                                    >
+                                    <span id="alpacaUpdated">
                                         —
                                     </span>
 
@@ -843,6 +930,8 @@ Risk | MarketPulse
                         </h3>
 
 
+                        <!-- Trading capital -->
+
                         <div class="mb-3">
 
                             <label
@@ -859,7 +948,7 @@ Risk | MarketPulse
                             <div class="form-text">
 
                                 Total hypothetical capital
-                                available for the simulation.
+                                available for this simulation.
 
                                 This is not automatically the
                                 amount invested in the selected
@@ -869,6 +958,8 @@ Risk | MarketPulse
 
                         </div>
 
+
+                        <!-- Risk percentage -->
 
                         <div class="mb-2">
 
@@ -893,9 +984,13 @@ Risk | MarketPulse
 
                             <div class="form-text">
 
-                                For example, 1% of $10,000
-                                represents a maximum planned
-                                risk budget of $100.
+                                Example:
+
+                                1% of $10,000 means a maximum
+                                planned trade-loss budget of $100.
+
+                                It does not mean that only $100
+                                is invested.
 
                             </div>
 
@@ -955,7 +1050,7 @@ Risk | MarketPulse
                         </div>
 
 
-                        <!-- Live budget -->
+                        <!-- Live risk budget -->
 
                         <div
                             class="
@@ -1025,7 +1120,7 @@ Risk | MarketPulse
                         </div>
 
 
-                        <!-- Entry Price -->
+                        <!-- Entry -->
 
                         <div class="mb-3">
 
@@ -1065,9 +1160,11 @@ Risk | MarketPulse
 
                                 <span class="small text-muted">
 
-                                    Entry is the price of one
-                                    share/unit, not the total
-                                    position value.
+                                    Entry price means the price
+                                    of one share/unit.
+
+                                    It is not the total amount
+                                    invested.
 
                                 </span>
 
@@ -1076,7 +1173,7 @@ Risk | MarketPulse
                         </div>
 
 
-                        <!-- Stop Method -->
+                        <!-- Stop-loss method -->
 
                         <div class="mb-3">
 
@@ -1089,10 +1186,20 @@ Risk | MarketPulse
 
                             {{ form.stop_method }}
 
+
+                            <div class="form-text">
+
+                                Choose how MarketPulse should
+                                calculate the level where the
+                                simulated position exits if
+                                price moves against it.
+
+                            </div>
+
                         </div>
 
 
-                        <!-- Percentage Stop -->
+                        <!-- Percentage stop -->
 
                         <div
                             id="percentageStopSection"
@@ -1120,16 +1227,18 @@ Risk | MarketPulse
 
                             <div class="form-text">
 
-                                Example: a 5% stop on a
-                                $100 long entry calculates a
-                                $95 stop price.
+                                Example:
+
+                                A 5% stop on a $100 long
+                                entry calculates a $95
+                                stop price.
 
                             </div>
 
                         </div>
 
 
-                        <!-- ATR Stop -->
+                        <!-- ATR stop -->
 
                         <div
                             id="atrStopSection"
@@ -1149,18 +1258,20 @@ Risk | MarketPulse
 
                             <div class="form-text">
 
-                                ATR uses stored historical High,
+                                ATR measures recent historical
+                                price movement using High,
                                 Low and Close observations.
 
-                                If this stock has not yet been
-                                imported, import its history first.
+                                A value of 2 means the stop
+                                distance is approximately
+                                2 × the 14-day ATR.
 
                             </div>
 
                         </div>
 
 
-                        <!-- Fixed Stop -->
+                        <!-- Fixed stop -->
 
                         <div
                             id="fixedStopSection"
@@ -1179,7 +1290,7 @@ Risk | MarketPulse
                         </div>
 
 
-                        <!-- Profit Target -->
+                        <!-- Target -->
 
                         <div class="mb-3">
 
@@ -1201,8 +1312,11 @@ Risk | MarketPulse
 
                             <div class="form-text">
 
-                                Used to calculate potential
-                                reward and reward-to-risk.
+                                Optional favourable exit price.
+
+                                If supplied, MarketPulse can
+                                calculate the potential reward
+                                and reward-to-risk ratio.
 
                             </div>
 
@@ -1210,7 +1324,7 @@ Risk | MarketPulse
 
 
                         <!-- ============================== -->
-                        <!-- LIVE TRADE PREVIEW             -->
+                        <!-- LIVE PREVIEW                   -->
                         <!-- ============================== -->
 
                         <div
@@ -1222,7 +1336,7 @@ Risk | MarketPulse
                             "
                         >
 
-                            <h4 class="h6">
+                            <h4 class="h6 mb-3">
                                 Live Risk Preview
                             </h4>
 
@@ -1236,9 +1350,7 @@ Risk | MarketPulse
                                         Calculated Stop
                                     </div>
 
-                                    <strong
-                                        id="liveStopPrice"
-                                    >
+                                    <strong id="liveStopPrice">
                                         —
                                     </strong>
 
@@ -1251,9 +1363,7 @@ Risk | MarketPulse
                                         Risk per Share / Unit
                                     </div>
 
-                                    <strong
-                                        id="liveRiskPerUnit"
-                                    >
+                                    <strong id="liveRiskPerUnit">
                                         —
                                     </strong>
 
@@ -1266,9 +1376,7 @@ Risk | MarketPulse
                                         Risk-Constrained Position
                                     </div>
 
-                                    <strong
-                                        id="livePositionSize"
-                                    >
+                                    <strong id="livePositionSize">
                                         —
                                     </strong>
 
@@ -1281,9 +1389,7 @@ Risk | MarketPulse
                                         Reward / Risk
                                     </div>
 
-                                    <strong
-                                        id="liveRewardRisk"
-                                    >
+                                    <strong id="liveRewardRisk">
                                         —
                                     </strong>
 
@@ -1298,7 +1404,7 @@ Risk | MarketPulse
 
 
                     <!-- ================================== -->
-                    <!-- ERRORS                             -->
+                    <!-- FORM ERRORS                        -->
                     <!-- ================================== -->
 
                     {% if form.errors %}
@@ -1345,7 +1451,7 @@ Risk | MarketPulse
 
 
         <!-- ============================================== -->
-        <!-- HISTORICAL MARKET CONTEXT                     -->
+        <!-- HISTORICAL RISK CONTEXT                       -->
         <!-- ============================================== -->
 
         <div class="card shadow-sm mb-4">
@@ -1362,6 +1468,7 @@ Risk | MarketPulse
                     "
                 >
 
+
                     <div>
 
                         <h2 class="h4 mb-1">
@@ -1370,9 +1477,9 @@ Risk | MarketPulse
 
                         <p class="text-muted small">
 
-                            Quantitative metrics calculated
-                            from historical observations stored
-                            in MarketPulse.
+                            Risk measures calculated from
+                            historical observations stored
+                            inside MarketPulse.
 
                         </p>
 
@@ -1387,25 +1494,36 @@ Risk | MarketPulse
                             border
                         "
                     >
-                        Stored Data
+                        Stored OHLCV
                     </span>
+
 
                 </div>
 
 
-                <!-- No historical data warning -->
+                <!-- No historical data -->
 
                 <div
                     id="historicalDataWarning"
                     class="alert alert-warning py-2 d-none"
                 >
 
-                    Historical data for this symbol is not yet
-                    stored in MarketPulse.
+                    <strong>
+                        Historical analytics are not available yet.
+                    </strong>
 
-                    Percentage and fixed-price risk calculations
-                    can still be used, but ATR and historical
-                    analytics require imported OHLCV data.
+                    <div class="small mt-1">
+
+                        This symbol has not yet been stored
+                        in MarketPulse's historical dataset.
+
+                        You can still use percentage or
+                        fixed-price risk calculations.
+
+                        ATR, volatility and drawdown require
+                        historical OHLCV observations.
+
+                    </div>
 
                 </div>
 
@@ -1458,9 +1576,7 @@ Risk | MarketPulse
                         <div class="border rounded p-3">
 
                             <div class="small text-muted">
-
                                 20-Day Annualised Volatility
-
                             </div>
 
                             <div
@@ -1480,9 +1596,7 @@ Risk | MarketPulse
                         <div class="border rounded p-3">
 
                             <div class="small text-muted">
-
                                 Historical Max Drawdown
-
                             </div>
 
                             <div
@@ -1588,7 +1702,7 @@ Risk | MarketPulse
 
 
         <!-- ============================================== -->
-        <!-- TERMINOLOGY                                   -->
+        <!-- INPUT EXPLANATIONS                            -->
         <!-- ============================================== -->
 
         <div class="card shadow-sm">
@@ -1599,6 +1713,14 @@ Risk | MarketPulse
                 <h2 class="h5">
                     What do these inputs mean?
                 </h2>
+
+
+                <p class="small text-muted">
+
+                    Use these explanations if you are
+                    unfamiliar with trade-risk terminology.
+
+                </p>
 
 
                 <div
@@ -1637,11 +1759,12 @@ Risk | MarketPulse
                             <div class="accordion-body small">
 
                                 Total hypothetical capital
-                                available to the trading account.
+                                available to the trading
+                                account.
 
-                                It is not automatically the amount
-                                used to purchase this particular
-                                stock.
+                                It does not mean this entire
+                                amount will be invested in
+                                one position.
 
                             </div>
 
@@ -1681,13 +1804,20 @@ Risk | MarketPulse
 
                             <div class="accordion-body small">
 
-                                If capital is $10,000 and the
-                                risk budget is 1%, MarketPulse
-                                limits the planned trade loss
-                                to approximately $100.
+                                This is the maximum planned
+                                loss if the simulated
+                                stop-loss is reached.
 
-                                It does not mean only $100 is
-                                invested.
+                                Example:
+
+                                Capital = $10,000
+
+                                Risk = 1%
+
+                                Maximum planned loss = $100.
+
+                                It does not mean only $100
+                                is invested.
 
                             </div>
 
@@ -1728,8 +1858,8 @@ Risk | MarketPulse
                             <div class="accordion-body small">
 
                                 The assumed price of one share
-                                when the hypothetical position
-                                begins.
+                                or unit when the hypothetical
+                                trade begins.
 
                                 MarketPulse can populate this
                                 using Alpaca's latest available
@@ -1773,14 +1903,60 @@ Risk | MarketPulse
 
                             <div class="accordion-body small">
 
-                                A predefined level where the
-                                simulation assumes the position
-                                is exited when price moves
-                                unfavourably.
+                                The stop-loss is the planned
+                                exit level when price moves
+                                against the hypothetical trade.
 
-                                Actual market execution may
-                                differ because of gaps,
+                                Actual market execution can
+                                differ because of price gaps,
                                 liquidity and slippage.
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- ATR -->
+
+                    <div class="accordion-item">
+
+                        <h3 class="accordion-header">
+
+                            <button
+                                class="
+                                    accordion-button
+                                    collapsed
+                                "
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#atrHelp"
+                            >
+                                ATR
+                            </button>
+
+                        </h3>
+
+
+                        <div
+                            id="atrHelp"
+                            class="
+                                accordion-collapse
+                                collapse
+                            "
+                        >
+
+                            <div class="accordion-body small">
+
+                                Average True Range measures
+                                recent historical price
+                                movement.
+
+                                MarketPulse can use ATR to
+                                calculate a stop distance that
+                                responds to the asset's recent
+                                volatility.
 
                             </div>
 
@@ -1820,11 +1996,12 @@ Risk | MarketPulse
 
                             <div class="accordion-body small">
 
-                                Optional favourable exit price.
+                                An optional favourable exit
+                                price.
 
-                                It lets MarketPulse compare
-                                potential reward with the
-                                amount placed at risk.
+                                It allows MarketPulse to compare
+                                possible reward with the amount
+                                placed at risk.
 
                             </div>
 
@@ -1845,7 +2022,7 @@ Risk | MarketPulse
 
 
 <!-- ====================================================== -->
-<!-- 4. SERVER-SIDE RESULT                                  -->
+<!-- 5. SERVER-SIDE RISK RESULT                             -->
 <!-- ====================================================== -->
 
 {% if result %}
@@ -1869,6 +2046,10 @@ Risk | MarketPulse
 
 
             <div>
+
+                <div class="text-primary fw-semibold small">
+                    RISK PLAN COMPLETE
+                </div>
 
                 <h2 class="h3 mb-1">
                     Risk Plan Result
@@ -1924,6 +2105,13 @@ Risk | MarketPulse
 
                     </div>
 
+                    <div class="small text-muted">
+
+                        Maximum planned loss before
+                        whole-unit rounding.
+
+                    </div>
+
                 </div>
 
             </div>
@@ -1934,15 +2122,20 @@ Risk | MarketPulse
                 <div class="border rounded p-3 h-100">
 
                     <div class="small text-muted">
-
                         Risk-Constrained Position
-
                     </div>
 
                     <div class="fs-4 fw-bold">
 
                         {{ result.quantity }}
                         units
+
+                    </div>
+
+                    <div class="small text-muted">
+
+                        Position size permitted by the
+                        selected risk settings.
 
                     </div>
 
@@ -1992,7 +2185,9 @@ Risk | MarketPulse
         </div>
 
 
-        <!-- Entry / stop -->
+        <!-- ============================================== -->
+        <!-- ENTRY / STOP                                  -->
+        <!-- ============================================== -->
 
         <div class="row g-3 mt-1">
 
@@ -2051,7 +2246,9 @@ Risk | MarketPulse
         </div>
 
 
-        <!-- Loss / Reward -->
+        <!-- ============================================== -->
+        <!-- LOSS / REWARD                                 -->
+        <!-- ============================================== -->
 
         <div class="row g-3 mt-1">
 
@@ -2134,13 +2331,13 @@ Risk | MarketPulse
 
 
         <!-- ============================================== -->
-        <!-- MARKETPULSE CHECKS                            -->
+        <!-- MARKETPULSE RISK CHECKS                       -->
         <!-- ============================================== -->
 
         <div class="mt-4">
 
             <h3 class="h5">
-                MarketPulse Risk Checks
+                What does this result mean?
             </h3>
 
 
@@ -2149,27 +2346,25 @@ Risk | MarketPulse
 
                 <div class="list-group-item">
 
-                    Maximum requested risk:
+                    Your selected risk settings allow a
+                    maximum risk budget of
 
                     <strong>
-
                         ${{ result.maximum_risk_amount|floatformat:2 }}
-
-                    </strong>
+                    </strong>.
 
                 </div>
 
 
                 <div class="list-group-item">
 
-                    Actual planned loss after whole-unit
-                    position sizing:
+                    After whole-unit position sizing,
+                    the calculated planned stop-loss
+                    exposure is
 
                     <strong>
-
                         ${{ result.planned_loss|floatformat:2 }}
-
-                    </strong>
+                    </strong>.
 
                 </div>
 
@@ -2183,9 +2378,9 @@ Risk | MarketPulse
                         "
                     >
 
-                        Position size was limited by available
-                        trading capital rather than by the
-                        risk budget alone.
+                        The position size was limited by
+                        available trading capital rather
+                        than by the risk budget alone.
 
                     </div>
 
@@ -2196,14 +2391,31 @@ Risk | MarketPulse
 
                     <div class="list-group-item">
 
-                        Stop distance equals approximately
+                        The stop distance is approximately
+
+                        <strong>
+                            {{ result.stop_atr_multiple|floatformat:2 }}
+                            ATR
+                        </strong>.
+
+                    </div>
+
+                {% endif %}
+
+
+                {% if result.reward_risk_ratio != None %}
+
+                    <div class="list-group-item">
+
+                        The hypothetical reward is approximately
 
                         <strong>
 
-                            {{ result.stop_atr_multiple|floatformat:2 }}
-                            ATR
+                            {{ result.reward_risk_ratio|floatformat:2 }}
 
-                        </strong>.
+                        </strong>
+
+                        times the calculated planned risk.
 
                     </div>
 
@@ -2215,7 +2427,9 @@ Risk | MarketPulse
         </div>
 
 
-        <!-- Next workflow -->
+        <!-- ============================================== -->
+        <!-- NEXT ACTIONS                                   -->
+        <!-- ============================================== -->
 
         <div class="d-flex gap-2 flex-wrap mt-4">
 
@@ -2236,6 +2450,14 @@ Risk | MarketPulse
             </a>
 
 
+            <a
+                href="{% url 'risk_management:stress_test' %}?symbol={{ result.symbol }}"
+                class="btn btn-outline-danger"
+            >
+                Stress Test This Risk
+            </a>
+
+
         </div>
 
 
@@ -2248,14 +2470,421 @@ Risk | MarketPulse
 
 
 <!-- ====================================================== -->
-<!-- 5. HISTORICAL MARKET DATA JSON                         -->
+<!-- 6. STRESS TEST                                         -->
+<!-- ====================================================== -->
+
+<div
+    id="stress-testing"
+    class="card shadow-sm mt-4"
+>
+
+    <div class="card-body">
+
+
+        <div
+            class="
+                d-flex
+                justify-content-between
+                align-items-start
+                flex-wrap
+                gap-3
+            "
+        >
+
+
+            <div style="max-width: 760px;">
+
+                <div class="text-danger fw-semibold small">
+                    SEVERE MARKET SCENARIO ANALYSIS
+                </div>
+
+
+                <h2 class="h4 mt-1 mb-2">
+                    Stress Test
+                </h2>
+
+
+                <p class="mb-2">
+
+                    What could happen if market conditions
+                    become significantly worse than normal?
+
+                </p>
+
+
+                <p class="text-muted mb-0">
+
+                    Stress testing applies severe hypothetical
+                    conditions to historical data so you can
+                    investigate whether a strategy remains
+                    reasonably resilient.
+
+                </p>
+
+            </div>
+
+
+            <a
+                href="{% url 'risk_management:stress_test' %}"
+                class="btn btn-outline-danger"
+            >
+                Run Stress Test
+            </a>
+
+
+        </div>
+
+
+        <hr>
+
+
+        <!-- ============================================== -->
+        <!-- SIMPLE SCENARIO EXPLANATIONS                  -->
+        <!-- ============================================== -->
+
+        <div class="row g-3">
+
+
+            <!-- Crash -->
+
+            <div class="col-md-6 col-xl-3">
+
+                <div class="border rounded p-3 h-100">
+
+                    <div
+                        class="
+                            d-flex
+                            justify-content-between
+                            align-items-start
+                            gap-2
+                        "
+                    >
+
+                        <h3 class="h6 mb-2">
+                            Severe Market Decline
+                        </h3>
+
+                        <span class="badge bg-danger">
+                            Crash
+                        </span>
+
+                    </div>
+
+
+                    <p class="small text-muted mb-2">
+
+                        Simulates a substantial downward
+                        market shock.
+
+                    </p>
+
+
+                    <div class="small">
+
+                        <strong>
+                            Question answered:
+                        </strong>
+
+                        How much does strategy performance
+                        deteriorate during a sharp decline?
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- Volatility -->
+
+            <div class="col-md-6 col-xl-3">
+
+                <div class="border rounded p-3 h-100">
+
+                    <div
+                        class="
+                            d-flex
+                            justify-content-between
+                            align-items-start
+                            gap-2
+                        "
+                    >
+
+                        <h3 class="h6 mb-2">
+                            Volatility Spike
+                        </h3>
+
+                        <span class="badge bg-warning text-dark">
+                            Volatility
+                        </span>
+
+                    </div>
+
+
+                    <p class="small text-muted mb-2">
+
+                        Simulates much larger and less
+                        predictable price movements.
+
+                    </p>
+
+
+                    <div class="small">
+
+                        <strong>
+                            Question answered:
+                        </strong>
+
+                        Does the strategy remain stable when
+                        price movements become much larger?
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- Liquidity -->
+
+            <div class="col-md-6 col-xl-3">
+
+                <div class="border rounded p-3 h-100">
+
+                    <div
+                        class="
+                            d-flex
+                            justify-content-between
+                            align-items-start
+                            gap-2
+                        "
+                    >
+
+                        <h3 class="h6 mb-2">
+                            Liquidity Shock
+                        </h3>
+
+                        <span class="badge bg-secondary">
+                            Liquidity
+                        </span>
+
+                    </div>
+
+
+                    <p class="small text-muted mb-2">
+
+                        Simulates a substantial reduction
+                        in market trading volume.
+
+                    </p>
+
+
+                    <div class="small">
+
+                        <strong>
+                            Question answered:
+                        </strong>
+
+                        How vulnerable is the strategy when
+                        market liquidity deteriorates?
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- Regime change -->
+
+            <div class="col-md-6 col-xl-3">
+
+                <div class="border rounded p-3 h-100">
+
+                    <div
+                        class="
+                            d-flex
+                            justify-content-between
+                            align-items-start
+                            gap-2
+                        "
+                    >
+
+                        <h3 class="h6 mb-2">
+                            Market Condition Change
+                        </h3>
+
+                        <span class="badge bg-dark">
+                            Regime Shift
+                        </span>
+
+                    </div>
+
+
+                    <p class="small text-muted mb-2">
+
+                        Simulates the historical trend
+                        changing substantially.
+
+                    </p>
+
+
+                    <div class="small">
+
+                        <strong>
+                            Question answered:
+                        </strong>
+
+                        Does the strategy depend too heavily
+                        on one type of market environment?
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- ============================================== -->
+        <!-- STRESS TEST VS NORMAL STOP-LOSS                -->
+        <!-- ============================================== -->
+
+        <div class="alert alert-light border mt-4 mb-0">
+
+            <strong>
+                Why use a stress test if I already have a stop-loss?
+            </strong>
+
+
+            <div class="small mt-2">
+
+                The normal risk planner assumes a predefined
+                stop level.
+
+                Stress testing asks a different question:
+                what happens if markets move unusually quickly,
+                volatility increases sharply, liquidity falls,
+                or historical market behaviour changes?
+
+                A real stop order is not guaranteed to execute
+                exactly at the requested price during severe
+                market conditions.
+
+            </div>
+
+        </div>
+
+
+        <div class="mt-3">
+
+            <a
+                href="{% url 'risk_management:stress_test' %}"
+                class="btn btn-danger"
+            >
+                Start Stress Test
+            </a>
+
+        </div>
+
+
+    </div>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- 7. RISK WORKFLOW SUMMARY                               -->
+<!-- ====================================================== -->
+
+<div class="card shadow-sm mt-4">
+
+    <div class="card-body">
+
+
+        <h2 class="h5 mb-3">
+            MarketPulse Risk Workflow
+        </h2>
+
+
+        <div
+            class="
+                d-flex
+                align-items-center
+                flex-wrap
+                gap-2
+            "
+        >
+
+
+            <span class="badge bg-primary p-2">
+                1. Select Asset
+            </span>
+
+            <span class="text-muted">
+                →
+            </span>
+
+
+            <span class="badge bg-primary p-2">
+                2. Set Risk Budget
+            </span>
+
+            <span class="text-muted">
+                →
+            </span>
+
+
+            <span class="badge bg-primary p-2">
+                3. Calculate Position
+            </span>
+
+            <span class="text-muted">
+                →
+            </span>
+
+
+            <span class="badge bg-dark p-2">
+                4. Review Risk
+            </span>
+
+            <span class="text-muted">
+                →
+            </span>
+
+
+            <span class="badge bg-danger p-2">
+                5. Stress Test
+            </span>
+
+
+        </div>
+
+
+        <p class="small text-muted mt-3 mb-0">
+
+            This creates a clear progression from ordinary
+            trade-risk planning to severe-scenario analysis.
+
+        </p>
+
+
+    </div>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- 8. HISTORICAL MARKET DATA JSON                         -->
 <!-- ====================================================== -->
 
 {{ market_context_map|json_script:"market-context-data" }}
 
 
 <!-- ====================================================== -->
-<!-- 6. CLIENT-SIDE MARKET + RISK WORKFLOW                  -->
+<!-- 9. CLIENT-SIDE MARKET + RISK WORKFLOW                  -->
 <!-- ====================================================== -->
 
 <script>
@@ -2266,7 +2895,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 6.1 HISTORICAL MARKET DATA
+        // 9.1 HISTORICAL MARKET DATA
         // ====================================================
 
         const dataElement =
@@ -2293,7 +2922,8 @@ document.addEventListener(
 
             catch (error) {
 
-                parsedMarketData = {};
+                parsedMarketData =
+                    {};
 
             }
 
@@ -2305,7 +2935,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 6.2 API ROUTES
+        // 9.2 API ROUTES
         // ====================================================
 
         const ALPACA_SEARCH_URL =
@@ -2317,7 +2947,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 6.3 FORM ELEMENTS
+        // 9.3 FORM ELEMENTS
         // ====================================================
 
         const symbolField =
@@ -2381,7 +3011,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 6.4 ALPACA ELEMENTS
+        // 9.4 ALPACA ELEMENTS
         // ====================================================
 
         const searchResults =
@@ -2415,7 +3045,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 6.5 STOP SECTIONS
+        // 9.5 STOP METHOD SECTIONS
         // ====================================================
 
         const percentageSection =
@@ -2437,7 +3067,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 6.6 STATE
+        // 9.6 STATE
         // ====================================================
 
         let latestAlpacaPrice =
@@ -2453,7 +3083,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 6.7 BASIC FORMATTERS
+        // 9.7 BASIC FORMATTERS
         // ====================================================
 
         function money(value) {
@@ -2472,10 +3102,16 @@ document.addEventListener(
 
 
             const number =
-                Number(value);
+                Number(
+                    value
+                );
 
 
-            if (!Number.isFinite(number)) {
+            if (
+                !Number.isFinite(
+                    number
+                )
+            ) {
 
                 return "—";
 
@@ -2506,7 +3142,9 @@ document.addEventListener(
                 );
 
 
-            return Number.isFinite(value)
+            return Number.isFinite(
+                value
+            )
                 ?
                 value
                 :
@@ -2537,7 +3175,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 6.8 CURRENT HISTORICAL CONTEXT
+        // 9.8 CURRENT HISTORICAL CONTEXT
         // ====================================================
 
         function currentMarketContext() {
@@ -2551,12 +3189,14 @@ document.addEventListener(
 
             const symbol =
                 symbolField.value
-                .trim()
-                .toUpperCase();
+                    .trim()
+                    .toUpperCase();
 
 
             return (
-                marketData[symbol]
+                marketData[
+                    symbol
+                ]
                 ||
                 null
             );
@@ -2565,7 +3205,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 6.9 UPDATE HISTORICAL CONTEXT
+        // 9.9 UPDATE HISTORICAL CONTEXT
         // ====================================================
 
         function updateMarketContext() {
@@ -2592,47 +3232,53 @@ document.addEventListener(
 
                 setText(
                     "contextAtr",
-                    context.atr_14 !== null
-                    &&
-                    context.atr_14 !== undefined
-                    ?
-                    money(
-                        context.atr_14
+                    (
+                        context.atr_14 !== null
+                        &&
+                        context.atr_14 !== undefined
                     )
-                    :
-                    "—"
+                        ?
+                        money(
+                            context.atr_14
+                        )
+                        :
+                        "—"
                 );
 
 
                 setText(
                     "contextVolatility",
-                    context.annualised_volatility_pct !== null
-                    &&
-                    context.annualised_volatility_pct !== undefined
-                    ?
-                    Number(
-                        context.annualised_volatility_pct
-                    ).toFixed(2)
-                    +
-                    "%"
-                    :
-                    "—"
+                    (
+                        context.annualised_volatility_pct !== null
+                        &&
+                        context.annualised_volatility_pct !== undefined
+                    )
+                        ?
+                        Number(
+                            context.annualised_volatility_pct
+                        ).toFixed(2)
+                        +
+                        "%"
+                        :
+                        "—"
                 );
 
 
                 setText(
                     "contextDrawdown",
-                    context.maximum_drawdown_pct !== null
-                    &&
-                    context.maximum_drawdown_pct !== undefined
-                    ?
-                    Number(
-                        context.maximum_drawdown_pct
-                    ).toFixed(2)
-                    +
-                    "%"
-                    :
-                    "—"
+                    (
+                        context.maximum_drawdown_pct !== null
+                        &&
+                        context.maximum_drawdown_pct !== undefined
+                    )
+                        ?
+                        Number(
+                            context.maximum_drawdown_pct
+                        ).toFixed(2)
+                        +
+                        "%"
+                        :
+                        "—"
                 );
 
 
@@ -2738,7 +3384,9 @@ document.addEventListener(
             }
 
 
-            // Update historical import link.
+            // ------------------------------------------------
+            // Update Data-tab link with selected symbol.
+            // ------------------------------------------------
 
             const importLink =
                 document.getElementById(
@@ -2750,24 +3398,24 @@ document.addEventListener(
 
                 const symbol =
                     symbolField
-                    ?
-                    symbolField.value
-                        .trim()
-                        .toUpperCase()
-                    :
-                    "";
+                        ?
+                        symbolField.value
+                            .trim()
+                            .toUpperCase()
+                        :
+                        "";
 
 
                 importLink.href =
                     symbol
-                    ?
-                    "{% url 'data_management:import' %}?symbol="
-                    +
-                    encodeURIComponent(
-                        symbol
-                    )
-                    :
-                    "{% url 'data_management:import' %}";
+                        ?
+                        "{% url 'data_management:import' %}?symbol="
+                        +
+                        encodeURIComponent(
+                            symbol
+                        )
+                        :
+                        "{% url 'data_management:import' %}";
 
             }
 
@@ -2775,7 +3423,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 6.10 SAFE ALPACA SEARCH RESULT ELEMENT
+        // 9.10 CREATE SAFE ALPACA SEARCH RESULT
         // ====================================================
 
         function createSearchResult(
@@ -2892,10 +3540,10 @@ document.addEventListener(
 
             tradable.textContent =
                 asset.tradable
-                ?
-                "Tradable"
-                :
-                "Not tradable";
+                    ?
+                    "Tradable"
+                    :
+                    "Not tradable";
 
 
             right.appendChild(
@@ -2938,13 +3586,21 @@ document.addEventListener(
                         asset.symbol;
 
 
-                    searchResults.classList.add(
-                        "d-none"
-                    );
+                    if (searchResults) {
+
+                        searchResults.classList.add(
+                            "d-none"
+                        );
+
+                    }
 
 
-                    searchStatus.textContent =
-                        "";
+                    if (searchStatus) {
+
+                        searchStatus.textContent =
+                            "";
+
+                    }
 
 
                     updateMarketContext();
@@ -2967,7 +3623,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 6.11 SEARCH ALPACA
+        // 9.11 SEARCH ALPACA
         // ====================================================
 
         async function searchAlpacaAssets(
@@ -2980,20 +3636,34 @@ document.addEventListener(
 
             if (query.length < 1) {
 
-                searchResults.classList.add(
-                    "d-none"
-                );
+                if (searchResults) {
 
-                searchStatus.textContent =
-                    "";
+                    searchResults.classList.add(
+                        "d-none"
+                    );
+
+                }
+
+
+                if (searchStatus) {
+
+                    searchStatus.textContent =
+                        "";
+
+                }
+
 
                 return;
 
             }
 
 
-            searchStatus.textContent =
-                "Searching Alpaca...";
+            if (searchStatus) {
+
+                searchStatus.textContent =
+                    "Searching Alpaca...";
+
+            }
 
 
             try {
@@ -3020,8 +3690,12 @@ document.addEventListener(
                     await response.json();
 
 
-                searchResults.innerHTML =
-                    "";
+                if (searchResults) {
+
+                    searchResults.innerHTML =
+                        "";
+
+                }
 
 
                 if (
@@ -3039,20 +3713,24 @@ document.addEventListener(
                 }
 
 
-                searchStatus.textContent =
-                    data.count
-                    +
-                    " result"
-                    +
-                    (
-                        data.count === 1
-                        ?
-                        ""
-                        :
-                        "s"
-                    )
-                    +
-                    " from Alpaca";
+                if (searchStatus) {
+
+                    searchStatus.textContent =
+                        data.count
+                        +
+                        " result"
+                        +
+                        (
+                            data.count === 1
+                                ?
+                                ""
+                                :
+                                "s"
+                        )
+                        +
+                        " from Alpaca";
+
+                }
 
 
                 if (
@@ -3061,30 +3739,34 @@ document.addEventListener(
                     data.results.length === 0
                 ) {
 
-                    const empty =
-                        document.createElement(
-                            "div"
+                    if (searchResults) {
+
+                        const empty =
+                            document.createElement(
+                                "div"
+                            );
+
+
+                        empty.className =
+                            "list-group-item "
+                            +
+                            "text-muted";
+
+
+                        empty.textContent =
+                            "No matching Alpaca assets found.";
+
+
+                        searchResults.appendChild(
+                            empty
                         );
 
 
-                    empty.className =
-                        "list-group-item "
-                        +
-                        "text-muted";
+                        searchResults.classList.remove(
+                            "d-none"
+                        );
 
-
-                    empty.textContent =
-                        "No matching Alpaca assets found.";
-
-
-                    searchResults.appendChild(
-                        empty
-                    );
-
-
-                    searchResults.classList.remove(
-                        "d-none"
-                    );
+                    }
 
 
                     return;
@@ -3095,33 +3777,49 @@ document.addEventListener(
                 data.results.forEach(
                     function (asset) {
 
-                        searchResults.appendChild(
-                            createSearchResult(
-                                asset
-                            )
-                        );
+                        if (searchResults) {
+
+                            searchResults.appendChild(
+                                createSearchResult(
+                                    asset
+                                )
+                            );
+
+                        }
 
                     }
                 );
 
 
-                searchResults.classList.remove(
-                    "d-none"
-                );
+                if (searchResults) {
+
+                    searchResults.classList.remove(
+                        "d-none"
+                    );
+
+                }
 
             }
 
             catch (error) {
 
-                searchResults.classList.add(
-                    "d-none"
-                );
+                if (searchResults) {
+
+                    searchResults.classList.add(
+                        "d-none"
+                    );
+
+                }
 
 
-                searchStatus.textContent =
-                    "MarketPulse could not search Alpaca: "
-                    +
-                    error.message;
+                if (searchStatus) {
+
+                    searchStatus.textContent =
+                        "MarketPulse could not search Alpaca: "
+                        +
+                        error.message;
+
+                }
 
             }
 
@@ -3129,7 +3827,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 6.12 LOAD ALPACA SNAPSHOT
+        // 9.12 LOAD ALPACA SNAPSHOT
         // ====================================================
 
         async function loadAlpacaSnapshot(
@@ -3138,8 +3836,8 @@ document.addEventListener(
 
             symbol =
                 symbol
-                .trim()
-                .toUpperCase();
+                    .trim()
+                    .toUpperCase();
 
 
             if (!symbol) {
@@ -3149,8 +3847,12 @@ document.addEventListener(
             }
 
 
-            searchStatus.textContent =
-                "Loading latest Alpaca snapshot...";
+            if (searchStatus) {
+
+                searchStatus.textContent =
+                    "Loading latest Alpaca snapshot...";
+
+            }
 
 
             if (refreshAlpacaButton) {
@@ -3219,24 +3921,26 @@ document.addEventListener(
 
 
                 latestAlpacaPrice =
-                    snapshot.latest_price
-                    !== null
-                    &&
-                    snapshot.latest_price
-                    !== undefined
-                    ?
-                    Number(
-                        snapshot.latest_price
+                    (
+                        snapshot.latest_price !== null
+                        &&
+                        snapshot.latest_price !== undefined
                     )
-                    :
-                    null;
+                        ?
+                        Number(
+                            snapshot.latest_price
+                        )
+                        :
+                        null;
 
 
                 currentSnapshotSymbol =
                     symbol;
 
 
-                // Identification
+                // ------------------------------------------------
+                // Asset identification
+                // ------------------------------------------------
 
                 setText(
                     "alpacaAssetName",
@@ -3264,7 +3968,9 @@ document.addEventListener(
                 );
 
 
-                // Latest prices
+                // ------------------------------------------------
+                // Current prices
+                // ------------------------------------------------
 
                 setText(
                     "alpacaLatestPrice",
@@ -3306,7 +4012,9 @@ document.addEventListener(
                 );
 
 
+                // ------------------------------------------------
                 // Daily change
+                // ------------------------------------------------
 
                 let dailyChangeText =
                     "—";
@@ -3337,10 +4045,10 @@ document.addEventListener(
                     dailyChangeText =
                         (
                             change >= 0
-                            ?
-                            "+"
-                            :
-                            ""
+                                ?
+                                "+"
+                                :
+                                ""
                         )
                         +
                         change.toFixed(2)
@@ -3349,10 +4057,10 @@ document.addEventListener(
                         +
                         (
                             percentage >= 0
-                            ?
-                            "+"
-                            :
-                            ""
+                                ?
+                                "+"
+                                :
+                                ""
                         )
                         +
                         percentage.toFixed(2)
@@ -3368,7 +4076,9 @@ document.addEventListener(
                 );
 
 
+                // ------------------------------------------------
                 // Daily bar
+                // ------------------------------------------------
 
                 setText(
                     "alpacaDayOpen",
@@ -3396,61 +4106,67 @@ document.addEventListener(
 
                 setText(
                     "alpacaDayVolume",
-                    daily.volume !== null
-                    &&
-                    daily.volume !== undefined
-                    ?
-                    Number(
-                        daily.volume
-                    ).toLocaleString()
-                    :
-                    "—"
+                    (
+                        daily.volume !== null
+                        &&
+                        daily.volume !== undefined
+                    )
+                        ?
+                        Number(
+                            daily.volume
+                        ).toLocaleString()
+                        :
+                        "—"
                 );
 
 
-                // Asset properties
+                // ------------------------------------------------
+                // Asset capabilities
+                // ------------------------------------------------
 
                 setText(
                     "alpacaTradable",
                     asset.tradable
-                    ?
-                    "Tradable"
-                    :
-                    "Not Tradable"
+                        ?
+                        "Tradable"
+                        :
+                        "Not Tradable"
                 );
 
 
                 setText(
                     "alpacaFractionable",
                     asset.fractionable
-                    ?
-                    "Fractional Trading"
-                    :
-                    "Whole Units"
+                        ?
+                        "Fractional Trading"
+                        :
+                        "Whole Units"
                 );
 
 
                 setText(
                     "alpacaShortable",
                     asset.shortable
-                    ?
-                    "Shortable"
-                    :
-                    "Not Shortable"
+                        ?
+                        "Shortable"
+                        :
+                        "Not Shortable"
                 );
 
 
                 setText(
                     "alpacaMarginable",
                     asset.marginable
-                    ?
-                    "Marginable"
-                    :
-                    "Not Marginable"
+                        ?
+                        "Marginable"
+                        :
+                        "Not Marginable"
                 );
 
 
-                // Provider provenance
+                // ------------------------------------------------
+                // Provider information
+                // ------------------------------------------------
 
                 setText(
                     "alpacaFeed",
@@ -3485,8 +4201,12 @@ document.addEventListener(
                 }
 
 
-                searchStatus.textContent =
-                    "Latest Alpaca market snapshot loaded.";
+                if (searchStatus) {
+
+                    searchStatus.textContent =
+                        "Latest Alpaca market snapshot loaded.";
+
+                }
 
 
                 updateLivePreview();
@@ -3512,10 +4232,14 @@ document.addEventListener(
                 }
 
 
-                searchStatus.textContent =
-                    "MarketPulse could not load Alpaca data: "
-                    +
-                    error.message;
+                if (searchStatus) {
+
+                    searchStatus.textContent =
+                        "MarketPulse could not load Alpaca data: "
+                        +
+                        error.message;
+
+                }
 
             }
 
@@ -3534,17 +4258,17 @@ document.addEventListener(
 
 
         // ====================================================
-        // 6.13 STOP METHOD UI
+        // 9.13 STOP METHOD UI
         // ====================================================
 
         function updateStopMethod() {
 
             const method =
                 stopMethodField
-                ?
-                stopMethodField.value
-                :
-                "percentage";
+                    ?
+                    stopMethodField.value
+                    :
+                    "percentage";
 
 
             if (percentageSection) {
@@ -3583,7 +4307,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 6.14 LIVE RISK PREVIEW
+        // 9.14 LIVE RISK PREVIEW
         // ====================================================
 
         function updateLivePreview() {
@@ -3610,11 +4334,13 @@ document.addEventListener(
                 currentMarketContext();
 
 
-            // Priority:
+            // ------------------------------------------------
+            // Entry-price priority
             //
-            // 1. User-entered entry
-            // 2. Alpaca latest price
-            // 3. Stored historical close
+            // 1. User-entered value
+            // 2. Latest Alpaca price
+            // 3. Latest stored historical close
+            // ------------------------------------------------
 
             if (
                 entry === null
@@ -3642,31 +4368,35 @@ document.addEventListener(
             }
 
 
+            // ------------------------------------------------
+            // Maximum planned risk
+            // ------------------------------------------------
+
             const maximumRisk =
                 (
                     capital !== null
                     &&
                     riskPct !== null
                 )
-                ?
-                capital
-                *
-                riskPct
-                /
-                100
-                :
-                null;
+                    ?
+                    capital
+                    *
+                    riskPct
+                    /
+                    100
+                    :
+                    null;
 
 
             setText(
                 "liveRiskAmount",
                 maximumRisk !== null
-                ?
-                "$"
-                +
-                maximumRisk.toFixed(2)
-                :
-                "—"
+                    ?
+                    "$"
+                    +
+                    maximumRisk.toFixed(2)
+                    :
+                    "—"
             );
 
 
@@ -3696,6 +4426,7 @@ document.addEventListener(
                     "—"
                 );
 
+
                 return;
 
             }
@@ -3703,25 +4434,27 @@ document.addEventListener(
 
             const direction =
                 directionField
-                ?
-                directionField.value
-                :
-                "long";
+                    ?
+                    directionField.value
+                    :
+                    "long";
 
 
             const method =
                 stopMethodField
-                ?
-                stopMethodField.value
-                :
-                "percentage";
+                    ?
+                    stopMethodField.value
+                    :
+                    "percentage";
 
 
             let stop =
                 null;
 
 
-            // Percentage method
+            // ------------------------------------------------
+            // Percentage stop
+            // ------------------------------------------------
 
             if (method === "percentage") {
 
@@ -3747,17 +4480,19 @@ document.addEventListener(
 
                     stop =
                         direction === "long"
-                        ?
-                        entry - distance
-                        :
-                        entry + distance;
+                            ?
+                            entry - distance
+                            :
+                            entry + distance;
 
                 }
 
             }
 
 
-            // ATR method
+            // ------------------------------------------------
+            // ATR stop
+            // ------------------------------------------------
 
             else if (
                 method === "atr"
@@ -3778,7 +4513,9 @@ document.addEventListener(
 
 
                 if (
-                    Number.isFinite(atr)
+                    Number.isFinite(
+                        atr
+                    )
                     &&
                     atr > 0
                     &&
@@ -3795,17 +4532,19 @@ document.addEventListener(
 
                     stop =
                         direction === "long"
-                        ?
-                        entry - distance
-                        :
-                        entry + distance;
+                            ?
+                            entry - distance
+                            :
+                            entry + distance;
 
                 }
 
             }
 
 
-            // Fixed price method
+            // ------------------------------------------------
+            // Fixed stop
+            // ------------------------------------------------
 
             else if (
                 method === "fixed"
@@ -3819,10 +4558,16 @@ document.addEventListener(
             }
 
 
+            // ------------------------------------------------
+            // Unable to calculate stop
+            // ------------------------------------------------
+
             if (
                 stop === null
                 ||
-                !Number.isFinite(stop)
+                !Number.isFinite(
+                    stop
+                )
             ) {
 
                 setText(
@@ -3845,10 +4590,15 @@ document.addEventListener(
                     "—"
                 );
 
+
                 return;
 
             }
 
+
+            // ------------------------------------------------
+            // Risk per unit
+            // ------------------------------------------------
 
             const riskPerUnit =
                 Math.abs(
@@ -3873,6 +4623,10 @@ document.addEventListener(
                 )
             );
 
+
+            // ------------------------------------------------
+            // Position size
+            // ------------------------------------------------
 
             let quantity =
                 null;
@@ -3914,14 +4668,18 @@ document.addEventListener(
             setText(
                 "livePositionSize",
                 quantity !== null
-                ?
-                quantity
-                +
-                " units"
-                :
-                "—"
+                    ?
+                    quantity
+                    +
+                    " units"
+                    :
+                    "—"
             );
 
+
+            // ------------------------------------------------
+            // Reward-to-risk
+            // ------------------------------------------------
 
             const target =
                 numberValue(
@@ -3937,10 +4695,10 @@ document.addEventListener(
 
                 const rewardPerUnit =
                     direction === "long"
-                    ?
-                    target - entry
-                    :
-                    entry - target;
+                        ?
+                        target - entry
+                        :
+                        entry - target;
 
 
                 if (rewardPerUnit > 0) {
@@ -3984,7 +4742,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 6.15 SYMBOL SEARCH EVENTS
+        // 9.15 SYMBOL SEARCH EVENT
         // ====================================================
 
         if (symbolField) {
@@ -3993,15 +4751,19 @@ document.addEventListener(
                 "input",
                 function () {
 
-                    // A typed symbol is no longer guaranteed
-                    // to match the currently displayed snapshot.
+                    const typedSymbol =
+                        symbolField.value
+                            .trim()
+                            .toUpperCase();
+
+
+                    // Clear stale Alpaca price if the user
+                    // starts typing a different symbol.
 
                     if (
                         currentSnapshotSymbol
                         !==
-                        symbolField.value
-                            .trim()
-                            .toUpperCase()
+                        typedSymbol
                     ) {
 
                         latestAlpacaPrice =
@@ -4044,7 +4806,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 6.16 USE ALPACA PRICE
+        // 9.16 USE ALPACA PRICE
         // ====================================================
 
         if (useAlpacaPriceButton) {
@@ -4067,7 +4829,8 @@ document.addEventListener(
                             new Event(
                                 "input",
                                 {
-                                    bubbles: true,
+                                    bubbles:
+                                        true,
                                 }
                             )
                         );
@@ -4081,7 +4844,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 6.17 REFRESH ALPACA SNAPSHOT
+        // 9.17 REFRESH ALPACA SNAPSHOT
         // ====================================================
 
         if (refreshAlpacaButton) {
@@ -4109,7 +4872,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 6.18 STORED HISTORICAL CLOSE
+        // 9.18 USE STORED HISTORICAL CLOSE
         // ====================================================
 
         const latestStoredButton =
@@ -4149,7 +4912,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 6.19 RISK PRESETS
+        // 9.19 RISK PRESET BUTTONS
         // ====================================================
 
         document
@@ -4181,7 +4944,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 6.20 GENERAL RISK FIELD EVENTS
+        // 9.20 GENERAL RISK FIELD EVENTS
         // ====================================================
 
         [
@@ -4221,6 +4984,10 @@ document.addEventListener(
         );
 
 
+        // ====================================================
+        // 9.21 STOP METHOD EVENT
+        // ====================================================
+
         if (stopMethodField) {
 
             stopMethodField.addEventListener(
@@ -4232,7 +4999,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 6.21 CLOSE SEARCH RESULTS
+        // 9.22 CLOSE ALPACA SEARCH RESULTS
         // ====================================================
 
         document.addEventListener(
@@ -4263,7 +5030,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 6.22 INITIAL PAGE STATE
+        // 9.23 INITIAL PAGE STATE
         // ====================================================
 
         updateMarketContext();
@@ -4273,8 +5040,8 @@ document.addEventListener(
         updateLivePreview();
 
 
-        // If a symbol is already present following a POST,
-        // reload its Alpaca snapshot automatically.
+        // Reload an Alpaca snapshot automatically if
+        // a symbol is already present after form submission.
 
         if (
             symbolField

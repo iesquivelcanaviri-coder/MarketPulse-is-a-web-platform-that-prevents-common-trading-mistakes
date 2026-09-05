@@ -4,20 +4,35 @@
 {# MARKETPULSE BASE TEMPLATE                                #}
 {# ======================================================== #}
 
-{# Framework mapping:#}
-{#This is the main shared layout for every Django page.#}
-{#It connects:#}
-{#- Django template inheritance#}
-{#- django-bootstrap5#}
-{#- Django static files#}
-{#- Authentication navigation#}
-{#- Django messages#}
-{#- MarketPulse application URLs#}
-{#- Shared CSS and JavaScript#}
-
-{#IMPORTANT:#}
-{#This template contains only ONE real content block.#}
-{#Django template syntax is not written inside HTML comments.#}
+{# Framework mapping:                                      #}
+{# This is the main shared layout for every Django page.   #}
+{#                                                        #}
+{# It connects:                                            #}
+{# - Django template inheritance                           #}
+{# - django-bootstrap5                                     #}
+{# - Django static files                                   #}
+{# - Authentication navigation                             #}
+{# - Django messages                                       #}
+{# - MarketPulse application URLs                          #}
+{# - Shared CSS and JavaScript                             #}
+{#                                                        #}
+{# User-facing navigation is intentionally kept simple:    #}
+{#                                                        #}
+{# Home                                                   #}
+{# Dashboard                                              #}
+{# Data                                                   #}
+{# Strategies                                             #}
+{# Risk                                                   #}
+{#                                                        #}
+{# The old standalone Analysis tab has been removed.       #}
+{#                                                        #}
+{# Analytical features now belong to their logical areas: #}
+{#                                                        #}
+{# Market Regime     -> Data / Market Condition            #}
+{# Overfitting       -> Strategies / Robustness            #}
+{# Stress Testing    -> Risk / Stress Test                 #}
+{#                                                        #}
+{# analysis_tools remains an INTERNAL analytics engine.    #}
 
 <html lang="en">
 
@@ -36,9 +51,11 @@
     >
 
     <title>
+
         {% block title %}
             MarketPulse
         {% endblock %}
+
     </title>
 
 
@@ -149,7 +166,9 @@
             <ul class="navbar-nav me-auto">
 
 
-                {# ---------------- Home ------------------ #}
+                {# ================================================= #}
+                {# HOME                                              #}
+                {# ================================================= #}
 
                 <li class="nav-item">
 
@@ -166,7 +185,9 @@
                 {% if user.is_authenticated %}
 
 
-                    {# -------------- Dashboard ------------ #}
+                    {# ============================================= #}
+                    {# DASHBOARD                                     #}
+                    {# ============================================= #}
 
                     <li class="nav-item">
 
@@ -180,7 +201,15 @@
                     </li>
 
 
-                    {# -------------- Data ----------------- #}
+                    {# ============================================= #}
+                    {# DATA                                          #}
+                    {# ============================================= #}
+
+                    {# Data contains:                                #}
+                    {# - Historical market data                      #}
+                    {# - Import / refresh                            #}
+                    {# - Dataset inspection                          #}
+                    {# - Market Condition / Regime Analysis          #}
 
                     <li class="nav-item">
 
@@ -194,7 +223,16 @@
                     </li>
 
 
-                    {# -------------- Strategies ----------- #}
+                    {# ============================================= #}
+                    {# STRATEGIES                                    #}
+                    {# ============================================= #}
+
+                    {# Strategies contains:                          #}
+                    {# - Strategy & Model Library                    #}
+                    {# - User-created strategies                     #}
+                    {# - Strategy comparison                         #}
+                    {# - Backtesting                                 #}
+                    {# - Strategy Robustness / Overfitting Analysis  #}
 
                     <li class="nav-item">
 
@@ -208,7 +246,16 @@
                     </li>
 
 
-                    {# -------------- Risk ----------------- #}
+                    {# ============================================= #}
+                    {# RISK                                          #}
+                    {# ============================================= #}
+
+                    {# Risk contains:                                #}
+                    {# - Trade Risk Planner                          #}
+                    {# - Position sizing                             #}
+                    {# - Stop-loss analysis                          #}
+                    {# - Reward-to-risk                              #}
+                    {# - Stress Testing                              #}
 
                     <li class="nav-item">
 
@@ -222,71 +269,24 @@
                     </li>
 
 
-                    {# ==================================== #}
-                    {# ANALYSIS DROPDOWN                    #}
-                    {# ==================================== #}
+                    {# ============================================= #}
+                    {# ANALYSIS TAB REMOVED                           #}
+                    {# ============================================= #}
 
-                    <li class="nav-item dropdown">
-
-                        <a
-                            class="nav-link dropdown-toggle"
-                            href="#"
-                            role="button"
-                            data-bs-toggle="dropdown"
-                            aria-expanded="false"
-                        >
-                            Analysis
-                        </a>
-
-
-                        <ul class="dropdown-menu">
-
-
-                            {# ---------- Overfitting ------- #}
-
-                            <li>
-
-                                <a
-                                    class="dropdown-item"
-                                    href="{% url 'analysis_tools:overfitting' %}"
-                                >
-                                    Overfitting
-                                </a>
-
-                            </li>
-
-
-                            {# ---------- Market Regime ----- #}
-
-                            <li>
-
-                                <a
-                                    class="dropdown-item"
-                                    href="{% url 'analysis_tools:regime' %}"
-                                >
-                                    Market Regime
-                                </a>
-
-                            </li>
-
-
-                            {# ---------- Stress Testing ---- #}
-
-                            <li>
-
-                                <a
-                                    class="dropdown-item"
-                                    href="{% url 'analysis_tools:stress' %}"
-                                >
-                                    Stress Testing
-                                </a>
-
-                            </li>
-
-
-                        </ul>
-
-                    </li>
+                    {# The old Analysis dropdown previously linked to: #}
+                    {#                                                  #}
+                    {# analysis_tools:overfitting                        #}
+                    {# analysis_tools:regime                             #}
+                    {# analysis_tools:stress                             #}
+                    {#                                                  #}
+                    {# Those public routes are intentionally no longer   #}
+                    {# referenced here.                                  #}
+                    {#                                                  #}
+                    {# Their functionality has been redistributed:       #}
+                    {#                                                  #}
+                    {# Overfitting -> Strategies                         #}
+                    {# Market Regime -> Data                             #}
+                    {# Stress Testing -> Risk                            #}
 
 
                 {% endif %}
@@ -304,7 +304,9 @@
                 {% if user.is_authenticated %}
 
 
-                    {# ---------------- Profile ------------ #}
+                    {# ============================================= #}
+                    {# PROFILE                                       #}
+                    {# ============================================= #}
 
                     <li class="nav-item">
 
@@ -318,7 +320,9 @@
                     </li>
 
 
-                    {# ---------------- Logout ------------- #}
+                    {# ============================================= #}
+                    {# LOGOUT                                        #}
+                    {# ============================================= #}
 
                     <li class="nav-item">
 
@@ -344,7 +348,9 @@
                 {% else %}
 
 
-                    {# ---------------- Login -------------- #}
+                    {# ============================================= #}
+                    {# LOGIN                                         #}
+                    {# ============================================= #}
 
                     <li class="nav-item">
 
@@ -358,7 +364,9 @@
                     </li>
 
 
-                    {# ---------------- Register ----------- #}
+                    {# ============================================= #}
+                    {# REGISTER                                      #}
+                    {# ============================================= #}
 
                     <li class="nav-item">
 
@@ -405,6 +413,7 @@
             >
 
                 {{ message }}
+
 
                 <button
                     type="button"

@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}
+Market Condition | MarketPulse
+{% endblock %}
+
+{% block content %}
+
+
+<div class="mb-4">
+
+    <a
+        href="{% url 'data_management:import' %}"
+        class="text-decoration-none"
+    >
+        ← Back to Data
+    </a>
+
+    <h1 class="h2 mt-3 mb-1">
+        Market Condition
+    </h1>
+
+    <p class="text-muted">
+
+        Understand whether an asset has recently been
+        trending upward, falling, moving sideways or
+        experiencing high volatility.
+
+    </p>
+
+</div>
+
+
+<div class="row g-4">
+
+
+    <div class="col-lg-6">
+
+
+        <div class="card shadow-sm">
+
+            <div class="card-body">
+
+                <div class="text-primary fw-semibold small">
+                    STEP 1
+                </div>
+
+                <h2 class="h4">
+                    Choose an Asset
+                </h2>
+
+
+                {% if symbols %}
+
+                    <form method="post">
+
+                        {% csrf_token %}
+
+
+                        <label
+                            class="form-label fw-semibold"
+                            for="symbol"
+                        >
+                            Asset
+                        </label>
+
+
+                        <select
+                            class="form-select mb-3"
+                            id="symbol"
+                            name="symbol"
+                            required
+                        >
+
+                            {% for symbol in symbols %}
+
+                                <option
+                                    value="{{ symbol }}"
+                                    {% if symbol == selected_symbol %}
+                                        selected
+                                    {% endif %}
+                                >
+                                    {{ symbol }}
+                                </option>
+
+                            {% endfor %}
+
+                        </select>
+
+
+                        <div class="alert alert-light border">
+
+                            <strong>
+                                What will MarketPulse check?
+                            </strong>
+
+                            <ul class="mb-0 mt-2">
+
+                                <li>
+                                    Recent price direction
+                                </li>
+
+                                <li>
+                                    Historical volatility
+                                </li>
+
+                                <li>
+                                    Moving-average trend
+                                </li>
+
+                                <li>
+                                    Strength of the detected condition
+                                </li>
+
+                            </ul>
+
+                        </div>
+
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary"
+                        >
+                            Analyse Market Condition
+                        </button>
+
+                    </form>
+
+
+                {% else %}
+
+                    <div class="alert alert-warning">
+
+                        Import historical market data first.
+
+                    </div>
+
+
+                    <a
+                        href="{% url 'data_management:import' %}"
+                        class="btn btn-primary"
+                    >
+                        Import Data
+                    </a>
+
+                {% endif %}
+
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="col-lg-6">
+
+
+        <div class="card shadow-sm">
+
+            <div class="card-body">
+
+                <div class="text-primary fw-semibold small">
+                    STEP 2
+                </div>
+
+                <h2 class="h4">
+                    Understand the Result
+                </h2>
+
+
+                {% if latest_regime %}
+
+                    <div class="mb-3">
+
+                        <div class="text-muted small">
+                            Current Condition
+                        </div>
+
+                        <div class="fs-3 fw-bold">
+
+                            {{ latest_regime.get_regime_display }}
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="row g-3">
+
+                        <div class="col-6">
+
+                            <div class="border rounded p-3">
+
+                                <div class="small text-muted">
+                                    Confidence
+                                </div>
+
+                                <strong>
+                                    {{ latest_regime.confidence|floatformat:2 }}
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-6">
+
+                            <div class="border rounded p-3">
+
+                                <div class="small text-muted">
+                                    Volatility
+                                </div>
+
+                                <strong>
+                                    {{ latest_regime.volatility|floatformat:2 }}
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="alert alert-info mt-3 mb-0">
+
+                        This describes the recent historical
+                        market environment. It is not a prediction
+                        of future prices.
+
+                    </div>
+
+
+                {% else %}
+
+                    <p class="text-muted">
+
+                        Choose an asset and run the analysis.
+                        MarketPulse will explain the detected
+                        market environment here.
+
+                    </p>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+</div>
+
+
+{% endblock %}

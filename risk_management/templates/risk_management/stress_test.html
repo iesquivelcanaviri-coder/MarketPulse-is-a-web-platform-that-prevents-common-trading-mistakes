@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}
+Stress Test | MarketPulse
+{% endblock %}
+
+{% block content %}
+
+
+<a
+    href="{% url 'risk_management:calculator' %}"
+    class="text-decoration-none"
+>
+    ← Back to Risk
+</a>
+
+
+<div class="mt-3 mb-4">
+
+    <h1 class="h2 mb-1">
+        Stress Test
+    </h1>
+
+    <p class="text-muted">
+
+        What could happen if market conditions become
+        substantially worse than normal?
+
+    </p>
+
+</div>
+
+
+<div class="card shadow-sm">
+
+    <div class="card-body">
+
+        <form method="post">
+
+            {% csrf_token %}
+
+
+            <div class="mb-3">
+
+                <label class="form-label fw-semibold">
+                    Strategy
+                </label>
+
+                <select
+                    class="form-select"
+                    name="strategy"
+                    required
+                >
+
+                    <option value="">
+                        Select a strategy
+                    </option>
+
+                    {% for strategy in strategies %}
+
+                        <option value="{{ strategy.id }}">
+                            {{ strategy.name }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+
+            <div class="mb-3">
+
+                <label class="form-label fw-semibold">
+                    Asset
+                </label>
+
+                <select
+                    class="form-select"
+                    name="symbol"
+                    required
+                >
+
+                    <option value="">
+                        Select an asset
+                    </option>
+
+                    {% for symbol in symbols %}
+
+                        <option value="{{ symbol }}">
+                            {{ symbol }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+
+            <div class="mb-4">
+
+                <label class="form-label fw-semibold">
+                    What scenario do you want to test?
+                </label>
+
+
+                <div class="form-check border rounded p-3 mb-2">
+
+                    <input
+                        class="form-check-input ms-0 me-2"
+                        type="radio"
+                        name="scenario"
+                        value="crash"
+                        id="crash"
+                        checked
+                    >
+
+                    <label
+                        class="form-check-label"
+                        for="crash"
+                    >
+
+                        <strong>
+                            Severe Market Decline
+                        </strong>
+
+                        <div class="small text-muted">
+
+                            Simulates an approximately 20%
+                            downward market shock.
+
+                        </div>
+
+                    </label>
+
+                </div>
+
+
+                <div class="form-check border rounded p-3 mb-2">
+
+                    <input
+                        class="form-check-input ms-0 me-2"
+                        type="radio"
+                        name="scenario"
+                        value="volatility_spike"
+                        id="volatility"
+                    >
+
+                    <label
+                        class="form-check-label"
+                        for="volatility"
+                    >
+
+                        <strong>
+                            Volatility Spike
+                        </strong>
+
+                        <div class="small text-muted">
+
+                            Simulates price movement becoming
+                            approximately three times more volatile.
+
+                        </div>
+
+                    </label>
+
+                </div>
+
+
+                <div class="form-check border rounded p-3 mb-2">
+
+                    <input
+                        class="form-check-input ms-0 me-2"
+                        type="radio"
+                        name="scenario"
+                        value="liquidity_crisis"
+                        id="liquidity"
+                    >
+
+                    <label
+                        class="form-check-label"
+                        for="liquidity"
+                    >
+
+                        <strong>
+                            Liquidity Shock
+                        </strong>
+
+                        <div class="small text-muted">
+
+                            Simulates a substantial reduction
+                            in trading volume.
+
+                        </div>
+
+                    </label>
+
+                </div>
+
+
+                <div class="form-check border rounded p-3">
+
+                    <input
+                        class="form-check-input ms-0 me-2"
+                        type="radio"
+                        name="scenario"
+                        value="regime_change"
+                        id="regime"
+                    >
+
+                    <label
+                        class="form-check-label"
+                        for="regime"
+                    >
+
+                        <strong>
+                            Market Condition Change
+                        </strong>
+
+                        <div class="small text-muted">
+
+                            Tests what happens when the historical
+                            trend changes significantly.
+
+                        </div>
+
+                    </label>
+
+                </div>
+
+            </div>
+
+
+            <button
+                type="submit"
+                class="btn btn-danger"
+            >
+                Run Stress Test
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+{% endblock %}

@@ -12,19 +12,28 @@ strategy_builder/urls.py
 strategy_builder/views.py
     ↓
 templates/strategy_builder/
+    ↓
+analysis_tools.analyzers
+    ↓
+PostgreSQL
 
 
-AVAILABLE ROUTES:
+============================================================
+USER-FACING STRATEGY WORKFLOW
+============================================================
 
 /strategy/
     -> Strategy & Model Research workspace
-    -> Shows:
-       - 37 library models
+
+    Shows:
+       - Strategy & Model Library
+       - 37 quantitative models
        - 7 model categories
        - Search and filtering
        - Model comparison
        - User-created strategies
        - Backtest summaries
+       - Strategy validation tools
 
 
 /strategy/create/
@@ -32,8 +41,22 @@ AVAILABLE ROUTES:
 
 
 /strategy/library/add/
-    -> Add another model or strategy to the
-       StrategyLibraryItem catalogue
+    -> Add another quantitative model or strategy
+       to the StrategyLibraryItem catalogue
+
+
+/strategy/robustness/
+    -> Strategy Robustness
+    -> User-friendly name for Overfitting Analysis
+
+    Answers the question:
+
+       "Does this strategy continue to behave reasonably
+        when tested on different historical periods?"
+
+
+/strategy/robustness/results/
+    -> View Strategy Robustness / Overfitting results
 
 
 /strategy/<strategy_id>/backtest/
@@ -43,6 +66,38 @@ AVAILABLE ROUTES:
 
 /strategy/results/<backtest_id>/
     -> View saved backtest results
+
+
+============================================================
+IMPORTANT ARCHITECTURE
+============================================================
+
+The old public Analysis tab is being removed.
+
+However:
+
+analysis_tools/
+    models.py
+    analyzers.py
+    migrations/
+
+remain part of MarketPulse internally.
+
+For Strategy Robustness the architecture becomes:
+
+Strategies Tab
+    ↓
+strategy_builder.views
+    ↓
+analysis_tools.analyzers.detect_overfitting()
+    ↓
+analysis_tools.models.OverfittingTest
+    ↓
+PostgreSQL
+
+This gives the user a simpler interface while keeping
+the analytics implementation separated into a reusable
+backend analytics layer.
 
 ============================================================
 """
@@ -61,13 +116,20 @@ from . import views
 # 2. APPLICATION NAMESPACE
 # ============================================================
 
-# This allows templates and views to reference URLs using:
+# This namespace allows templates and Python code to
+# reference routes using descriptive names instead of
+# hard-coded URLs.
+#
+# Examples:
 #
 # strategy_builder:list
 # strategy_builder:create
 # strategy_builder:library_add
+# strategy_builder:robustness
+# strategy_builder:robustness_results
 # strategy_builder:backtest
 # strategy_builder:results
+
 app_name = "strategy_builder"
 
 
@@ -78,7 +140,7 @@ app_name = "strategy_builder"
 urlpatterns = [
 
     # ========================================================
-    # STRATEGY & MODEL RESEARCH WORKSPACE
+    # 3.1 STRATEGY & MODEL RESEARCH WORKSPACE
     # ========================================================
 
     # URL:
@@ -87,18 +149,20 @@ urlpatterns = [
     #
     # Purpose:
     #
-    # Displays the complete MarketPulse Strategy & Model
-    # Research workspace.
+    # Main Strategies page for MarketPulse.
     #
-    # This page contains:
+    # This page can contain:
     #
     # - StrategyLibraryItem catalogue
     # - 37 quantitative models
-    # - Category filtering
+    # - Seven model categories
     # - Search
-    # - Metadata comparison
-    # - My Strategies
+    # - Filtering
+    # - Model comparison
+    # - User-created strategies
     # - Backtest summaries
+    # - Strategy Robustness access
+
     path(
         "",
         views.strategy_list,
@@ -107,7 +171,7 @@ urlpatterns = [
 
 
     # ========================================================
-    # CREATE USER STRATEGY
+    # 3.2 CREATE USER STRATEGY
     # ========================================================
 
     # URL:
@@ -116,8 +180,9 @@ urlpatterns = [
     #
     # Purpose:
     #
-    # Allows a logged-in user to create their own
+    # Allows an authenticated user to create a custom
     # rule-based MarketPulse trading strategy.
+
     path(
         "create/",
         views.strategy_create,
@@ -126,7 +191,7 @@ urlpatterns = [
 
 
     # ========================================================
-    # ADD MODEL TO STRATEGY LIBRARY
+    # 3.3 ADD MODEL TO STRATEGY LIBRARY
     # ========================================================
 
     # URL:
@@ -138,12 +203,13 @@ urlpatterns = [
     # Allows another quantitative model, strategy or
     # analytical method to be added to StrategyLibraryItem.
     #
-    # New models should initially be stored as:
+    # New entries should normally begin with:
     #
     # implementation_status = "catalogued"
     #
-    # until their numerical execution engine has actually
-    # been implemented and tested.
+    # until an actual execution engine has been implemented
+    # and tested.
+
     path(
         "library/add/",
         views.library_item_create,
@@ -152,15 +218,79 @@ urlpatterns = [
 
 
     # ========================================================
-    # BACKTEST USER STRATEGY
+    # 3.4 STRATEGY ROBUSTNESS
+    # ========================================================
+
+    # URL:
+    #
+    # /strategy/robustness/
+    #
+    # User-facing name:
+    #
+    # Strategy Robustness
+    #
+    # Technical method:
+    #
+    # Overfitting Analysis
+    #
+    # Purpose:
+    #
+    # Helps the user investigate whether apparently strong
+    # historical performance remains reasonably consistent
+    # when evaluated over different historical periods.
+    #
+    # The user should not need to understand the technical
+    # term "overfitting" before using this tool.
+    #
+    # Backend flow:
+    #
+    # strategy_robustness()
+    #       ↓
+    # analysis_tools.analyzers.detect_overfitting()
+    #       ↓
+    # OverfittingTest
+    #       ↓
+    # PostgreSQL
+
+    path(
+        "robustness/",
+        views.strategy_robustness,
+        name="robustness",
+    ),
+
+
+    # ========================================================
+    # 3.5 STRATEGY ROBUSTNESS RESULTS
+    # ========================================================
+
+    # URL:
+    #
+    # /strategy/robustness/results/
+    #
+    # Purpose:
+    #
+    # Displays saved Strategy Robustness / Overfitting
+    # analysis results in the Strategies area rather than
+    # under a separate Analysis navigation tab.
+
+    path(
+        "robustness/results/",
+        views.strategy_robustness_results,
+        name="robustness_results",
+    ),
+
+
+    # ========================================================
+    # 3.6 BACKTEST USER STRATEGY
     # ========================================================
 
     # Example:
     #
     # /strategy/4/backtest/
     #
-    # strategy_id identifies the Strategy record that
-    # should be tested against historical market data.
+    # strategy_id identifies the Strategy database record
+    # that should be tested using historical market data.
+
     path(
         "<int:strategy_id>/backtest/",
         views.backtest_strategy,
@@ -169,14 +299,16 @@ urlpatterns = [
 
 
     # ========================================================
-    # VIEW BACKTEST RESULTS
+    # 3.7 VIEW BACKTEST RESULTS
     # ========================================================
 
     # Example:
     #
     # /strategy/results/12/
     #
-    # backtest_id identifies the saved Backtest record.
+    # backtest_id identifies the saved Backtest record
+    # whose performance metrics should be displayed.
+
     path(
         "results/<int:backtest_id>/",
         views.backtest_results,
