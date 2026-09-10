@@ -21,7 +21,7 @@ data_management/views.py
     ↓
 templates/data_management/import.html
     ↓
-Historical OHLCV table
+Historical Open, High, Low, Close and Volume table
 
 
 DATA PROVIDER ARCHITECTURE:
@@ -76,6 +76,16 @@ analysis_tools.models.MarketRegime
 data_management.views.market_condition
     ↓
 templates/data_management/market_condition.html
+    ↓
+User selects stored asset
+    ↓
+Run Market Condition analysis
+    ↓
+MarketRegime result saved
+    ↓
+Redirect back to Market Condition workspace
+    ↓
+Latest classification displayed on same page
 
 
 PURPOSE OF THE DATA TAB:
@@ -84,13 +94,7 @@ The Data tab is responsible for:
 
 1. Importing historical market data from Alpaca.
 2. Saving imported observations into core.MarketData.
-3. Displaying historical OHLCV data:
-   - Date
-   - Open
-   - High
-   - Low
-   - Close
-   - Volume
+3. Displaying historical Open, High, Low, Close and Volume data.
 4. Showing the market-data provider and feed.
 5. Remembering the most recently imported symbol.
 6. Allowing the user to switch between imported symbols.
@@ -110,7 +114,7 @@ The Data tab is responsible for:
 
 IMPORTANT ARCHITECTURE:
 
-The old separate Analysis tab is no longer exposed
+The old separate Analysis navigation tab is no longer exposed
 through the user interface.
 
 analysis_tools remains an INTERNAL analytics engine.
@@ -120,6 +124,21 @@ The user-facing location for Market Regime Analysis is:
 Data
     ↓
 Market Condition
+
+
+MARKET CONDITION UX:
+
+The Data page acts as the entry point.
+
+The dedicated Market Condition workspace is responsible for:
+
+- Choosing an imported asset.
+- Running Market Regime Analysis.
+- Displaying the current historical classification.
+- Displaying confidence and volatility.
+- Explaining the result in user-friendly language.
+
+The user stays on the Market Condition page after analysis.
 
 
 DATA PROVENANCE:
@@ -144,52 +163,14 @@ remain reproducible.
 # 1. DJANGO IMPORTS
 # ============================================================
 
-# Django settings provide access to MarketPulse configuration.
-#
-# This includes:
-#
-# - USE_CELERY
-# - ALPACA_DATA_FEED
-#
-# Alpaca credentials themselves remain in environment
-# variables and must never be exposed in templates.
 from django.conf import settings
 
-
-# Django messages allow MarketPulse to display:
-#
-# - Success messages
-# - Information messages
-# - Validation errors
-# - Import failures
 from django.contrib import messages
 
-
-# Only authenticated users should be able to:
-#
-# - Import market data
-# - Inspect stored datasets
-# - Run Market Condition analysis
 from django.contrib.auth.decorators import login_required
 
-
-# redirect:
-# Sends the user to another Django URL.
-#
-# render:
-# Combines a template with context data.
 from django.shortcuts import redirect, render
 
-
-# reverse converts a named Django route into its URL.
-#
-# Example:
-#
-# data_management:import
-#
-# becomes:
-#
-# /data/import/
 from django.urls import reverse
 
 
@@ -197,17 +178,6 @@ from django.urls import reverse
 # 2. CORE MARKET DATA IMPORT
 # ============================================================
 
-# MarketData is MarketPulse's persistent historical
-# OHLCV storage layer.
-#
-# The external provider supplies the original observations,
-# while MarketPulse stores them in PostgreSQL for:
-#
-# - Backtesting
-# - Risk calculations
-# - Market Condition analysis
-# - Strategy testing
-# - Stress testing
 from core.models import MarketData
 
 
@@ -215,40 +185,13 @@ from core.models import MarketData
 # 3. DATA MANAGEMENT IMPORTS
 # ============================================================
 
-# DataImportForm validates the historical-data request.
-#
-# Typical fields include:
-#
-# - Source
-# - Symbol
-# - Start date
-# - End date
 from .forms import DataImportForm
 
-
-# DataSource:
-# Identifies the external provider associated with an import.
-#
-# DataImport:
-# Provides an audit/history record for each import request.
 from .models import (
     DataImport,
     DataSource,
 )
 
-
-# process_data_import connects the DataImport record
-# to the actual historical-data import process.
-#
-# TARGET ARCHITECTURE:
-#
-# DataImport
-#     ↓
-# process_data_import()
-#     ↓
-# Alpaca historical bars
-#     ↓
-# core.MarketData
 from .tasks import process_data_import
 
 
@@ -256,24 +199,10 @@ from .tasks import process_data_import
 # 4. STRATEGY & MODEL LIBRARY IMPORTS
 # ============================================================
 
-# Groups StrategyLibraryItem objects by category.
-#
-# Example groups:
-#
-# - Stochastic Models
-# - Time-Series Models
-# - Machine Learning Models
-# - Factor Models
-# - Portfolio Optimisation
-# - Derivatives Pricing
-# - Monte Carlo / Simulation
 from strategy_builder.library import (
     get_grouped_strategy_library,
 )
 
-
-# StrategyLibraryItem stores metadata describing each
-# quantitative model available inside MarketPulse.
 from strategy_builder.models import (
     StrategyLibraryItem,
 )
@@ -283,21 +212,10 @@ from strategy_builder.models import (
 # 5. INTERNAL ANALYTICS ENGINE IMPORTS
 # ============================================================
 
-# analysis_tools is no longer a separate user-facing tab.
-#
-# Instead, it acts as an internal analytics engine.
-#
-# Market Regime Analysis is presented to the user as:
-#
-# Data
-#     ↓
-# Market Condition
 from analysis_tools.analyzers import (
     identify_market_regime,
 )
 
-
-# MarketRegime stores calculated Market Condition results.
 from analysis_tools.models import (
     MarketRegime,
 )
@@ -339,7 +257,32 @@ def data_import(request):
         ↓
     import.html
         ↓
-    Historical OHLCV table
+    Historical market-data table
+
+
+    MARKET CONDITION SUMMARY FLOW:
+
+    MarketRegime
+        ↓
+    data_import()
+        ↓
+    latest_regime
+        ↓
+    import.html
+        ↓
+    Latest Market Condition can be summarised
+    inside the main Data workspace
+
+
+    DEDICATED ANALYSIS FLOW:
+
+    Data workspace
+        ↓
+    Open Market Condition Analysis
+        ↓
+    market_condition()
+        ↓
+    market_condition.html
 
 
     MODEL SELECTION FLOW:
@@ -358,15 +301,6 @@ def data_import(request):
         ↓
     Future Model Runner
 
-
-    OHLCV:
-
-    O = Open
-    H = High
-    L = Low
-    C = Close
-    V = Volume
-
     ============================================================
     """
 
@@ -375,17 +309,7 @@ def data_import(request):
     # 6.1 ENSURE ALPACA DATA SOURCE EXISTS
     # ========================================================
 
-    # Alpaca is MarketPulse's primary market-data provider.
-    #
-    # update_or_create() keeps the configuration
-    # self-healing:
-    #
-    # If Alpaca does not exist:
-    #     Create it.
-    #
-    # If Alpaca already exists:
-    #     Refresh its configuration.
-    alpaca_source, created = (
+    alpaca_source, _created = (
         DataSource.objects.update_or_create(
 
             name="Alpaca",
@@ -408,15 +332,6 @@ def data_import(request):
     # 6.2 DISABLE LEGACY YAHOO FINANCE SOURCE
     # ========================================================
 
-    # Yahoo Finance was the original historical-data provider.
-    #
-    # It is no longer exposed as the primary Data-tab source.
-    #
-    # We do not delete the database record because old
-    # DataImport audit records may still reference it.
-    #
-    # Keeping historical audit relationships intact is better
-    # than deleting the old provider.
     DataSource.objects.filter(
         name="Yahoo Finance"
     ).update(
@@ -428,11 +343,6 @@ def data_import(request):
     # 6.3 BUILD HISTORICAL DATA IMPORT FORM
     # ========================================================
 
-    # GET:
-    #     Displays the form.
-    #
-    # POST:
-    #     Validates the historical-data request.
     form = DataImportForm(
         request.POST or None,
         initial={
@@ -446,11 +356,6 @@ def data_import(request):
     # 6.4 RESTRICT DATA SOURCE TO ALPACA
     # ========================================================
 
-    # If DataImportForm contains a "source" field, only expose
-    # Alpaca in this Data-tab workflow.
-    #
-    # This prevents the user from accidentally selecting the
-    # old Yahoo Finance source.
     if "source" in form.fields:
 
         form.fields[
@@ -502,11 +407,9 @@ def data_import(request):
 
 
         # ----------------------------------------------------
-        # Enforce Alpaca as the provider
+        # Enforce Alpaca as provider
         # ----------------------------------------------------
 
-        # MarketPulse now uses Alpaca as the primary provider
-        # for the Data-tab workflow.
         import_job.source = (
             alpaca_source
         )
@@ -516,14 +419,6 @@ def data_import(request):
         # Standardise ticker symbol
         # ----------------------------------------------------
 
-        # Examples:
-        #
-        # aapl
-        # Aapl
-        #
-        # become:
-        #
-        # AAPL
         import_job.symbol = (
             import_job.symbol
             .strip()
@@ -532,7 +427,7 @@ def data_import(request):
 
 
         # ----------------------------------------------------
-        # Save import audit/history record
+        # Save import audit record
         # ----------------------------------------------------
 
         import_job.save()
@@ -547,10 +442,6 @@ def data_import(request):
             "USE_CELERY",
             False,
         ):
-
-            # ------------------------------------------------
-            # CELERY / BACKGROUND MODE
-            # ------------------------------------------------
 
             process_data_import.delay(
                 import_job.pk
@@ -572,16 +463,10 @@ def data_import(request):
             # LOCAL DEVELOPMENT / COLLEGE DEMO MODE
             # ------------------------------------------------
 
-            # Run synchronously so imported observations
-            # become immediately available after redirect.
             process_data_import(
                 import_job.pk
             )
 
-
-            # ------------------------------------------------
-            # Reload because process_data_import modifies it
-            # ------------------------------------------------
 
             import_job.refresh_from_db()
 
@@ -630,9 +515,6 @@ def data_import(request):
         )
 
 
-        # Example:
-        #
-        # /data/import/?symbol=AAPL
         return redirect(
             f"{data_page_url}?symbol={import_job.symbol}"
         )
@@ -642,13 +524,6 @@ def data_import(request):
     # 7. DETERMINE WHICH SYMBOL SHOULD BE DISPLAYED
     # ========================================================
 
-    # First preference:
-    #
-    # Symbol supplied in the URL.
-    #
-    # Example:
-    #
-    # /data/import/?symbol=AAPL
     selected_symbol = (
         request.GET
         .get(
@@ -716,35 +591,24 @@ def data_import(request):
     # 10. PREPARE EMPTY MARKET DATA VALUES
     # ========================================================
 
-    # Empty QuerySet prevents unrelated symbols from being
-    # shown when no dataset has been selected.
     market_data = (
         MarketData.objects.none()
     )
 
 
-    # Total number of observations for selected symbol.
     total_records = 0
 
-
-    # Oldest historical observation.
     earliest_record = None
 
-
-    # Most recent historical observation.
     latest_record = None
 
 
     # ========================================================
-    # 11. LOAD HISTORICAL OHLCV DATA
+    # 11. LOAD HISTORICAL MARKET DATA
     # ========================================================
 
     if selected_symbol:
 
-
-        # ----------------------------------------------------
-        # Retrieve every stored observation for the asset
-        # ----------------------------------------------------
 
         all_symbol_data = (
             MarketData.objects
@@ -754,19 +618,11 @@ def data_import(request):
         )
 
 
-        # ----------------------------------------------------
-        # Count observations
-        # ----------------------------------------------------
-
         total_records = (
             all_symbol_data
             .count()
         )
 
-
-        # ----------------------------------------------------
-        # Earliest observation
-        # ----------------------------------------------------
 
         earliest_record = (
             all_symbol_data
@@ -777,10 +633,6 @@ def data_import(request):
         )
 
 
-        # ----------------------------------------------------
-        # Latest observation
-        # ----------------------------------------------------
-
         latest_record = (
             all_symbol_data
             .order_by(
@@ -790,23 +642,6 @@ def data_import(request):
         )
 
 
-        # ----------------------------------------------------
-        # Historical table rows
-        # ----------------------------------------------------
-
-        # Only the latest 250 observations are sent to the
-        # browser.
-        #
-        # Older observations remain permanently stored in
-        # PostgreSQL and remain available to:
-        #
-        # - Backtesting
-        # - Forecasting
-        # - Machine learning
-        # - Risk analysis
-        # - Market Condition analysis
-        # - Strategy Robustness
-        # - Stress testing
         market_data = (
             all_symbol_data
             .order_by(
@@ -854,20 +689,6 @@ def data_import(request):
     # 14. LOAD COMPLETE STRATEGY & MODEL LIBRARY
     # ========================================================
 
-    # Example structure:
-    #
-    # [
-    #     {
-    #         "code": "stochastic",
-    #         "label": "Stochastic Models",
-    #         "items": [...]
-    #     },
-    #     {
-    #         "code": "time_series",
-    #         "label": "Time-Series Models",
-    #         "items": [...]
-    #     },
-    # ]
     strategy_categories = (
         get_grouped_strategy_library()
     )
@@ -877,9 +698,6 @@ def data_import(request):
     # 15. READ SELECTED MODEL FROM URL
     # ========================================================
 
-    # Example:
-    #
-    # /data/import/?symbol=AAPL&model=gbm
     selected_model_code = (
         request.GET
         .get(
@@ -926,18 +744,37 @@ def data_import(request):
 
 
     # ========================================================
-    # 18. DATA PROVIDER / PROVENANCE INFORMATION
+    # 18. LOAD LATEST MARKET CONDITION SUMMARY
     # ========================================================
 
-    # These values are intentionally passed to the template
-    # so the user can clearly see where the data originates.
+    # The main Data page may still show the most recently
+    # calculated Market Condition as a summary.
     #
-    # This is useful for:
-    #
-    # - Transparency
-    # - Reproducibility
-    # - Lecturer demonstration
-    # - Debugging
+    # The actual analysis is performed in the dedicated
+    # Market Condition workspace.
+
+    latest_regime = None
+
+
+    if selected_symbol:
+
+        latest_regime = (
+            MarketRegime.objects
+            .filter(
+                symbol=selected_symbol
+            )
+            .order_by(
+                "-date",
+                "-created_at",
+            )
+            .first()
+        )
+
+
+    # ========================================================
+    # 19. DATA PROVIDER / PROVENANCE INFORMATION
+    # ========================================================
+
     market_data_provider = (
         "Alpaca"
     )
@@ -959,7 +796,7 @@ def data_import(request):
 
 
     # ========================================================
-    # 19. SEND DATA TO IMPORT.HTML
+    # 20. SEND DATA TO IMPORT.HTML
     # ========================================================
 
     context = {
@@ -996,7 +833,7 @@ def data_import(request):
 
 
         # ====================================================
-        # HISTORICAL OHLCV ROWS
+        # HISTORICAL MARKET DATA
         # ====================================================
 
         "market_data":
@@ -1063,11 +900,19 @@ def data_import(request):
 
         "dataset_available":
             dataset_available,
+
+
+        # ====================================================
+        # MARKET CONDITION SUMMARY
+        # ====================================================
+
+        "latest_regime":
+            latest_regime,
     }
 
 
     # ========================================================
-    # 20. RENDER DATA PAGE
+    # 21. RENDER DATA PAGE
     # ========================================================
 
     return render(
@@ -1078,7 +923,7 @@ def data_import(request):
 
 
 # ============================================================
-# 21. IMPORT HISTORY VIEW
+# 22. IMPORT HISTORY VIEW
 # ============================================================
 
 @login_required
@@ -1087,15 +932,6 @@ def import_history(request):
     ============================================================
     MARKET DATA IMPORT HISTORY
     ============================================================
-
-    FRAMEWORK FLOW:
-
-    DataImport
-        ↓
-    import_history()
-        ↓
-    templates/data_management/history.html
-
 
     Displays:
 
@@ -1112,10 +948,6 @@ def import_history(request):
     """
 
 
-    # ========================================================
-    # 21.1 LOAD LOGGED-IN USER'S IMPORTS
-    # ========================================================
-
     imports = (
         DataImport.objects
         .filter(
@@ -1130,26 +962,15 @@ def import_history(request):
     )
 
 
-    # ========================================================
-    # 21.2 BUILD TEMPLATE CONTEXT
-    # ========================================================
-
     context = {
 
-        # Preferred variable.
         "imports":
             imports,
 
-
-        # Compatibility with an older history.html version.
         "jobs":
             imports,
     }
 
-
-    # ========================================================
-    # 21.3 RENDER IMPORT HISTORY PAGE
-    # ========================================================
 
     return render(
         request,
@@ -1159,7 +980,7 @@ def import_history(request):
 
 
 # ============================================================
-# 22. MARKET CONDITION ANALYSIS
+# 23. MARKET CONDITION ANALYSIS
 # ============================================================
 
 @login_required
@@ -1180,38 +1001,45 @@ def market_condition(request):
         Market Regime Analysis
 
 
-    FRAMEWORK FLOW:
+    USER-FACING WORKFLOW:
 
-    Alpaca Historical Market Data
+    Data Workspace
         ↓
-    core.MarketData
+    Open Market Condition Analysis
+        ↓
+    Market Condition workspace
+        ↓
+    Choose stored dataset
+        ↓
+    Click Analyse Market Condition
         ↓
     identify_market_regime()
         ↓
-    analysis_tools.analyzers
+    MarketRegime saved
         ↓
-    MarketRegime
+    Redirect back to SAME Market Condition workspace
         ↓
-    data_management/market_condition.html
+    New result displayed
 
 
     IMPORTANT:
 
-    The technical term "Market Regime Analysis" remains
-    visible for academic clarity.
+    The Market Condition page is a dedicated sub-workspace
+    belonging to the Data section.
 
-    However, the user-facing feature is called:
+    After analysis the user stays on this page.
 
-        Market Condition
+    They return to the main Data page only by intentionally
+    selecting:
 
-    because that makes its purpose easier to understand.
+        Back to Data
 
     ============================================================
     """
 
 
     # ========================================================
-    # 22.1 FIND SYMBOLS WITH HISTORICAL DATA
+    # 23.1 FIND SYMBOLS WITH HISTORICAL DATA
     # ========================================================
 
     symbols = list(
@@ -1228,14 +1056,15 @@ def market_condition(request):
 
 
     # ========================================================
-    # 22.2 DETERMINE SELECTED SYMBOL
+    # 23.2 DETERMINE SELECTED SYMBOL
     # ========================================================
 
     # Selection priority:
     #
     # 1. Submitted POST symbol
-    # 2. Symbol passed in URL
-    # 3. First available historical symbol
+    # 2. Symbol supplied in URL
+    # 3. First stored historical symbol
+
     selected_symbol = (
         request.POST.get(
             "symbol"
@@ -1259,7 +1088,7 @@ def market_condition(request):
 
 
     # ========================================================
-    # 22.3 PREPARE SYMBOL SUMMARY
+    # 23.3 PREPARE SYMBOL SUMMARY
     # ========================================================
 
     observation_count = 0
@@ -1280,7 +1109,8 @@ def market_condition(request):
 
 
         observation_count = (
-            selected_data.count()
+            selected_data
+            .count()
         )
 
 
@@ -1303,14 +1133,14 @@ def market_condition(request):
 
 
     # ========================================================
-    # 22.4 HANDLE ANALYSIS REQUEST
+    # 23.4 HANDLE ANALYSIS REQUEST
     # ========================================================
 
     if request.method == "POST":
 
 
         # ----------------------------------------------------
-        # Validate asset selection
+        # NO SYMBOL SELECTED
         # ----------------------------------------------------
 
         if not selected_symbol:
@@ -1325,7 +1155,7 @@ def market_condition(request):
 
 
         # ----------------------------------------------------
-        # Require sufficient historical data
+        # NOT ENOUGH HISTORICAL DATA
         # ----------------------------------------------------
 
         elif observation_count < 20:
@@ -1335,8 +1165,8 @@ def market_condition(request):
                 (
                     f"{selected_symbol} currently has only "
                     f"{observation_count} historical observations. "
-                    "More historical data is required before "
-                    "MarketPulse can estimate the market condition."
+                    "At least 20 observations are required before "
+                    "MarketPulse can estimate the Market Condition."
                 ),
             )
 
@@ -1357,7 +1187,7 @@ def market_condition(request):
 
 
                 # ---------------------------------------------
-                # Analysis completed
+                # ANALYSIS COMPLETED SUCCESSFULLY
                 # ---------------------------------------------
 
                 if regime_result:
@@ -1371,25 +1201,38 @@ def market_condition(request):
                     )
 
 
-                    results_url = reverse(
-                        "data_management:market_condition_results"
+                    # =========================================
+                    # IMPORTANT UX CHANGE
+                    # =========================================
+                    #
+                    # Keep the user inside the dedicated
+                    # Market Condition workspace.
+                    #
+                    # Example:
+                    #
+                    # /data/market-condition/?symbol=MSFT
+
+                    market_condition_url = reverse(
+                        "data_management:market_condition"
                     )
 
 
                     return redirect(
-                        f"{results_url}?symbol={selected_symbol}"
+                        f"{market_condition_url}"
+                        f"?symbol={selected_symbol}"
                     )
 
 
                 # ---------------------------------------------
-                # Analyzer returned no result
+                # ANALYZER RETURNED NO RESULT
                 # ---------------------------------------------
 
                 messages.error(
                     request,
                     (
-                        "MarketPulse could not determine a market "
-                        "condition from the available historical data."
+                        "MarketPulse could not determine a "
+                        "Market Condition from the available "
+                        "historical data."
                     ),
                 )
 
@@ -1397,7 +1240,7 @@ def market_condition(request):
             except Exception as error:
 
                 # ---------------------------------------------
-                # Prevent analytical failure from crashing page
+                # ANALYTICAL ERROR
                 # ---------------------------------------------
 
                 messages.error(
@@ -1410,7 +1253,7 @@ def market_condition(request):
 
 
     # ========================================================
-    # 22.5 LOAD MOST RECENT RESULT FOR SELECTED ASSET
+    # 23.5 LOAD MOST RECENT RESULT FOR SELECTED ASSET
     # ========================================================
 
     latest_regime = None
@@ -1432,16 +1275,30 @@ def market_condition(request):
 
 
     # ========================================================
-    # 22.6 BUILD TEMPLATE CONTEXT
+    # 23.6 BUILD TEMPLATE CONTEXT
     # ========================================================
 
     context = {
 
+        # ====================================================
+        # AVAILABLE DATASETS
+        # ====================================================
+
         "symbols":
             symbols,
 
+
+        # ====================================================
+        # SELECTED DATASET
+        # ====================================================
+
         "selected_symbol":
             selected_symbol,
+
+
+        # ====================================================
+        # DATASET SUMMARY
+        # ====================================================
 
         "observation_count":
             observation_count,
@@ -1454,7 +1311,7 @@ def market_condition(request):
 
 
         # ====================================================
-        # MARKET CONDITION RESULT
+        # LATEST MARKET CONDITION
         # ====================================================
 
         "latest_regime":
@@ -1480,7 +1337,7 @@ def market_condition(request):
 
 
     # ========================================================
-    # 22.7 RENDER MARKET CONDITION PAGE
+    # 23.7 RENDER MARKET CONDITION WORKSPACE
     # ========================================================
 
     return render(
@@ -1491,39 +1348,54 @@ def market_condition(request):
 
 
 # ============================================================
-# 23. MARKET CONDITION RESULTS
+# 24. LEGACY MARKET CONDITION RESULTS ROUTE
 # ============================================================
 
 @login_required
 def market_condition_results(request):
     """
     ============================================================
-    MARKET CONDITION RESULTS
+    LEGACY MARKET CONDITION RESULTS ROUTE
     ============================================================
 
-    Displays recent Market Regime / Market Condition results.
+    Older MarketPulse code used:
 
-    If the URL contains:
+        /data/market-condition/results/
 
-        ?symbol=AAPL
+    and attempted to render:
 
-    MarketPulse filters the results to AAPL.
+        data_management/market_condition_results.html
 
-    Otherwise it displays the most recent results across all
-    analysed symbols.
 
-    The Market Condition result itself is calculated by
-    MarketPulse from historical observations stored in
-    core.MarketData.
+    The current architecture no longer requires a separate
+    results template.
 
-    Once the historical importer is fully migrated, those
-    observations originate from Alpaca.
+    Market Condition analysis and its result are now displayed
+    together inside:
+
+        data_management/market_condition.html
+
+
+    WHY KEEP THIS VIEW?
+
+    Older links, bookmarks or URL patterns might still point to:
+
+        /data/market-condition/results/?symbol=AAPL
+
+
+    Instead of producing:
+
+        TemplateDoesNotExist
+
+    this compatibility view redirects the user into the current
+    Market Condition workspace.
+
     ============================================================
     """
 
 
     # ========================================================
-    # 23.1 READ OPTIONAL SYMBOL FILTER
+    # 24.1 READ OPTIONAL SYMBOL
     # ========================================================
 
     selected_symbol = (
@@ -1538,99 +1410,47 @@ def market_condition_results(request):
 
 
     # ========================================================
-    # 23.2 START WITH ALL RESULTS
+    # 24.2 IF NO SYMBOL, USE MOST RECENT ANALYSED SYMBOL
     # ========================================================
 
-    regimes = (
-        MarketRegime.objects
-        .all()
+    if not selected_symbol:
+
+        latest_regime = (
+            MarketRegime.objects
+            .order_by(
+                "-date",
+                "-created_at",
+            )
+            .first()
+        )
+
+
+        if latest_regime:
+
+            selected_symbol = (
+                latest_regime.symbol
+                .strip()
+                .upper()
+            )
+
+
+    # ========================================================
+    # 24.3 REDIRECT TO CURRENT MARKET CONDITION WORKSPACE
+    # ========================================================
+
+    market_condition_url = reverse(
+        "data_management:market_condition"
     )
 
-
-    # ========================================================
-    # 23.3 FILTER BY SYMBOL WHEN REQUESTED
-    # ========================================================
 
     if selected_symbol:
 
-        regimes = (
-            regimes
-            .filter(
-                symbol=selected_symbol
-            )
+        return redirect(
+            f"{market_condition_url}"
+            f"?symbol={selected_symbol}"
         )
 
 
-    # ========================================================
-    # 23.4 ORDER MOST RECENT FIRST
-    # ========================================================
-
-    regimes = (
-        regimes
-        .order_by(
-            "-date",
-            "-created_at",
-        )[:20]
-    )
-
-
-    # ========================================================
-    # 23.5 AVAILABLE ANALYSED SYMBOLS
-    # ========================================================
-
-    analysed_symbols = (
-        MarketRegime.objects
-        .order_by(
-            "symbol"
-        )
-        .values_list(
-            "symbol",
-            flat=True,
-        )
-        .distinct()
-    )
-
-
-    # ========================================================
-    # 23.6 TEMPLATE CONTEXT
-    # ========================================================
-
-    context = {
-
-        "regimes":
-            regimes,
-
-        "selected_symbol":
-            selected_symbol,
-
-        "analysed_symbols":
-            analysed_symbols,
-
-
-        # ====================================================
-        # DATA PROVENANCE
-        # ====================================================
-
-        "market_data_provider":
-            "Alpaca",
-
-        "market_data_feed":
-            str(
-                getattr(
-                    settings,
-                    "ALPACA_DATA_FEED",
-                    "iex",
-                )
-            ).upper(),
-    }
-
-
-    # ========================================================
-    # 23.7 RENDER RESULT PAGE
-    # ========================================================
-
-    return render(
-        request,
-        "data_management/market_condition_results.html",
-        context,
+    return redirect(
+        market_condition_url
     )

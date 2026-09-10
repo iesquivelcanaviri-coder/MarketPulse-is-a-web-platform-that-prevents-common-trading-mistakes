@@ -3,64 +3,89 @@
 
 {% comment %}
 ============================================================
-MARKETPULSE - TRADE & PORTFOLIO RISK
+MARKETPULSE - TRADE & PORTFOLIO RISK WORKSPACE
 ============================================================
 
-USER-FACING RESPONSIBILITY:
+USER WORKFLOW:
 
 Risk
     ↓
-Current Market Information
+1. Choose Market
     ↓
-Historical Risk Context
+2. Set Risk Budget
     ↓
-Trade Risk Planning
+3. Define Trade
     ↓
-Position Sizing
+4. Review Risk Plan
     ↓
-Stop-Loss Analysis
-    ↓
-Reward / Risk
-    ↓
-Stress Testing
+5. Stress Test
 
 
-DATA SOURCES:
+CURRENT MARKET DATA:
 
-ALPACA
+Browser
     ↓
-Active US-Equity Asset Universe
+MarketPulse Django API
     ↓
-Asset Search
+Alpaca Market Data Service
     ↓
-Latest Trade / Quote / Daily Snapshot
+Latest Trade
+Daily Market Snapshot
+Asset Information
 
 
-MARKETPULSE DATABASE
+HISTORICAL RISK DATA:
+
+core.MarketData
     ↓
-Historical OHLCV
+Stored Open, High, Low, Close and Volume observations
     ↓
-ATR
-Volatility
-Drawdown
-Historical Range
-
-
-INTERNAL ANALYTICS ENGINE:
-
-analysis_tools
+MarketPulse historical calculations
     ↓
-Stress-test calculations
+Average True Range
+Annualised Volatility
+Maximum Drawdown
+Historical Price Range
 
-analysis_tools is NOT presented as a separate
-user-facing section.
 
-The user accesses stress testing through Risk.
+RISK CALCULATION:
 
-IMPORTANT:
+Trading Capital
+    +
+Maximum Risk Percentage
+    ↓
+Maximum Planned Loss
 
-Alpaca API credentials must never enter this template.
-The browser communicates only with MarketPulse's Django API.
+
+Entry Price
+    +
+Stop-Loss
+    ↓
+Risk per Unit
+
+
+Maximum Planned Loss
+    ÷
+Risk per Unit
+    ↓
+Risk-Constrained Position Size
+
+
+STRESS TEST:
+
+Risk
+    ↓
+Stress Test
+    ↓
+analysis_tools internal analytics engine
+
+
+IMPORTANT SECURITY:
+
+Alpaca credentials are NEVER passed to this template.
+
+The browser communicates with MarketPulse's Django API.
+
 ============================================================
 {% endcomment %}
 
@@ -70,343 +95,2074 @@ Risk | MarketPulse
 {% endblock %}
 
 
+{% block extra_css %}
+
+<style>
+
+/* ======================================================== */
+/* MARKETPULSE - RISK WORKSPACE                             */
+/* ======================================================== */
+
+
+/* -------------------------------------------------------- */
+/* 1. PAGE FOUNDATION                                       */
+/* -------------------------------------------------------- */
+
+.risk-workspace {
+
+    --risk-blue: #0d6efd;
+    --risk-blue-dark: #0a58ca;
+    --risk-blue-soft: #edf5ff;
+
+    --risk-text: #172033;
+    --risk-muted: #667085;
+
+    --risk-border: #e3e9f1;
+    --risk-soft: #f8fafc;
+
+    --risk-success: #168654;
+    --risk-success-soft: #e8f8ef;
+
+    --risk-danger: #dc3545;
+    --risk-danger-soft: #fdecee;
+
+    --risk-warning: #9a6700;
+    --risk-warning-soft: #fff7df;
+
+    color: var(--risk-text);
+}
+
+
+.risk-workspace a {
+    text-decoration: none;
+}
+
+
+/* -------------------------------------------------------- */
+/* 2. PAGE HEADER                                           */
+/* -------------------------------------------------------- */
+
+.risk-page-header {
+
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+
+    gap: 1.5rem;
+
+    margin-bottom: 1.4rem;
+}
+
+
+.risk-page-title {
+
+    margin: 0 0 .35rem;
+
+    font-size: clamp(
+        2rem,
+        4vw,
+        2.65rem
+    );
+
+    line-height: 1.05;
+
+    font-weight: 760;
+    letter-spacing: -.035em;
+}
+
+
+.risk-page-subtitle {
+
+    max-width: 850px;
+
+    margin: 0;
+
+    color: var(--risk-muted);
+
+    font-size: .92rem;
+    line-height: 1.55;
+}
+
+
+/* -------------------------------------------------------- */
+/* 3. COMMON                                                */
+/* -------------------------------------------------------- */
+
+.risk-eyebrow {
+
+    margin-bottom: .2rem;
+
+    color: var(--risk-blue);
+
+    font-size: .64rem;
+    font-weight: 750;
+
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+
+
+.risk-eyebrow-danger {
+    color: var(--risk-danger);
+}
+
+
+.risk-panel {
+
+    margin-bottom: 1.25rem;
+
+    padding: 1.2rem;
+
+    background: #ffffff;
+
+    border: 1px solid var(--risk-border);
+    border-radius: 15px;
+
+    box-shadow:
+        0 7px 22px
+        rgba(16, 24, 40, .04);
+}
+
+
+.risk-workspace .btn {
+
+    border-radius: 8px;
+
+    font-weight: 600;
+}
+
+
+.risk-workspace .btn-primary {
+
+    box-shadow:
+        0 5px 14px
+        rgba(13, 110, 253, .14);
+}
+
+
+/* -------------------------------------------------------- */
+/* 4. FIVE-STEP WORKFLOW                                    */
+/* -------------------------------------------------------- */
+
+.risk-workflow-panel {
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        auto
+        minmax(0, 1fr)
+        auto
+        minmax(0, 1fr)
+        auto
+        minmax(0, 1fr)
+        auto
+        minmax(0, 1fr);
+
+    align-items: center;
+
+    gap: .55rem;
+
+    margin-bottom: 1.15rem;
+
+    padding: 1rem 1.1rem;
+
+    background: #ffffff;
+
+    border: 1px solid var(--risk-border);
+    border-radius: 14px;
+
+    box-shadow:
+        0 6px 20px
+        rgba(16, 24, 40, .035);
+}
+
+
+.risk-flow-step {
+
+    display: flex;
+    align-items: center;
+
+    gap: .55rem;
+
+    min-width: 0;
+}
+
+
+.risk-flow-number {
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 auto;
+
+    width: 27px;
+    height: 27px;
+
+    color: #ffffff;
+    background: var(--risk-blue);
+
+    border-radius: 50%;
+
+    font-size: .65rem;
+    font-weight: 750;
+}
+
+
+.risk-flow-number-danger {
+    background: var(--risk-danger);
+}
+
+
+.risk-flow-icon {
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 auto;
+
+    width: 35px;
+    height: 35px;
+
+    color: var(--risk-blue);
+    background: var(--risk-blue-soft);
+
+    border-radius: 9px;
+}
+
+
+.risk-flow-icon-danger {
+
+    color: var(--risk-danger);
+    background: var(--risk-danger-soft);
+}
+
+
+.risk-flow-step strong {
+
+    display: block;
+
+    margin-bottom: .08rem;
+
+    font-size: .72rem;
+}
+
+
+.risk-flow-step small {
+
+    display: block;
+
+    color: var(--risk-muted);
+
+    font-size: .58rem;
+    line-height: 1.3;
+}
+
+
+.risk-flow-arrow {
+
+    color: #aab5c5;
+
+    font-size: .62rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 5. DATA SOURCE STRIP                                     */
+/* -------------------------------------------------------- */
+
+.risk-source-strip {
+
+    margin-bottom: 1.25rem;
+
+    padding: .9rem 1rem;
+
+    background: #ffffff;
+
+    border: 1px solid var(--risk-border);
+    border-radius: 12px;
+}
+
+
+.risk-source-main {
+
+    display: flex;
+    align-items: center;
+
+    gap: .7rem;
+}
+
+
+.risk-source-main > i {
+
+    color: var(--risk-blue);
+}
+
+
+.risk-source-main strong {
+
+    display: block;
+
+    margin-bottom: .1rem;
+
+    font-size: .75rem;
+}
+
+
+.risk-source-main span {
+
+    color: var(--risk-muted);
+
+    font-size: .65rem;
+}
+
+
+.risk-source-details {
+
+    margin-top: .65rem;
+}
+
+
+.risk-source-details > summary {
+
+    cursor: pointer;
+
+    width: fit-content;
+
+    color: var(--risk-blue);
+
+    list-style: none;
+
+    font-size: .65rem;
+    font-weight: 650;
+}
+
+
+.risk-source-details > summary::-webkit-details-marker {
+    display: none;
+}
+
+
+.risk-source-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            3,
+            minmax(0, 1fr)
+        );
+
+    gap: .75rem;
+
+    margin-top: .7rem;
+}
+
+
+.risk-source-grid > div {
+
+    padding: .7rem;
+
+    background: var(--risk-soft);
+
+    border: 1px solid var(--risk-border);
+    border-radius: 8px;
+}
+
+
+.risk-source-grid strong {
+
+    font-size: .68rem;
+}
+
+
+.risk-source-grid p {
+
+    margin: .25rem 0 0;
+
+    color: var(--risk-muted);
+
+    font-size: .63rem;
+    line-height: 1.4;
+}
+
+
+/* -------------------------------------------------------- */
+/* 6. PLANNER                                               */
+/* -------------------------------------------------------- */
+
+.risk-planner-heading {
+
+    margin-bottom: 1rem;
+}
+
+
+.risk-planner-heading h2 {
+
+    margin: 0 0 .2rem;
+
+    font-size: 1.25rem;
+    font-weight: 750;
+}
+
+
+.risk-planner-heading p {
+
+    max-width: 760px;
+
+    margin: 0;
+
+    color: var(--risk-muted);
+
+    font-size: .76rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 7. PROGRESSIVE RISK STEPS                                */
+/* -------------------------------------------------------- */
+
+.risk-step {
+
+    overflow: hidden;
+
+    margin-bottom: .75rem;
+
+    background: #ffffff;
+
+    border: 1px solid var(--risk-border);
+    border-radius: 11px;
+}
+
+
+.risk-step-summary {
+
+    display: flex;
+    align-items: center;
+
+    gap: .7rem;
+
+    cursor: pointer;
+
+    padding: .8rem .9rem;
+
+    background: #fbfcfe;
+
+    list-style: none;
+}
+
+
+.risk-step-summary::-webkit-details-marker {
+    display: none;
+}
+
+
+.risk-step[open] > .risk-step-summary {
+
+    background: #f5f9ff;
+
+    border-bottom: 1px solid var(--risk-border);
+}
+
+
+.risk-step-number {
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 auto;
+
+    width: 29px;
+    height: 29px;
+
+    color: #ffffff;
+    background: var(--risk-blue);
+
+    border-radius: 8px;
+
+    font-size: .66rem;
+    font-weight: 750;
+}
+
+
+.risk-step-summary-copy {
+
+    flex: 1;
+
+    min-width: 0;
+}
+
+
+.risk-step-summary-copy strong {
+
+    display: block;
+
+    margin-bottom: .1rem;
+
+    font-size: .8rem;
+}
+
+
+.risk-step-summary-copy small {
+
+    display: block;
+
+    color: var(--risk-muted);
+
+    font-size: .63rem;
+}
+
+
+.risk-step-status {
+
+    display: inline-flex;
+    align-items: center;
+
+    gap: .3rem;
+
+    padding: .25rem .5rem;
+
+    color: var(--risk-success);
+    background: var(--risk-success-soft);
+
+    border-radius: 999px;
+
+    font-size: .6rem;
+    font-weight: 700;
+}
+
+
+.risk-step-content {
+
+    padding: 1rem;
+}
+
+
+.risk-step-content .form-label {
+
+    margin-bottom: .35rem;
+
+    font-size: .73rem;
+    font-weight: 700;
+}
+
+
+.risk-step-content .form-text {
+
+    color: var(--risk-muted);
+
+    font-size: .63rem;
+    line-height: 1.4;
+}
+
+
+.risk-step-content input,
+.risk-step-content select {
+
+    min-height: 43px;
+
+    border-color: #d7dfeb;
+    border-radius: 8px;
+}
+
+
+/* -------------------------------------------------------- */
+/* 8. ALPACA SEARCH RESULTS                                 */
+/* -------------------------------------------------------- */
+
+#alpacaSearchResults {
+
+    z-index: 1050;
+
+    max-height: 340px;
+
+    overflow-y: auto;
+}
+
+
+/* -------------------------------------------------------- */
+/* 9. MARKET CARD                                           */
+/* -------------------------------------------------------- */
+
+.market-summary-panel {
+
+    margin-top: .8rem;
+
+    padding: .9rem;
+
+    background: #fbfcfe;
+
+    border: 1px solid var(--risk-border);
+    border-radius: 10px;
+}
+
+
+.market-summary-header {
+
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+
+    gap: .75rem;
+}
+
+
+.market-summary-header h4 {
+
+    margin: 0 0 .15rem;
+
+    font-size: .88rem;
+    font-weight: 720;
+}
+
+
+.market-summary-identity {
+
+    color: var(--risk-muted);
+
+    font-size: .65rem;
+}
+
+
+.market-primary-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            3,
+            minmax(0, 1fr)
+        );
+
+    gap: .55rem;
+
+    margin-top: .8rem;
+}
+
+
+.market-primary-stat {
+
+    padding: .65rem;
+
+    background: #ffffff;
+
+    border: 1px solid var(--risk-border);
+    border-radius: 8px;
+}
+
+
+.market-primary-stat span {
+
+    display: block;
+
+    margin-bottom: .15rem;
+
+    color: var(--risk-muted);
+
+    font-size: .59rem;
+}
+
+
+.market-primary-stat strong {
+
+    font-size: .78rem;
+}
+
+
+.market-detail-dropdown {
+
+    margin-top: .75rem;
+}
+
+
+.market-detail-dropdown summary {
+
+    cursor: pointer;
+
+    padding: .5rem .6rem;
+
+    color: #475467;
+    background: #ffffff;
+
+    border: 1px solid var(--risk-border);
+    border-radius: 7px;
+
+    list-style: none;
+
+    font-size: .64rem;
+    font-weight: 650;
+}
+
+
+.market-detail-dropdown summary::-webkit-details-marker {
+    display: none;
+}
+
+
+.market-detail-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            4,
+            minmax(0, 1fr)
+        );
+
+    gap: .45rem;
+
+    margin-top: .55rem;
+}
+
+
+.market-detail-stat {
+
+    padding: .55rem;
+
+    background: #ffffff;
+
+    border: 1px solid var(--risk-border);
+    border-radius: 7px;
+}
+
+
+.market-detail-stat span {
+
+    display: block;
+
+    margin-bottom: .15rem;
+
+    color: var(--risk-muted);
+
+    font-size: .55rem;
+}
+
+
+.market-detail-stat strong {
+
+    font-size: .67rem;
+}
+
+
+.market-capabilities {
+
+    margin-top: .6rem;
+}
+
+
+.market-capabilities .badge {
+
+    font-size: .55rem;
+}
+
+
+.market-actions {
+
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: .45rem;
+
+    margin-top: .75rem;
+}
+
+
+.market-provenance {
+
+    margin-top: .65rem;
+
+    color: var(--risk-muted);
+
+    font-size: .58rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 10. RISK BUDGET                                          */
+/* -------------------------------------------------------- */
+
+.risk-budget-preview {
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 1rem;
+
+    margin-top: .8rem;
+    padding: .75rem .85rem;
+
+    background: var(--risk-blue-soft);
+
+    border: 1px solid #d8e7fa;
+    border-radius: 9px;
+}
+
+
+.risk-budget-preview span {
+
+    color: var(--risk-muted);
+
+    font-size: .65rem;
+}
+
+
+.risk-budget-preview strong {
+
+    font-size: 1.1rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 11. LIVE RISK RESULT                                     */
+/* -------------------------------------------------------- */
+
+.risk-plan-hero {
+
+    overflow: hidden;
+
+    background:
+        linear-gradient(
+            145deg,
+            #f8fbff,
+            #edf5ff
+        );
+
+    border: 1px solid #d6e6fb;
+    border-radius: 11px;
+}
+
+
+.risk-plan-primary {
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 1rem;
+
+    padding: .8rem .9rem;
+
+    border-bottom: 1px solid #dce8f7;
+}
+
+
+.risk-plan-primary span {
+
+    color: var(--risk-muted);
+
+    font-size: .65rem;
+}
+
+
+.risk-plan-primary strong {
+
+    font-size: 1.2rem;
+}
+
+
+.risk-plan-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            4,
+            minmax(0, 1fr)
+        );
+}
+
+
+.risk-plan-grid > div {
+
+    padding: .75rem;
+
+    border-right: 1px solid #dce8f7;
+}
+
+
+.risk-plan-grid > div:last-child {
+    border-right: 0;
+}
+
+
+.risk-plan-grid span {
+
+    display: block;
+
+    margin-bottom: .18rem;
+
+    color: var(--risk-muted);
+
+    font-size: .56rem;
+}
+
+
+.risk-plan-grid strong {
+
+    font-size: .72rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 12. STICKY RISK SNAPSHOT                                 */
+/* -------------------------------------------------------- */
+
+.risk-snapshot-panel {
+
+    position: sticky;
+
+    top: 85px;
+
+    padding: 1.05rem;
+
+    background: #ffffff;
+
+    border: 1px solid var(--risk-border);
+    border-radius: 15px;
+
+    box-shadow:
+        0 7px 22px
+        rgba(16, 24, 40, .04);
+}
+
+
+.risk-snapshot-header {
+
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+
+    gap: .75rem;
+
+    margin-bottom: .85rem;
+}
+
+
+.risk-snapshot-header h2 {
+
+    margin: 0;
+
+    font-size: 1.1rem;
+    font-weight: 750;
+}
+
+
+.risk-symbol-badge {
+
+    padding: .3rem .55rem;
+
+    color: #344054;
+    background: #f1f4f8;
+
+    border-radius: 7px;
+
+    font-size: .65rem;
+    font-weight: 700;
+}
+
+
+.risk-snapshot-section {
+
+    padding: .75rem 0;
+
+    border-top: 1px solid var(--risk-border);
+}
+
+
+.risk-snapshot-section:first-of-type {
+
+    border-top: 0;
+    padding-top: 0;
+}
+
+
+.risk-snapshot-section h3 {
+
+    margin-bottom: .55rem;
+
+    font-size: .72rem;
+    font-weight: 700;
+}
+
+
+.risk-current-price {
+
+    padding: .7rem;
+
+    background: var(--risk-blue-soft);
+
+    border-radius: 9px;
+}
+
+
+.risk-current-price span {
+
+    display: block;
+
+    color: var(--risk-muted);
+
+    font-size: .58rem;
+}
+
+
+.risk-current-price strong {
+
+    display: block;
+
+    margin-top: .12rem;
+
+    font-size: 1.05rem;
+}
+
+
+.risk-current-change {
+
+    margin-top: .2rem;
+
+    color: var(--risk-muted);
+
+    font-size: .6rem;
+}
+
+
+.risk-mini-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(0, 1fr)
+        );
+
+    gap: .45rem;
+}
+
+
+.risk-mini-stat {
+
+    padding: .55rem;
+
+    background: #fbfcfe;
+
+    border: 1px solid var(--risk-border);
+    border-radius: 8px;
+}
+
+
+.risk-mini-stat span {
+
+    display: block;
+
+    margin-bottom: .15rem;
+
+    color: var(--risk-muted);
+
+    font-size: .54rem;
+    line-height: 1.3;
+}
+
+
+.risk-mini-stat strong {
+
+    font-size: .68rem;
+}
+
+
+.risk-plan-snapshot {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(0, 1fr)
+        );
+
+    gap: .45rem;
+}
+
+
+.risk-plan-snapshot-item {
+
+    padding: .55rem;
+
+    background: #f8fafc;
+
+    border-radius: 7px;
+}
+
+
+.risk-plan-snapshot-item span {
+
+    display: block;
+
+    color: var(--risk-muted);
+
+    font-size: .53rem;
+}
+
+
+.risk-plan-snapshot-item strong {
+
+    display: block;
+
+    margin-top: .12rem;
+
+    font-size: .69rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 13. HELP ACCORDION                                       */
+/* -------------------------------------------------------- */
+
+.risk-help {
+
+    margin-top: .65rem;
+}
+
+
+.risk-help > summary {
+
+    cursor: pointer;
+
+    padding: .55rem .65rem;
+
+    color: #475467;
+    background: #f8fafc;
+
+    border: 1px solid var(--risk-border);
+    border-radius: 8px;
+
+    list-style: none;
+
+    font-size: .63rem;
+    font-weight: 650;
+}
+
+
+.risk-help > summary::-webkit-details-marker {
+    display: none;
+}
+
+
+.risk-help-body {
+
+    margin-top: .55rem;
+}
+
+
+.risk-help-body .accordion-button {
+
+    padding: .65rem;
+
+    font-size: .65rem;
+}
+
+
+.risk-help-body .accordion-body {
+
+    font-size: .62rem;
+    line-height: 1.5;
+}
+
+
+/* -------------------------------------------------------- */
+/* 14. CALCULATION EXPLANATION                              */
+/* -------------------------------------------------------- */
+
+.risk-explanation-summary {
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 1rem;
+
+    cursor: pointer;
+
+    list-style: none;
+}
+
+
+.risk-explanation-summary::-webkit-details-marker {
+    display: none;
+}
+
+
+.risk-explanation-summary strong {
+
+    font-size: .82rem;
+}
+
+
+.risk-calculation-flow {
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        auto
+        minmax(0, 1fr)
+        auto
+        minmax(0, 1fr);
+
+    align-items: center;
+
+    gap: .7rem;
+
+    margin-top: 1rem;
+}
+
+
+.risk-formula-card {
+
+    min-height: 135px;
+
+    padding: .8rem;
+
+    background: var(--risk-soft);
+
+    border: 1px solid var(--risk-border);
+    border-radius: 9px;
+}
+
+
+.risk-formula-number {
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 24px;
+    height: 24px;
+
+    margin-bottom: .5rem;
+
+    color: #ffffff;
+    background: var(--risk-blue);
+
+    border-radius: 6px;
+
+    font-size: .58rem;
+    font-weight: 700;
+}
+
+
+.risk-formula-card strong {
+
+    display: block;
+
+    margin-bottom: .35rem;
+
+    font-size: .7rem;
+}
+
+
+.risk-formula-card p {
+
+    margin-bottom: .4rem;
+
+    color: var(--risk-muted);
+
+    font-size: .62rem;
+}
+
+
+.risk-formula-card code {
+
+    font-size: .62rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 15. SERVER RESULT                                        */
+/* -------------------------------------------------------- */
+
+.server-risk-result {
+
+    border-top: 3px solid var(--risk-blue);
+}
+
+
+.server-result-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            4,
+            minmax(0, 1fr)
+        );
+
+    gap: .65rem;
+}
+
+
+.server-result-stat {
+
+    padding: .75rem;
+
+    background: #fbfcfe;
+
+    border: 1px solid var(--risk-border);
+    border-radius: 9px;
+}
+
+
+.server-result-stat span {
+
+    display: block;
+
+    margin-bottom: .15rem;
+
+    color: var(--risk-muted);
+
+    font-size: .58rem;
+}
+
+
+.server-result-stat strong {
+
+    font-size: .9rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 16. STRESS TEST                                          */
+/* -------------------------------------------------------- */
+
+.risk-stress-panel {
+
+    overflow: hidden;
+}
+
+
+.risk-stress-summary {
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 1rem;
+
+    cursor: pointer;
+
+    list-style: none;
+}
+
+
+.risk-stress-summary::-webkit-details-marker {
+    display: none;
+}
+
+
+.risk-stress-summary h2 {
+
+    margin: .15rem 0 .2rem;
+
+    font-size: 1.1rem;
+    font-weight: 750;
+}
+
+
+.risk-stress-summary p {
+
+    max-width: 760px;
+
+    margin: 0;
+
+    color: var(--risk-muted);
+
+    font-size: .7rem;
+}
+
+
+.risk-stress-action {
+
+    flex: 0 0 auto;
+
+    padding: .4rem .65rem;
+
+    color: var(--risk-danger);
+    background: #ffffff;
+
+    border: 1px solid var(--risk-danger);
+    border-radius: 8px;
+
+    font-size: .65rem;
+    font-weight: 650;
+}
+
+
+.risk-stress-content {
+
+    margin-top: 1rem;
+    padding-top: 1rem;
+
+    border-top: 1px solid var(--risk-border);
+}
+
+
+.risk-scenario-list {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(0, 1fr)
+        );
+
+    gap: .55rem;
+}
+
+
+.risk-scenario {
+
+    display: flex;
+    align-items: flex-start;
+
+    gap: .65rem;
+
+    padding: .7rem;
+
+    background: #fbfcfe;
+
+    border: 1px solid var(--risk-border);
+    border-radius: 9px;
+}
+
+
+.risk-scenario-icon {
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 auto;
+
+    width: 34px;
+    height: 34px;
+
+    color: var(--risk-danger);
+    background: var(--risk-danger-soft);
+
+    border-radius: 8px;
+}
+
+
+.risk-scenario strong {
+
+    display: block;
+
+    margin-bottom: .2rem;
+
+    font-size: .68rem;
+}
+
+
+.risk-scenario p {
+
+    margin: 0;
+
+    color: var(--risk-muted);
+
+    font-size: .61rem;
+    line-height: 1.4;
+}
+
+
+.risk-stop-explanation {
+
+    margin: .8rem 0;
+}
+
+
+.risk-stop-explanation summary {
+
+    cursor: pointer;
+
+    color: #475467;
+
+    font-size: .66rem;
+    font-weight: 650;
+}
+
+
+.risk-stop-explanation p {
+
+    margin: .5rem 0 0;
+
+    color: var(--risk-muted);
+
+    font-size: .63rem;
+    line-height: 1.5;
+}
+
+
+/* -------------------------------------------------------- */
+/* 17. EDUCATIONAL NOTICE                                   */
+/* -------------------------------------------------------- */
+
+.risk-educational-notice {
+
+    display: flex;
+    align-items: flex-start;
+
+    gap: .6rem;
+
+    margin-top: 1rem;
+
+    padding: .7rem .8rem;
+
+    color: #5b6472;
+    background: var(--risk-warning-soft);
+
+    border: 1px solid #f2e1a9;
+    border-radius: 9px;
+
+    font-size: .62rem;
+    line-height: 1.45;
+}
+
+
+.risk-educational-notice i {
+
+    margin-top: .1rem;
+
+    color: var(--risk-warning);
+}
+
+
+/* -------------------------------------------------------- */
+/* 18. RESPONSIVE                                           */
+/* -------------------------------------------------------- */
+
+@media (max-width: 1199.98px) {
+
+    .risk-workflow-panel {
+
+        grid-template-columns:
+            repeat(
+                3,
+                minmax(0, 1fr)
+            );
+    }
+
+
+    .risk-flow-arrow {
+        display: none;
+    }
+
+
+    .risk-snapshot-panel {
+
+        position: static;
+    }
+
+}
+
+
+@media (max-width: 991.98px) {
+
+    .risk-source-grid,
+    .risk-calculation-flow {
+
+        grid-template-columns: 1fr;
+    }
+
+
+    .risk-calculation-flow > i {
+        display: none;
+    }
+
+
+    .server-result-grid {
+
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+    }
+
+}
+
+
+@media (max-width: 767.98px) {
+
+    .risk-page-header,
+    .risk-stress-summary {
+
+        flex-direction: column;
+    }
+
+
+    .risk-workflow-panel,
+    .risk-source-grid,
+    .market-primary-grid,
+    .market-detail-grid,
+    .risk-plan-grid,
+    .risk-scenario-list,
+    .server-result-grid {
+
+        grid-template-columns: 1fr;
+    }
+
+
+    .risk-plan-grid > div {
+
+        border-right: 0;
+        border-bottom: 1px solid #dce8f7;
+    }
+
+
+    .risk-plan-grid > div:last-child {
+
+        border-bottom: 0;
+    }
+
+}
+
+</style>
+
+{% endblock %}
+
+
 {% block content %}
+
+
+<div class="risk-workspace">
 
 
 <!-- ====================================================== -->
 <!-- 1. PAGE HEADER                                         -->
 <!-- ====================================================== -->
 
-<div class="mb-4">
+<div class="risk-page-header">
 
-    <h1 class="h2 mb-1">
-        Trade & Portfolio Risk
-    </h1>
 
-    <p class="text-muted mb-0">
+    <div>
 
-        Understand how much capital is exposed,
-        calculate a risk-controlled position,
-        and test what could happen if market
-        conditions become significantly worse.
 
-    </p>
+        <h1 class="risk-page-title">
+
+            Trade & Portfolio Risk
+
+        </h1>
+
+
+        <p class="risk-page-subtitle">
+
+            Define the maximum loss first, calculate a
+            risk-controlled position and then investigate
+            how the plan could behave under severe
+            hypothetical market conditions.
+
+        </p>
+
+
+    </div>
+
 
 </div>
 
 
 <!-- ====================================================== -->
-<!-- 2. SIMPLE USER WORKFLOW                                -->
+<!-- 2. FIVE-STEP WORKFLOW                                  -->
 <!-- ====================================================== -->
 
-<div class="card shadow-sm mb-4">
-
-    <div class="card-body">
+<section class="risk-workflow-panel">
 
 
-        <h2 class="h5 mb-3">
-            How to use the Risk workspace
-        </h2>
+    <!-- STEP 1 -->
 
+    <div class="risk-flow-step">
 
-        <div class="row g-3">
+        <span class="risk-flow-number">
+            1
+        </span>
 
+        <span class="risk-flow-icon">
 
-            <!-- Step 1 -->
+            <i class="fa-solid fa-magnifying-glass"></i>
 
-            <div class="col-md-4">
+        </span>
 
-                <div class="border rounded p-3 h-100">
+        <div>
 
-                    <div class="text-primary fw-semibold small">
-                        STEP 1
-                    </div>
+            <strong>
+                Choose Market
+            </strong>
 
-                    <div class="fw-semibold mt-1">
-                        Choose a Market
-                    </div>
-
-                    <div class="small text-muted mt-1">
-
-                        Search Alpaca for the asset you
-                        want to investigate and review
-                        its latest market information.
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <!-- Step 2 -->
-
-            <div class="col-md-4">
-
-                <div class="border rounded p-3 h-100">
-
-                    <div class="text-primary fw-semibold small">
-                        STEP 2
-                    </div>
-
-                    <div class="fw-semibold mt-1">
-                        Plan Your Risk
-                    </div>
-
-                    <div class="small text-muted mt-1">
-
-                        Decide how much capital you are
-                        prepared to lose and calculate
-                        a risk-constrained position.
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <!-- Step 3 -->
-
-            <div class="col-md-4">
-
-                <div class="border rounded p-3 h-100">
-
-                    <div class="text-danger fw-semibold small">
-                        STEP 3
-                    </div>
-
-                    <div class="fw-semibold mt-1">
-                        Test Severe Conditions
-                    </div>
-
-                    <div class="small text-muted mt-1">
-
-                        Run a stress test to see how a
-                        strategy could behave during
-                        severe market conditions.
-
-                    </div>
-
-                </div>
-
-            </div>
-
+            <small>
+                Select the asset to investigate.
+            </small>
 
         </div>
 
     </div>
 
-</div>
+
+    <i class="fa-solid fa-chevron-right risk-flow-arrow"></i>
+
+
+    <!-- STEP 2 -->
+
+    <div class="risk-flow-step">
+
+        <span class="risk-flow-number">
+            2
+        </span>
+
+        <span class="risk-flow-icon">
+
+            <i class="fa-solid fa-wallet"></i>
+
+        </span>
+
+        <div>
+
+            <strong>
+                Set Risk Budget
+            </strong>
+
+            <small>
+                Define the maximum planned loss.
+            </small>
+
+        </div>
+
+    </div>
+
+
+    <i class="fa-solid fa-chevron-right risk-flow-arrow"></i>
+
+
+    <!-- STEP 3 -->
+
+    <div class="risk-flow-step">
+
+        <span class="risk-flow-number">
+            3
+        </span>
+
+        <span class="risk-flow-icon">
+
+            <i class="fa-solid fa-sliders"></i>
+
+        </span>
+
+        <div>
+
+            <strong>
+                Define Trade
+            </strong>
+
+            <small>
+                Choose entry and stop assumptions.
+            </small>
+
+        </div>
+
+    </div>
+
+
+    <i class="fa-solid fa-chevron-right risk-flow-arrow"></i>
+
+
+    <!-- STEP 4 -->
+
+    <div class="risk-flow-step">
+
+        <span class="risk-flow-number">
+            4
+        </span>
+
+        <span class="risk-flow-icon">
+
+            <i class="fa-solid fa-calculator"></i>
+
+        </span>
+
+        <div>
+
+            <strong>
+                Review Plan
+            </strong>
+
+            <small>
+                Inspect the calculated risk.
+            </small>
+
+        </div>
+
+    </div>
+
+
+    <i class="fa-solid fa-chevron-right risk-flow-arrow"></i>
+
+
+    <!-- STEP 5 -->
+
+    <div class="risk-flow-step">
+
+        <span class="risk-flow-number risk-flow-number-danger">
+            5
+        </span>
+
+        <span class="risk-flow-icon risk-flow-icon-danger">
+
+            <i class="fa-solid fa-triangle-exclamation"></i>
+
+        </span>
+
+        <div>
+
+            <strong>
+                Stress Test
+            </strong>
+
+            <small>
+                Explore severe scenarios.
+            </small>
+
+        </div>
+
+    </div>
+
+
+</section>
 
 
 <!-- ====================================================== -->
 <!-- 3. DATA SOURCE / PROVENANCE                            -->
 <!-- ====================================================== -->
 
-<div class="card shadow-sm mb-4">
-
-    <div class="card-body">
+<section class="risk-source-strip">
 
 
-        <div
-            class="
-                d-flex
-                justify-content-between
-                align-items-start
-                flex-wrap
-                gap-3
-            "
-        >
+    <div class="risk-source-main">
+
+
+        <i class="fa-solid fa-circle-info"></i>
+
+
+        <div>
+
+            <strong>
+                Risk calculations use current and historical market information.
+            </strong>
+
+            <span>
+
+                Alpaca Market Data · IEX feed ·
+                MarketPulse stored historical analytics
+
+            </span>
+
+        </div>
+
+
+    </div>
+
+
+    <details class="risk-source-details">
+
+
+        <summary>
+
+            How does the data flow work?
+
+            <i class="fa-solid fa-chevron-down ms-1"></i>
+
+        </summary>
+
+
+        <div class="risk-source-grid">
 
 
             <div>
 
-                <h2 class="h5 mb-1">
-                    Where does the information come from?
-                </h2>
+                <strong>
+                    Alpaca Market Data
+                </strong>
 
-                <p class="text-muted mb-0">
+                <p>
 
-                    MarketPulse separates current market
-                    information from historical risk analytics
-                    so the source of every calculation is clear.
+                    Supplies current asset information,
+                    latest trade, quote information and
+                    the current daily market snapshot.
 
                 </p>
 
             </div>
 
 
-            <div class="d-flex gap-2 flex-wrap">
-
-                <span class="badge bg-success">
-                    Alpaca Market Data
-                </span>
-
-                <span class="badge bg-light text-dark border">
-                    IEX Feed
-                </span>
-
-                <span class="badge bg-light text-dark border">
-                    MarketPulse Analytics
-                </span>
-
-            </div>
-
-
-        </div>
-
-
-        <hr>
-
-
-        <div class="row g-3 small">
-
-
-            <div class="col-md-4">
-
-                <strong>
-                    Alpaca
-                </strong>
-
-                <div class="text-muted">
-
-                    Asset universe, company information,
-                    exchange, tradability, latest trade,
-                    bid/ask and current daily snapshot.
-
-                </div>
-
-            </div>
-
-
-            <div class="col-md-4">
+            <div>
 
                 <strong>
                     MarketPulse Database
                 </strong>
 
-                <div class="text-muted">
+                <p>
 
-                    Stored historical OHLCV observations
-                    used for reproducible quantitative
-                    calculations.
+                    Stores historical Open, High, Low,
+                    Close and Volume observations so
+                    historical calculations are reproducible.
 
-                </div>
+                </p>
 
             </div>
 
 
-            <div class="col-md-4">
+            <div>
 
                 <strong>
                     MarketPulse Calculations
                 </strong>
 
-                <div class="text-muted">
+                <p>
 
-                    ATR, volatility, drawdown,
-                    position sizing, stop-loss,
-                    reward-to-risk and stress analysis.
+                    Uses the selected inputs and stored data
+                    to calculate position sizing, stop-loss,
+                    volatility, drawdown and risk metrics.
 
-                </div>
+                </p>
 
             </div>
 
 
         </div>
 
-    </div>
 
-</div>
+    </details>
+
+
+</section>
 
 
 <!-- ====================================================== -->
 <!-- 4. MAIN RISK WORKSPACE                                 -->
 <!-- ====================================================== -->
 
-<div class="row g-4">
+<div class="row g-4 align-items-start">
 
 
     <!-- ================================================== -->
-    <!-- LEFT COLUMN                                        -->
+    <!-- LEFT: TRADE RISK PLANNER                          -->
     <!-- ================================================== -->
 
-    <div class="col-xl-7">
+    <div class="col-xl-8">
 
 
-        <div class="card shadow-sm">
-
-            <div class="card-body">
+        <section class="risk-panel">
 
 
-                <h2 class="h4 mb-1">
+            <div class="risk-planner-heading">
+
+                <div class="risk-eyebrow">
+                    Position Risk Planning
+                </div>
+
+                <h2>
                     Trade Risk Planner
                 </h2>
 
+                <p>
 
-                <p class="text-muted mb-4">
-
-                    Calculate how large a hypothetical
-                    position can be while staying within
-                    your chosen maximum loss.
+                    Work through the steps in order.
+                    MarketPulse uses your maximum-loss limit
+                    to calculate a risk-constrained
+                    hypothetical position size.
 
                 </p>
 
-
-                <form method="post">
-
-                    {% csrf_token %}
+            </div>
 
 
-                    <!-- ================================== -->
-                    <!-- STEP 1                             -->
-                    <!-- ================================== -->
+            <form method="post">
 
-                    <div class="mb-4">
+                {% csrf_token %}
 
-                        <div
-                            class="
-                                text-primary
-                                fw-semibold
-                                small
-                                mb-1
-                            "
+
+                <!-- ====================================== -->
+                <!-- STEP 1 - CHOOSE MARKET                 -->
+                <!-- ====================================== -->
+
+                <details
+                    class="risk-step"
+                    open
+                >
+
+
+                    <summary class="risk-step-summary">
+
+
+                        <span class="risk-step-number">
+                            1
+                        </span>
+
+
+                        <span class="risk-step-summary-copy">
+
+                            <strong>
+                                Choose Market
+                            </strong>
+
+                            <small>
+
+                                Search Alpaca for the asset
+                                you want to investigate.
+
+                            </small>
+
+                        </span>
+
+
+                        <span
+                            id="stepOneStatus"
+                            class="risk-step-status"
                         >
-                            STEP 1
-                        </div>
+
+                            <i class="fa-solid fa-magnifying-glass"></i>
+
+                            Search
+
+                        </span>
 
 
-                        <h3 class="h5">
-                            Search the Market
-                        </h3>
+                    </summary>
 
 
-                        <p class="text-muted small">
-
-                            Search Alpaca's active US-equity
-                            universe rather than being limited
-                            to stocks already stored in
-                            MarketPulse.
-
-                        </p>
+                    <div class="risk-step-content">
 
 
                         <!-- ============================== -->
-                        <!-- ALPACA ASSET SEARCH             -->
+                        <!-- ASSET SEARCH                   -->
                         <!-- ============================== -->
 
                         <div class="mb-3">
 
+
                             <label
                                 for="id_symbol"
-                                class="form-label fw-semibold"
+                                class="form-label"
                             >
+
                                 Asset / Symbol
+
                             </label>
 
 
                             <div class="position-relative">
+
 
                                 {{ form.symbol }}
 
@@ -420,13 +2176,9 @@ Risk | MarketPulse
                                         shadow
                                         d-none
                                     "
-                                    style="
-                                        z-index: 1050;
-                                        max-height: 340px;
-                                        overflow-y: auto;
-                                    "
                                 >
                                 </div>
+
 
                             </div>
 
@@ -448,12 +2200,11 @@ Risk | MarketPulse
                             >
                             </div>
 
+
                         </div>
 
 
-                        <!-- ================================== -->
-                        <!-- USD WORKFLOW                       -->
-                        <!-- ================================== -->
+                        <!-- USD WORKFLOW -->
 
                         <input
                             type="hidden"
@@ -463,76 +2214,38 @@ Risk | MarketPulse
 
 
                         <!-- ============================== -->
-                        <!-- ALPACA SNAPSHOT PANEL          -->
+                        <!-- ALPACA MARKET SUMMARY          -->
                         <!-- ============================== -->
 
                         <div
                             id="alpacaMarketPanel"
-                            class="card border mb-3 d-none"
+                            class="market-summary-panel d-none"
                         >
 
-                            <div class="card-body">
+
+                            <!-- HEADER -->
+
+                            <div class="market-summary-header">
 
 
-                                <!-- Asset heading -->
-
-                                <div
-                                    class="
-                                        d-flex
-                                        justify-content-between
-                                        align-items-start
-                                        flex-wrap
-                                        gap-3
-                                        mb-3
-                                    "
-                                >
+                                <div>
 
 
-                                    <div>
+                                    <h4 id="alpacaAssetName">
+                                        —
+                                    </h4>
 
-                                        <h4
-                                            id="alpacaAssetName"
-                                            class="h5 mb-1"
-                                        >
+
+                                    <div class="market-summary-identity">
+
+                                        <strong id="alpacaSymbol">
                                             —
-                                        </h4>
+                                        </strong>
 
+                                        &nbsp;·&nbsp;
 
-                                        <div class="text-muted">
-
-                                            <strong id="alpacaSymbol">
-                                                —
-                                            </strong>
-
-                                            <span class="mx-1">
-                                                ·
-                                            </span>
-
-                                            <span id="alpacaExchange">
-                                                —
-                                            </span>
-
-                                        </div>
-
-                                    </div>
-
-
-                                    <div class="text-end">
-
-                                        <span class="badge bg-success">
-                                            Alpaca
-                                        </span>
-
-                                        <span
-                                            id="alpacaFeed"
-                                            class="
-                                                badge
-                                                bg-light
-                                                text-dark
-                                                border
-                                            "
-                                        >
-                                            IEX
+                                        <span id="alpacaExchange">
+                                            —
                                         </span>
 
                                     </div>
@@ -541,105 +2254,208 @@ Risk | MarketPulse
                                 </div>
 
 
-                                <!-- ====================== -->
-                                <!-- LATEST MARKET DATA     -->
-                                <!-- ====================== -->
-
-                                <div class="row g-2">
+                                <div>
 
 
-                                    <div class="col-6 col-lg-3">
+                                    <span class="badge bg-success">
+                                        Alpaca
+                                    </span>
 
-                                        <div
-                                            class="
-                                                border
-                                                rounded
-                                                p-2
-                                                h-100
-                                            "
-                                        >
 
-                                            <div class="small text-muted">
-                                                Latest Trade
-                                            </div>
+                                    <span
+                                        id="alpacaFeed"
+                                        class="
+                                            badge
+                                            bg-light
+                                            text-dark
+                                            border
+                                        "
+                                    >
+                                        IEX
+                                    </span>
 
-                                            <strong id="alpacaLatestPrice">
-                                                —
-                                            </strong>
 
-                                        </div>
+                                </div>
+
+
+                            </div>
+
+
+                            <!-- ========================== -->
+                            <!-- PRIMARY INFORMATION        -->
+                            <!-- ========================== -->
+
+                            <div class="market-primary-grid">
+
+
+                                <div class="market-primary-stat">
+
+                                    <span>
+                                        Latest Market Price
+                                    </span>
+
+                                    <strong id="alpacaLatestPrice">
+                                        —
+                                    </strong>
+
+                                </div>
+
+
+                                <div class="market-primary-stat">
+
+                                    <span>
+                                        Daily Change
+                                    </span>
+
+                                    <strong id="alpacaDailyChange">
+                                        —
+                                    </strong>
+
+                                </div>
+
+
+                                <div class="market-primary-stat">
+
+                                    <span>
+                                        Day Range
+                                    </span>
+
+                                    <strong id="alpacaDayRange">
+                                        —
+                                    </strong>
+
+                                </div>
+
+
+                            </div>
+
+
+                            <!-- ========================== -->
+                            <!-- SECONDARY DETAILS          -->
+                            <!-- ========================== -->
+
+                            <details class="market-detail-dropdown">
+
+
+                                <summary>
+
+                                    Market Details
+
+                                    <i
+                                        class="
+                                            fa-solid
+                                            fa-chevron-down
+                                            float-end
+                                        "
+                                    >
+                                    </i>
+
+                                </summary>
+
+
+                                <div class="market-detail-grid">
+
+
+                                    <div class="market-detail-stat">
+
+                                        <span>
+                                            Bid
+                                        </span>
+
+                                        <strong id="alpacaBid">
+                                            —
+                                        </strong>
 
                                     </div>
 
 
-                                    <div class="col-6 col-lg-3">
+                                    <div class="market-detail-stat">
 
-                                        <div
-                                            class="
-                                                border
-                                                rounded
-                                                p-2
-                                                h-100
-                                            "
-                                        >
+                                        <span>
+                                            Ask
+                                        </span>
 
-                                            <div class="small text-muted">
-                                                Bid
-                                            </div>
-
-                                            <strong id="alpacaBid">
-                                                —
-                                            </strong>
-
-                                        </div>
+                                        <strong id="alpacaAsk">
+                                            —
+                                        </strong>
 
                                     </div>
 
 
-                                    <div class="col-6 col-lg-3">
+                                    <div class="market-detail-stat">
 
-                                        <div
-                                            class="
-                                                border
-                                                rounded
-                                                p-2
-                                                h-100
-                                            "
-                                        >
+                                        <span>
+                                            Bid / Ask Spread
+                                        </span>
 
-                                            <div class="small text-muted">
-                                                Ask
-                                            </div>
-
-                                            <strong id="alpacaAsk">
-                                                —
-                                            </strong>
-
-                                        </div>
+                                        <strong id="alpacaSpread">
+                                            —
+                                        </strong>
 
                                     </div>
 
 
-                                    <div class="col-6 col-lg-3">
+                                    <div class="market-detail-stat">
 
-                                        <div
-                                            class="
-                                                border
-                                                rounded
-                                                p-2
-                                                h-100
-                                            "
-                                        >
+                                        <span>
+                                            Previous Close
+                                        </span>
 
-                                            <div class="small text-muted">
-                                                Bid / Ask Spread
-                                            </div>
+                                        <strong id="alpacaPreviousClose">
+                                            —
+                                        </strong>
 
-                                            <strong id="alpacaSpread">
-                                                —
-                                            </strong>
+                                    </div>
 
-                                        </div>
+
+                                    <div class="market-detail-stat">
+
+                                        <span>
+                                            Day Open
+                                        </span>
+
+                                        <strong id="alpacaDayOpen">
+                                            —
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div class="market-detail-stat">
+
+                                        <span>
+                                            Day High
+                                        </span>
+
+                                        <strong id="alpacaDayHigh">
+                                            —
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div class="market-detail-stat">
+
+                                        <span>
+                                            Day Low
+                                        </span>
+
+                                        <strong id="alpacaDayLow">
+                                            —
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div class="market-detail-stat">
+
+                                        <span>
+                                            Day Volume
+                                        </span>
+
+                                        <strong id="alpacaDayVolume">
+                                            —
+                                        </strong>
 
                                     </div>
 
@@ -647,133 +2463,10 @@ Risk | MarketPulse
                                 </div>
 
 
-                                <!-- ====================== -->
-                                <!-- PREVIOUS CLOSE         -->
-                                <!-- ====================== -->
+                                <!-- Asset capabilities -->
 
-                                <div class="row g-2 mt-1">
+                                <div class="market-capabilities">
 
-
-                                    <div class="col-6">
-
-                                        <div class="border rounded p-2">
-
-                                            <div class="small text-muted">
-                                                Previous Close
-                                            </div>
-
-                                            <strong id="alpacaPreviousClose">
-                                                —
-                                            </strong>
-
-                                        </div>
-
-                                    </div>
-
-
-                                    <div class="col-6">
-
-                                        <div class="border rounded p-2">
-
-                                            <div class="small text-muted">
-                                                Change vs Previous Close
-                                            </div>
-
-                                            <strong id="alpacaDailyChange">
-                                                —
-                                            </strong>
-
-                                        </div>
-
-                                    </div>
-
-
-                                </div>
-
-
-                                <!-- ====================== -->
-                                <!-- DAILY BAR              -->
-                                <!-- ====================== -->
-
-                                <div class="row g-2 mt-1">
-
-
-                                    <div class="col-6 col-lg-3">
-
-                                        <div class="border rounded p-2">
-
-                                            <div class="small text-muted">
-                                                Day Open
-                                            </div>
-
-                                            <strong id="alpacaDayOpen">
-                                                —
-                                            </strong>
-
-                                        </div>
-
-                                    </div>
-
-
-                                    <div class="col-6 col-lg-3">
-
-                                        <div class="border rounded p-2">
-
-                                            <div class="small text-muted">
-                                                Day High
-                                            </div>
-
-                                            <strong id="alpacaDayHigh">
-                                                —
-                                            </strong>
-
-                                        </div>
-
-                                    </div>
-
-
-                                    <div class="col-6 col-lg-3">
-
-                                        <div class="border rounded p-2">
-
-                                            <div class="small text-muted">
-                                                Day Low
-                                            </div>
-
-                                            <strong id="alpacaDayLow">
-                                                —
-                                            </strong>
-
-                                        </div>
-
-                                    </div>
-
-
-                                    <div class="col-6 col-lg-3">
-
-                                        <div class="border rounded p-2">
-
-                                            <div class="small text-muted">
-                                                Day Volume
-                                            </div>
-
-                                            <strong id="alpacaDayVolume">
-                                                —
-                                            </strong>
-
-                                        </div>
-
-                                    </div>
-
-
-                                </div>
-
-
-                                <!-- ====================== -->
-                                <!-- ASSET CAPABILITIES     -->
-                                <!-- ====================== -->
-
-                                <div class="mt-3">
 
                                     <span
                                         id="alpacaTradable"
@@ -783,7 +2476,6 @@ Risk | MarketPulse
                                             text-dark
                                             border
                                             me-1
-                                            mb-1
                                         "
                                     >
                                         —
@@ -798,7 +2490,6 @@ Risk | MarketPulse
                                             text-dark
                                             border
                                             me-1
-                                            mb-1
                                         "
                                     >
                                         —
@@ -813,7 +2504,6 @@ Risk | MarketPulse
                                             text-dark
                                             border
                                             me-1
-                                            mb-1
                                         "
                                     >
                                         —
@@ -827,54 +2517,18 @@ Risk | MarketPulse
                                             bg-light
                                             text-dark
                                             border
-                                            me-1
-                                            mb-1
                                         "
                                     >
                                         —
                                     </span>
 
-                                </div>
-
-
-                                <!-- ====================== -->
-                                <!-- MARKET ACTIONS         -->
-                                <!-- ====================== -->
-
-                                <div
-                                    class="
-                                        d-flex
-                                        gap-2
-                                        flex-wrap
-                                        mt-3
-                                    "
-                                >
-
-                                    <button
-                                        type="button"
-                                        id="useAlpacaPrice"
-                                        class="btn btn-sm btn-primary"
-                                    >
-                                        Use Latest Price as Entry
-                                    </button>
-
-
-                                    <button
-                                        type="button"
-                                        id="refreshAlpacaPrice"
-                                        class="btn btn-sm btn-outline-primary"
-                                    >
-                                        Refresh Snapshot
-                                    </button>
 
                                 </div>
 
 
-                                <!-- ====================== -->
-                                <!-- DATA PROVENANCE        -->
-                                <!-- ====================== -->
+                                <!-- Provenance -->
 
-                                <div class="small text-muted mt-3">
+                                <div class="market-provenance">
 
                                     Provider:
 
@@ -897,48 +2551,112 @@ Risk | MarketPulse
                                 </div>
 
 
+                            </details>
+
+
+                            <!-- ========================== -->
+                            <!-- MARKET ACTIONS             -->
+                            <!-- ========================== -->
+
+                            <div class="market-actions">
+
+
+                                <button
+                                    type="button"
+                                    id="useAlpacaPrice"
+                                    class="btn btn-sm btn-primary"
+                                >
+
+                                    <i class="fa-solid fa-arrow-down me-1"></i>
+
+                                    Use Latest Market Price
+
+                                </button>
+
+
+                                <button
+                                    type="button"
+                                    id="refreshAlpacaPrice"
+                                    class="btn btn-sm btn-outline-primary"
+                                >
+
+                                    <i class="fa-solid fa-rotate me-1"></i>
+
+                                    Refresh
+
+                                </button>
+
+
                             </div>
 
+
+                            <div class="form-text mt-2">
+
+                                The latest market price is used
+                                only as a hypothetical entry
+                                price for this risk calculation.
+
+                            </div>
+
+
                         </div>
+
 
                     </div>
 
 
-                    <hr>
+                </details>
 
 
-                    <!-- ================================== -->
-                    <!-- STEP 2                             -->
-                    <!-- ================================== -->
+                <!-- ====================================== -->
+                <!-- STEP 2 - RISK BUDGET                   -->
+                <!-- ====================================== -->
 
-                    <div class="my-4">
-
-                        <div
-                            class="
-                                text-primary
-                                fw-semibold
-                                small
-                                mb-1
-                            "
-                        >
-                            STEP 2
-                        </div>
+                <details class="risk-step">
 
 
-                        <h3 class="h5">
-                            Define Your Risk Budget
-                        </h3>
+                    <summary class="risk-step-summary">
+
+
+                        <span class="risk-step-number">
+                            2
+                        </span>
+
+
+                        <span class="risk-step-summary-copy">
+
+                            <strong>
+                                Set Risk Budget
+                            </strong>
+
+                            <small>
+
+                                Define how much capital you
+                                are prepared to expose to loss.
+
+                            </small>
+
+                        </span>
+
+
+                    </summary>
+
+
+                    <div class="risk-step-content">
 
 
                         <!-- Trading capital -->
 
                         <div class="mb-3">
 
+
                             <label
-                                class="form-label fw-semibold"
+                                class="form-label"
                                 for="{{ form.trading_capital.id_for_label }}"
                             >
+
                                 Trading Capital / Portfolio Value
+
                             </label>
 
 
@@ -951,10 +2669,10 @@ Risk | MarketPulse
                                 available for this simulation.
 
                                 This is not automatically the
-                                amount invested in the selected
-                                stock.
+                                amount invested in one position.
 
                             </div>
+
 
                         </div>
 
@@ -963,36 +2681,39 @@ Risk | MarketPulse
 
                         <div class="mb-2">
 
+
                             <label
-                                class="form-label fw-semibold"
+                                class="form-label"
                                 for="{{ form.risk_percentage.id_for_label }}"
                             >
+
                                 Maximum Risk per Trade
+
                             </label>
 
 
                             <div class="input-group">
 
+
                                 {{ form.risk_percentage }}
+
 
                                 <span class="input-group-text">
                                     %
                                 </span>
+
 
                             </div>
 
 
                             <div class="form-text">
 
-                                Example:
-
-                                1% of $10,000 means a maximum
-                                planned trade-loss budget of $100.
-
-                                It does not mean that only $100
-                                is invested.
+                                Example: 1% of $10,000 creates
+                                a maximum planned loss budget
+                                of $100.
 
                             </div>
+
 
                         </div>
 
@@ -1001,8 +2722,9 @@ Risk | MarketPulse
 
                         <div class="d-flex gap-2 flex-wrap mt-2">
 
-                            <span class="small text-muted me-1">
-                                Example simulation presets:
+
+                            <span class="small text-muted align-self-center">
+                                Example presets:
                             </span>
 
 
@@ -1047,75 +2769,99 @@ Risk | MarketPulse
                                 2%
                             </button>
 
+
                         </div>
 
 
-                        <!-- Live risk budget -->
+                        <!-- Maximum loss -->
 
-                        <div
-                            class="
-                                border
-                                rounded
-                                p-3
-                                mt-3
-                                bg-light
-                            "
-                        >
+                        <div class="risk-budget-preview">
 
-                            <div class="small text-muted">
-                                Maximum Planned Risk
-                            </div>
 
-                            <div
-                                class="fs-4 fw-bold"
-                                id="liveRiskAmount"
-                            >
+                            <span>
+                                Maximum Planned Loss
+                            </span>
+
+
+                            <strong id="liveRiskAmount">
+
                                 —
-                            </div>
+
+                            </strong>
+
 
                         </div>
+
 
                     </div>
 
 
-                    <hr>
+                </details>
 
 
-                    <!-- ================================== -->
-                    <!-- STEP 3                             -->
-                    <!-- ================================== -->
+                <!-- ====================================== -->
+                <!-- STEP 3 - DEFINE TRADE                  -->
+                <!-- ====================================== -->
 
-                    <div class="my-4">
-
-                        <div
-                            class="
-                                text-primary
-                                fw-semibold
-                                small
-                                mb-1
-                            "
-                        >
-                            STEP 3
-                        </div>
+                <details class="risk-step">
 
 
-                        <h3 class="h5">
-                            Define the Trade
-                        </h3>
+                    <summary class="risk-step-summary">
+
+
+                        <span class="risk-step-number">
+                            3
+                        </span>
+
+
+                        <span class="risk-step-summary-copy">
+
+                            <strong>
+                                Define Trade
+                            </strong>
+
+                            <small>
+
+                                Set the hypothetical direction,
+                                entry, stop-loss and optional target.
+
+                            </small>
+
+                        </span>
+
+
+                    </summary>
+
+
+                    <div class="risk-step-content">
 
 
                         <!-- Direction -->
 
                         <div class="mb-3">
 
+
                             <label
-                                class="form-label fw-semibold"
+                                class="form-label"
                                 for="{{ form.direction.id_for_label }}"
                             >
+
                                 Trade Direction
+
                             </label>
 
+
                             {{ form.direction }}
+
+
+                            <div class="form-text">
+
+                                The direction is a simulation
+                                assumption. MarketPulse is not
+                                predicting future price direction.
+
+                            </div>
+
 
                         </div>
 
@@ -1124,11 +2870,14 @@ Risk | MarketPulse
 
                         <div class="mb-3">
 
+
                             <label
-                                class="form-label fw-semibold"
+                                class="form-label"
                                 for="{{ form.entry_price.id_for_label }}"
                             >
+
                                 Planned Entry Price
+
                             </label>
 
 
@@ -1145,6 +2894,7 @@ Risk | MarketPulse
                                 "
                             >
 
+
                                 <button
                                     type="button"
                                     id="useLatestClose"
@@ -1154,35 +2904,40 @@ Risk | MarketPulse
                                         btn-outline-secondary
                                     "
                                 >
+
                                     Use Stored Historical Close
+
                                 </button>
 
 
-                                <span class="small text-muted">
+                                <span class="form-text mt-0">
 
-                                    Entry price means the price
-                                    of one share/unit.
-
-                                    It is not the total amount
-                                    invested.
+                                    Entry price is the assumed
+                                    price of one share or unit.
 
                                 </span>
 
+
                             </div>
+
 
                         </div>
 
 
-                        <!-- Stop-loss method -->
+                        <!-- Stop method -->
 
                         <div class="mb-3">
 
+
                             <label
-                                class="form-label fw-semibold"
+                                class="form-label"
                                 for="{{ form.stop_method.id_for_label }}"
                             >
+
                                 Stop-Loss Method
+
                             </label>
+
 
                             {{ form.stop_method }}
 
@@ -1190,66 +2945,75 @@ Risk | MarketPulse
                             <div class="form-text">
 
                                 Choose how MarketPulse should
-                                calculate the level where the
-                                simulated position exits if
-                                price moves against it.
+                                calculate the hypothetical exit
+                                level if price moves against
+                                the position.
 
                             </div>
+
 
                         </div>
 
 
-                        <!-- Percentage stop -->
+                        <!-- Percentage -->
 
                         <div
                             id="percentageStopSection"
                             class="mb-3"
                         >
 
+
                             <label
-                                class="form-label fw-semibold"
+                                class="form-label"
                                 for="{{ form.stop_loss_percentage.id_for_label }}"
                             >
+
                                 Stop-Loss Distance
+
                             </label>
 
 
                             <div class="input-group">
 
+
                                 {{ form.stop_loss_percentage }}
+
 
                                 <span class="input-group-text">
                                     %
                                 </span>
+
 
                             </div>
 
 
                             <div class="form-text">
 
-                                Example:
-
-                                A 5% stop on a $100 long
-                                entry calculates a $95
-                                stop price.
+                                Example: a 5% stop on a
+                                $100 long entry calculates
+                                a $95 hypothetical stop price.
 
                             </div>
+
 
                         </div>
 
 
-                        <!-- ATR stop -->
+                        <!-- ATR -->
 
                         <div
                             id="atrStopSection"
                             class="mb-3 d-none"
                         >
 
+
                             <label
-                                class="form-label fw-semibold"
+                                class="form-label"
                                 for="{{ form.atr_multiplier.id_for_label }}"
                             >
-                                ATR Multiplier
+
+                                Average True Range Multiplier
+
                             </label>
 
 
@@ -1258,44 +3022,50 @@ Risk | MarketPulse
 
                             <div class="form-text">
 
-                                ATR measures recent historical
-                                price movement using High,
-                                Low and Close observations.
+                                Average True Range (ATR) measures
+                                recent historical price movement.
 
-                                A value of 2 means the stop
-                                distance is approximately
-                                2 × the 14-day ATR.
+                                A multiplier of 2 creates a stop
+                                distance of approximately twice
+                                the 14-day Average True Range.
 
                             </div>
+
 
                         </div>
 
 
-                        <!-- Fixed stop -->
+                        <!-- Fixed -->
 
                         <div
                             id="fixedStopSection"
                             class="mb-3 d-none"
                         >
 
+
                             <label
-                                class="form-label fw-semibold"
+                                class="form-label"
                                 for="{{ form.stop_price.id_for_label }}"
                             >
+
                                 Fixed Stop Price
+
                             </label>
 
+
                             {{ form.stop_price }}
+
 
                         </div>
 
 
                         <!-- Target -->
 
-                        <div class="mb-3">
+                        <div class="mb-0">
+
 
                             <label
-                                class="form-label fw-semibold"
+                                class="form-label"
                                 for="{{ form.target_price.id_for_label }}"
                             >
 
@@ -1307,48 +3077,102 @@ Risk | MarketPulse
 
                             </label>
 
+
                             {{ form.target_price }}
 
 
                             <div class="form-text">
 
-                                Optional favourable exit price.
-
-                                If supplied, MarketPulse can
-                                calculate the potential reward
-                                and reward-to-risk ratio.
+                                If supplied, MarketPulse compares
+                                potential reward with the
+                                calculated risk.
 
                             </div>
+
 
                         </div>
 
 
-                        <!-- ============================== -->
-                        <!-- LIVE PREVIEW                   -->
-                        <!-- ============================== -->
-
-                        <div
-                            class="
-                                border
-                                rounded
-                                p-3
-                                bg-light
-                            "
-                        >
-
-                            <h4 class="h6 mb-3">
-                                Live Risk Preview
-                            </h4>
+                    </div>
 
 
-                            <div class="row g-3 small">
+                </details>
 
 
-                                <div class="col-md-6">
+                <!-- ====================================== -->
+                <!-- STEP 4 - REVIEW PLAN                   -->
+                <!-- ====================================== -->
 
-                                    <div class="text-muted">
+                <details
+                    class="
+                        risk-step
+                        risk-result-step
+                    "
+                    open
+                >
+
+
+                    <summary class="risk-step-summary">
+
+
+                        <span class="risk-step-number">
+                            4
+                        </span>
+
+
+                        <span class="risk-step-summary-copy">
+
+                            <strong>
+                                Review Risk Plan
+                            </strong>
+
+                            <small>
+
+                                Review the live calculation
+                                before submitting the plan.
+
+                            </small>
+
+                        </span>
+
+
+                    </summary>
+
+
+                    <div class="risk-step-content">
+
+
+                        <div class="risk-plan-hero">
+
+
+                            <!-- Maximum loss -->
+
+                            <div class="risk-plan-primary">
+
+
+                                <span>
+                                    Maximum Planned Loss
+                                </span>
+
+
+                                <strong id="liveRiskAmountDisplay">
+                                    —
+                                </strong>
+
+
+                            </div>
+
+
+                            <!-- Live calculations -->
+
+                            <div class="risk-plan-grid">
+
+
+                                <div>
+
+                                    <span>
                                         Calculated Stop
-                                    </div>
+                                    </span>
 
                                     <strong id="liveStopPrice">
                                         —
@@ -1357,11 +3181,11 @@ Risk | MarketPulse
                                 </div>
 
 
-                                <div class="col-md-6">
+                                <div>
 
-                                    <div class="text-muted">
+                                    <span>
                                         Risk per Share / Unit
-                                    </div>
+                                    </span>
 
                                     <strong id="liveRiskPerUnit">
                                         —
@@ -1370,11 +3194,11 @@ Risk | MarketPulse
                                 </div>
 
 
-                                <div class="col-md-6">
+                                <div>
 
-                                    <div class="text-muted">
+                                    <span>
                                         Risk-Constrained Position
-                                    </div>
+                                    </span>
 
                                     <strong id="livePositionSize">
                                         —
@@ -1383,11 +3207,11 @@ Risk | MarketPulse
                                 </div>
 
 
-                                <div class="col-md-6">
+                                <div>
 
-                                    <div class="text-muted">
+                                    <span>
                                         Reward / Risk
-                                    </div>
+                                    </span>
 
                                     <strong id="liveRewardRisk">
                                         —
@@ -1398,255 +3222,254 @@ Risk | MarketPulse
 
                             </div>
 
+
                         </div>
+
+
+                        <div class="form-text mt-2">
+
+                            The position size is constrained by
+                            both your maximum-risk budget and
+                            available hypothetical capital.
+
+                        </div>
+
+
+                        <!-- Errors -->
+
+                        {% if form.errors %}
+
+                            <div class="alert alert-danger mt-3 mb-0">
+
+                                <strong>
+                                    Please correct the following:
+                                </strong>
+
+                                {{ form.errors }}
+
+                            </div>
+
+                        {% endif %}
+
+
+                        <!-- Calculate -->
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary mt-3"
+                        >
+
+                            <i class="fa-solid fa-calculator me-2"></i>
+
+                            Calculate Risk Plan
+
+                        </button>
+
 
                     </div>
 
 
-                    <!-- ================================== -->
-                    <!-- FORM ERRORS                        -->
-                    <!-- ================================== -->
-
-                    {% if form.errors %}
-
-                        <div class="alert alert-danger">
-
-                            <strong>
-                                Please correct the following:
-                            </strong>
-
-                            {{ form.errors }}
-
-                        </div>
-
-                    {% endif %}
+                </details>
 
 
-                    <!-- ================================== -->
-                    <!-- CALCULATE                          -->
-                    <!-- ================================== -->
-
-                    <button
-                        type="submit"
-                        class="btn btn-primary btn-lg"
-                    >
-                        Calculate Risk Plan
-                    </button>
+            </form>
 
 
-                </form>
+        </section>
 
-            </div>
-
-        </div>
 
     </div>
 
 
     <!-- ================================================== -->
-    <!-- RIGHT COLUMN                                       -->
+    <!-- RIGHT: STICKY RISK SNAPSHOT                        -->
     <!-- ================================================== -->
 
-    <div class="col-xl-5">
+    <div class="col-xl-4">
 
 
-        <!-- ============================================== -->
-        <!-- HISTORICAL RISK CONTEXT                       -->
-        <!-- ============================================== -->
-
-        <div class="card shadow-sm mb-4">
-
-            <div class="card-body">
+        <aside class="risk-snapshot-panel">
 
 
-                <div
-                    class="
-                        d-flex
-                        justify-content-between
-                        align-items-start
-                        gap-2
-                    "
-                >
+            <!-- ========================================== -->
+            <!-- HEADER                                     -->
+            <!-- ========================================== -->
+
+            <div class="risk-snapshot-header">
 
 
-                    <div>
+                <div>
 
-                        <h2 class="h4 mb-1">
-                            Historical Risk Context
-                        </h2>
-
-                        <p class="text-muted small">
-
-                            Risk measures calculated from
-                            historical observations stored
-                            inside MarketPulse.
-
-                        </p>
-
+                    <div class="risk-eyebrow">
+                        Current Context
                     </div>
 
+                    <h2>
+                        Risk Snapshot
+                    </h2>
 
-                    <span
-                        class="
-                            badge
-                            bg-light
-                            text-dark
-                            border
-                        "
-                    >
-                        Stored OHLCV
+                </div>
+
+
+                <span
+                    id="riskSnapshotSymbol"
+                    class="risk-symbol-badge"
+                >
+                    —
+                </span>
+
+
+            </div>
+
+
+            <!-- ========================================== -->
+            <!-- CURRENT MARKET                             -->
+            <!-- ========================================== -->
+
+            <div class="risk-snapshot-section">
+
+
+                <h3>
+                    Current Market
+                </h3>
+
+
+                <div class="risk-current-price">
+
+
+                    <span>
+                        Latest Market Price
                     </span>
 
 
+                    <strong id="riskSnapshotPrice">
+                        —
+                    </strong>
+
+
+                    <div
+                        id="riskSnapshotChange"
+                        class="risk-current-change"
+                    >
+                        Waiting for market snapshot
+                    </div>
+
+
                 </div>
 
 
-                <!-- No historical data -->
+            </div>
+
+
+            <!-- ========================================== -->
+            <!-- HISTORICAL CONTEXT                         -->
+            <!-- ========================================== -->
+
+            <div class="risk-snapshot-section">
+
+
+                <h3>
+                    Historical Risk Context
+                </h3>
+
 
                 <div
                     id="historicalDataWarning"
-                    class="alert alert-warning py-2 d-none"
+                    class="
+                        alert
+                        alert-warning
+                        py-2
+                        small
+                        d-none
+                    "
                 >
 
-                    <strong>
-                        Historical analytics are not available yet.
-                    </strong>
+                    This asset has no stored historical
+                    dataset yet.
 
-                    <div class="small mt-1">
-
-                        This symbol has not yet been stored
-                        in MarketPulse's historical dataset.
-
-                        You can still use percentage or
-                        fixed-price risk calculations.
-
-                        ATR, volatility and drawdown require
-                        historical OHLCV observations.
-
-                    </div>
+                    Percentage and fixed-stop calculations
+                    can still be used.
 
                 </div>
 
 
-                <div class="row g-3">
+                <div class="risk-mini-grid">
 
 
-                    <div class="col-6">
+                    <div class="risk-mini-stat">
 
-                        <div class="border rounded p-3">
+                        <span>
+                            Latest Stored Close
+                        </span>
 
-                            <div class="small text-muted">
-                                Latest Stored Close
-                            </div>
-
-                            <div
-                                class="fw-bold"
-                                id="contextLatestClose"
-                            >
-                                —
-                            </div>
-
-                        </div>
+                        <strong id="contextLatestClose">
+                            —
+                        </strong>
 
                     </div>
 
 
-                    <div class="col-6">
+                    <div class="risk-mini-stat">
 
-                        <div class="border rounded p-3">
+                        <span>
+                            14-Day Average True Range
+                        </span>
 
-                            <div class="small text-muted">
-                                14-Day ATR
-                            </div>
-
-                            <div
-                                class="fw-bold"
-                                id="contextAtr"
-                            >
-                                —
-                            </div>
-
-                        </div>
+                        <strong id="contextAtr">
+                            —
+                        </strong>
 
                     </div>
 
 
-                    <div class="col-6">
+                    <div class="risk-mini-stat">
 
-                        <div class="border rounded p-3">
+                        <span>
+                            20-Day Annualised Volatility
+                        </span>
 
-                            <div class="small text-muted">
-                                20-Day Annualised Volatility
-                            </div>
-
-                            <div
-                                class="fw-bold"
-                                id="contextVolatility"
-                            >
-                                —
-                            </div>
-
-                        </div>
+                        <strong id="contextVolatility">
+                            —
+                        </strong>
 
                     </div>
 
 
-                    <div class="col-6">
+                    <div class="risk-mini-stat">
 
-                        <div class="border rounded p-3">
+                        <span>
+                            Historical Maximum Drawdown
+                        </span>
 
-                            <div class="small text-muted">
-                                Historical Max Drawdown
-                            </div>
-
-                            <div
-                                class="fw-bold"
-                                id="contextDrawdown"
-                            >
-                                —
-                            </div>
-
-                        </div>
+                        <strong id="contextDrawdown">
+                            —
+                        </strong>
 
                     </div>
 
 
-                    <div class="col-6">
+                    <div class="risk-mini-stat">
 
-                        <div class="border rounded p-3">
+                        <span>
+                            30-Day High
+                        </span>
 
-                            <div class="small text-muted">
-                                30-Day High
-                            </div>
-
-                            <div
-                                class="fw-bold"
-                                id="contextHigh"
-                            >
-                                —
-                            </div>
-
-                        </div>
+                        <strong id="contextHigh">
+                            —
+                        </strong>
 
                     </div>
 
 
-                    <div class="col-6">
+                    <div class="risk-mini-stat">
 
-                        <div class="border rounded p-3">
+                        <span>
+                            30-Day Low
+                        </span>
 
-                            <div class="small text-muted">
-                                30-Day Low
-                            </div>
-
-                            <div
-                                class="fw-bold"
-                                id="contextLow"
-                            >
-                                —
-                            </div>
-
-                        </div>
+                        <strong id="contextLow">
+                            —
+                        </strong>
 
                     </div>
 
@@ -1654,23 +3477,17 @@ Risk | MarketPulse
                 </div>
 
 
-                <hr>
-
-
-                <div class="small text-muted">
+                <div class="small text-muted mt-2">
 
                     <strong>
-                        Historical observations:
+                        Observations:
                     </strong>
 
                     <span id="contextObservations">
                         —
                     </span>
 
-                </div>
-
-
-                <div class="small text-muted">
+                    <br>
 
                     <strong>
                         Latest stored date:
@@ -1683,674 +3500,877 @@ Risk | MarketPulse
                 </div>
 
 
-                <div class="mt-3">
-
-                    <a
-                        id="importHistoricalDataLink"
-                        href="{% url 'data_management:import' %}"
-                        class="btn btn-sm btn-outline-primary"
-                    >
-                        Open Historical Data
-                    </a>
-
-                </div>
-
-
-            </div>
-
-        </div>
-
-
-        <!-- ============================================== -->
-        <!-- INPUT EXPLANATIONS                            -->
-        <!-- ============================================== -->
-
-        <div class="card shadow-sm">
-
-            <div class="card-body">
-
-
-                <h2 class="h5">
-                    What do these inputs mean?
-                </h2>
-
-
-                <p class="small text-muted">
-
-                    Use these explanations if you are
-                    unfamiliar with trade-risk terminology.
-
-                </p>
-
-
-                <div
-                    class="accordion"
-                    id="riskHelp"
+                <a
+                    id="importHistoricalDataLink"
+                    href="{% url 'data_management:import' %}"
+                    class="
+                        btn
+                        btn-sm
+                        btn-outline-primary
+                        mt-2
+                    "
                 >
 
+                    View Historical Data
 
-                    <!-- Trading Capital -->
-
-                    <div class="accordion-item">
-
-                        <h3 class="accordion-header">
-
-                            <button
-                                class="accordion-button"
-                                type="button"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#capitalHelp"
-                            >
-                                Trading Capital
-                            </button>
-
-                        </h3>
+                </a>
 
 
-                        <div
-                            id="capitalHelp"
-                            class="
-                                accordion-collapse
-                                collapse
-                                show
-                            "
-                        >
+            </div>
 
-                            <div class="accordion-body small">
 
-                                Total hypothetical capital
-                                available to the trading
-                                account.
+            <!-- ========================================== -->
+            <!-- CURRENT PLAN                               -->
+            <!-- ========================================== -->
 
-                                It does not mean this entire
-                                amount will be invested in
-                                one position.
+            <div class="risk-snapshot-section">
 
-                            </div>
 
-                        </div>
+                <h3>
+                    Current Risk Plan
+                </h3>
+
+
+                <div class="risk-plan-snapshot">
+
+
+                    <div class="risk-plan-snapshot-item">
+
+                        <span>
+                            Maximum Loss
+                        </span>
+
+                        <strong id="riskSnapshotMaximumLoss">
+                            —
+                        </strong>
 
                     </div>
 
 
-                    <!-- Maximum Risk -->
+                    <div class="risk-plan-snapshot-item">
 
-                    <div class="accordion-item">
+                        <span>
+                            Stop Price
+                        </span>
 
-                        <h3 class="accordion-header">
-
-                            <button
-                                class="
-                                    accordion-button
-                                    collapsed
-                                "
-                                type="button"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#riskHelpText"
-                            >
-                                Maximum Risk
-                            </button>
-
-                        </h3>
-
-
-                        <div
-                            id="riskHelpText"
-                            class="
-                                accordion-collapse
-                                collapse
-                            "
-                        >
-
-                            <div class="accordion-body small">
-
-                                This is the maximum planned
-                                loss if the simulated
-                                stop-loss is reached.
-
-                                Example:
-
-                                Capital = $10,000
-
-                                Risk = 1%
-
-                                Maximum planned loss = $100.
-
-                                It does not mean only $100
-                                is invested.
-
-                            </div>
-
-                        </div>
+                        <strong id="riskSnapshotStop">
+                            —
+                        </strong>
 
                     </div>
 
 
-                    <!-- Entry -->
+                    <div class="risk-plan-snapshot-item">
 
-                    <div class="accordion-item">
+                        <span>
+                            Position Size
+                        </span>
 
-                        <h3 class="accordion-header">
-
-                            <button
-                                class="
-                                    accordion-button
-                                    collapsed
-                                "
-                                type="button"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#entryHelp"
-                            >
-                                Entry Price
-                            </button>
-
-                        </h3>
-
-
-                        <div
-                            id="entryHelp"
-                            class="
-                                accordion-collapse
-                                collapse
-                            "
-                        >
-
-                            <div class="accordion-body small">
-
-                                The assumed price of one share
-                                or unit when the hypothetical
-                                trade begins.
-
-                                MarketPulse can populate this
-                                using Alpaca's latest available
-                                trade price.
-
-                            </div>
-
-                        </div>
+                        <strong id="riskSnapshotPosition">
+                            —
+                        </strong>
 
                     </div>
 
 
-                    <!-- Stop -->
+                    <div class="risk-plan-snapshot-item">
 
-                    <div class="accordion-item">
+                        <span>
+                            Reward / Risk
+                        </span>
 
-                        <h3 class="accordion-header">
-
-                            <button
-                                class="
-                                    accordion-button
-                                    collapsed
-                                "
-                                type="button"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#stopHelp"
-                            >
-                                Stop-Loss
-                            </button>
-
-                        </h3>
-
-
-                        <div
-                            id="stopHelp"
-                            class="
-                                accordion-collapse
-                                collapse
-                            "
-                        >
-
-                            <div class="accordion-body small">
-
-                                The stop-loss is the planned
-                                exit level when price moves
-                                against the hypothetical trade.
-
-                                Actual market execution can
-                                differ because of price gaps,
-                                liquidity and slippage.
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- ATR -->
-
-                    <div class="accordion-item">
-
-                        <h3 class="accordion-header">
-
-                            <button
-                                class="
-                                    accordion-button
-                                    collapsed
-                                "
-                                type="button"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#atrHelp"
-                            >
-                                ATR
-                            </button>
-
-                        </h3>
-
-
-                        <div
-                            id="atrHelp"
-                            class="
-                                accordion-collapse
-                                collapse
-                            "
-                        >
-
-                            <div class="accordion-body small">
-
-                                Average True Range measures
-                                recent historical price
-                                movement.
-
-                                MarketPulse can use ATR to
-                                calculate a stop distance that
-                                responds to the asset's recent
-                                volatility.
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- Target -->
-
-                    <div class="accordion-item">
-
-                        <h3 class="accordion-header">
-
-                            <button
-                                class="
-                                    accordion-button
-                                    collapsed
-                                "
-                                type="button"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#targetHelp"
-                            >
-                                Profit Target
-                            </button>
-
-                        </h3>
-
-
-                        <div
-                            id="targetHelp"
-                            class="
-                                accordion-collapse
-                                collapse
-                            "
-                        >
-
-                            <div class="accordion-body small">
-
-                                An optional favourable exit
-                                price.
-
-                                It allows MarketPulse to compare
-                                possible reward with the amount
-                                placed at risk.
-
-                            </div>
-
-                        </div>
+                        <strong id="riskSnapshotReward">
+                            —
+                        </strong>
 
                     </div>
 
 
                 </div>
 
+
             </div>
 
-        </div>
+
+            <!-- ========================================== -->
+            <!-- TERMINOLOGY HELP                           -->
+            <!-- ========================================== -->
+
+            <details class="risk-help">
+
+
+                <summary>
+
+                    <i class="fa-solid fa-circle-question me-1"></i>
+
+                    What do these terms mean?
+
+                </summary>
+
+
+                <div class="risk-help-body">
+
+
+                    <div
+                        class="accordion"
+                        id="riskHelpAccordion"
+                    >
+
+
+                        <!-- Capital -->
+
+                        <div class="accordion-item">
+
+                            <h3 class="accordion-header">
+
+                                <button
+                                    class="
+                                        accordion-button
+                                        collapsed
+                                    "
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#capitalHelp"
+                                >
+
+                                    Trading Capital
+
+                                </button>
+
+                            </h3>
+
+
+                            <div
+                                id="capitalHelp"
+                                class="
+                                    accordion-collapse
+                                    collapse
+                                "
+                                data-bs-parent="#riskHelpAccordion"
+                            >
+
+                                <div class="accordion-body">
+
+                                    Total hypothetical capital
+                                    available to the account.
+
+                                    It does not mean the entire
+                                    amount is invested in one
+                                    position.
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- Risk -->
+
+                        <div class="accordion-item">
+
+                            <h3 class="accordion-header">
+
+                                <button
+                                    class="
+                                        accordion-button
+                                        collapsed
+                                    "
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#riskHelpText"
+                                >
+
+                                    Maximum Risk
+
+                                </button>
+
+                            </h3>
+
+
+                            <div
+                                id="riskHelpText"
+                                class="
+                                    accordion-collapse
+                                    collapse
+                                "
+                                data-bs-parent="#riskHelpAccordion"
+                            >
+
+                                <div class="accordion-body">
+
+                                    Maximum planned loss if
+                                    the hypothetical stop-loss
+                                    is reached.
+
+                                    For example, 1% of $10,000
+                                    creates a $100 risk budget.
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- Entry -->
+
+                        <div class="accordion-item">
+
+                            <h3 class="accordion-header">
+
+                                <button
+                                    class="
+                                        accordion-button
+                                        collapsed
+                                    "
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#entryHelp"
+                                >
+
+                                    Entry Price
+
+                                </button>
+
+                            </h3>
+
+
+                            <div
+                                id="entryHelp"
+                                class="
+                                    accordion-collapse
+                                    collapse
+                                "
+                                data-bs-parent="#riskHelpAccordion"
+                            >
+
+                                <div class="accordion-body">
+
+                                    The assumed price of one
+                                    share or unit when the
+                                    simulated position begins.
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- Stop -->
+
+                        <div class="accordion-item">
+
+                            <h3 class="accordion-header">
+
+                                <button
+                                    class="
+                                        accordion-button
+                                        collapsed
+                                    "
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#stopHelp"
+                                >
+
+                                    Stop-Loss
+
+                                </button>
+
+                            </h3>
+
+
+                            <div
+                                id="stopHelp"
+                                class="
+                                    accordion-collapse
+                                    collapse
+                                "
+                                data-bs-parent="#riskHelpAccordion"
+                            >
+
+                                <div class="accordion-body">
+
+                                    The planned exit level
+                                    when price moves against
+                                    the hypothetical position.
+
+                                    Actual market execution can
+                                    differ because of gaps,
+                                    liquidity and slippage.
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- ATR -->
+
+                        <div class="accordion-item">
+
+                            <h3 class="accordion-header">
+
+                                <button
+                                    class="
+                                        accordion-button
+                                        collapsed
+                                    "
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#atrHelp"
+                                >
+
+                                    Average True Range (ATR)
+
+                                </button>
+
+                            </h3>
+
+
+                            <div
+                                id="atrHelp"
+                                class="
+                                    accordion-collapse
+                                    collapse
+                                "
+                                data-bs-parent="#riskHelpAccordion"
+                            >
+
+                                <div class="accordion-body">
+
+                                    Average True Range measures
+                                    recent historical price
+                                    movement.
+
+                                    MarketPulse can use it to
+                                    create a volatility-adjusted
+                                    stop-loss distance.
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- Target -->
+
+                        <div class="accordion-item">
+
+                            <h3 class="accordion-header">
+
+                                <button
+                                    class="
+                                        accordion-button
+                                        collapsed
+                                    "
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#targetHelp"
+                                >
+
+                                    Profit Target
+
+                                </button>
+
+                            </h3>
+
+
+                            <div
+                                id="targetHelp"
+                                class="
+                                    accordion-collapse
+                                    collapse
+                                "
+                                data-bs-parent="#riskHelpAccordion"
+                            >
+
+                                <div class="accordion-body">
+
+                                    An optional favourable
+                                    exit price used to compare
+                                    potential reward with the
+                                    calculated risk.
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                    </div>
+
+
+                </div>
+
+
+            </details>
+
+
+        </aside>
+
 
     </div>
+
 
 </div>
 
 
 <!-- ====================================================== -->
-<!-- 5. SERVER-SIDE RISK RESULT                             -->
+<!-- 5. CALCULATION EXPLANATION                             -->
+<!-- ====================================================== -->
+
+<section class="risk-panel mt-4">
+
+
+    <details>
+
+
+        <summary class="risk-explanation-summary">
+
+
+            <div>
+
+                <div class="risk-eyebrow">
+                    Calculation Method
+                </div>
+
+                <strong>
+                    How does MarketPulse calculate the risk plan?
+                </strong>
+
+            </div>
+
+
+            <i class="fa-solid fa-chevron-down"></i>
+
+
+        </summary>
+
+
+        <div class="risk-calculation-flow">
+
+
+            <!-- Formula 1 -->
+
+            <div class="risk-formula-card">
+
+
+                <span class="risk-formula-number">
+                    1
+                </span>
+
+
+                <strong>
+                    Maximum Planned Loss
+                </strong>
+
+
+                <p>
+
+                    Trading Capital × Maximum Risk Percentage
+
+                </p>
+
+
+                <code>
+                    $10,000 × 1% = $100
+                </code>
+
+
+            </div>
+
+
+            <i class="fa-solid fa-arrow-right text-muted"></i>
+
+
+            <!-- Formula 2 -->
+
+            <div class="risk-formula-card">
+
+
+                <span class="risk-formula-number">
+                    2
+                </span>
+
+
+                <strong>
+                    Risk per Unit
+                </strong>
+
+
+                <p>
+
+                    Absolute difference between
+                    Entry Price and Stop Price.
+
+                </p>
+
+
+                <code>
+                    $315.42 − $299.65 = $15.77
+                </code>
+
+
+            </div>
+
+
+            <i class="fa-solid fa-arrow-right text-muted"></i>
+
+
+            <!-- Formula 3 -->
+
+            <div class="risk-formula-card">
+
+
+                <span class="risk-formula-number">
+                    3
+                </span>
+
+
+                <strong>
+                    Position Size
+                </strong>
+
+
+                <p>
+
+                    Maximum Planned Loss ÷ Risk per Unit
+
+                </p>
+
+
+                <code>
+                    $100 ÷ $15.77 ≈ 6 units
+                </code>
+
+
+            </div>
+
+
+        </div>
+
+
+        <div class="risk-educational-notice">
+
+
+            <i class="fa-solid fa-circle-info"></i>
+
+
+            <div>
+
+                The calculation is a risk-planning simulation.
+
+                It does not guarantee the actual loss because
+                real execution may be affected by market gaps,
+                liquidity and slippage.
+
+            </div>
+
+
+        </div>
+
+
+    </details>
+
+
+</section>
+
+
+<!-- ====================================================== -->
+<!-- 6. SERVER-SIDE CALCULATED RESULT                       -->
 <!-- ====================================================== -->
 
 {% if result %}
 
 
-<div class="card shadow-sm mt-4">
-
-    <div class="card-body">
-
-
-        <div
-            class="
-                d-flex
-                justify-content-between
-                align-items-start
-                flex-wrap
-                gap-3
-                mb-4
-            "
-        >
+<section
+    class="
+        risk-panel
+        server-risk-result
+    "
+>
 
 
-            <div>
+    <div
+        class="
+            d-flex
+            justify-content-between
+            align-items-start
+            flex-wrap
+            gap-3
+            mb-3
+        "
+    >
 
-                <div class="text-primary fw-semibold small">
-                    RISK PLAN COMPLETE
-                </div>
 
-                <h2 class="h3 mb-1">
-                    Risk Plan Result
-                </h2>
+        <div>
 
-
-                <p class="text-muted mb-0">
-
-                    {{ result.symbol }}
-
-                    ·
-
-                    {{ result.direction|title }}
-
-                    ·
-
-                    USD
-
-                </p>
-
+            <div class="risk-eyebrow">
+                Risk Plan Complete
             </div>
 
 
-            <span class="badge bg-primary fs-6">
+            <h2 class="h4 mb-1">
 
-                {{ result.risk_percentage|floatformat:2 }}%
-                Risk Budget
+                Risk Plan Result
 
+            </h2>
+
+
+            <p class="text-muted small mb-0">
+
+                {{ result.symbol }}
+
+                ·
+
+                {{ result.direction|title }}
+
+                ·
+
+                United States Dollar
+
+            </p>
+
+        </div>
+
+
+        <span class="badge bg-primary">
+
+            {{ result.risk_percentage|floatformat:2 }}%
+            Maximum Risk
+
+        </span>
+
+
+    </div>
+
+
+    <!-- MAIN METRICS -->
+
+    <div class="server-result-grid">
+
+
+        <div class="server-result-stat">
+
+            <span>
+                Maximum Risk Budget
             </span>
 
+            <strong>
+
+                ${{ result.maximum_risk_amount|floatformat:2 }}
+
+            </strong>
 
         </div>
 
 
-        <!-- ============================================== -->
-        <!-- MAIN METRICS                                  -->
-        <!-- ============================================== -->
+        <div class="server-result-stat">
 
-        <div class="row g-3">
+            <span>
+                Position Size
+            </span>
 
+            <strong>
 
-            <div class="col-md-6 col-xl-3">
+                {{ result.quantity }}
+                units
 
-                <div class="border rounded p-3 h-100">
-
-                    <div class="small text-muted">
-                        Maximum Risk Budget
-                    </div>
-
-                    <div class="fs-4 fw-bold">
-
-                        ${{ result.maximum_risk_amount|floatformat:2 }}
-
-                    </div>
-
-                    <div class="small text-muted">
-
-                        Maximum planned loss before
-                        whole-unit rounding.
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="col-md-6 col-xl-3">
-
-                <div class="border rounded p-3 h-100">
-
-                    <div class="small text-muted">
-                        Risk-Constrained Position
-                    </div>
-
-                    <div class="fs-4 fw-bold">
-
-                        {{ result.quantity }}
-                        units
-
-                    </div>
-
-                    <div class="small text-muted">
-
-                        Position size permitted by the
-                        selected risk settings.
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="col-md-6 col-xl-3">
-
-                <div class="border rounded p-3 h-100">
-
-                    <div class="small text-muted">
-                        Position Value
-                    </div>
-
-                    <div class="fs-4 fw-bold">
-
-                        ${{ result.position_value|floatformat:2 }}
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="col-md-6 col-xl-3">
-
-                <div class="border rounded p-3 h-100">
-
-                    <div class="small text-muted">
-                        Capital Allocated
-                    </div>
-
-                    <div class="fs-4 fw-bold">
-
-                        {{ result.capital_allocation_pct|floatformat:2 }}%
-
-                    </div>
-
-                </div>
-
-            </div>
-
+            </strong>
 
         </div>
 
 
-        <!-- ============================================== -->
-        <!-- ENTRY / STOP                                  -->
-        <!-- ============================================== -->
+        <div class="server-result-stat">
 
-        <div class="row g-3 mt-1">
+            <span>
+                Position Value
+            </span>
 
+            <strong>
 
-            <div class="col-md-4">
+                ${{ result.position_value|floatformat:2 }}
 
-                <div class="border rounded p-3">
-
-                    <div class="small text-muted">
-                        Entry Price
-                    </div>
-
-                    <strong>
-                        ${{ result.entry_price|floatformat:4 }}
-                    </strong>
-
-                </div>
-
-            </div>
-
-
-            <div class="col-md-4">
-
-                <div class="border rounded p-3">
-
-                    <div class="small text-muted">
-                        Calculated Stop
-                    </div>
-
-                    <strong>
-                        ${{ result.stop_price|floatformat:4 }}
-                    </strong>
-
-                </div>
-
-            </div>
-
-
-            <div class="col-md-4">
-
-                <div class="border rounded p-3">
-
-                    <div class="small text-muted">
-                        Risk per Unit
-                    </div>
-
-                    <strong>
-                        ${{ result.risk_per_unit|floatformat:4 }}
-                    </strong>
-
-                </div>
-
-            </div>
-
+            </strong>
 
         </div>
 
 
-        <!-- ============================================== -->
-        <!-- LOSS / REWARD                                 -->
-        <!-- ============================================== -->
+        <div class="server-result-stat">
 
-        <div class="row g-3 mt-1">
+            <span>
+                Capital Allocated
+            </span>
 
+            <strong>
 
-            <div class="col-md-4">
+                {{ result.capital_allocation_pct|floatformat:2 }}%
 
-                <div class="border rounded p-3">
-
-                    <div class="small text-muted">
-                        Planned Loss if Stop Reached
-                    </div>
-
-                    <strong>
-
-                        ${{ result.planned_loss|floatformat:2 }}
-
-                    </strong>
-
-                </div>
-
-            </div>
-
-
-            <div class="col-md-4">
-
-                <div class="border rounded p-3">
-
-                    <div class="small text-muted">
-                        Potential Reward
-                    </div>
-
-                    <strong>
-
-                        {% if result.potential_reward != None %}
-
-                            ${{ result.potential_reward|floatformat:2 }}
-
-                        {% else %}
-
-                            Not calculated
-
-                        {% endif %}
-
-                    </strong>
-
-                </div>
-
-            </div>
-
-
-            <div class="col-md-4">
-
-                <div class="border rounded p-3">
-
-                    <div class="small text-muted">
-                        Reward / Risk
-                    </div>
-
-                    <strong>
-
-                        {% if result.reward_risk_ratio != None %}
-
-                            {{ result.reward_risk_ratio|floatformat:2 }}
-                            : 1
-
-                        {% else %}
-
-                            Add a target price
-
-                        {% endif %}
-
-                    </strong>
-
-                </div>
-
-            </div>
-
+            </strong>
 
         </div>
 
 
-        <!-- ============================================== -->
-        <!-- MARKETPULSE RISK CHECKS                       -->
-        <!-- ============================================== -->
+        <div class="server-result-stat">
 
-        <div class="mt-4">
+            <span>
+                Entry Price
+            </span>
 
-            <h3 class="h5">
-                What does this result mean?
-            </h3>
+            <strong>
+
+                ${{ result.entry_price|floatformat:4 }}
+
+            </strong>
+
+        </div>
 
 
-            <div class="list-group">
+        <div class="server-result-stat">
+
+            <span>
+                Calculated Stop
+            </span>
+
+            <strong>
+
+                ${{ result.stop_price|floatformat:4 }}
+
+            </strong>
+
+        </div>
+
+
+        <div class="server-result-stat">
+
+            <span>
+                Risk per Unit
+            </span>
+
+            <strong>
+
+                ${{ result.risk_per_unit|floatformat:4 }}
+
+            </strong>
+
+        </div>
+
+
+        <div class="server-result-stat">
+
+            <span>
+                Planned Loss if Stop Reached
+            </span>
+
+            <strong>
+
+                ${{ result.planned_loss|floatformat:2 }}
+
+            </strong>
+
+        </div>
+
+
+    </div>
+
+
+    <!-- REWARD -->
+
+    <div class="row g-3 mt-1">
+
+
+        <div class="col-md-6">
+
+            <div class="server-result-stat h-100">
+
+                <span>
+                    Potential Reward
+                </span>
+
+                <strong>
+
+                    {% if result.potential_reward != None %}
+
+                        ${{ result.potential_reward|floatformat:2 }}
+
+                    {% else %}
+
+                        Not calculated
+
+                    {% endif %}
+
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-6">
+
+            <div class="server-result-stat h-100">
+
+                <span>
+                    Reward / Risk Ratio
+                </span>
+
+                <strong>
+
+                    {% if result.reward_risk_ratio != None %}
+
+                        {{ result.reward_risk_ratio|floatformat:2 }}
+                        : 1
+
+                    {% else %}
+
+                        Add a target price
+
+                    {% endif %}
+
+                </strong>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+    <!-- INTERPRETATION -->
+
+    <details class="risk-help mt-3">
+
+
+        <summary>
+
+            <i class="fa-solid fa-circle-info me-1"></i>
+
+            What does this calculated result mean?
+
+        </summary>
+
+
+        <div class="mt-2">
+
+
+            <div class="list-group small">
 
 
                 <div class="list-group-item">
 
-                    Your selected risk settings allow a
+                    Your selected settings create a
                     maximum risk budget of
 
                     <strong>
+
                         ${{ result.maximum_risk_amount|floatformat:2 }}
+
                     </strong>.
 
                 </div>
@@ -2359,11 +4379,12 @@ Risk | MarketPulse
                 <div class="list-group-item">
 
                     After whole-unit position sizing,
-                    the calculated planned stop-loss
-                    exposure is
+                    the planned stop-loss exposure is
 
                     <strong>
+
                         ${{ result.planned_loss|floatformat:2 }}
+
                     </strong>.
 
                 </div>
@@ -2378,7 +4399,7 @@ Risk | MarketPulse
                         "
                     >
 
-                        The position size was limited by
+                        Position size was constrained by
                         available trading capital rather
                         than by the risk budget alone.
 
@@ -2391,12 +4412,15 @@ Risk | MarketPulse
 
                     <div class="list-group-item">
 
-                        The stop distance is approximately
+                        Stop distance is approximately
 
                         <strong>
+
                             {{ result.stop_atr_multiple|floatformat:2 }}
-                            ATR
-                        </strong>.
+
+                            times the Average True Range.
+
+                        </strong>
 
                     </div>
 
@@ -2407,7 +4431,7 @@ Risk | MarketPulse
 
                     <div class="list-group-item">
 
-                        The hypothetical reward is approximately
+                        Potential hypothetical reward is
 
                         <strong>
 
@@ -2424,467 +4448,68 @@ Risk | MarketPulse
 
             </div>
 
-        </div>
-
-
-        <!-- ============================================== -->
-        <!-- NEXT ACTIONS                                   -->
-        <!-- ============================================== -->
-
-        <div class="d-flex gap-2 flex-wrap mt-4">
-
-
-            <a
-                href="{% url 'data_management:import' %}?symbol={{ result.symbol }}"
-                class="btn btn-outline-primary"
-            >
-                View Historical Data
-            </a>
-
-
-            <a
-                href="{% url 'strategy_builder:list' %}"
-                class="btn btn-outline-dark"
-            >
-                Compare Strategies
-            </a>
-
-
-            <a
-                href="{% url 'risk_management:stress_test' %}?symbol={{ result.symbol }}"
-                class="btn btn-outline-danger"
-            >
-                Stress Test This Risk
-            </a>
-
 
         </div>
+
+
+    </details>
+
+
+    <!-- NEXT ACTIONS -->
+
+    <div class="d-flex gap-2 flex-wrap mt-3">
+
+
+        <a
+            href="{% url 'data_management:import' %}?symbol={{ result.symbol }}"
+            class="btn btn-sm btn-outline-primary"
+        >
+
+            View Historical Data
+
+        </a>
+
+
+        <a
+            href="{% url 'strategy_builder:list' %}"
+            class="btn btn-sm btn-outline-dark"
+        >
+
+            Open Strategies
+
+        </a>
+
+
+        <a
+            href="{% url 'risk_management:stress_test' %}?symbol={{ result.symbol }}"
+            class="btn btn-sm btn-outline-danger"
+        >
+
+            Stress Test This Risk
+
+        </a>
 
 
     </div>
 
-</div>
+
+</section>
 
 
 {% endif %}
 
 
-<!-- ====================================================== -->
-<!-- 6. STRESS TEST                                         -->
-<!-- ====================================================== -->
-
-<div
-    id="stress-testing"
-    class="card shadow-sm mt-4"
->
-
-    <div class="card-body">
-
-
-        <div
-            class="
-                d-flex
-                justify-content-between
-                align-items-start
-                flex-wrap
-                gap-3
-            "
-        >
-
-
-            <div style="max-width: 760px;">
-
-                <div class="text-danger fw-semibold small">
-                    SEVERE MARKET SCENARIO ANALYSIS
-                </div>
-
-
-                <h2 class="h4 mt-1 mb-2">
-                    Stress Test
-                </h2>
-
-
-                <p class="mb-2">
-
-                    What could happen if market conditions
-                    become significantly worse than normal?
-
-                </p>
-
-
-                <p class="text-muted mb-0">
-
-                    Stress testing applies severe hypothetical
-                    conditions to historical data so you can
-                    investigate whether a strategy remains
-                    reasonably resilient.
-
-                </p>
-
-            </div>
-
-
-            <a
-                href="{% url 'risk_management:stress_test' %}"
-                class="btn btn-outline-danger"
-            >
-                Run Stress Test
-            </a>
-
-
-        </div>
-
-
-        <hr>
-
-
-        <!-- ============================================== -->
-        <!-- SIMPLE SCENARIO EXPLANATIONS                  -->
-        <!-- ============================================== -->
-
-        <div class="row g-3">
-
-
-            <!-- Crash -->
-
-            <div class="col-md-6 col-xl-3">
-
-                <div class="border rounded p-3 h-100">
-
-                    <div
-                        class="
-                            d-flex
-                            justify-content-between
-                            align-items-start
-                            gap-2
-                        "
-                    >
-
-                        <h3 class="h6 mb-2">
-                            Severe Market Decline
-                        </h3>
-
-                        <span class="badge bg-danger">
-                            Crash
-                        </span>
-
-                    </div>
-
-
-                    <p class="small text-muted mb-2">
-
-                        Simulates a substantial downward
-                        market shock.
-
-                    </p>
-
-
-                    <div class="small">
-
-                        <strong>
-                            Question answered:
-                        </strong>
-
-                        How much does strategy performance
-                        deteriorate during a sharp decline?
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <!-- Volatility -->
-
-            <div class="col-md-6 col-xl-3">
-
-                <div class="border rounded p-3 h-100">
-
-                    <div
-                        class="
-                            d-flex
-                            justify-content-between
-                            align-items-start
-                            gap-2
-                        "
-                    >
-
-                        <h3 class="h6 mb-2">
-                            Volatility Spike
-                        </h3>
-
-                        <span class="badge bg-warning text-dark">
-                            Volatility
-                        </span>
-
-                    </div>
-
-
-                    <p class="small text-muted mb-2">
-
-                        Simulates much larger and less
-                        predictable price movements.
-
-                    </p>
-
-
-                    <div class="small">
-
-                        <strong>
-                            Question answered:
-                        </strong>
-
-                        Does the strategy remain stable when
-                        price movements become much larger?
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <!-- Liquidity -->
-
-            <div class="col-md-6 col-xl-3">
-
-                <div class="border rounded p-3 h-100">
-
-                    <div
-                        class="
-                            d-flex
-                            justify-content-between
-                            align-items-start
-                            gap-2
-                        "
-                    >
-
-                        <h3 class="h6 mb-2">
-                            Liquidity Shock
-                        </h3>
-
-                        <span class="badge bg-secondary">
-                            Liquidity
-                        </span>
-
-                    </div>
-
-
-                    <p class="small text-muted mb-2">
-
-                        Simulates a substantial reduction
-                        in market trading volume.
-
-                    </p>
-
-
-                    <div class="small">
-
-                        <strong>
-                            Question answered:
-                        </strong>
-
-                        How vulnerable is the strategy when
-                        market liquidity deteriorates?
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <!-- Regime change -->
-
-            <div class="col-md-6 col-xl-3">
-
-                <div class="border rounded p-3 h-100">
-
-                    <div
-                        class="
-                            d-flex
-                            justify-content-between
-                            align-items-start
-                            gap-2
-                        "
-                    >
-
-                        <h3 class="h6 mb-2">
-                            Market Condition Change
-                        </h3>
-
-                        <span class="badge bg-dark">
-                            Regime Shift
-                        </span>
-
-                    </div>
-
-
-                    <p class="small text-muted mb-2">
-
-                        Simulates the historical trend
-                        changing substantially.
-
-                    </p>
-
-
-                    <div class="small">
-
-                        <strong>
-                            Question answered:
-                        </strong>
-
-                        Does the strategy depend too heavily
-                        on one type of market environment?
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-        </div>
-
-
-        <!-- ============================================== -->
-        <!-- STRESS TEST VS NORMAL STOP-LOSS                -->
-        <!-- ============================================== -->
-
-        <div class="alert alert-light border mt-4 mb-0">
-
-            <strong>
-                Why use a stress test if I already have a stop-loss?
-            </strong>
-
-
-            <div class="small mt-2">
-
-                The normal risk planner assumes a predefined
-                stop level.
-
-                Stress testing asks a different question:
-                what happens if markets move unusually quickly,
-                volatility increases sharply, liquidity falls,
-                or historical market behaviour changes?
-
-                A real stop order is not guaranteed to execute
-                exactly at the requested price during severe
-                market conditions.
-
-            </div>
-
-        </div>
-
-
-        <div class="mt-3">
-
-            <a
-                href="{% url 'risk_management:stress_test' %}"
-                class="btn btn-danger"
-            >
-                Start Stress Test
-            </a>
-
-        </div>
-
-
-    </div>
-
-</div>
 
 
 <!-- ====================================================== -->
-<!-- 7. RISK WORKFLOW SUMMARY                               -->
-<!-- ====================================================== -->
-
-<div class="card shadow-sm mt-4">
-
-    <div class="card-body">
-
-
-        <h2 class="h5 mb-3">
-            MarketPulse Risk Workflow
-        </h2>
-
-
-        <div
-            class="
-                d-flex
-                align-items-center
-                flex-wrap
-                gap-2
-            "
-        >
-
-
-            <span class="badge bg-primary p-2">
-                1. Select Asset
-            </span>
-
-            <span class="text-muted">
-                →
-            </span>
-
-
-            <span class="badge bg-primary p-2">
-                2. Set Risk Budget
-            </span>
-
-            <span class="text-muted">
-                →
-            </span>
-
-
-            <span class="badge bg-primary p-2">
-                3. Calculate Position
-            </span>
-
-            <span class="text-muted">
-                →
-            </span>
-
-
-            <span class="badge bg-dark p-2">
-                4. Review Risk
-            </span>
-
-            <span class="text-muted">
-                →
-            </span>
-
-
-            <span class="badge bg-danger p-2">
-                5. Stress Test
-            </span>
-
-
-        </div>
-
-
-        <p class="small text-muted mt-3 mb-0">
-
-            This creates a clear progression from ordinary
-            trade-risk planning to severe-scenario analysis.
-
-        </p>
-
-
-    </div>
-
-</div>
-
-
-<!-- ====================================================== -->
-<!-- 8. HISTORICAL MARKET DATA JSON                         -->
+<!-- 9. HISTORICAL MARKET DATA JSON                         -->
 <!-- ====================================================== -->
 
 {{ market_context_map|json_script:"market-context-data" }}
 
 
 <!-- ====================================================== -->
-<!-- 9. CLIENT-SIDE MARKET + RISK WORKFLOW                  -->
+<!-- 10. CLIENT-SIDE MARKET + RISK WORKFLOW                 -->
 <!-- ====================================================== -->
 
 <script>
@@ -2895,7 +4520,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 9.1 HISTORICAL MARKET DATA
+        // 10.1 HISTORICAL MARKET DATA
         // ====================================================
 
         const dataElement =
@@ -2935,7 +4560,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 9.2 API ROUTES
+        // 10.2 API ROUTES
         // ====================================================
 
         const ALPACA_SEARCH_URL =
@@ -2947,7 +4572,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 9.3 FORM ELEMENTS
+        // 10.3 FORM ELEMENTS
         // ====================================================
 
         const symbolField =
@@ -3011,7 +4636,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 9.4 ALPACA ELEMENTS
+        // 10.4 ALPACA ELEMENTS
         // ====================================================
 
         const searchResults =
@@ -3045,7 +4670,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 9.5 STOP METHOD SECTIONS
+        // 10.5 STOP METHOD SECTIONS
         // ====================================================
 
         const percentageSection =
@@ -3067,7 +4692,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 9.6 STATE
+        // 10.6 STATE
         // ====================================================
 
         let latestAlpacaPrice =
@@ -3083,7 +4708,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 9.7 BASIC FORMATTERS
+        // 10.7 FORMATTERS
         // ====================================================
 
         function money(value) {
@@ -3175,7 +4800,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 9.8 CURRENT HISTORICAL CONTEXT
+        // 10.8 CURRENT HISTORICAL CONTEXT
         // ====================================================
 
         function currentMarketContext() {
@@ -3205,7 +4830,58 @@ document.addEventListener(
 
 
         // ====================================================
-        // 9.9 UPDATE HISTORICAL CONTEXT
+        // 10.9 UPDATE SYMBOL DISPLAY
+        // ====================================================
+
+        function updateSnapshotSymbol() {
+
+            const symbol =
+                symbolField
+                    ?
+                    symbolField.value
+                        .trim()
+                        .toUpperCase()
+                    :
+                    "";
+
+
+            setText(
+                "riskSnapshotSymbol",
+                symbol || "—"
+            );
+
+
+            const stepStatus =
+                document.getElementById(
+                    "stepOneStatus"
+                );
+
+
+            if (stepStatus) {
+
+                if (symbol) {
+
+                    stepStatus.innerHTML =
+                        '<i class="fa-solid fa-check"></i> '
+                        +
+                        symbol;
+
+                }
+
+                else {
+
+                    stepStatus.innerHTML =
+                        '<i class="fa-solid fa-magnifying-glass"></i> Search';
+
+                }
+
+            }
+
+        }
+
+
+        // ====================================================
+        // 10.10 UPDATE HISTORICAL CONTEXT
         // ====================================================
 
         function updateMarketContext() {
@@ -3218,6 +4894,9 @@ document.addEventListener(
                 document.getElementById(
                     "historicalDataWarning"
                 );
+
+
+            updateSnapshotSymbol();
 
 
             if (context) {
@@ -3423,7 +5102,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 9.10 CREATE SAFE ALPACA SEARCH RESULT
+        // 10.11 CREATE ALPACA SEARCH RESULT
         // ====================================================
 
         function createSearchResult(
@@ -3575,6 +5254,7 @@ document.addEventListener(
                 "click",
                 function () {
 
+
                     if (!symbolField) {
 
                         return;
@@ -3623,7 +5303,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 9.11 SEARCH ALPACA
+        // 10.12 SEARCH ALPACA
         // ====================================================
 
         async function searchAlpacaAssets(
@@ -3748,9 +5428,7 @@ document.addEventListener(
 
 
                         empty.className =
-                            "list-group-item "
-                            +
-                            "text-muted";
+                            "list-group-item text-muted";
 
 
                         empty.textContent =
@@ -3827,7 +5505,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 9.12 LOAD ALPACA SNAPSHOT
+        // 10.13 LOAD ALPACA SNAPSHOT
         // ====================================================
 
         async function loadAlpacaSnapshot(
@@ -3968,12 +5646,28 @@ document.addEventListener(
                 );
 
 
+                setText(
+                    "riskSnapshotSymbol",
+                    asset.symbol
+                    ||
+                    symbol
+                );
+
+
                 // ------------------------------------------------
                 // Current prices
                 // ------------------------------------------------
 
                 setText(
                     "alpacaLatestPrice",
+                    money(
+                        snapshot.latest_price
+                    )
+                );
+
+
+                setText(
+                    "riskSnapshotPrice",
                     money(
                         snapshot.latest_price
                     )
@@ -4076,6 +5770,12 @@ document.addEventListener(
                 );
 
 
+                setText(
+                    "riskSnapshotChange",
+                    dailyChangeText
+                );
+
+
                 // ------------------------------------------------
                 // Daily bar
                 // ------------------------------------------------
@@ -4118,6 +5818,45 @@ document.addEventListener(
                         :
                         "—"
                 );
+
+
+                // ------------------------------------------------
+                // Combined day range
+                // ------------------------------------------------
+
+                if (
+                    daily.low !== null
+                    &&
+                    daily.low !== undefined
+                    &&
+                    daily.high !== null
+                    &&
+                    daily.high !== undefined
+                ) {
+
+                    setText(
+                        "alpacaDayRange",
+                        money(
+                            daily.low
+                        )
+                        +
+                        " – "
+                        +
+                        money(
+                            daily.high
+                        )
+                    );
+
+                }
+
+                else {
+
+                    setText(
+                        "alpacaDayRange",
+                        "—"
+                    );
+
+                }
 
 
                 // ------------------------------------------------
@@ -4223,6 +5962,18 @@ document.addEventListener(
                     null;
 
 
+                setText(
+                    "riskSnapshotPrice",
+                    "—"
+                );
+
+
+                setText(
+                    "riskSnapshotChange",
+                    "Market snapshot unavailable"
+                );
+
+
                 if (marketPanel) {
 
                     marketPanel.classList.add(
@@ -4258,7 +6009,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 9.13 STOP METHOD UI
+        // 10.14 STOP METHOD UI
         // ====================================================
 
         function updateStopMethod() {
@@ -4307,7 +6058,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 9.14 LIVE RISK PREVIEW
+        // 10.15 LIVE RISK PREVIEW
         // ====================================================
 
         function updateLivePreview() {
@@ -4335,11 +6086,7 @@ document.addEventListener(
 
 
             // ------------------------------------------------
-            // Entry-price priority
-            //
-            // 1. User-entered value
-            // 2. Latest Alpaca price
-            // 3. Latest stored historical close
+            // Entry priority
             // ------------------------------------------------
 
             if (
@@ -4388,17 +6135,37 @@ document.addEventListener(
                     null;
 
 
-            setText(
-                "liveRiskAmount",
+            const maximumRiskText =
                 maximumRisk !== null
                     ?
                     "$"
                     +
                     maximumRisk.toFixed(2)
                     :
-                    "—"
+                    "—";
+
+
+            setText(
+                "liveRiskAmount",
+                maximumRiskText
             );
 
+
+            setText(
+                "liveRiskAmountDisplay",
+                maximumRiskText
+            );
+
+
+            setText(
+                "riskSnapshotMaximumLoss",
+                maximumRiskText
+            );
+
+
+            // ------------------------------------------------
+            // No entry
+            // ------------------------------------------------
 
             if (
                 entry === null
@@ -4423,6 +6190,22 @@ document.addEventListener(
 
                 setText(
                     "liveRewardRisk",
+                    "—"
+                );
+
+
+                setText(
+                    "riskSnapshotStop",
+                    "—"
+                );
+
+                setText(
+                    "riskSnapshotPosition",
+                    "—"
+                );
+
+                setText(
+                    "riskSnapshotReward",
                     "—"
                 );
 
@@ -4491,7 +6274,7 @@ document.addEventListener(
 
 
             // ------------------------------------------------
-            // ATR stop
+            // Average True Range stop
             // ------------------------------------------------
 
             else if (
@@ -4559,7 +6342,7 @@ document.addEventListener(
 
 
             // ------------------------------------------------
-            // Unable to calculate stop
+            // Stop unavailable
             // ------------------------------------------------
 
             if (
@@ -4591,6 +6374,22 @@ document.addEventListener(
                 );
 
 
+                setText(
+                    "riskSnapshotStop",
+                    "—"
+                );
+
+                setText(
+                    "riskSnapshotPosition",
+                    "—"
+                );
+
+                setText(
+                    "riskSnapshotReward",
+                    "—"
+                );
+
+
                 return;
 
             }
@@ -4608,11 +6407,21 @@ document.addEventListener(
                 );
 
 
-            setText(
-                "liveStopPrice",
+            const stopText =
                 money(
                     stop
-                )
+                );
+
+
+            setText(
+                "liveStopPrice",
+                stopText
+            );
+
+
+            setText(
+                "riskSnapshotStop",
+                stopText
             );
 
 
@@ -4665,15 +6474,25 @@ document.addEventListener(
             }
 
 
-            setText(
-                "livePositionSize",
+            const quantityText =
                 quantity !== null
                     ?
                     quantity
                     +
                     " units"
                     :
-                    "—"
+                    "—";
+
+
+            setText(
+                "livePositionSize",
+                quantityText
+            );
+
+
+            setText(
+                "riskSnapshotPosition",
+                quantityText
             );
 
 
@@ -4709,11 +6528,21 @@ document.addEventListener(
                         riskPerUnit;
 
 
-                    setText(
-                        "liveRewardRisk",
+                    const ratioText =
                         ratio.toFixed(2)
                         +
-                        " : 1"
+                        " : 1";
+
+
+                    setText(
+                        "liveRewardRisk",
+                        ratioText
+                    );
+
+
+                    setText(
+                        "riskSnapshotReward",
+                        ratioText
                     );
 
                 }
@@ -4722,6 +6551,12 @@ document.addEventListener(
 
                     setText(
                         "liveRewardRisk",
+                        "Invalid target"
+                    );
+
+
+                    setText(
+                        "riskSnapshotReward",
                         "Invalid target"
                     );
 
@@ -4736,13 +6571,19 @@ document.addEventListener(
                     "Add target"
                 );
 
+
+                setText(
+                    "riskSnapshotReward",
+                    "Add target"
+                );
+
             }
 
         }
 
 
         // ====================================================
-        // 9.15 SYMBOL SEARCH EVENT
+        // 10.16 SYMBOL SEARCH EVENT
         // ====================================================
 
         if (symbolField) {
@@ -4757,9 +6598,6 @@ document.addEventListener(
                             .toUpperCase();
 
 
-                    // Clear stale Alpaca price if the user
-                    // starts typing a different symbol.
-
                     if (
                         currentSnapshotSymbol
                         !==
@@ -4768,6 +6606,18 @@ document.addEventListener(
 
                         latestAlpacaPrice =
                             null;
+
+
+                        setText(
+                            "riskSnapshotPrice",
+                            "—"
+                        );
+
+
+                        setText(
+                            "riskSnapshotChange",
+                            "Select an asset to load market data"
+                        );
 
                     }
 
@@ -4806,7 +6656,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 9.16 USE ALPACA PRICE
+        // 10.17 USE ALPACA PRICE
         // ====================================================
 
         if (useAlpacaPriceButton) {
@@ -4844,7 +6694,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 9.17 REFRESH ALPACA SNAPSHOT
+        // 10.18 REFRESH ALPACA SNAPSHOT
         // ====================================================
 
         if (refreshAlpacaButton) {
@@ -4872,7 +6722,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 9.18 USE STORED HISTORICAL CLOSE
+        // 10.19 USE STORED HISTORICAL CLOSE
         // ====================================================
 
         const latestStoredButton =
@@ -4912,7 +6762,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 9.19 RISK PRESET BUTTONS
+        // 10.20 RISK PRESETS
         // ====================================================
 
         document
@@ -4944,7 +6794,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 9.20 GENERAL RISK FIELD EVENTS
+        // 10.21 GENERAL FIELD EVENTS
         // ====================================================
 
         [
@@ -4985,7 +6835,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 9.21 STOP METHOD EVENT
+        // 10.22 STOP METHOD
         // ====================================================
 
         if (stopMethodField) {
@@ -4999,7 +6849,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 9.22 CLOSE ALPACA SEARCH RESULTS
+        // 10.23 CLOSE SEARCH RESULTS
         // ====================================================
 
         document.addEventListener(
@@ -5030,7 +6880,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 9.23 INITIAL PAGE STATE
+        // 10.24 INITIAL PAGE STATE
         // ====================================================
 
         updateMarketContext();
@@ -5039,9 +6889,6 @@ document.addEventListener(
 
         updateLivePreview();
 
-
-        // Reload an Alpaca snapshot automatically if
-        // a symbol is already present after form submission.
 
         if (
             symbolField
@@ -5060,6 +6907,9 @@ document.addEventListener(
 );
 
 </script>
+
+
+</div>
 
 
 {% endblock %}

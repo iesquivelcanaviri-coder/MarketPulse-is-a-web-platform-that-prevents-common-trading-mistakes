@@ -6,28 +6,58 @@
 MARKETPULSE - STRATEGY & MODEL RESEARCH WORKSPACE
 ============================================================
 
-Framework mapping:
+FRONT-USER WORKFLOW:
+
+Strategies
+    ↓
+Search or open a model category
+    ↓
+Review compact model summaries
+    ↓
+Open "More Details" only when required
+    ↓
+Use a model with stored Market Data
+    OR
+    ↓
+Create a custom strategy
+    ↓
+Historical Backtest
+    ↓
+Strategy Robustness
+    ↓
+Overfitting Analysis
+
+
+MODEL LIBRARY WORKFLOW:
 
 StrategyLibraryItem
-        ↓
-Quantitative Model Library
-        ↓
-Search / Filter / Compare
-        ↓
-Use with Market Data
+    ↓
+strategy_builder/views.py
+    ↓
+library_items
+    ↓
+This template
+    ↓
+Category Accordion
+    ↓
+Compact Model Row
+    ↓
+More Details
+    ↓
+Purpose / Data Requirements / Parameters / Output
 
 
-core.Strategy
-        ↓
-StrategyRule
-        ↓
-User-created Strategy
-        ↓
-Historical Backtest
-        ↓
-Strategy Robustness
-        ↓
-Overfitting Analysis
+ADMINISTRATOR WORKFLOW:
+
+Administrator
+    ↓
+Add Library Model
+    ↓
+StrategyLibraryItem
+    ↓
+PostgreSQL
+    ↓
+Model becomes available in Strategy & Model Library
 
 
 RELATED MARKETPULSE WORKFLOW:
@@ -50,22 +80,32 @@ PURPOSE:
 
 The Strategies tab answers:
 
-    "What model or strategy do I want to test?"
+    "Which quantitative approach do I want to research?"
 
 and:
 
-    "Does this strategy remain reasonably robust
-    outside the historical period used to evaluate it?"
+    "How does my strategy behave historically?"
 
-Market Regime has moved to Data.
+and:
 
-Stress Testing has moved to Risk.
+    "Does its behaviour remain reasonably stable when
+    evaluated on different historical periods?"
 
-The old standalone Analysis tab is therefore no longer
-required in the user-facing navigation.
 
-This is an educational quantitative research environment.
-It does not provide investment advice.
+DESIGN PRINCIPLE:
+
+The Strategy page uses progressive disclosure.
+
+Instead of displaying every model detail at once:
+
+Category
+    ↓
+Model Summary
+    ↓
+More Details
+
+This keeps the interface compact and easier to navigate.
+
 ============================================================
 {% endcomment %}
 
@@ -75,59 +115,1389 @@ Strategies | MarketPulse
 {% endblock %}
 
 
+{% block extra_css %}
+
+<style>
+
+/* ======================================================== */
+/* MARKETPULSE STRATEGY RESEARCH WORKSPACE                  */
+/* ======================================================== */
+
+
+/* -------------------------------------------------------- */
+/* 1. PAGE FOUNDATION                                       */
+/* -------------------------------------------------------- */
+
+.strategy-workspace {
+
+    --strategy-blue: #0d6efd;
+    --strategy-blue-dark: #0a58ca;
+    --strategy-blue-soft: #edf5ff;
+
+    --strategy-text: #172033;
+    --strategy-muted: #667085;
+
+    --strategy-border: #e3e9f1;
+    --strategy-surface: #ffffff;
+    --strategy-soft: #f8fafc;
+
+    --strategy-success: #168654;
+    --strategy-success-soft: #e8f8ef;
+
+    --strategy-warning: #9a6700;
+    --strategy-warning-soft: #fff7df;
+
+    color: var(--strategy-text);
+}
+
+
+.strategy-workspace a {
+    text-decoration: none;
+}
+
+
+/* -------------------------------------------------------- */
+/* 2. PAGE HEADER                                           */
+/* -------------------------------------------------------- */
+
+.strategy-page-header {
+
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+
+    gap: 1.5rem;
+
+    margin-bottom: 1.4rem;
+}
+
+
+.strategy-page-title {
+
+    margin: 0 0 .35rem;
+
+    font-size: clamp(
+        2rem,
+        4vw,
+        2.65rem
+    );
+
+    line-height: 1.05;
+
+    font-weight: 760;
+    letter-spacing: -.035em;
+}
+
+
+.strategy-page-subtitle {
+
+    max-width: 820px;
+
+    margin: 0;
+
+    color: var(--strategy-muted);
+
+    font-size: .92rem;
+    line-height: 1.55;
+}
+
+
+.strategy-header-actions {
+
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: .6rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 3. COMMON PANELS                                         */
+/* -------------------------------------------------------- */
+
+.strategy-panel {
+
+    margin-bottom: 1.25rem;
+
+    padding: 1.25rem;
+
+    background: #ffffff;
+
+    border: 1px solid var(--strategy-border);
+    border-radius: 15px;
+
+    box-shadow:
+        0 7px 22px
+        rgba(16, 24, 40, .04);
+}
+
+
+.strategy-eyebrow {
+
+    margin-bottom: .2rem;
+
+    color: var(--strategy-blue);
+
+    font-size: .65rem;
+    font-weight: 750;
+
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+
+
+.strategy-section-header {
+
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+
+    gap: 1rem;
+
+    margin-bottom: 1rem;
+}
+
+
+.strategy-section-header h2 {
+
+    margin: 0 0 .2rem;
+
+    font-size: 1.22rem;
+    font-weight: 750;
+}
+
+
+.strategy-section-header p {
+
+    max-width: 800px;
+
+    margin: 0;
+
+    color: var(--strategy-muted);
+
+    font-size: .78rem;
+    line-height: 1.5;
+}
+
+
+/* -------------------------------------------------------- */
+/* 4. RESEARCH WORKFLOW                                     */
+/* -------------------------------------------------------- */
+
+.strategy-flow {
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        auto
+        minmax(0, 1fr)
+        auto
+        minmax(0, 1fr)
+        auto
+        minmax(0, 1fr);
+
+    align-items: center;
+
+    gap: .65rem;
+}
+
+
+.strategy-flow-step {
+
+    display: flex;
+    align-items: center;
+
+    gap: .65rem;
+
+    min-width: 0;
+}
+
+
+.strategy-flow-number {
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 auto;
+
+    width: 28px;
+    height: 28px;
+
+    color: #ffffff;
+    background: var(--strategy-blue);
+
+    border-radius: 50%;
+
+    font-size: .68rem;
+    font-weight: 750;
+}
+
+
+.strategy-flow-icon {
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 auto;
+
+    width: 38px;
+    height: 38px;
+
+    color: var(--strategy-blue);
+    background: var(--strategy-blue-soft);
+
+    border-radius: 10px;
+}
+
+
+.strategy-flow-copy strong {
+
+    display: block;
+
+    margin-bottom: .1rem;
+
+    font-size: .78rem;
+}
+
+
+.strategy-flow-copy span {
+
+    display: block;
+
+    color: var(--strategy-muted);
+
+    font-size: .65rem;
+    line-height: 1.35;
+}
+
+
+.strategy-flow-arrow {
+
+    color: #a7b3c3;
+
+    font-size: .68rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 5. COMPACT SUMMARY                                       */
+/* -------------------------------------------------------- */
+
+.strategy-summary {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            4,
+            minmax(0, 1fr)
+        );
+
+    overflow: hidden;
+
+    margin-bottom: 1.25rem;
+
+    background: #ffffff;
+
+    border: 1px solid var(--strategy-border);
+    border-radius: 13px;
+
+    box-shadow:
+        0 5px 18px
+        rgba(16, 24, 40, .035);
+}
+
+
+.strategy-summary-item {
+
+    padding: .85rem 1rem;
+
+    border-right: 1px solid var(--strategy-border);
+}
+
+
+.strategy-summary-item:last-child {
+
+    border-right: 0;
+}
+
+
+.strategy-summary-label {
+
+    display: block;
+
+    margin-bottom: .15rem;
+
+    color: var(--strategy-muted);
+
+    font-size: .62rem;
+
+    text-transform: uppercase;
+}
+
+
+.strategy-summary-value {
+
+    display: inline-block;
+
+    margin-right: .35rem;
+
+    font-size: 1.15rem;
+    font-weight: 760;
+}
+
+
+.strategy-summary-help {
+
+    color: var(--strategy-muted);
+
+    font-size: .66rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 6. SEARCH / FILTER BAR                                   */
+/* -------------------------------------------------------- */
+
+.strategy-filter-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 2fr)
+        minmax(180px, 1fr)
+        minmax(170px, .8fr)
+        auto;
+
+    align-items: end;
+
+    gap: .85rem;
+}
+
+
+.strategy-filter-grid label {
+
+    margin-bottom: .35rem;
+
+    font-size: .72rem;
+    font-weight: 700;
+}
+
+
+.strategy-filter-grid .form-control,
+.strategy-filter-grid .form-select {
+
+    min-height: 43px;
+
+    border-color: #d6dfeb;
+    border-radius: 9px;
+
+    font-size: .78rem;
+}
+
+
+.strategy-search-wrapper {
+
+    position: relative;
+}
+
+
+.strategy-search-wrapper i {
+
+    position: absolute;
+
+    top: 50%;
+    left: .85rem;
+
+    color: #98a2b3;
+
+    transform: translateY(-50%);
+
+    pointer-events: none;
+}
+
+
+.strategy-search-wrapper input {
+
+    padding-left: 2.35rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 7. LIBRARY HEADER                                        */
+/* -------------------------------------------------------- */
+
+.strategy-library-meta {
+
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: .5rem;
+}
+
+
+.strategy-library-hint {
+
+    color: var(--strategy-muted);
+
+    font-size: .68rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 8. CATEGORY ACCORDION                                    */
+/* -------------------------------------------------------- */
+
+.strategy-category-accordion {
+
+    display: flex;
+    flex-direction: column;
+
+    gap: .65rem;
+}
+
+
+.strategy-category-item {
+
+    overflow: hidden;
+
+    background: #ffffff;
+
+    border: 1px solid var(--strategy-border) !important;
+    border-radius: 12px !important;
+
+    box-shadow:
+        0 4px 14px
+        rgba(16, 24, 40, .03);
+}
+
+
+.strategy-category-button {
+
+    display: flex;
+    align-items: center;
+
+    gap: .7rem;
+
+    padding: .85rem 1rem;
+
+    color: var(--strategy-text);
+    background: #ffffff;
+
+    font-size: .8rem;
+    font-weight: 700;
+
+    box-shadow: none !important;
+}
+
+
+.strategy-category-button:not(.collapsed) {
+
+    color: var(--strategy-text);
+    background: #f7faff;
+}
+
+
+.strategy-category-button:focus {
+
+    border-color: transparent;
+    box-shadow: none;
+}
+
+
+.strategy-category-number {
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 auto;
+
+    width: 28px;
+    height: 28px;
+
+    color: var(--strategy-blue);
+    background: var(--strategy-blue-soft);
+
+    border-radius: 8px;
+
+    font-size: .65rem;
+}
+
+
+.strategy-category-name {
+
+    flex: 1;
+}
+
+
+.strategy-category-count {
+
+    margin-right: .7rem;
+
+    color: var(--strategy-muted);
+
+    font-size: .64rem;
+    font-weight: 600;
+}
+
+
+.strategy-category-body {
+
+    padding: 0 1rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 9. COMPACT MODEL ROW                                     */
+/* -------------------------------------------------------- */
+
+.strategy-model-row {
+
+    padding: .9rem 0;
+
+    border-top: 1px solid #edf1f5;
+}
+
+
+.strategy-model-row:first-child {
+
+    border-top: 0;
+}
+
+
+.strategy-model-main {
+
+    display: grid;
+
+    grid-template-columns:
+        auto
+        minmax(0, 1fr)
+        auto;
+
+    align-items: center;
+
+    gap: .8rem;
+}
+
+
+.strategy-model-select {
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 30px;
+}
+
+
+.strategy-model-copy {
+
+    min-width: 0;
+}
+
+
+.strategy-model-title-row {
+
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: .5rem;
+
+    margin-bottom: .25rem;
+}
+
+
+.strategy-model-title-row h3 {
+
+    margin: 0;
+
+    font-size: .88rem;
+    font-weight: 720;
+}
+
+
+.strategy-model-title-row .badge {
+
+    font-size: .54rem;
+}
+
+
+.strategy-model-summary {
+
+    max-width: 720px;
+
+    margin: 0;
+
+    color: var(--strategy-muted);
+
+    font-size: .69rem;
+    line-height: 1.45;
+}
+
+
+.strategy-model-actions {
+
+    display: flex;
+    align-items: center;
+
+    gap: .5rem;
+
+    flex: 0 0 auto;
+}
+
+
+/* -------------------------------------------------------- */
+/* 10. MODEL DETAILS DROPDOWN                               */
+/* -------------------------------------------------------- */
+
+.strategy-model-details {
+
+    margin-top: .65rem;
+    margin-left: 38px;
+}
+
+
+.strategy-model-details summary {
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    cursor: pointer;
+
+    padding: .5rem .65rem;
+
+    color: #475467;
+    background: #f8fafc;
+
+    border-radius: 7px;
+
+    list-style: none;
+
+    font-size: .67rem;
+    font-weight: 650;
+}
+
+
+.strategy-model-details summary::-webkit-details-marker {
+
+    display: none;
+}
+
+
+.strategy-details-chevron {
+
+    color: #98a2b3;
+
+    transition: transform .2s ease;
+}
+
+
+.strategy-model-details[open]
+.strategy-details-chevron {
+
+    transform: rotate(180deg);
+}
+
+
+.strategy-model-detail-content {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(0, 1fr)
+        );
+
+    gap: .75rem;
+
+    margin-top: .55rem;
+
+    padding: .8rem;
+
+    background: #fbfcfe;
+
+    border: 1px solid #edf1f5;
+    border-radius: 8px;
+}
+
+
+.strategy-detail-block {
+
+    min-width: 0;
+}
+
+
+.strategy-detail-label {
+
+    display: block;
+
+    margin-bottom: .3rem;
+
+    color: #344054;
+
+    font-size: .61rem;
+    font-weight: 750;
+
+    letter-spacing: .03em;
+    text-transform: uppercase;
+}
+
+
+.strategy-detail-block p {
+
+    margin: 0;
+
+    color: var(--strategy-muted);
+
+    font-size: .68rem;
+    line-height: 1.45;
+}
+
+
+.strategy-parameter-list {
+
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: .35rem;
+}
+
+
+.strategy-parameter-list span {
+
+    padding: .27rem .4rem;
+
+    color: #475467;
+    background: #ffffff;
+
+    border: 1px solid var(--strategy-border);
+    border-radius: 6px;
+
+    font-size: .61rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 11. COMPARISON BAR                                       */
+/* -------------------------------------------------------- */
+
+.strategy-compare-bar {
+
+    display: none;
+
+    position: sticky;
+
+    bottom: 1rem;
+    z-index: 20;
+
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 1rem;
+
+    margin-top: 1rem;
+    padding: .75rem .9rem;
+
+    color: #ffffff;
+    background: #172033;
+
+    border-radius: 10px;
+
+    box-shadow:
+        0 10px 30px
+        rgba(16, 24, 40, .22);
+}
+
+
+.strategy-compare-bar.is-visible {
+
+    display: flex;
+}
+
+
+.strategy-compare-copy {
+
+    font-size: .72rem;
+}
+
+
+.strategy-compare-copy strong {
+
+    display: block;
+
+    margin-bottom: .1rem;
+
+    font-size: .76rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 12. NO RESULTS                                           */
+/* -------------------------------------------------------- */
+
+.strategy-no-results {
+
+    margin-top: 1rem;
+
+    padding: 1rem;
+
+    color: var(--strategy-muted);
+    background: #f8fafc;
+
+    border: 1px dashed #ccd5e2;
+    border-radius: 10px;
+
+    text-align: center;
+
+    font-size: .75rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 13. MODEL COMPARISON                                     */
+/* -------------------------------------------------------- */
+
+.strategy-comparison-table th,
+.strategy-comparison-table td {
+
+    padding: .7rem;
+
+    font-size: .72rem;
+    vertical-align: top;
+}
+
+
+.strategy-comparison-table th {
+
+    background: #f8fafc;
+}
+
+
+/* -------------------------------------------------------- */
+/* 14. MY STRATEGIES                                        */
+/* -------------------------------------------------------- */
+
+.my-strategy-list {
+
+    display: flex;
+    flex-direction: column;
+
+    gap: .65rem;
+}
+
+
+.my-strategy-item {
+
+    overflow: hidden;
+
+    border: 1px solid var(--strategy-border);
+    border-radius: 10px;
+
+    background: #ffffff;
+}
+
+
+.my-strategy-summary {
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        auto;
+
+    align-items: center;
+
+    gap: 1rem;
+
+    padding: .85rem 1rem;
+}
+
+
+.my-strategy-name {
+
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: .5rem;
+}
+
+
+.my-strategy-name h3 {
+
+    margin: 0;
+
+    font-size: .88rem;
+    font-weight: 720;
+}
+
+
+.my-strategy-description {
+
+    margin: .2rem 0 0;
+
+    color: var(--strategy-muted);
+
+    font-size: .68rem;
+}
+
+
+.my-strategy-actions {
+
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: .45rem;
+}
+
+
+.my-strategy-details {
+
+    border-top: 1px solid #edf1f5;
+}
+
+
+.my-strategy-details summary {
+
+    cursor: pointer;
+
+    padding: .6rem 1rem;
+
+    color: #475467;
+    background: #fafbfc;
+
+    list-style: none;
+
+    font-size: .67rem;
+    font-weight: 650;
+}
+
+
+.my-strategy-details summary::-webkit-details-marker {
+
+    display: none;
+}
+
+
+.my-strategy-detail-body {
+
+    padding: .9rem 1rem;
+}
+
+
+.my-strategy-metrics {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            4,
+            minmax(0, 1fr)
+        );
+
+    gap: .6rem;
+
+    margin-top: .75rem;
+}
+
+
+.my-strategy-metric {
+
+    padding: .65rem;
+
+    background: #f8fafc;
+
+    border: 1px solid var(--strategy-border);
+    border-radius: 8px;
+}
+
+
+.my-strategy-metric span {
+
+    display: block;
+
+    color: var(--strategy-muted);
+
+    font-size: .58rem;
+    text-transform: uppercase;
+}
+
+
+.my-strategy-metric strong {
+
+    display: block;
+
+    margin-top: .15rem;
+
+    font-size: .78rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 15. VALIDATION                                           */
+/* -------------------------------------------------------- */
+
+.validation-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(0, 1fr)
+        );
+
+    gap: .8rem;
+}
+
+
+.validation-box {
+
+    padding: 1rem;
+
+    background: #fbfcfe;
+
+    border: 1px solid var(--strategy-border);
+    border-radius: 11px;
+}
+
+
+.validation-box h3 {
+
+    margin: .2rem 0 .45rem;
+
+    font-size: .95rem;
+    font-weight: 720;
+}
+
+
+.validation-box p {
+
+    color: #475467;
+
+    font-size: .72rem;
+    line-height: 1.45;
+}
+
+
+.validation-question {
+
+    padding: .65rem;
+
+    background: #ffffff;
+
+    border: 1px solid var(--strategy-border);
+    border-radius: 8px;
+
+    font-size: .68rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 16. RELATED TOOLS                                        */
+/* -------------------------------------------------------- */
+
+.related-tools-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(0, 1fr)
+        );
+
+    gap: .8rem;
+}
+
+
+.related-tool {
+
+    padding: .9rem;
+
+    background: #fbfcfe;
+
+    border: 1px solid var(--strategy-border);
+    border-radius: 10px;
+}
+
+
+.related-tool h3 {
+
+    margin: .2rem 0 .35rem;
+
+    font-size: .9rem;
+}
+
+
+.related-tool p {
+
+    margin-bottom: .6rem;
+
+    color: var(--strategy-muted);
+
+    font-size: .69rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 17. BUTTONS                                              */
+/* -------------------------------------------------------- */
+
+.strategy-workspace .btn {
+
+    border-radius: 8px;
+
+    font-weight: 600;
+}
+
+
+.strategy-workspace .btn-primary {
+
+    box-shadow:
+        0 5px 14px
+        rgba(13, 110, 253, .14);
+}
+
+
+/* -------------------------------------------------------- */
+/* 18. RESPONSIVE                                           */
+/* -------------------------------------------------------- */
+
+@media (max-width: 991.98px) {
+
+    .strategy-flow {
+
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+    }
+
+
+    .strategy-flow-arrow {
+
+        display: none;
+    }
+
+
+    .strategy-filter-grid {
+
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+    }
+
+
+    .strategy-summary {
+
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+    }
+
+
+    .strategy-summary-item:nth-child(2) {
+
+        border-right: 0;
+    }
+
+
+    .strategy-summary-item:nth-child(-n+2) {
+
+        border-bottom: 1px solid var(--strategy-border);
+    }
+
+
+    .my-strategy-metrics {
+
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+    }
+
+}
+
+
+@media (max-width: 767.98px) {
+
+    .strategy-page-header,
+    .strategy-section-header {
+
+        flex-direction: column;
+    }
+
+
+    .strategy-flow,
+    .strategy-filter-grid,
+    .strategy-summary,
+    .validation-grid,
+    .related-tools-grid,
+    .strategy-model-detail-content {
+
+        grid-template-columns: 1fr;
+    }
+
+
+    .strategy-summary-item {
+
+        border-right: 0;
+        border-bottom: 1px solid var(--strategy-border);
+    }
+
+
+    .strategy-summary-item:last-child {
+
+        border-bottom: 0;
+    }
+
+
+    .strategy-model-main {
+
+        grid-template-columns:
+            auto
+            minmax(0, 1fr);
+    }
+
+
+    .strategy-model-actions {
+
+        grid-column: 1 / -1;
+
+        padding-left: 38px;
+    }
+
+
+    .strategy-model-actions .btn {
+
+        width: 100%;
+    }
+
+
+    .strategy-model-details {
+
+        margin-left: 0;
+    }
+
+
+    .my-strategy-summary {
+
+        grid-template-columns: 1fr;
+    }
+
+
+    .my-strategy-actions .btn {
+
+        flex: 1;
+    }
+
+
+    .strategy-compare-bar {
+
+        position: static;
+
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+}
+
+</style>
+
+{% endblock %}
+
+
 {% block content %}
+
+
+<div class="strategy-workspace">
 
 
 <!-- ====================================================== -->
 <!-- 1. PAGE HEADER                                         -->
 <!-- ====================================================== -->
 
-<div
-    class="
-        d-flex
-        justify-content-between
-        align-items-start
-        flex-wrap
-        gap-3
-        mb-4
-    "
->
+<div class="strategy-page-header">
+
 
     <div>
 
-        <h1 class="h2 mb-1">
+
+        <h1 class="strategy-page-title">
+
             Strategy & Model Research
+
         </h1>
 
-        <p class="text-muted mb-0">
 
-            Explore quantitative models, build strategies,
-            compare approaches and test whether historical
-            performance is robust.
+        <p class="strategy-page-subtitle">
+
+            Explore quantitative approaches, create your own
+            strategies and investigate whether historical
+            performance remains reasonably robust.
 
         </p>
+
 
     </div>
 
 
-    <div class="d-flex gap-2 flex-wrap">
+    <div class="strategy-header-actions">
+
+
+        <!-- ============================================== -->
+        <!-- FRONT-USER ACTION                              -->
+        <!-- ============================================== -->
 
         <a
             class="btn btn-primary"
             href="{% url 'strategy_builder:create' %}"
         >
+
+            <i class="fa-solid fa-plus me-1"></i>
+
             New Strategy
+
         </a>
 
 
-        <a
-            class="btn btn-outline-primary"
-            href="{% url 'strategy_builder:library_add' %}"
-        >
-            Add Library Model
-        </a>
+        <!-- ============================================== -->
+        <!-- ADMINISTRATOR-ONLY ACTION                      -->
+        <!-- ============================================== -->
+
+        {% if request.user.is_staff %}
+
+            <a
+                class="btn btn-outline-primary"
+                href="{% url 'strategy_builder:library_add' %}"
+            >
+
+                <i class="fa-solid fa-database me-1"></i>
+
+                Add Library Model
+
+            </a>
+
+        {% endif %}
+
 
     </div>
+
 
 </div>
 
@@ -136,351 +1506,240 @@ Strategies | MarketPulse
 <!-- 2. RESEARCH WORKFLOW                                   -->
 <!-- ====================================================== -->
 
-<div class="card shadow-sm mb-4">
-
-    <div class="card-body">
+<section class="strategy-panel">
 
 
-        <h2 class="h5 mb-3">
-            Strategy Research Workflow
-        </h2>
+    <div class="strategy-eyebrow">
+        Research Workflow
+    </div>
 
 
-        <div class="row g-3 text-center">
+    <div class="strategy-flow">
 
 
-            <div class="col-md-3">
+        <!-- STEP 1 -->
 
-                <div class="border rounded p-3 h-100">
-
-                    <div class="small text-primary fw-semibold">
-                        STEP 1
-                    </div>
-
-                    <strong>
-                        Choose a Model
-                    </strong>
-
-                    <div class="small text-muted mt-1">
-                        Browse or compare quantitative models.
-                    </div>
-
-                </div>
-
-            </div>
+        <div class="strategy-flow-step">
 
 
-            <div class="col-md-3">
-
-                <div class="border rounded p-3 h-100">
-
-                    <div class="small text-primary fw-semibold">
-                        STEP 2
-                    </div>
-
-                    <strong>
-                        Build a Strategy
-                    </strong>
-
-                    <div class="small text-muted mt-1">
-                        Define rules and parameters.
-                    </div>
-
-                </div>
-
-            </div>
+            <span class="strategy-flow-number">
+                1
+            </span>
 
 
-            <div class="col-md-3">
+            <span class="strategy-flow-icon">
 
-                <div class="border rounded p-3 h-100">
+                <i class="fa-solid fa-book-open"></i>
 
-                    <div class="small text-primary fw-semibold">
-                        STEP 3
-                    </div>
-
-                    <strong>
-                        Backtest
-                    </strong>
-
-                    <div class="small text-muted mt-1">
-                        Measure historical behaviour.
-                    </div>
-
-                </div>
-
-            </div>
+            </span>
 
 
-            <div class="col-md-3">
+            <div class="strategy-flow-copy">
 
-                <div class="border rounded p-3 h-100">
+                <strong>
+                    Choose a Model
+                </strong>
 
-                    <div class="small text-primary fw-semibold">
-                        STEP 4
-                    </div>
-
-                    <strong>
-                        Check Robustness
-                    </strong>
-
-                    <div class="small text-muted mt-1">
-                        Investigate possible overfitting.
-                    </div>
-
-                </div>
+                <span>
+                    Explore a quantitative approach.
+                </span>
 
             </div>
 
 
         </div>
 
-    </div>
 
-</div>
+        <i
+            class="
+                fa-solid
+                fa-chevron-right
+                strategy-flow-arrow
+            "
+        >
+        </i>
 
 
-<!-- ====================================================== -->
-<!-- 3. STRATEGY RESEARCH SUMMARY                           -->
-<!-- ====================================================== -->
+        <!-- STEP 2 -->
 
-<div class="row g-3 mb-4">
+        <div class="strategy-flow-step">
 
 
-    <!-- Library Models -->
+            <span class="strategy-flow-number">
+                2
+            </span>
 
-    <div class="col-sm-6 col-xl-3">
 
-        <div class="card shadow-sm h-100">
+            <span class="strategy-flow-icon">
 
-            <div class="card-body">
+                <i class="fa-solid fa-sliders"></i>
 
-                <div class="text-muted small">
-                    Library Models
-                </div>
+            </span>
 
-                <div class="fs-2 fw-bold">
-                    {{ total_library_models|default:"0" }}
-                </div>
 
-                <div class="small text-muted">
-                    Quantitative models available
-                </div>
+            <div class="strategy-flow-copy">
+
+                <strong>
+                    Build a Strategy
+                </strong>
+
+                <span>
+                    Define trading rules and parameters.
+                </span>
 
             </div>
+
 
         </div>
 
-    </div>
+
+        <i
+            class="
+                fa-solid
+                fa-chevron-right
+                strategy-flow-arrow
+            "
+        >
+        </i>
 
 
-    <!-- Categories -->
+        <!-- STEP 3 -->
 
-    <div class="col-sm-6 col-xl-3">
+        <div class="strategy-flow-step">
 
-        <div class="card shadow-sm h-100">
 
-            <div class="card-body">
+            <span class="strategy-flow-number">
+                3
+            </span>
 
-                <div class="text-muted small">
-                    Model Categories
-                </div>
 
-                <div class="fs-2 fw-bold">
-                    7
-                </div>
+            <span class="strategy-flow-icon">
 
-                <div class="small text-muted">
-                    Research families
-                </div>
+                <i class="fa-solid fa-clock-rotate-left"></i>
+
+            </span>
+
+
+            <div class="strategy-flow-copy">
+
+                <strong>
+                    Backtest
+                </strong>
+
+                <span>
+                    Measure historical behaviour.
+                </span>
 
             </div>
+
 
         </div>
 
-    </div>
+
+        <i
+            class="
+                fa-solid
+                fa-chevron-right
+                strategy-flow-arrow
+            "
+        >
+        </i>
 
 
-    <!-- Ready -->
+        <!-- STEP 4 -->
 
-    <div class="col-sm-6 col-xl-3">
+        <div class="strategy-flow-step">
 
-        <div class="card shadow-sm h-100">
 
-            <div class="card-body">
+            <span class="strategy-flow-number">
+                4
+            </span>
 
-                <div class="text-muted small">
-                    Ready to Run
-                </div>
 
-                <div class="fs-2 fw-bold">
-                    {{ ready_models|default:"0" }}
-                </div>
+            <span class="strategy-flow-icon">
 
-                <div class="small text-muted">
-                    Execution engines implemented
-                </div>
+                <i class="fa-solid fa-shield-halved"></i>
+
+            </span>
+
+
+            <div class="strategy-flow-copy">
+
+                <strong>
+                    Check Robustness
+                </strong>
+
+                <span>
+                    Investigate possible overfitting.
+                </span>
 
             </div>
+
 
         </div>
 
+
     </div>
 
 
-    <!-- My Strategies -->
+</section>
 
-    <div class="col-sm-6 col-xl-3">
 
-        <div class="card shadow-sm h-100">
 
-            <div class="card-body">
+<!-- ====================================================== -->
+<!-- 4. SEARCH AND FILTER                                   -->
+<!-- ====================================================== -->
 
-                <div class="text-muted small">
-                    My Strategies
-                </div>
+<section class="strategy-panel">
 
-                <div class="fs-2 fw-bold">
-                    {{ my_strategy_count|default:"0" }}
-                </div>
 
-                <div class="small text-muted">
-                    Custom strategies created
-                </div>
+    <div class="strategy-section-header">
 
+
+        <div>
+
+            <div class="strategy-eyebrow">
+                Find an Approach
             </div>
+
+
+            <h2>
+                Search the Model Library
+            </h2>
+
+
+            <p>
+
+                Search by model name or narrow the catalogue
+                by research category and implementation status.
+
+            </p>
 
         </div>
 
-    </div>
-
-
-</div>
-
-
-<!-- ====================================================== -->
-<!-- 4. MODEL CATEGORIES                                    -->
-<!-- ====================================================== -->
-
-<div class="mb-4">
-
-
-    <div class="mb-3">
-
-        <h2 class="h4 mb-1">
-            Model Categories
-        </h2>
-
-        <p class="text-muted mb-0">
-
-            Select a category to narrow the quantitative
-            model library.
-
-        </p>
 
     </div>
 
 
-    <div class="row g-3">
+    <div class="strategy-filter-grid">
 
 
-        {% for category in category_cards %}
+        <!-- ============================================== -->
+        <!-- SEARCH                                         -->
+        <!-- ============================================== -->
+
+        <div>
 
 
-            <div class="col-sm-6 col-lg-4 col-xl-3">
+            <label for="modelSearch">
+                Search
+            </label>
 
 
-                <button
-                    type="button"
-                    class="
-                        card
-                        category-card
-                        text-start
-                        w-100
-                        h-100
-                        border
-                        bg-white
-                    "
-                    data-category="{{ category.code }}"
-                >
+            <div class="strategy-search-wrapper">
 
 
-                    <div class="card-body">
-
-
-                        <div class="fw-semibold mb-1">
-                            {{ category.label }}
-                        </div>
-
-
-                        <div class="text-muted small">
-
-                            {{ category.count }}
-
-                            model{{ category.count|pluralize }}
-
-                        </div>
-
-
-                    </div>
-
-
-                </button>
-
-
-            </div>
-
-
-        {% empty %}
-
-
-            <div class="col-12">
-
-                <div class="alert alert-light border">
-
-                    Model categories will appear here once the
-                    Strategy & Model Library has been loaded.
-
-                </div>
-
-            </div>
-
-
-        {% endfor %}
-
-
-    </div>
-
-</div>
-
-
-<!-- ====================================================== -->
-<!-- 5. SEARCH AND FILTER                                   -->
-<!-- ====================================================== -->
-
-<div class="card shadow-sm mb-4">
-
-    <div class="card-body">
-
-
-        <h2 class="h5 mb-3">
-            Find a Strategy or Model
-        </h2>
-
-
-        <div class="row g-3">
-
-
-            <!-- Search -->
-
-            <div class="col-lg-6">
-
-                <label
-                    for="modelSearch"
-                    class="form-label"
-                >
-                    Search
-                </label>
+                <i class="fa-solid fa-magnifying-glass"></i>
 
 
                 <input
@@ -490,79 +1749,6 @@ Strategies | MarketPulse
                     placeholder="Search ARIMA, Heston, Random Forest, Monte Carlo..."
                 >
 
-            </div>
-
-
-            <!-- Category -->
-
-            <div class="col-md-6 col-lg-3">
-
-                <label
-                    for="categoryFilter"
-                    class="form-label"
-                >
-                    Category
-                </label>
-
-
-                <select
-                    id="categoryFilter"
-                    class="form-select"
-                >
-
-                    <option value="">
-                        All Categories
-                    </option>
-
-
-                    {% for category in category_cards %}
-
-                        <option value="{{ category.code }}">
-                            {{ category.label }}
-                        </option>
-
-                    {% endfor %}
-
-
-                </select>
-
-            </div>
-
-
-            <!-- Status -->
-
-            <div class="col-md-6 col-lg-3">
-
-                <label
-                    for="statusFilter"
-                    class="form-label"
-                >
-                    Implementation
-                </label>
-
-
-                <select
-                    id="statusFilter"
-                    class="form-select"
-                >
-
-                    <option value="">
-                        All Statuses
-                    </option>
-
-                    <option value="ready">
-                        Ready to Run
-                    </option>
-
-                    <option value="experimental">
-                        Experimental
-                    </option>
-
-                    <option value="catalogued">
-                        Catalogued
-                    </option>
-
-                </select>
 
             </div>
 
@@ -570,45 +1756,163 @@ Strategies | MarketPulse
         </div>
 
 
-        <div class="mt-3">
+        <!-- ============================================== -->
+        <!-- CATEGORY FILTER                                -->
+        <!-- ============================================== -->
+
+        <div>
+
+
+            <label for="categoryFilter">
+                Category
+            </label>
+
+
+            <select
+                id="categoryFilter"
+                class="form-select"
+            >
+
+
+                <option value="">
+                    All Categories
+                </option>
+
+
+                {% for category in category_cards %}
+
+                    <option value="{{ category.code }}">
+
+                        {{ category.label }}
+
+                    </option>
+
+                {% endfor %}
+
+
+            </select>
+
+
+        </div>
+
+
+        <!-- ============================================== -->
+        <!-- IMPLEMENTATION FILTER                          -->
+        <!-- ============================================== -->
+
+        <div>
+
+
+            <label for="statusFilter">
+                Implementation
+            </label>
+
+
+            <select
+                id="statusFilter"
+                class="form-select"
+            >
+
+
+                <option value="">
+                    All Statuses
+                </option>
+
+
+                <option value="ready">
+                    Ready to Run
+                </option>
+
+
+                <option value="experimental">
+                    Experimental
+                </option>
+
+
+                <option value="catalogued">
+                    Catalogued
+                </option>
+
+
+            </select>
+
+
+        </div>
+
+
+        <!-- ============================================== -->
+        <!-- CLEAR                                          -->
+        <!-- ============================================== -->
+
+        <div>
+
 
             <button
                 type="button"
                 id="clearFilters"
-                class="btn btn-sm btn-outline-secondary"
+                class="btn btn-outline-secondary w-100"
             >
-                Clear Filters
+
+                Clear
+
             </button>
+
 
         </div>
 
 
     </div>
 
-</div>
+
+</section>
 
 
 <!-- ====================================================== -->
-<!-- 6. STRATEGY & MODEL LIBRARY                            -->
+<!-- 5. STRATEGY & MODEL LIBRARY                            -->
 <!-- ====================================================== -->
 
-<div class="mb-5">
+<section class="strategy-panel"
+         id="modelLibrarySection">
+
+    <div class="strategy-section-header">
 
 
-    <div class="mb-3">
+        <div>
 
-        <h2 class="h4 mb-1">
-            Strategy & Model Library
-        </h2>
 
-        <p class="text-muted mb-0">
+            <div class="strategy-eyebrow">
+                Quantitative Research Library
+            </div>
 
-            Browse the MarketPulse model catalogue.
 
-            Select between two and four models to compare
-            their purpose, data requirements and outputs.
+            <h2>
+                Strategy & Model Library
+            </h2>
 
-        </p>
+
+            <p>
+
+                Open a category, review the available models
+                and expand only the details you need.
+
+            </p>
+
+
+        </div>
+
+
+        <div class="strategy-library-meta">
+
+
+            <span class="strategy-library-hint">
+
+                Select 2–4 models if you want to compare them.
+
+            </span>
+
+
+        </div>
+
 
     </div>
 
@@ -620,321 +1924,472 @@ Strategies | MarketPulse
 
 
         <!-- ================================================= -->
-        <!-- COMPARE CONTROLS                                  -->
+        <!-- CATEGORY ACCORDION                                -->
         <!-- ================================================= -->
 
         <div
-            class="
-                d-flex
-                align-items-center
-                gap-3
-                flex-wrap
-                mb-3
-            "
-        >
-
-            <button
-                type="submit"
-                class="btn btn-dark"
-                id="compareButton"
-            >
-                Compare Selected
-            </button>
-
-
-            <span
-                id="compareCounter"
-                class="text-muted"
-            >
-                Select 2–4 models
-            </span>
-
-        </div>
-
-
-        <!-- ================================================= -->
-        <!-- MODEL CARDS                                       -->
-        <!-- ================================================= -->
-
-        <div
-            id="strategyLibrary"
-            class="row g-3"
+            class="accordion strategy-category-accordion"
+            id="strategyCategoryAccordion"
         >
 
 
-            {% for item in library_items %}
+            {% for category in category_cards %}
 
 
                 <div
-                    class="
-                        col-md-6
-                        col-xl-4
-                        model-card-wrapper
-                    "
-
-                    data-name="{{ item.name|lower }} {{ item.description|lower }} {{ item.purpose|lower }}"
-
-                    data-category="{{ item.category }}"
-
-                    data-status="{{ item.implementation_status }}"
+                    class="accordion-item strategy-category-item"
+                    data-category="{{ category.code }}"
                 >
 
 
-                    <div class="card shadow-sm h-100">
+                    <!-- ================================== -->
+                    <!-- CATEGORY HEADER                    -->
+                    <!-- ================================== -->
+
+                    <h2
+                        class="accordion-header"
+                        id="categoryHeading{{ forloop.counter }}"
+                    >
 
 
-                        <div class="card-body d-flex flex-column">
+                        <button
+                            class="
+                                accordion-button
+                                collapsed
+                                strategy-category-button
+                            "
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#categoryCollapse{{ forloop.counter }}"
+                            aria-expanded="false"
+                            aria-controls="categoryCollapse{{ forloop.counter }}"
+                        >
 
 
-                            <!-- Model heading -->
+                            <span class="strategy-category-number">
 
-                            <div
-                                class="
-                                    d-flex
-                                    justify-content-between
-                                    align-items-start
-                                    gap-3
-                                "
-                            >
+                                {{ forloop.counter }}
+
+                            </span>
 
 
-                                <div>
+                            <span class="strategy-category-name">
 
-                                    <h3 class="h5 mb-1">
-                                        {{ item.name }}
-                                    </h3>
+                                {{ category.label }}
 
-
-                                    <div class="text-muted small">
-                                        {{ item.get_category_display }}
-                                    </div>
-
-                                </div>
+                            </span>
 
 
-                                <div class="form-check">
+                            <span class="strategy-category-count">
 
-                                    <input
-                                        type="checkbox"
-                                        class="
-                                            form-check-input
-                                            model-compare-checkbox
-                                        "
-                                        name="compare"
-                                        value="{{ item.code }}"
-                                        aria-label="Compare {{ item.name }}"
+                                {{ category.count }}
 
-                                        {% if item.code in compare_codes %}
-                                            checked
-                                        {% endif %}
+                                model{{ category.count|pluralize }}
+
+                            </span>
+
+
+                        </button>
+
+
+                    </h2>
+
+
+                    <!-- ================================== -->
+                    <!-- CATEGORY CONTENT                   -->
+                    <!-- ================================== -->
+
+                    <div
+                        id="categoryCollapse{{ forloop.counter }}"
+                        class="accordion-collapse collapse"
+                        aria-labelledby="categoryHeading{{ forloop.counter }}"
+                        data-bs-parent="#strategyCategoryAccordion"
+                    >
+
+
+                        <div class="accordion-body strategy-category-body">
+
+
+                            {% for item in library_items %}
+
+
+                                {% if item.category == category.code %}
+
+
+                                    <article
+                                        class="strategy-model-row"
+                                        data-name="{{ item.name|lower }} {{ item.description|lower }} {{ item.purpose|lower }}"
+                                        data-category="{{ item.category }}"
+                                        data-status="{{ item.implementation_status }}"
                                     >
 
-                                </div>
 
+                                        <!-- ============================== -->
+                                        <!-- MODEL SUMMARY                  -->
+                                        <!-- ============================== -->
 
-                            </div>
+                                        <div class="strategy-model-main">
 
 
-                            <hr>
+                                            <!-- COMPARE -->
 
+                                            <div class="strategy-model-select">
 
-                            <!-- Description -->
 
-                            <p class="small">
-                                {{ item.description }}
-                            </p>
+                                                <input
+                                                    type="checkbox"
+                                                    class="
+                                                        form-check-input
+                                                        model-compare-checkbox
+                                                    "
+                                                    name="compare"
+                                                    value="{{ item.code }}"
+                                                    aria-label="Compare {{ item.name }}"
 
+                                                    {% if item.code in compare_codes %}
+                                                        checked
+                                                    {% endif %}
+                                                >
 
-                            <!-- Purpose -->
 
-                            {% if item.purpose %}
+                                            </div>
 
-                                <div class="small mb-3">
 
-                                    <strong>
-                                        Purpose:
-                                    </strong>
+                                            <!-- MODEL COPY -->
 
-                                    {{ item.purpose }}
+                                            <div class="strategy-model-copy">
 
-                                </div>
 
-                            {% endif %}
+                                                <div class="strategy-model-title-row">
 
 
-                            <!-- Data requirements -->
+                                                    <h3>
 
-                            <div class="mb-3">
+                                                        {{ item.name }}
 
+                                                    </h3>
 
-                                <div class="small fw-semibold mb-1">
-                                    Data Required
-                                </div>
 
+                                                    {% if item.implementation_status == "ready" %}
 
-                                {% for requirement in item.data_requirements %}
 
+                                                        <span class="badge bg-success">
 
-                                    <span
-                                        class="
-                                            badge
-                                            bg-light
-                                            text-dark
-                                            border
-                                            me-1
-                                            mb-1
-                                        "
-                                    >
-                                        {{ requirement }}
-                                    </span>
+                                                            Ready to Run
 
+                                                        </span>
 
-                                {% empty %}
 
+                                                    {% elif item.implementation_status == "experimental" %}
 
-                                    <span class="text-muted small">
-                                        No additional requirements
-                                    </span>
 
+                                                        <span
+                                                            class="
+                                                                badge
+                                                                bg-warning
+                                                                text-dark
+                                                            "
+                                                        >
 
-                                {% endfor %}
+                                                            Experimental
 
+                                                        </span>
 
-                            </div>
 
+                                                    {% else %}
 
-                            <!-- Output -->
 
-                            {% if item.output_type %}
+                                                        <span class="badge bg-secondary">
 
-                                <div class="small mb-3">
+                                                            Catalogued
 
-                                    <strong>
-                                        Output:
-                                    </strong>
+                                                        </span>
 
-                                    {{ item.output_type }}
 
-                                </div>
+                                                    {% endif %}
 
-                            {% endif %}
 
+                                                </div>
 
-                            <!-- Status -->
 
-                            <div class="mb-3">
+                                                <p class="strategy-model-summary">
 
+                                                    {{ item.description|truncatechars:150 }}
 
-                                {% if item.implementation_status == "ready" %}
+                                                </p>
 
-                                    <span class="badge bg-success">
-                                        Ready to Run
-                                    </span>
 
+                                            </div>
 
-                                {% elif item.implementation_status == "experimental" %}
 
-                                    <span class="badge bg-warning text-dark">
-                                        Experimental
-                                    </span>
+                                            <!-- ACTION -->
 
+                                            <div class="strategy-model-actions">
 
-                                {% else %}
 
-                                    <span class="badge bg-secondary">
-                                        Catalogued
-                                    </span>
+                                                <a
+                                                    href="{% url 'data_management:import' %}?model={{ item.code }}"
+                                                    class="
+                                                        btn
+                                                        btn-sm
+                                                        btn-outline-primary
+                                                    "
+                                                >
 
-                                {% endif %}
+                                                    <i
+                                                        class="
+                                                            fa-solid
+                                                            fa-database
+                                                            me-1
+                                                        "
+                                                    >
+                                                    </i>
 
+                                                    Use With Data
 
-                            </div>
+                                                </a>
 
 
-                            <!-- Parameters -->
+                                            </div>
 
-                            <details class="mb-3">
-
-
-                                <summary class="small fw-semibold">
-                                    View Default Parameters
-                                </summary>
-
-
-                                <div class="mt-2">
-
-
-                                    {% for key, value in item.default_parameters.items %}
-
-
-                                        <div
-                                            class="
-                                                d-flex
-                                                justify-content-between
-                                                gap-3
-                                                border-bottom
-                                                py-1
-                                                small
-                                            "
-                                        >
-
-                                            <span>
-                                                {{ key }}
-                                            </span>
-
-                                            <strong>
-                                                {{ value }}
-                                            </strong>
 
                                         </div>
 
 
-                                    {% empty %}
+                                        <!-- ============================== -->
+                                        <!-- MODEL DETAILS                  -->
+                                        <!-- ============================== -->
+
+                                        <details class="strategy-model-details">
 
 
-                                        <span class="text-muted small">
-
-                                            No configurable default
-                                            parameters.
-
-                                        </span>
+                                            <summary>
 
 
-                                    {% endfor %}
+                                                <span>
+
+                                                    <i
+                                                        class="
+                                                            fa-solid
+                                                            fa-circle-info
+                                                            me-2
+                                                        "
+                                                    >
+                                                    </i>
+
+                                                    More Details
+
+                                                </span>
 
 
-                                </div>
+                                                <i
+                                                    class="
+                                                        fa-solid
+                                                        fa-chevron-down
+                                                        strategy-details-chevron
+                                                    "
+                                                >
+                                                </i>
 
 
-                            </details>
+                                            </summary>
 
 
-                            <!-- Actions -->
-
-                            <div
-                                class="
-                                    mt-auto
-                                    d-flex
-                                    gap-2
-                                    flex-wrap
-                                "
-                            >
+                                            <div class="strategy-model-detail-content">
 
 
-                                <a
-                                    href="{% url 'data_management:import' %}?model={{ item.code }}"
-                                    class="btn btn-sm btn-outline-primary"
-                                >
-                                    Use with Data
-                                </a>
+                                                <!-- PURPOSE -->
+
+                                                <div class="strategy-detail-block">
 
 
-                            </div>
+                                                    <span class="strategy-detail-label">
+
+                                                        Purpose
+
+                                                    </span>
+
+
+                                                    <p>
+
+                                                        {% if item.purpose %}
+
+                                                            {{ item.purpose }}
+
+                                                        {% else %}
+
+                                                            No additional purpose
+                                                            information has been supplied.
+
+                                                        {% endif %}
+
+                                                    </p>
+
+
+                                                </div>
+
+
+                                                <!-- DATA REQUIREMENTS -->
+
+                                                <div class="strategy-detail-block">
+
+
+                                                    <span class="strategy-detail-label">
+
+                                                        Data Required
+
+                                                    </span>
+
+
+                                                    <div>
+
+
+                                                        {% for requirement in item.data_requirements %}
+
+
+                                                            <span
+                                                                class="
+                                                                    badge
+                                                                    bg-light
+                                                                    text-dark
+                                                                    border
+                                                                    me-1
+                                                                    mb-1
+                                                                "
+                                                            >
+
+                                                                {{ requirement }}
+
+                                                            </span>
+
+
+                                                        {% empty %}
+
+
+                                                            <span class="text-muted small">
+
+                                                                No additional requirements.
+
+                                                            </span>
+
+
+                                                        {% endfor %}
+
+
+                                                    </div>
+
+
+                                                </div>
+
+
+                                                <!-- EXPECTED OUTPUT -->
+
+                                                <div class="strategy-detail-block">
+
+
+                                                    <span class="strategy-detail-label">
+
+                                                        Expected Output
+
+                                                    </span>
+
+
+                                                    <p>
+
+                                                        {% if item.output_type %}
+
+                                                            {{ item.output_type }}
+
+                                                        {% else %}
+
+                                                            Output information
+                                                            has not yet been configured.
+
+                                                        {% endif %}
+
+                                                    </p>
+
+
+                                                </div>
+
+
+                                                <!-- PARAMETERS -->
+
+                                                <div class="strategy-detail-block">
+
+
+                                                    <span class="strategy-detail-label">
+
+                                                        Default Parameters
+
+                                                    </span>
+
+
+                                                    {% if item.default_parameters %}
+
+
+                                                        <div class="strategy-parameter-list">
+
+
+                                                            {% for key, value in item.default_parameters.items %}
+
+
+                                                                <span>
+
+                                                                    <strong>
+                                                                        {{ key }}
+                                                                    </strong>
+
+                                                                    =
+
+                                                                    {{ value }}
+
+                                                                </span>
+
+
+                                                            {% endfor %}
+
+
+                                                        </div>
+
+
+                                                    {% else %}
+
+
+                                                        <span class="text-muted small">
+
+                                                            No configurable
+                                                            default parameters.
+
+                                                        </span>
+
+
+                                                    {% endif %}
+
+
+                                                </div>
+
+
+                                            </div>
+
+
+                                        </details>
+
+
+                                    </article>
+
+
+                                {% endif %}
+
+
+                            {% endfor %}
 
 
                         </div>
 
+
                     </div>
+
 
                 </div>
 
@@ -942,34 +2397,10 @@ Strategies | MarketPulse
             {% empty %}
 
 
-                <div class="col-12">
+                <div class="strategy-no-results">
 
-                    <div class="alert alert-warning">
-
-
-                        <h3 class="h6">
-                            No strategy library models found
-                        </h3>
-
-
-                        <p class="mb-2">
-                            The Strategy Library is currently empty.
-                        </p>
-
-
-                        <p class="mb-0">
-
-                            Populate the initial model library
-                            by running:
-
-                            <code>
-                                python manage.py seed_strategy_library
-                            </code>
-
-                        </p>
-
-
-                    </div>
+                    The quantitative model categories
+                    are currently unavailable.
 
                 </div>
 
@@ -980,28 +2411,86 @@ Strategies | MarketPulse
         </div>
 
 
+        <!-- ================================================= -->
+        <!-- NO SEARCH RESULTS                                 -->
+        <!-- ================================================= -->
+
         <div
             id="noModelResults"
-            class="alert alert-info mt-3 d-none"
+            class="strategy-no-results d-none"
         >
+
+            <i class="fa-solid fa-magnifying-glass me-2"></i>
+
             No strategy or model matches the selected filters.
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- COMPARISON BAR                                    -->
+        <!-- ================================================= -->
+
+        <div
+            id="compareBar"
+            class="strategy-compare-bar"
+        >
+
+
+            <div class="strategy-compare-copy">
+
+
+                <strong>
+                    Compare Models
+                </strong>
+
+
+                <span id="compareCounter">
+
+                    Select 2–4 models
+
+                </span>
+
+
+            </div>
+
+
+            <button
+                type="submit"
+                class="btn btn-sm btn-light"
+                id="compareButton"
+                disabled
+            >
+
+                Compare Selected
+
+                <i class="fa-solid fa-arrow-right ms-1"></i>
+
+            </button>
+
+
         </div>
 
 
     </form>
 
-</div>
+
+</section>
 
 
 <!-- ====================================================== -->
-<!-- 7. MODEL COMPARISON                                    -->
+<!-- 6. MODEL COMPARISON                                    -->
 <!-- ====================================================== -->
 
 {% if comparison_message %}
 
+
     <div class="alert alert-info">
+
         {{ comparison_message }}
+
     </div>
+
 
 {% endif %}
 
@@ -1009,332 +2498,485 @@ Strategies | MarketPulse
 {% if compare_items|length >= 2 %}
 
 
-<div class="card shadow-sm mb-5">
+<section class="strategy-panel">
 
-    <div class="card-body">
 
+    <div class="strategy-section-header">
 
-        <h2 class="h4 mb-1">
-            Model Comparison
-        </h2>
 
+        <div>
 
-        <p class="text-muted">
 
-            Compare model design, purpose, data requirements
-            and expected outputs.
+            <div class="strategy-eyebrow">
+                Research Comparison
+            </div>
 
-            Performance metrics can be compared after models
-            have been executed against comparable datasets.
 
-        </p>
+            <h2>
+                Model Comparison
+            </h2>
 
 
-        <div class="table-responsive">
+            <p>
 
+                Compare the selected models by purpose,
+                required data, expected output and
+                implementation status.
 
-            <table class="table table-bordered align-middle">
-
-
-                <tbody>
-
-
-                    <tr>
-
-                        <th style="min-width: 180px;">
-                            Model
-                        </th>
-
-                        {% for item in compare_items %}
-
-                            <th style="min-width: 220px;">
-                                {{ item.name }}
-                            </th>
-
-                        {% endfor %}
-
-                    </tr>
-
-
-                    <tr>
-
-                        <th>
-                            Category
-                        </th>
-
-                        {% for item in compare_items %}
-
-                            <td>
-                                {{ item.get_category_display }}
-                            </td>
-
-                        {% endfor %}
-
-                    </tr>
-
-
-                    <tr>
-
-                        <th>
-                            Purpose
-                        </th>
-
-                        {% for item in compare_items %}
-
-                            <td>
-                                {{ item.purpose|default:"—" }}
-                            </td>
-
-                        {% endfor %}
-
-                    </tr>
-
-
-                    <tr>
-
-                        <th>
-                            Data Required
-                        </th>
-
-                        {% for item in compare_items %}
-
-                            <td>
-
-                                {% for requirement in item.data_requirements %}
-
-                                    <span
-                                        class="
-                                            badge
-                                            bg-light
-                                            text-dark
-                                            border
-                                            mb-1
-                                        "
-                                    >
-                                        {{ requirement }}
-                                    </span>
-
-                                {% empty %}
-
-                                    —
-
-                                {% endfor %}
-
-                            </td>
-
-                        {% endfor %}
-
-                    </tr>
-
-
-                    <tr>
-
-                        <th>
-                            Default Parameters
-                        </th>
-
-                        {% for item in compare_items %}
-
-                            <td>
-                                {{ item.default_parameters|length }}
-                            </td>
-
-                        {% endfor %}
-
-                    </tr>
-
-
-                    <tr>
-
-                        <th>
-                            Expected Output
-                        </th>
-
-                        {% for item in compare_items %}
-
-                            <td>
-                                {{ item.output_type|default:"—" }}
-                            </td>
-
-                        {% endfor %}
-
-                    </tr>
-
-
-                    <tr>
-
-                        <th>
-                            Implementation
-                        </th>
-
-                        {% for item in compare_items %}
-
-                            <td>
-                                {{ item.get_implementation_status_display }}
-                            </td>
-
-                        {% endfor %}
-
-                    </tr>
-
-
-                    <tr>
-
-                        <th>
-                            Dataset Testing
-                        </th>
-
-                        {% for item in compare_items %}
-
-                            <td>
-
-                                <a
-                                    href="{% url 'data_management:import' %}?model={{ item.code }}"
-                                    class="btn btn-sm btn-primary"
-                                >
-                                    Use with Data
-                                </a>
-
-                            </td>
-
-                        {% endfor %}
-
-                    </tr>
-
-
-                </tbody>
-
-
-            </table>
+            </p>
 
 
         </div>
 
+
     </div>
 
-</div>
+
+    <div class="table-responsive">
+
+
+        <table
+            class="
+                table
+                table-bordered
+                strategy-comparison-table
+                mb-0
+            "
+        >
+
+
+            <tbody>
+
+
+                <tr>
+
+
+                    <th style="min-width: 160px;">
+                        Model
+                    </th>
+
+
+                    {% for item in compare_items %}
+
+
+                        <th style="min-width: 210px;">
+
+                            {{ item.name }}
+
+                        </th>
+
+
+                    {% endfor %}
+
+
+                </tr>
+
+
+                <tr>
+
+
+                    <th>
+                        Category
+                    </th>
+
+
+                    {% for item in compare_items %}
+
+
+                        <td>
+
+                            {{ item.get_category_display }}
+
+                        </td>
+
+
+                    {% endfor %}
+
+
+                </tr>
+
+
+                <tr>
+
+
+                    <th>
+                        Purpose
+                    </th>
+
+
+                    {% for item in compare_items %}
+
+
+                        <td>
+
+                            {{ item.purpose|default:"—" }}
+
+                        </td>
+
+
+                    {% endfor %}
+
+
+                </tr>
+
+
+                <tr>
+
+
+                    <th>
+                        Data Required
+                    </th>
+
+
+                    {% for item in compare_items %}
+
+
+                        <td>
+
+
+                            {% for requirement in item.data_requirements %}
+
+
+                                <span
+                                    class="
+                                        badge
+                                        bg-light
+                                        text-dark
+                                        border
+                                        me-1
+                                        mb-1
+                                    "
+                                >
+
+                                    {{ requirement }}
+
+                                </span>
+
+
+                            {% empty %}
+
+                                —
+
+                            {% endfor %}
+
+
+                        </td>
+
+
+                    {% endfor %}
+
+
+                </tr>
+
+
+                <tr>
+
+
+                    <th>
+                        Default Parameters
+                    </th>
+
+
+                    {% for item in compare_items %}
+
+
+                        <td>
+
+                            {{ item.default_parameters|length }}
+
+                        </td>
+
+
+                    {% endfor %}
+
+
+                </tr>
+
+
+                <tr>
+
+
+                    <th>
+                        Expected Output
+                    </th>
+
+
+                    {% for item in compare_items %}
+
+
+                        <td>
+
+                            {{ item.output_type|default:"—" }}
+
+                        </td>
+
+
+                    {% endfor %}
+
+
+                </tr>
+
+
+                <tr>
+
+
+                    <th>
+                        Implementation
+                    </th>
+
+
+                    {% for item in compare_items %}
+
+
+                        <td>
+
+                            {{ item.get_implementation_status_display }}
+
+                        </td>
+
+
+                    {% endfor %}
+
+
+                </tr>
+
+
+                <tr>
+
+
+                    <th>
+                        Research Action
+                    </th>
+
+
+                    {% for item in compare_items %}
+
+
+                        <td>
+
+
+                            <a
+                                href="{% url 'data_management:import' %}?model={{ item.code }}"
+                                class="btn btn-sm btn-primary"
+                            >
+
+                                Use With Data
+
+                            </a>
+
+
+                        </td>
+
+
+                    {% endfor %}
+
+
+                </tr>
+
+
+            </tbody>
+
+
+        </table>
+
+
+    </div>
+
+
+</section>
 
 
 {% endif %}
 
 
 <!-- ====================================================== -->
-<!-- 8. MY STRATEGIES                                       -->
+<!-- 7. MY STRATEGIES                                       -->
 <!-- ====================================================== -->
 
-<div
-    class="card shadow-sm mb-5"
+<section
+    class="strategy-panel"
     id="myStrategiesSection"
 >
 
-    <div class="card-body">
+
+    <div class="strategy-section-header">
 
 
-        <div
-            class="
-                d-flex
-                justify-content-between
-                align-items-center
-                flex-wrap
-                gap-3
-                mb-3
-            "
-        >
+        <div>
 
 
-            <div>
-
-                <h2 class="h4 mb-1">
-                    My Strategies
-                </h2>
-
-
-                <p class="text-muted mb-0">
-
-                    Trading strategies created using the
-                    MarketPulse Strategy Builder.
-
-                </p>
-
+            <div class="strategy-eyebrow">
+                My Research
             </div>
 
 
-            <a
-                class="btn btn-primary"
-                href="{% url 'strategy_builder:create' %}"
-            >
-                New Strategy
-            </a>
+            <h2>
+                My Strategies
+            </h2>
+
+
+            <p>
+
+                Strategies you created using the
+                MarketPulse Strategy Builder.
+
+            </p>
 
 
         </div>
 
 
-        {% if my_strategy_rows %}
+        <a
+            class="btn btn-sm btn-primary"
+            href="{% url 'strategy_builder:create' %}"
+        >
+
+            <i class="fa-solid fa-plus me-1"></i>
+
+            New Strategy
+
+        </a>
+
+
+    </div>
+
+
+    {% if my_strategy_rows %}
+
+
+        <div class="my-strategy-list">
 
 
             {% for row in my_strategy_rows %}
 
 
-                <div class="card border mb-3">
-
-                    <div class="card-body">
+                <article class="my-strategy-item">
 
 
-                        <div
-                            class="
-                                d-flex
-                                justify-content-between
-                                align-items-start
-                                flex-wrap
-                                gap-3
-                            "
-                        >
+                    <!-- ================================== -->
+                    <!-- COMPACT SUMMARY                    -->
+                    <!-- ================================== -->
+
+                    <div class="my-strategy-summary">
 
 
-                            <div>
+                        <div>
 
-                                <h3 class="h5 mb-1">
+
+                            <div class="my-strategy-name">
+
+
+                                <h3>
+
                                     {{ row.strategy.name }}
+
                                 </h3>
 
 
-                                <p class="text-muted mb-2">
-                                    {{ row.strategy.description }}
-                                </p>
+                                {% if row.strategy.is_active %}
+
+
+                                    <span class="badge bg-success">
+
+                                        Active
+
+                                    </span>
+
+
+                                {% else %}
+
+
+                                    <span class="badge bg-secondary">
+
+                                        Inactive
+
+                                    </span>
+
+
+                                {% endif %}
+
 
                             </div>
 
 
-                            {% if row.strategy.is_active %}
+                            <p class="my-strategy-description">
 
-                                <span class="badge bg-success">
-                                    Active
-                                </span>
+                                {{ row.strategy.description|default:"Custom MarketPulse strategy."|truncatechars:130 }}
 
-                            {% else %}
-
-                                <span class="badge bg-secondary">
-                                    Inactive
-                                </span>
-
-                            {% endif %}
+                            </p>
 
 
                         </div>
 
 
-                        <!-- Strategy rules -->
+                        <!-- ACTIONS -->
 
-                        <div class="mb-3">
+                        <div class="my-strategy-actions">
 
 
-                            <div class="small fw-semibold">
+                            <a
+                                class="
+                                    btn
+                                    btn-sm
+                                    btn-outline-primary
+                                "
+                                href="{% url 'strategy_builder:backtest' row.strategy.id %}"
+                            >
+
+                                Run Backtest
+
+                            </a>
+
+
+                            <a
+                                class="
+                                    btn
+                                    btn-sm
+                                    btn-outline-dark
+                                "
+                                href="{% url 'strategy_builder:robustness' %}?strategy={{ row.strategy.id }}"
+                            >
+
+                                Check Robustness
+
+                            </a>
+
+
+                        </div>
+
+
+                    </div>
+
+
+                    <!-- ================================== -->
+                    <!-- STRATEGY DETAILS                   -->
+                    <!-- ================================== -->
+
+                    <details class="my-strategy-details">
+
+
+                        <summary>
+
+                            <i class="fa-solid fa-circle-info me-2"></i>
+
+                            View Strategy Details
+
+                        </summary>
+
+
+                        <div class="my-strategy-detail-body">
+
+
+                            <!-- RULES -->
+
+                            <div class="small fw-semibold mb-2">
+
                                 Strategy Rules
+
                             </div>
 
 
-                            <ul class="mb-0">
+                            <ul class="small mb-0">
 
 
                                 {% for rule in row.strategy.rules.all %}
@@ -1345,7 +2987,9 @@ Strategies | MarketPulse
                                         {{ rule.name }}
 
                                         {% if rule.symbol %}
+
                                             ({{ rule.symbol }})
+
                                         {% endif %}
 
                                     </li>
@@ -1355,7 +2999,9 @@ Strategies | MarketPulse
 
 
                                     <li class="text-muted">
+
                                         No rules configured.
+
                                     </li>
 
 
@@ -1364,215 +3010,181 @@ Strategies | MarketPulse
 
                             </ul>
 
-                        </div>
+
+                            <!-- BACKTEST SUMMARY -->
+
+                            {% if row.latest_backtest %}
 
 
-                        <!-- Backtest summary -->
-
-                        {% if row.latest_backtest %}
+                                <div class="my-strategy-metrics">
 
 
-                            <div class="row g-2 mb-3">
+                                    <div class="my-strategy-metric">
 
-
-                                <div class="col-6 col-md-3">
-
-                                    <div class="border rounded p-2">
-
-                                        <div class="small text-muted">
+                                        <span>
                                             Return
-                                        </div>
+                                        </span>
 
                                         <strong>
+
                                             {{ row.latest_backtest.total_return|floatformat:2 }}
+
                                         </strong>
 
                                     </div>
 
-                                </div>
 
+                                    <div class="my-strategy-metric">
 
-                                <div class="col-6 col-md-3">
-
-                                    <div class="border rounded p-2">
-
-                                        <div class="small text-muted">
+                                        <span>
                                             Sharpe Ratio
-                                        </div>
+                                        </span>
 
                                         <strong>
+
                                             {{ row.latest_backtest.sharpe_ratio|floatformat:2 }}
+
                                         </strong>
 
                                     </div>
 
-                                </div>
 
+                                    <div class="my-strategy-metric">
 
-                                <div class="col-6 col-md-3">
-
-                                    <div class="border rounded p-2">
-
-                                        <div class="small text-muted">
-                                            Max Drawdown
-                                        </div>
+                                        <span>
+                                            Maximum Drawdown
+                                        </span>
 
                                         <strong>
+
                                             {{ row.latest_backtest.max_drawdown|floatformat:2 }}
+
                                         </strong>
 
                                     </div>
 
-                                </div>
 
+                                    <div class="my-strategy-metric">
 
-                                <div class="col-6 col-md-3">
-
-                                    <div class="border rounded p-2">
-
-                                        <div class="small text-muted">
+                                        <span>
                                             Backtests
-                                        </div>
+                                        </span>
 
                                         <strong>
+
                                             {{ row.backtest_count }}
+
                                         </strong>
 
                                     </div>
 
+
                                 </div>
 
 
-                            </div>
+                            {% else %}
 
 
-                        {% else %}
+                                <div
+                                    class="
+                                        alert
+                                        alert-light
+                                        border
+                                        small
+                                        mt-3
+                                        mb-0
+                                    "
+                                >
+
+                                    This strategy has not been
+                                    backtested yet.
+
+                                </div>
 
 
-                            <div
-                                class="
-                                    alert
-                                    alert-light
-                                    border
-                                    py-2
-                                    mb-3
-                                "
-                            >
-
-                                This strategy has not been
-                                backtested yet.
-
-                            </div>
-
-
-                        {% endif %}
-
-
-                        <!-- Actions -->
-
-                        <div class="d-flex gap-2 flex-wrap">
-
-
-                            <a
-                                class="btn btn-outline-primary"
-                                href="{% url 'strategy_builder:backtest' row.strategy.id %}"
-                            >
-                                Run Backtest
-                            </a>
-
-
-                            <a
-                                class="btn btn-outline-dark"
-                                href="{% url 'strategy_builder:robustness' %}?strategy={{ row.strategy.id }}"
-                            >
-                                Check Robustness
-                            </a>
+                            {% endif %}
 
 
                         </div>
 
 
-                    </div>
+                    </details>
 
-                </div>
+
+                </article>
 
 
             {% endfor %}
 
 
-        {% elif strategies %}
+        </div>
+
+
+    {% elif strategies %}
+
+
+        <div class="my-strategy-list">
 
 
             {% for s in strategies %}
 
 
-                <div class="card border mb-3">
-
-                    <div class="card-body">
+                <article class="my-strategy-item">
 
 
-                        <h3 class="h5">
-                            {{ s.name }}
-                        </h3>
+                    <div class="my-strategy-summary">
 
 
-                        <p>
-                            {{ s.description }}
-                        </p>
+                        <div>
 
 
-                        <div class="small fw-semibold">
-                            Strategy Rules
+                            <div class="my-strategy-name">
+
+                                <h3>
+                                    {{ s.name }}
+                                </h3>
+
+                            </div>
+
+
+                            <p class="my-strategy-description">
+
+                                {{ s.description|default:"Custom MarketPulse strategy."|truncatechars:130 }}
+
+                            </p>
+
+
                         </div>
 
 
-                        <ul>
-
-
-                            {% for r in s.rules.all %}
-
-
-                                <li>
-
-                                    {{ r.name }}
-
-                                    {% if r.symbol %}
-                                        ({{ r.symbol }})
-                                    {% endif %}
-
-                                </li>
-
-
-                            {% empty %}
-
-
-                                <li class="text-muted">
-                                    No rules configured.
-                                </li>
-
-
-                            {% endfor %}
-
-
-                        </ul>
-
-
-                        <div class="d-flex gap-2 flex-wrap">
+                        <div class="my-strategy-actions">
 
 
                             <a
-                                class="btn btn-outline-primary"
+                                class="
+                                    btn
+                                    btn-sm
+                                    btn-outline-primary
+                                "
                                 href="{% url 'strategy_builder:backtest' s.id %}"
                             >
+
                                 Run Backtest
+
                             </a>
 
 
                             <a
-                                class="btn btn-outline-dark"
+                                class="
+                                    btn
+                                    btn-sm
+                                    btn-outline-dark
+                                "
                                 href="{% url 'strategy_builder:robustness' %}?strategy={{ s.id }}"
                             >
+
                                 Check Robustness
+
                             </a>
 
 
@@ -1581,222 +3193,156 @@ Strategies | MarketPulse
 
                     </div>
 
-                </div>
+
+                    <details class="my-strategy-details">
+
+
+                        <summary>
+
+                            <i class="fa-solid fa-circle-info me-2"></i>
+
+                            View Strategy Details
+
+                        </summary>
+
+
+                        <div class="my-strategy-detail-body">
+
+
+                            <div class="small fw-semibold mb-2">
+
+                                Strategy Rules
+
+                            </div>
+
+
+                            <ul class="small mb-0">
+
+
+                                {% for r in s.rules.all %}
+
+
+                                    <li>
+
+                                        {{ r.name }}
+
+                                        {% if r.symbol %}
+
+                                            ({{ r.symbol }})
+
+                                        {% endif %}
+
+                                    </li>
+
+
+                                {% empty %}
+
+
+                                    <li class="text-muted">
+
+                                        No rules configured.
+
+                                    </li>
+
+
+                                {% endfor %}
+
+
+                            </ul>
+
+
+                        </div>
+
+
+                    </details>
+
+
+                </article>
 
 
             {% endfor %}
 
 
-        {% else %}
+        </div>
 
 
-            <div class="alert alert-light border mb-0">
+    {% else %}
 
 
-                <h3 class="h6">
-                    No custom strategies yet
-                </h3>
+        <div
+            class="
+                alert
+                alert-light
+                border
+                mb-0
+            "
+        >
 
 
-                <p class="mb-2">
+            <div class="fw-semibold mb-1">
 
-                    Create a strategy first, then MarketPulse
-                    can backtest it and perform a robustness
-                    check.
-
-                </p>
-
-
-                <a
-                    href="{% url 'strategy_builder:create' %}"
-                    class="btn btn-sm btn-primary"
-                >
-                    Create First Strategy
-                </a>
-
+                No custom strategies yet
 
             </div>
 
 
-        {% endif %}
+            <div class="small text-muted mb-3">
+
+                Create a strategy first. You can then
+                backtest it and investigate its robustness.
+
+            </div>
 
 
-    </div>
+            <a
+                href="{% url 'strategy_builder:create' %}"
+                class="btn btn-sm btn-primary"
+            >
 
-</div>
+                Create First Strategy
+
+            </a>
+
+
+        </div>
+
+
+    {% endif %}
+
+
+</section>
 
 
 <!-- ====================================================== -->
-<!-- 9. STRATEGY VALIDATION                                 -->
+<!-- 8. STRATEGY VALIDATION                                 -->
 <!-- ====================================================== -->
 
-<div class="card shadow-sm mb-4">
-
-    <div class="card-body">
+<section class="strategy-panel">
 
 
-        <h2 class="h4 mb-1">
-            Strategy Validation
-        </h2>
+    <div class="strategy-section-header">
 
 
-        <p class="text-muted">
-
-            Historical profitability alone does not show
-            whether a strategy is reliable.
-
-            MarketPulse therefore separates historical
-            backtesting from robustness testing.
-
-        </p>
+        <div>
 
 
-        <div class="row g-3">
-
-
-            <!-- ========================================== -->
-            <!-- HISTORICAL BACKTEST                       -->
-            <!-- ========================================== -->
-
-            <div class="col-md-6">
-
-
-                <div class="border rounded p-4 h-100">
-
-
-                    <div
-                        class="
-                            text-primary
-                            fw-semibold
-                            small
-                            mb-1
-                        "
-                    >
-                        PERFORMANCE TEST
-                    </div>
-
-
-                    <h3 class="h5">
-                        Historical Backtest
-                    </h3>
-
-
-                    <p>
-
-                        <strong>
-                            Question:
-                        </strong>
-
-                        How did this strategy behave on
-                        historical market data?
-
-                    </p>
-
-
-                    <p class="small text-muted">
-
-                        MarketPulse can measure return,
-                        Sharpe ratio, maximum drawdown,
-                        win rate and trading activity.
-
-                    </p>
-
-
-                    <div class="alert alert-light border small">
-
-                        Start by selecting one of your
-                        strategies and clicking
-                        <strong>Run Backtest</strong>.
-
-                    </div>
-
-
-                    <a
-                        href="#myStrategiesSection"
-                        class="btn btn-outline-primary"
-                    >
-                        Choose a Strategy
-                    </a>
-
-
-                </div>
-
-
+            <div class="strategy-eyebrow">
+                Validate Historical Performance
             </div>
 
 
-            <!-- ========================================== -->
-            <!-- STRATEGY ROBUSTNESS                       -->
-            <!-- ========================================== -->
-
-            <div class="col-md-6">
+            <h2>
+                Strategy Validation
+            </h2>
 
 
-                <div class="border rounded p-4 h-100">
+            <p>
 
+                Backtesting and robustness testing answer
+                different questions, so MarketPulse keeps
+                the two stages separate.
 
-                    <div
-                        class="
-                            text-primary
-                            fw-semibold
-                            small
-                            mb-1
-                        "
-                    >
-                        ROBUSTNESS TEST
-                    </div>
-
-
-                    <h3 class="h5">
-                        Strategy Robustness
-                    </h3>
-
-
-                    <p>
-
-                        <strong>
-                            Question:
-                        </strong>
-
-                        Does the strategy continue to behave
-                        reasonably when tested on different
-                        historical periods?
-
-                    </p>
-
-
-                    <p class="small text-muted mb-2">
-
-                        Technical method:
-                        <strong>
-                            Overfitting Analysis
-                        </strong>
-
-                    </p>
-
-
-                    <div class="alert alert-info small">
-
-                        MarketPulse separates historical
-                        periods and compares behaviour to
-                        identify possible performance
-                        deterioration.
-
-                    </div>
-
-
-                    <a
-                        href="{% url 'strategy_builder:robustness' %}"
-                        class="btn btn-primary"
-                    >
-                        Check Strategy Robustness
-                    </a>
-
-
-                </div>
-
-
-            </div>
+            </p>
 
 
         </div>
@@ -1804,135 +3350,105 @@ Strategies | MarketPulse
 
     </div>
 
-</div>
+
+    <div class="validation-grid">
 
 
-<!-- ====================================================== -->
-<!-- 10. RELATED MARKETPULSE TOOLS                           -->
-<!-- ====================================================== -->
+        <!-- ============================================== -->
+        <!-- BACKTEST                                       -->
+        <!-- ============================================== -->
 
-<div class="card shadow-sm mb-4">
-
-    <div class="card-body">
+        <div class="validation-box">
 
 
-        <h2 class="h4 mb-1">
-            Continue Your Research
-        </h2>
+            <div class="strategy-eyebrow">
+                Performance Test
+            </div>
 
 
-        <p class="text-muted">
-
-            Different questions now live in the section where
-            they are most useful.
-
-        </p>
+            <h3>
+                Historical Backtest
+            </h3>
 
 
-        <div class="row g-3">
+            <div class="validation-question">
 
+                <strong>
+                    Question:
+                </strong>
 
-            <!-- ========================================== -->
-            <!-- MARKET CONDITION                          -->
-            <!-- ========================================== -->
-
-            <div class="col-md-6">
-
-
-                <div class="border rounded p-3 h-100">
-
-
-                    <div class="small text-primary fw-semibold">
-                        DATA
-                    </div>
-
-
-                    <h3 class="h5 mt-1">
-                        Market Condition
-                    </h3>
-
-
-                    <p class="mb-1">
-
-                        Is the market trending upward,
-                        falling, sideways or experiencing
-                        unusually high volatility?
-
-                    </p>
-
-
-                    <p class="small text-muted">
-
-                        Technical method:
-                        Market Regime Analysis
-
-                    </p>
-
-
-                    <a
-                        href="{% url 'data_management:market_condition' %}"
-                        class="btn btn-outline-primary"
-                    >
-                        Analyse Market Condition
-                    </a>
-
-
-                </div>
-
+                How did the strategy behave on historical data?
 
             </div>
 
 
-            <!-- ========================================== -->
-            <!-- STRESS TEST                               -->
-            <!-- ========================================== -->
+            <p class="mt-3">
 
-            <div class="col-md-6">
+                Review return, Sharpe ratio, maximum drawdown,
+                win rate and trading activity.
 
-
-                <div class="border rounded p-3 h-100">
+            </p>
 
 
-                    <div class="small text-danger fw-semibold">
-                        RISK
-                    </div>
+            <a
+                href="#myStrategiesSection"
+                class="btn btn-sm btn-outline-primary"
+            >
+
+                Choose a Strategy
+
+            </a>
 
 
-                    <h3 class="h5 mt-1">
-                        Stress Test
-                    </h3>
+        </div>
 
 
-                    <p class="mb-1">
+        <!-- ============================================== -->
+        <!-- ROBUSTNESS                                     -->
+        <!-- ============================================== -->
 
-                        What happens if market conditions
-                        become substantially worse than
-                        expected?
-
-                    </p>
+        <div class="validation-box">
 
 
-                    <p class="small text-muted">
-
-                        Test severe declines, volatility
-                        spikes, liquidity shocks and market
-                        condition changes.
-
-                    </p>
+            <div class="strategy-eyebrow">
+                Robustness Test
+            </div>
 
 
-                    <a
-                        href="{% url 'risk_management:stress_test' %}"
-                        class="btn btn-outline-danger"
-                    >
-                        Run Stress Test
-                    </a>
+            <h3>
+                Strategy Robustness
+            </h3>
 
 
-                </div>
+            <div class="validation-question">
 
+                <strong>
+                    Question:
+                </strong>
+
+                Does the strategy continue to behave
+                reasonably across different historical periods?
 
             </div>
+
+
+            <p class="mt-3">
+
+                MarketPulse compares historical behaviour
+                across periods to investigate possible
+                performance deterioration and overfitting.
+
+            </p>
+
+
+            <a
+                href="{% url 'strategy_builder:robustness' %}"
+                class="btn btn-sm btn-primary"
+            >
+
+                Check Robustness
+
+            </a>
 
 
         </div>
@@ -1940,11 +3456,132 @@ Strategies | MarketPulse
 
     </div>
 
-</div>
+
+</section>
 
 
 <!-- ====================================================== -->
-<!-- 11. MODEL LIBRARY JAVASCRIPT                           -->
+<!-- 9. RELATED MARKETPULSE TOOLS                           -->
+<!-- ====================================================== -->
+
+<section class="strategy-panel">
+
+
+    <div class="strategy-section-header">
+
+
+        <div>
+
+
+            <div class="strategy-eyebrow">
+                Related Research
+            </div>
+
+
+            <h2>
+                Continue Your Analysis
+            </h2>
+
+
+            <p>
+
+                Market Condition and Stress Testing remain
+                available in the sections where they are
+                most relevant.
+
+            </p>
+
+
+        </div>
+
+
+    </div>
+
+
+    <div class="related-tools-grid">
+
+
+        <!-- MARKET CONDITION -->
+
+        <div class="related-tool">
+
+
+            <div class="strategy-eyebrow">
+                Data
+            </div>
+
+
+            <h3>
+                Market Condition
+            </h3>
+
+
+            <p>
+
+                Understand whether stored historical data
+                shows an Uptrend, Downtrend, Sideways market
+                or High Volatility.
+
+            </p>
+
+
+            <a
+                href="{% url 'data_management:market_condition' %}"
+                class="btn btn-sm btn-outline-primary"
+            >
+
+                Open Market Condition
+
+            </a>
+
+
+        </div>
+
+
+        <!-- STRESS TEST -->
+
+        <div class="related-tool">
+
+
+            <div class="strategy-eyebrow">
+                Risk
+            </div>
+
+
+            <h3>
+                Stress Testing
+            </h3>
+
+
+            <p>
+
+                Explore what could happen if market conditions
+                become substantially worse than expected.
+
+            </p>
+
+
+            <a
+                href="{% url 'risk_management:stress_test' %}"
+                class="btn btn-sm btn-outline-danger"
+            >
+
+                Open Stress Test
+
+            </a>
+
+
+        </div>
+
+
+    </div>
+
+
+</section>
+
+
+<!-- ====================================================== -->
+<!-- 10. LIBRARY INTERACTION JAVASCRIPT                     -->
 <!-- ====================================================== -->
 
 <script>
@@ -1955,7 +3592,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 11.1 ELEMENT REFERENCES
+        // 10.1 ELEMENT REFERENCES
         // ====================================================
 
         const searchInput =
@@ -1982,15 +3619,15 @@ document.addEventListener(
             );
 
 
-        const modelCards =
+        const modelRows =
             document.querySelectorAll(
-                ".model-card-wrapper"
+                ".strategy-model-row"
             );
 
 
-        const categoryCards =
+        const categoryItems =
             document.querySelectorAll(
-                ".category-card"
+                ".strategy-category-item"
             );
 
 
@@ -2012,6 +3649,12 @@ document.addEventListener(
             );
 
 
+        const compareBar =
+            document.getElementById(
+                "compareBar"
+            );
+
+
         const noResults =
             document.getElementById(
                 "noModelResults"
@@ -2019,7 +3662,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 11.2 FILTER MODELS
+        // 10.2 FILTER MODEL LIBRARY
         // ====================================================
 
         function filterModels() {
@@ -2035,7 +3678,7 @@ document.addEventListener(
                     "";
 
 
-            const category =
+            const selectedCategory =
                 categoryFilter
                     ?
                     categoryFilter.value
@@ -2043,7 +3686,7 @@ document.addEventListener(
                     "";
 
 
-            const status =
+            const selectedStatus =
                 statusFilter
                     ?
                     statusFilter.value
@@ -2051,28 +3694,32 @@ document.addEventListener(
                     "";
 
 
-            let visibleCount =
+            let totalVisibleRows =
                 0;
 
 
-            modelCards.forEach(
-                function (card) {
+            // ------------------------------------------------
+            // FILTER EVERY MODEL ROW
+            // ------------------------------------------------
+
+            modelRows.forEach(
+                function (row) {
 
 
                     const modelName =
-                        card.dataset.name
+                        row.dataset.name
                         ||
                         "";
 
 
                     const modelCategory =
-                        card.dataset.category
+                        row.dataset.category
                         ||
                         "";
 
 
                     const modelStatus =
-                        card.dataset.status
+                        row.dataset.status
                         ||
                         "";
 
@@ -2089,17 +3736,17 @@ document.addEventListener(
 
                     const matchesCategory =
                         (
-                            !category
+                            !selectedCategory
                             ||
-                            modelCategory === category
+                            modelCategory === selectedCategory
                         );
 
 
                     const matchesStatus =
                         (
-                            !status
+                            !selectedStatus
                             ||
-                            modelStatus === status
+                            modelStatus === selectedStatus
                         );
 
 
@@ -2113,7 +3760,7 @@ document.addEventListener(
                         );
 
 
-                    card.classList.toggle(
+                    row.classList.toggle(
                         "d-none",
                         !shouldShow
                     );
@@ -2121,7 +3768,7 @@ document.addEventListener(
 
                     if (shouldShow) {
 
-                        visibleCount += 1;
+                        totalVisibleRows += 1;
 
                     }
 
@@ -2130,11 +3777,50 @@ document.addEventListener(
             );
 
 
+            // ------------------------------------------------
+            // HIDE CATEGORY WHEN NONE OF ITS MODELS MATCH
+            // ------------------------------------------------
+
+            categoryItems.forEach(
+                function (categoryItem) {
+
+
+                    const visibleRows =
+                        Array.from(
+                            categoryItem.querySelectorAll(
+                                ".strategy-model-row"
+                            )
+                        )
+                        .filter(
+                            function (row) {
+
+                                return !row.classList.contains(
+                                    "d-none"
+                                );
+
+                            }
+                        );
+
+
+                    categoryItem.classList.toggle(
+                        "d-none",
+                        visibleRows.length === 0
+                    );
+
+
+                }
+            );
+
+
+            // ------------------------------------------------
+            // NO RESULTS MESSAGE
+            // ------------------------------------------------
+
             if (noResults) {
 
                 noResults.classList.toggle(
                     "d-none",
-                    visibleCount !== 0
+                    totalVisibleRows !== 0
                 );
 
             }
@@ -2144,10 +3830,10 @@ document.addEventListener(
 
 
         // ====================================================
-        // 11.3 UPDATE COMPARISON SELECTION
+        // 10.3 COMPARISON SELECTION
         // ====================================================
 
-        function updateCompareCounter() {
+        function updateCompareState() {
 
 
             const selected =
@@ -2166,6 +3852,10 @@ document.addEventListener(
             const selectedCount =
                 selected.length;
 
+
+            // ------------------------------------------------
+            // COUNTER TEXT
+            // ------------------------------------------------
 
             if (compareCounter) {
 
@@ -2196,10 +3886,39 @@ document.addEventListener(
 
                 }
 
+
             }
 
 
-            // Maximum four models.
+            // ------------------------------------------------
+            // SHOW COMPARISON BAR ONLY AFTER SELECTION
+            // ------------------------------------------------
+
+            if (compareBar) {
+
+                compareBar.classList.toggle(
+                    "is-visible",
+                    selectedCount > 0
+                );
+
+            }
+
+
+            // ------------------------------------------------
+            // REQUIRE AT LEAST TWO MODELS
+            // ------------------------------------------------
+
+            if (compareButton) {
+
+                compareButton.disabled =
+                    selectedCount < 2;
+
+            }
+
+
+            // ------------------------------------------------
+            // MAXIMUM FOUR MODELS
+            // ------------------------------------------------
 
             compareCheckboxes.forEach(
                 function (checkbox) {
@@ -2217,21 +3936,11 @@ document.addEventListener(
             );
 
 
-            // Comparison requires at least two.
-
-            if (compareButton) {
-
-                compareButton.disabled =
-                    selectedCount < 2;
-
-            }
-
-
         }
 
 
         // ====================================================
-        // 11.4 SEARCH
+        // 10.4 SEARCH
         // ====================================================
 
         if (searchInput) {
@@ -2245,7 +3954,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 11.5 CATEGORY FILTER
+        // 10.5 CATEGORY FILTER
         // ====================================================
 
         if (categoryFilter) {
@@ -2259,7 +3968,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 11.6 STATUS FILTER
+        // 10.6 STATUS FILTER
         // ====================================================
 
         if (statusFilter) {
@@ -2273,60 +3982,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 11.7 CATEGORY CARDS
-        // ====================================================
-
-        categoryCards.forEach(
-            function (card) {
-
-
-                card.addEventListener(
-                    "click",
-                    function () {
-
-
-                        if (categoryFilter) {
-
-                            categoryFilter.value =
-                                card.dataset.category;
-
-                        }
-
-
-                        filterModels();
-
-
-                        const library =
-                            document.getElementById(
-                                "strategyLibrary"
-                            );
-
-
-                        if (library) {
-
-                            library.scrollIntoView(
-                                {
-                                    behavior:
-                                        "smooth",
-
-                                    block:
-                                        "start",
-                                }
-                            );
-
-                        }
-
-
-                    }
-                );
-
-
-            }
-        );
-
-
-        // ====================================================
-        // 11.8 CLEAR FILTERS
+        // 10.7 CLEAR FILTERS
         // ====================================================
 
         if (clearFilters) {
@@ -2370,7 +4026,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 11.9 COMPARISON CHECKBOXES
+        // 10.8 COMPARISON CHECKBOXES
         // ====================================================
 
         compareCheckboxes.forEach(
@@ -2379,7 +4035,7 @@ document.addEventListener(
 
                 checkbox.addEventListener(
                     "change",
-                    updateCompareCounter
+                    updateCompareState
                 );
 
 
@@ -2388,18 +4044,21 @@ document.addEventListener(
 
 
         // ====================================================
-        // 11.10 INITIAL PAGE STATE
+        // 10.9 INITIAL STATE
         // ====================================================
 
         filterModels();
 
-        updateCompareCounter();
+        updateCompareState();
 
 
     }
 );
 
 </script>
+
+
+</div>
 
 
 {% endblock %}

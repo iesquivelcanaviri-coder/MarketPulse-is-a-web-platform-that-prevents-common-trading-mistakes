@@ -21,7 +21,7 @@ These endpoints can be consumed by:
 ARCHITECTURE
 ============================================================
 
-Browser / React
+Browser / React / Dashboard JavaScript
         ↓
       /api/
         ↓
@@ -32,6 +32,71 @@ MarketPulse Services
  ┌───────────────┬───────────────┬───────────────┐
  ↓               ↓               ↓
 PostgreSQL      Alpaca          MATLAB
+
+
+============================================================
+MARKET DATA FLOW
+============================================================
+
+Dashboard
+    ↓
+MarketPulse API
+    ↓
+Alpaca Service Layer
+    ↓
+Alpaca API
+    ↓
+Normalised JSON
+    ↓
+Search / Watchlist / Charts / Alerts
+
+
+Current market snapshot:
+
+    /api/alpaca/stocks/AAPL/snapshot/
+
+Historical OHLCV chart data:
+
+    /api/alpaca/stocks/AAPL/history/?period=1M
+
+Asset search:
+
+    /api/alpaca/assets/search/?q=Apple
+
+
+============================================================
+PROFESSIONAL CHART WORKSPACE
+============================================================
+
+The new Dashboard chart workspace can use:
+
+Asset Search
+    ↓
+/api/alpaca/assets/search/
+
+Selected Asset
+    ↓
+/api/alpaca/stocks/<symbol>/snapshot/
+
+Historical Chart
+    ↓
+/api/alpaca/stocks/<symbol>/history/
+
+The historical endpoint supplies OHLCV observations suitable
+for:
+
+- Candlestick charts
+- Line charts
+- Heikin-Ashi calculations
+- Volume charts
+- Future Volume Profile calculations
+
+
+IMPORTANT:
+
+A Futures Curve requires actual futures-contract market data
+and should not be constructed from ordinary stock or ETF
+historical bars.
 
 
 ============================================================
@@ -81,7 +146,10 @@ never be placed inside:
 # defined MarketPulse API routes.
 #
 # path() connects a URL address to a Django view.
-from django.urls import include, path
+from django.urls import (
+    include,
+    path,
+)
 
 
 # ============================================================
@@ -90,7 +158,9 @@ from django.urls import include, path
 
 # DefaultRouter automatically generates conventional REST API
 # routes for registered ViewSets.
-from rest_framework.routers import DefaultRouter
+from rest_framework.routers import (
+    DefaultRouter,
+)
 
 
 # ============================================================
@@ -105,7 +175,9 @@ from . import views
 # 4. DJANGO REST FRAMEWORK ROUTER
 # ============================================================
 
-router = DefaultRouter()
+router = (
+    DefaultRouter()
+)
 
 
 # ------------------------------------------------------------
@@ -155,7 +227,7 @@ urlpatterns = [
     # 5.1 APPLICATION HEALTH
     # ========================================================
 
-    # Browser/API URL:
+    # Browser / API URL:
     #
     # /api/health/
     #
@@ -180,98 +252,32 @@ urlpatterns = [
     # 5.2 DASHBOARD - LIVE MARKET OVERVIEW
     # ========================================================
 
-    # Browser/API URL:
+    # Browser / API URL:
     #
     # /api/dashboard/market-overview/
     #
+    # Examples:
     #
-    # PURPOSE:
+    # /api/dashboard/market-overview/?symbol=SPY
     #
-    # This is the main dynamic-data endpoint for the upgraded
-    # MarketPulse Dashboard.
+    # /api/dashboard/market-overview/?symbol=QQQ&period=1M
     #
-    # It should provide the information needed by the live
-    # Dashboard Market Pulse component.
+    # Purpose:
     #
+    # Provides:
     #
-    # EXPECTED INFORMATION:
+    # - US market clock
+    # - SPY snapshot
+    # - QQQ snapshot
+    # - DIA snapshot
+    # - IWM snapshot
+    # - benchmark comparison
+    # - historical benchmark graph information
+    # - Dashboard market condition
+    # - notices
+    # - data-health information
     #
-    # MARKET STATUS
-    #
-    # - Whether the US equity market is open or closed
-    # - Next market open
-    # - Next market close
-    #
-    #
-    # MARKET BENCHMARKS
-    #
-    # - SPY
-    # - QQQ
-    # - DIA
-    # - IWM
-    #
-    #
-    # For each benchmark the response can include:
-    #
-    # - Latest price
-    # - Previous close
-    # - Daily change
-    # - Daily percentage change
-    # - Day open
-    # - Day high
-    # - Day low
-    # - Day volume
-    #
-    #
-    # DASHBOARD CHART
-    #
-    # The endpoint can also provide historical/recent bars
-    # for the Dashboard chart.
-    #
-    # Example:
-    #
-    # SPY
-    #     ↓
-    # Timestamp
-    # Open
-    # High
-    # Low
-    # Close
-    # Volume
-    #
-    #
-    # DATA PROVENANCE
-    #
-    # The response should identify:
-    #
-    # - Provider: Alpaca
-    # - Feed: IEX
-    # - Last-updated timestamp
-    #
-    #
-    # FRONTEND WORKFLOW:
-    #
-    # Dashboard JavaScript / React
-    #         ↓
-    # GET /api/dashboard/market-overview/
-    #         ↓
-    # dashboard_market_overview()
-    #         ↓
-    # data_management.services.alpaca
-    #         ↓
-    # Alpaca Market Data API
-    #
-    #
-    # AUTOMATIC REFRESH:
-    #
-    # The frontend can call this endpoint periodically,
-    # for example every 60 seconds, without reloading the
-    # entire Dashboard page.
-    #
-    #
-    # SECURITY:
-    #
-    # No Alpaca credentials are returned in the JSON.
+    # Alpaca credentials remain on the Django server.
     path(
         "dashboard/market-overview/",
         views.dashboard_market_overview,
@@ -283,33 +289,18 @@ urlpatterns = [
     # 5.3 STORED MARKET DATA
     # ========================================================
 
-    # Browser/API URL:
+    # Browser / API URL:
     #
     # /api/market/latest/
     #
+    # Example:
     #
-    # PURPOSE:
+    # /api/market/latest/?symbol=AAPL&limit=60
     #
-    # Returns the latest historical market observations that
-    # have already been persisted inside MarketPulse.
+    # Purpose:
     #
-    #
-    # IMPORTANT DISTINCTION:
-    #
-    # /api/dashboard/market-overview/
-    #
-    #     = current/recent external market information
-    #       obtained through Alpaca.
-    #
-    #
-    # /api/market/latest/
-    #
-    #     = persisted MarketData records stored in
-    #       PostgreSQL.
-    #
-    #
-    # Keeping those responsibilities separate makes the data
-    # architecture easier to understand and maintain.
+    # Returns MarketData observations already persisted inside
+    # MarketPulse PostgreSQL storage.
     path(
         "market/latest/",
         views.market_latest,
@@ -321,21 +312,14 @@ urlpatterns = [
     # 5.4 RISK MANAGEMENT - POSITION SIZE
     # ========================================================
 
-    # Browser/API URL:
+    # Browser / API URL:
     #
     # /api/risk/position-size/
     #
+    # Purpose:
     #
-    # PURPOSE:
-    #
-    # Provides a REST-style endpoint for MarketPulse
-    # position-sizing calculations.
-    #
-    # This can be consumed by:
-    #
-    # - Risk page JavaScript
-    # - React components
-    # - Other MarketPulse interfaces
+    # Accepts risk-calculation inputs and returns position-size
+    # and stop-loss information.
     path(
         "risk/position-size/",
         views.risk_position_size,
@@ -347,16 +331,13 @@ urlpatterns = [
     # 5.5 MATLAB RISK INTEGRATION
     # ========================================================
 
-    # Browser/API URL:
+    # Browser / API URL:
     #
     # /api/matlab/risk/
     #
+    # Purpose:
     #
-    # PURPOSE:
-    #
-    # Provides the API integration point for MATLAB-based
-    # quantitative calculations when MATLAB support is
-    # enabled in MarketPulse.
+    # Provides access to the optional MATLAB risk bridge.
     path(
         "matlab/risk/",
         views.matlab_risk,
@@ -368,44 +349,18 @@ urlpatterns = [
     # 5.6 ALPACA - ASSET SEARCH
     # ========================================================
 
-    # Browser/API URL examples:
+    # Browser / API examples:
     #
     # /api/alpaca/assets/search/?q=AAPL
     #
     # /api/alpaca/assets/search/?q=Microsoft
     #
-    # /api/alpaca/assets/search/?q=NVIDIA
+    # /api/alpaca/assets/search/?q=Tesla
     #
+    # Purpose:
     #
-    # PURPOSE:
-    #
-    # Searches Alpaca's active US-equity asset universe.
-    #
-    #
-    # RETURNED INFORMATION CAN INCLUDE:
-    #
-    # - Symbol
-    # - Company / asset name
-    # - Exchange
-    # - Trading status
-    # - Tradability
-    # - Marginability
-    # - Shortability
-    # - Fractional-trading availability
-    # - Borrow information where available
-    #
-    #
-    # ARCHITECTURE:
-    #
-    # Browser
-    #     ↓
-    # MarketPulse API
-    #     ↓
-    # Alpaca service
-    #     ↓
-    # Alpaca
-    #
-    # The browser never communicates directly with Alpaca.
+    # Powers the Dashboard stock/ETF search box and future
+    # watchlist interface.
     path(
         "alpaca/assets/search/",
         views.alpaca_asset_search,
@@ -417,27 +372,22 @@ urlpatterns = [
     # 5.7 ALPACA - ASSET DETAILS
     # ========================================================
 
-    # Browser/API URL:
+    # Browser / API URL example:
     #
     # /api/alpaca/assets/AAPL/
     #
+    # Purpose:
     #
-    # PURPOSE:
+    # Returns descriptive information about an Alpaca asset,
+    # including:
     #
-    # Retrieves metadata for one Alpaca asset.
-    #
-    #
-    # INFORMATION CAN INCLUDE:
-    #
-    # - Symbol
-    # - Asset name
-    # - Exchange
-    # - Asset status
-    # - Tradability
-    # - Marginability
-    # - Shortability
-    # - Fractionability
-    # - Borrow information where available
+    # - symbol
+    # - name
+    # - exchange
+    # - asset class
+    # - tradability
+    # - shortability
+    # - fractionability
     path(
         "alpaca/assets/<str:symbol>/",
         views.alpaca_asset_detail,
@@ -446,63 +396,27 @@ urlpatterns = [
 
 
     # ========================================================
-    # 5.8 ALPACA - STOCK MARKET SNAPSHOT
+    # 5.8 ALPACA - CURRENT STOCK SNAPSHOT
     # ========================================================
 
-    # Browser/API URL:
+    # Browser / API URL example:
     #
     # /api/alpaca/stocks/AAPL/snapshot/
     #
+    # Purpose:
     #
-    # PURPOSE:
+    # Returns current/latest information including:
     #
-    # Retrieves current/latest market information for a single
-    # stock through the MarketPulse backend.
+    # - latest price
+    # - bid
+    # - ask
+    # - spread
+    # - daily OHLC
+    # - previous close
+    # - daily change
     #
-    #
-    # INFORMATION CAN INCLUDE:
-    #
-    # LATEST TRADE
-    #
-    # - Price
-    # - Timestamp
-    #
-    #
-    # LATEST QUOTE
-    #
-    # - Bid price
-    # - Ask price
-    # - Bid/ask spread
-    #
-    #
-    # CURRENT MARKET BAR
-    #
-    # - Open
-    # - High
-    # - Low
-    # - Close
-    # - Volume
-    #
-    #
-    # PREVIOUS MARKET BAR
-    #
-    # - Previous open
-    # - Previous high
-    # - Previous low
-    # - Previous close
-    # - Previous volume
-    #
-    #
-    # DERIVED INFORMATION
-    #
-    # - Daily price change
-    # - Daily percentage change
-    #
-    #
-    # PROVIDER INFORMATION
-    #
-    # - Alpaca
-    # - Market-data feed
+    # This endpoint supplies the selected-asset information
+    # shown above the professional chart.
     path(
         "alpaca/stocks/<str:symbol>/snapshot/",
         views.alpaca_stock_snapshot,
@@ -511,24 +425,79 @@ urlpatterns = [
 
 
     # ========================================================
-    # 5.9 DJANGO REST FRAMEWORK ROUTES
+    # 5.9 ALPACA - HISTORICAL STOCK OHLCV
     # ========================================================
 
-    # The REST Framework router is deliberately placed after
-    # the explicit MarketPulse API routes.
+    # Browser / API examples:
     #
-    # This keeps specific API paths easy to identify before
-    # the more general ViewSet routes are included.
+    # /api/alpaca/stocks/AAPL/history/?period=1M
+    #
+    # /api/alpaca/stocks/MSFT/history/?period=3M
+    #
+    # /api/alpaca/stocks/NVDA/history/?period=5D
+    #
+    # /api/alpaca/stocks/SPY/history/?period=1D
     #
     #
-    # Automatically generated examples:
+    # Purpose:
+    #
+    # Returns historical Alpaca OHLCV observations for the
+    # selected stock or ETF.
+    #
+    # Framework mapping:
+    #
+    # Search / Watchlist
+    #       ↓
+    # Selected Symbol
+    #       ↓
+    # /api/alpaca/stocks/<symbol>/history/
+    #       ↓
+    # api.views.alpaca_stock_history
+    #       ↓
+    # get_chart_history()
+    #       ↓
+    # Alpaca Historical Market Data API
+    #       ↓
+    # JSON OHLCV
+    #       ↓
+    # Professional Dashboard Chart
+    #
+    #
+    # This endpoint will support:
+    #
+    # - Candlestick chart
+    # - Line chart
+    # - Heikin-Ashi chart
+    # - Volume chart
+    #
+    # Volume Profile can later be calculated from the returned
+    # price and volume observations.
+    #
+    # Futures Curve is deliberately NOT handled by this route
+    # because that requires actual futures-contract data.
+    path(
+        "alpaca/stocks/<str:symbol>/history/",
+        views.alpaca_stock_history,
+        name="alpaca_stock_history",
+    ),
+
+
+    # ========================================================
+    # 5.10 DJANGO REST FRAMEWORK ROUTES
+    # ========================================================
+
+    # The router is deliberately placed AFTER the explicit
+    # MarketPulse API routes.
+    #
+    # This prevents automatically generated router patterns
+    # from making the API layout harder to reason about.
+    #
+    # Automatically exposes:
     #
     # /api/strategies/
-    #
     # /api/strategies/<id>/
     #
     # /api/backtests/
-    #
     # /api/backtests/<id>/
     path(
         "",

@@ -1,2 +1,4311 @@
-{% extends 'base.html' %}<!-- ======================================================== DASHBOARD: live ORM metrics from core/views.dashboard; Chart.js equity curve. -->
-{% block title %}Dashboard | MarketPulse{% endblock %}{% block content %}<h1 class="h3 mb-4">Dashboard</h1><div class="row g-3 mb-4"><div class="col-md-3"><div class="metric-card"><small>Active Strategies</small><strong>{{ active_strategy_count }}</strong></div></div><div class="col-md-3"><div class="metric-card"><small>Backtests</small><strong>{{ backtest_count }}</strong></div></div><div class="col-md-3"><div class="metric-card"><small>Avg Win Rate</small><strong>{{ avg_win_rate|floatformat:1 }}%</strong></div></div><div class="col-md-3"><div class="metric-card"><small>Market Rows</small><strong>{{ market_data_count }}</strong></div></div></div><div class="row"><div class="col-lg-8"><div class="card shadow-sm"><div class="card-body"><h5>Latest Equity Curve</h5>{% if latest_backtest %}<canvas id="equityChart"></canvas>{{ latest_backtest.results.equity_curve|json_script:'equity-data' }}{% else %}<p>Create a strategy and backtest it to populate this chart.</p>{% endif %}</div></div></div><div class="col-lg-4"><div class="card shadow-sm"><div class="card-body"><h5>Alerts</h5>{% for a in alerts %}<div class="border-bottom py-2"><strong>{{ a.title }}</strong><br><small>{{ a.message }}</small></div>{% empty %}<p>No alerts.</p>{% endfor %}</div></div></div></div>{% endblock %}{% block extra_js %}{% if latest_backtest %}<script src="https://cdn.jsdelivr.net/npm/chart.js"></script><script>const p=JSON.parse(document.getElementById('equity-data').textContent||'[]');new Chart(document.getElementById('equityChart'),{type:'line',data:{labels:p.map(x=>x.date),datasets:[{label:'Equity',data:p.map(x=>x.value),tension:.2}]}});</script>{% endif %}{% endblock %}
+{% extends "base.html" %}
+
+{% block title %}
+Market Workspace | MarketPulse
+{% endblock %}
+
+{% block content %}
+
+
+<!-- ====================================================== -->
+<!-- MARKETPULSE - PROFESSIONAL MARKET WORKSPACE             -->
+<!-- ====================================================== -->
+<!--
+Framework mapping:
+
+Browser
+    ↓
+templates/dashboard.html
+    ↓
+JavaScript
+    ↓
+MarketPulse Django REST API
+    ↓
+data_management.services.alpaca
+    ↓
+Alpaca Market Data API
+
+
+Selected asset flow:
+
+Search
+    ↓
+Alpaca asset search
+    ↓
+Select symbol
+    ↓
+Snapshot + Historical OHLCV
+    ↓
+Professional financial chart
+
+
+Alert flow:
+
+Dashboard
+    ↓
+AlertRule
+    ↓
+Django form POST
+    ↓
+PostgreSQL / Neon
+
+===========================================================
+-->
+
+
+<!-- ====================================================== -->
+<!-- 1. PAGE HEADER                                         -->
+<!-- ====================================================== -->
+
+<div
+    class="
+        d-flex
+        justify-content-between
+        align-items-start
+        flex-wrap
+        gap-3
+        mb-3
+    "
+>
+
+    <div>
+
+        <h1 class="h2 mb-1">
+            Market Workspace
+        </h1>
+
+        <p class="text-muted mb-0">
+            Search markets, analyse price behaviour and manage
+            configurable trading alerts.
+        </p>
+
+    </div>
+
+
+    <div class="text-end">
+
+        <div class="small text-muted">
+            Market Data
+        </div>
+
+        <div>
+
+            <span class="badge bg-success">
+                Alpaca
+            </span>
+
+            <span class="badge bg-light text-dark border">
+                IEX
+            </span>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- 2. MARKET CLOCK                                        -->
+<!-- ====================================================== -->
+
+<div class="card shadow-sm mb-3">
+
+    <div class="card-body py-3">
+
+        <div
+            class="
+                d-flex
+                justify-content-between
+                align-items-center
+                flex-wrap
+                gap-3
+            "
+        >
+
+            <div>
+
+                <div class="small text-muted">
+                    US MARKET STATUS
+                </div>
+
+                <div
+                    id="marketStatus"
+                    class="fs-5 fw-bold"
+                >
+                    Loading market status...
+                </div>
+
+                <div
+                    id="marketNextEvent"
+                    class="small text-muted"
+                >
+                    Contacting Alpaca...
+                </div>
+
+            </div>
+
+
+            <div class="text-end">
+
+                <div class="small text-muted">
+                    Last Live Refresh
+                </div>
+
+                <div
+                    id="marketUpdatedAt"
+                    class="fw-semibold"
+                >
+                    —
+                </div>
+
+                <button
+                    type="button"
+                    id="refreshWorkspaceButton"
+                    class="btn btn-sm btn-outline-primary mt-2"
+                >
+                    Refresh Market
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- 3. PROFESSIONAL MARKET WORKSPACE                       -->
+<!-- ====================================================== -->
+
+<div class="row g-3 mb-4">
+
+
+    <!-- ================================================== -->
+    <!-- 3.1 LEFT ASSET SEARCH PANEL                        -->
+    <!-- ================================================== -->
+
+    <div class="col-xl-3">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body p-0">
+
+
+                <!-- ------------------------------------------ -->
+                <!-- ASSET PANEL HEADER                         -->
+                <!-- ------------------------------------------ -->
+
+                <div class="p-3 border-bottom">
+
+                    <div
+                        class="
+                            d-flex
+                            justify-content-between
+                            align-items-center
+                            mb-3
+                        "
+                    >
+
+                        <div>
+
+                            <div class="small text-primary fw-semibold">
+                                MARKET EXPLORER
+                            </div>
+
+                            <h2 class="h5 mb-0">
+                                Search Assets
+                            </h2>
+
+                        </div>
+
+                        <span class="badge bg-light text-dark border">
+                            Alpaca
+                        </span>
+
+                    </div>
+
+
+                    <!-- -------------------------------------- -->
+                    <!-- SEARCH BOX                             -->
+                    <!-- -------------------------------------- -->
+
+                    <div class="input-group">
+
+                        <span class="input-group-text">
+                            ⌕
+                        </span>
+
+                        <input
+                            type="search"
+                            id="assetSearchInput"
+                            class="form-control"
+                            placeholder="Search stocks or ETFs..."
+                            autocomplete="off"
+                        >
+
+                    </div>
+
+
+                    <div
+                        id="assetSearchMessage"
+                        class="small text-muted mt-2"
+                    >
+                        Search by ticker or company name.
+                    </div>
+
+                </div>
+
+
+                <!-- ------------------------------------------ -->
+                <!-- SEARCH RESULTS                            -->
+                <!-- ------------------------------------------ -->
+
+                <div
+                    id="assetSearchResults"
+                    class="list-group list-group-flush"
+                >
+                </div>
+
+
+                <!-- ------------------------------------------ -->
+                <!-- POPULAR / QUICK ACCESS                    -->
+                <!-- ------------------------------------------ -->
+
+                <div
+                    id="popularAssetsSection"
+                    class="p-3"
+                >
+
+                    <div
+                        class="
+                            small
+                            text-muted
+                            fw-semibold
+                            mb-2
+                        "
+                    >
+                        QUICK ACCESS
+                    </div>
+
+
+                    <div class="list-group">
+
+
+                        <!-- AAPL -->
+
+                        <button
+                            type="button"
+                            class="
+                                list-group-item
+                                list-group-item-action
+                                asset-select-button
+                                active
+                            "
+                            data-symbol="AAPL"
+                        >
+
+                            <div
+                                class="
+                                    d-flex
+                                    justify-content-between
+                                    align-items-center
+                                "
+                            >
+
+                                <div>
+
+                                    <div class="fw-bold">
+                                        AAPL
+                                    </div>
+
+                                    <div class="small text-muted">
+                                        Apple
+                                    </div>
+
+                                </div>
+
+                                <span class="text-muted">
+                                    ›
+                                </span>
+
+                            </div>
+
+                        </button>
+
+
+                        <!-- MSFT -->
+
+                        <button
+                            type="button"
+                            class="
+                                list-group-item
+                                list-group-item-action
+                                asset-select-button
+                            "
+                            data-symbol="MSFT"
+                        >
+
+                            <div
+                                class="
+                                    d-flex
+                                    justify-content-between
+                                    align-items-center
+                                "
+                            >
+
+                                <div>
+
+                                    <div class="fw-bold">
+                                        MSFT
+                                    </div>
+
+                                    <div class="small text-muted">
+                                        Microsoft
+                                    </div>
+
+                                </div>
+
+                                <span class="text-muted">
+                                    ›
+                                </span>
+
+                            </div>
+
+                        </button>
+
+
+                        <!-- NVDA -->
+
+                        <button
+                            type="button"
+                            class="
+                                list-group-item
+                                list-group-item-action
+                                asset-select-button
+                            "
+                            data-symbol="NVDA"
+                        >
+
+                            <div
+                                class="
+                                    d-flex
+                                    justify-content-between
+                                    align-items-center
+                                "
+                            >
+
+                                <div>
+
+                                    <div class="fw-bold">
+                                        NVDA
+                                    </div>
+
+                                    <div class="small text-muted">
+                                        NVIDIA
+                                    </div>
+
+                                </div>
+
+                                <span class="text-muted">
+                                    ›
+                                </span>
+
+                            </div>
+
+                        </button>
+
+
+                        <!-- SPY -->
+
+                        <button
+                            type="button"
+                            class="
+                                list-group-item
+                                list-group-item-action
+                                asset-select-button
+                            "
+                            data-symbol="SPY"
+                        >
+
+                            <div
+                                class="
+                                    d-flex
+                                    justify-content-between
+                                    align-items-center
+                                "
+                            >
+
+                                <div>
+
+                                    <div class="fw-bold">
+                                        SPY
+                                    </div>
+
+                                    <div class="small text-muted">
+                                        S&amp;P 500 ETF
+                                    </div>
+
+                                </div>
+
+                                <span class="text-muted">
+                                    ›
+                                </span>
+
+                            </div>
+
+                        </button>
+
+
+                        <!-- QQQ -->
+
+                        <button
+                            type="button"
+                            class="
+                                list-group-item
+                                list-group-item-action
+                                asset-select-button
+                            "
+                            data-symbol="QQQ"
+                        >
+
+                            <div
+                                class="
+                                    d-flex
+                                    justify-content-between
+                                    align-items-center
+                                "
+                            >
+
+                                <div>
+
+                                    <div class="fw-bold">
+                                        QQQ
+                                    </div>
+
+                                    <div class="small text-muted">
+                                        Nasdaq-100 ETF
+                                    </div>
+
+                                </div>
+
+                                <span class="text-muted">
+                                    ›
+                                </span>
+
+                            </div>
+
+                        </button>
+
+
+                        <!-- DIA -->
+
+                        <button
+                            type="button"
+                            class="
+                                list-group-item
+                                list-group-item-action
+                                asset-select-button
+                            "
+                            data-symbol="DIA"
+                        >
+
+                            <div
+                                class="
+                                    d-flex
+                                    justify-content-between
+                                    align-items-center
+                                "
+                            >
+
+                                <div>
+
+                                    <div class="fw-bold">
+                                        DIA
+                                    </div>
+
+                                    <div class="small text-muted">
+                                        Dow Jones ETF
+                                    </div>
+
+                                </div>
+
+                                <span class="text-muted">
+                                    ›
+                                </span>
+
+                            </div>
+
+                        </button>
+
+
+                        <!-- IWM -->
+
+                        <button
+                            type="button"
+                            class="
+                                list-group-item
+                                list-group-item-action
+                                asset-select-button
+                            "
+                            data-symbol="IWM"
+                        >
+
+                            <div
+                                class="
+                                    d-flex
+                                    justify-content-between
+                                    align-items-center
+                                "
+                            >
+
+                                <div>
+
+                                    <div class="fw-bold">
+                                        IWM
+                                    </div>
+
+                                    <div class="small text-muted">
+                                        Russell 2000 ETF
+                                    </div>
+
+                                </div>
+
+                                <span class="text-muted">
+                                    ›
+                                </span>
+
+                            </div>
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- 3.2 MAIN TRADING CHART PANEL                       -->
+    <!-- ================================================== -->
+
+    <div class="col-xl-9">
+
+        <div class="card shadow-sm">
+
+
+            <!-- ============================================== -->
+            <!-- SELECTED ASSET HEADER                          -->
+            <!-- ============================================== -->
+
+            <div class="card-body border-bottom">
+
+                <div
+                    class="
+                        d-flex
+                        justify-content-between
+                        align-items-start
+                        flex-wrap
+                        gap-3
+                    "
+                >
+
+
+                    <!-- -------------------------------------- -->
+                    <!-- SYMBOL + PRICE                         -->
+                    <!-- -------------------------------------- -->
+
+                    <div>
+
+                        <div
+                            class="
+                                d-flex
+                                align-items-center
+                                gap-2
+                            "
+                        >
+
+                            <h2
+                                id="selectedAssetSymbol"
+                                class="h3 mb-0"
+                            >
+                                AAPL
+                            </h2>
+
+                            <span
+                                id="selectedAssetExchange"
+                                class="
+                                    badge
+                                    bg-light
+                                    text-dark
+                                    border
+                                "
+                            >
+                                —
+                            </span>
+
+                        </div>
+
+
+                        <div
+                            id="selectedAssetName"
+                            class="text-muted mt-1"
+                        >
+                            Loading asset...
+                        </div>
+
+
+                        <div
+                            class="
+                                d-flex
+                                align-items-baseline
+                                gap-3
+                                mt-2
+                            "
+                        >
+
+                            <div
+                                id="selectedAssetPrice"
+                                class="fs-2 fw-bold"
+                            >
+                                —
+                            </div>
+
+                            <div
+                                id="selectedAssetChange"
+                                class="fw-bold text-muted"
+                            >
+                                —
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- -------------------------------------- -->
+                    <!-- OHLCV                                 -->
+                    <!-- -------------------------------------- -->
+
+                    <div
+                        class="
+                            d-flex
+                            gap-4
+                            flex-wrap
+                            small
+                        "
+                    >
+
+                        <div>
+
+                            <div class="text-muted">
+                                Open
+                            </div>
+
+                            <strong id="selectedAssetOpen">
+                                —
+                            </strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <div class="text-muted">
+                                High
+                            </div>
+
+                            <strong id="selectedAssetHigh">
+                                —
+                            </strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <div class="text-muted">
+                                Low
+                            </div>
+
+                            <strong id="selectedAssetLow">
+                                —
+                            </strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <div class="text-muted">
+                                Previous Close
+                            </div>
+
+                            <strong id="selectedAssetPreviousClose">
+                                —
+                            </strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <div class="text-muted">
+                                Volume
+                            </div>
+
+                            <strong id="selectedAssetVolume">
+                                —
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ============================================== -->
+            <!-- CHART TOOLBAR                                  -->
+            <!-- ============================================== -->
+
+            <div class="card-body border-bottom py-2">
+
+                <div
+                    class="
+                        d-flex
+                        justify-content-between
+                        align-items-center
+                        flex-wrap
+                        gap-2
+                    "
+                >
+
+
+                    <!-- -------------------------------------- -->
+                    <!-- TIME PERIODS                           -->
+                    <!-- -------------------------------------- -->
+
+                    <div
+                        class="btn-group btn-group-sm"
+                        role="group"
+                        aria-label="Chart period"
+                    >
+
+                        <button
+                            type="button"
+                            class="btn btn-outline-secondary period-button"
+                            data-period="1D"
+                        >
+                            1D
+                        </button>
+
+                        <button
+                            type="button"
+                            class="btn btn-outline-secondary period-button"
+                            data-period="5D"
+                        >
+                            5D
+                        </button>
+
+                        <button
+                            type="button"
+                            class="btn btn-primary period-button"
+                            data-period="1M"
+                        >
+                            1M
+                        </button>
+
+                        <button
+                            type="button"
+                            class="btn btn-outline-secondary period-button"
+                            data-period="3M"
+                        >
+                            3M
+                        </button>
+
+                    </div>
+
+
+                    <!-- -------------------------------------- -->
+                    <!-- CHART TYPE SELECTOR                    -->
+                    <!-- -------------------------------------- -->
+
+                    <div
+                        class="
+                            d-flex
+                            align-items-center
+                            gap-2
+                        "
+                    >
+
+                        <label
+                            for="chartTypeSelect"
+                            class="small text-muted"
+                        >
+                            Chart
+                        </label>
+
+                        <select
+                            id="chartTypeSelect"
+                            class="form-select form-select-sm"
+                            style="min-width: 220px;"
+                        >
+
+                            <option value="candlestick">
+                                Candlestick
+                            </option>
+
+                            <option value="line">
+                                Line Chart
+                            </option>
+
+                            <option value="heikin_ashi">
+                                Heikin-Ashi
+                            </option>
+
+                            <option value="volume">
+                                Volume
+                            </option>
+
+                            <option value="volume_profile">
+                                Volume Profile / Market Profile
+                            </option>
+
+                            <option value="futures_curve">
+                                Futures Curve
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ============================================== -->
+            <!-- CHART AREA                                     -->
+            <!-- ============================================== -->
+
+            <div class="card-body">
+
+                <div
+                    class="
+                        d-flex
+                        justify-content-between
+                        align-items-center
+                        flex-wrap
+                        gap-2
+                        mb-2
+                    "
+                >
+
+                    <div>
+
+                        <div class="small text-primary fw-semibold">
+                            PROFESSIONAL CHART
+                        </div>
+
+                        <div
+                            id="chartDescription"
+                            class="small text-muted"
+                        >
+                            Candlestick price action with volume.
+                        </div>
+
+                    </div>
+
+
+                    <div class="small text-muted">
+
+                        <span id="chartProvider">
+                            Alpaca · IEX
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ------------------------------------------ -->
+                <!-- FINANCIAL CHART                           -->
+                <!-- ------------------------------------------ -->
+
+                <div
+                    id="professionalChart"
+                    style="
+                        position: relative;
+                        width: 100%;
+                        height: 520px;
+                        min-height: 520px;
+                    "
+                >
+                </div>
+
+
+                <!-- ------------------------------------------ -->
+                <!-- UNSUPPORTED CHART MESSAGE                 -->
+                <!-- ------------------------------------------ -->
+
+                <div
+                    id="unsupportedChartMessage"
+                    class="alert alert-light border d-none mt-3"
+                >
+                </div>
+
+
+                <div
+                    id="chartStatus"
+                    class="small text-muted mt-2"
+                >
+                    Loading AAPL historical data...
+                </div>
+
+
+                <!-- ------------------------------------------ -->
+                <!-- TRADINGVIEW ATTRIBUTION                   -->
+                <!-- ------------------------------------------ -->
+
+                <div class="small text-muted mt-2">
+
+                    Financial charting interface powered by
+
+                    <a
+                        href="https://www.tradingview.com/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        TradingView Lightweight Charts
+                    </a>.
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- 4. EDITABLE ALERT RULES                                -->
+<!-- ====================================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-body">
+
+
+        <!-- ================================================== -->
+        <!-- 4.1 ALERT HEADER                                  -->
+        <!-- ================================================== -->
+
+        <div
+            class="
+                d-flex
+                justify-content-between
+                align-items-center
+                flex-wrap
+                gap-3
+                mb-3
+            "
+        >
+
+            <div>
+
+                <div class="small text-primary fw-semibold">
+                    MARKET MONITORING
+                </div>
+
+                <h2 class="h4 mb-1">
+                    Alert Rules
+                </h2>
+
+                <p class="small text-muted mb-0">
+                    Create conditions that MarketPulse can
+                    monitor for price, volume and market risk.
+                </p>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="btn btn-primary"
+                data-bs-toggle="modal"
+                data-bs-target="#createAlertRuleModal"
+            >
+                + Add Alert
+            </button>
+
+        </div>
+
+
+        <!-- ================================================== -->
+        <!-- 4.2 ALERT TABLE                                   -->
+        <!-- ================================================== -->
+
+        {% if alert_rules %}
+
+            <div class="table-responsive">
+
+                <table
+                    class="
+                        table
+                        table-hover
+                        align-middle
+                        mb-0
+                    "
+                >
+
+                    <thead class="table-light">
+
+                        <tr>
+
+                            <th>
+                                Symbol
+                            </th>
+
+                            <th>
+                                Metric
+                            </th>
+
+                            <th>
+                                Condition
+                            </th>
+
+                            <th>
+                                Threshold
+                            </th>
+
+                            <th>
+                                Message
+                            </th>
+
+                            <th>
+                                Status
+                            </th>
+
+                            <th class="text-end">
+                                Actions
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for rule in alert_rules %}
+
+                            <tr>
+
+
+                                <!-- -------------------------- -->
+                                <!-- SYMBOL                     -->
+                                <!-- -------------------------- -->
+
+                                <td>
+
+                                    <button
+                                        type="button"
+                                        class="
+                                            btn
+                                            btn-link
+                                            p-0
+                                            fw-bold
+                                            text-decoration-none
+                                            alert-symbol-button
+                                        "
+                                        data-symbol="{{ rule.symbol }}"
+                                    >
+                                        {{ rule.symbol }}
+                                    </button>
+
+                                </td>
+
+
+                                <!-- -------------------------- -->
+                                <!-- METRIC                     -->
+                                <!-- -------------------------- -->
+
+                                <td>
+                                    {{ rule.get_metric_display }}
+                                </td>
+
+
+                                <!-- -------------------------- -->
+                                <!-- CONDITION                  -->
+                                <!-- -------------------------- -->
+
+                                <td>
+
+                                    <span
+                                        class="
+                                            badge
+                                            bg-light
+                                            text-dark
+                                            border
+                                        "
+                                    >
+                                        {{ rule.operator_symbol }}
+                                    </span>
+
+                                </td>
+
+
+                                <!-- -------------------------- -->
+                                <!-- THRESHOLD                  -->
+                                <!-- -------------------------- -->
+
+                                <td>
+
+                                    <strong>
+                                        {{ rule.threshold|floatformat:"-4" }}
+                                    </strong>
+
+                                </td>
+
+
+                                <!-- -------------------------- -->
+                                <!-- MESSAGE                    -->
+                                <!-- -------------------------- -->
+
+                                <td class="small">
+
+                                    {% if rule.message %}
+
+                                        {{ rule.message }}
+
+                                    {% else %}
+
+                                        <span class="text-muted">
+                                            —
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- -------------------------- -->
+                                <!-- STATUS                     -->
+                                <!-- -------------------------- -->
+
+                                <td>
+
+                                    {% if rule.is_enabled %}
+
+                                        <span class="badge bg-success">
+                                            Enabled
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="badge bg-secondary">
+                                            Disabled
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- -------------------------- -->
+                                <!-- ACTIONS                    -->
+                                <!-- -------------------------- -->
+
+                                <td class="text-end">
+
+                                    <div
+                                        class="
+                                            d-flex
+                                            justify-content-end
+                                            gap-1
+                                            flex-wrap
+                                        "
+                                    >
+
+
+                                        <!-- EDIT -->
+
+                                        <button
+                                            type="button"
+                                            class="
+                                                btn
+                                                btn-sm
+                                                btn-outline-primary
+                                            "
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#editAlertRuleModal{{ rule.id }}"
+                                        >
+                                            Edit
+                                        </button>
+
+
+                                        <!-- ENABLE / DISABLE -->
+
+                                        <form
+                                            method="post"
+                                            action="{% url 'alert_rule_toggle' rule.id %}"
+                                        >
+
+                                            {% csrf_token %}
+
+                                            <button
+                                                type="submit"
+                                                class="
+                                                    btn
+                                                    btn-sm
+                                                    btn-outline-secondary
+                                                "
+                                            >
+
+                                                {% if rule.is_enabled %}
+
+                                                    Disable
+
+                                                {% else %}
+
+                                                    Enable
+
+                                                {% endif %}
+
+                                            </button>
+
+                                        </form>
+
+
+                                        <!-- DELETE -->
+
+                                        <form
+                                            method="post"
+                                            action="{% url 'alert_rule_delete' rule.id %}"
+                                            onsubmit="
+                                                return confirm(
+                                                    'Delete this alert rule?'
+                                                );
+                                            "
+                                        >
+
+                                            {% csrf_token %}
+
+                                            <button
+                                                type="submit"
+                                                class="
+                                                    btn
+                                                    btn-sm
+                                                    btn-outline-danger
+                                                "
+                                            >
+                                                Delete
+                                            </button>
+
+                                        </form>
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+        {% else %}
+
+            <div class="alert alert-light border mb-0">
+
+                <strong>
+                    No alert rules yet.
+                </strong>
+
+                Select a market above and create your first
+                configurable MarketPulse alert.
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- 5. CREATE ALERT RULE MODAL                             -->
+<!-- ====================================================== -->
+
+<div
+    class="modal fade"
+    id="createAlertRuleModal"
+    tabindex="-1"
+    aria-hidden="true"
+>
+
+    <div class="modal-dialog modal-lg">
+
+        <div class="modal-content">
+
+            <form
+                method="post"
+                action="{% url 'alert_rule_create' %}"
+            >
+
+                {% csrf_token %}
+
+
+                <div class="modal-header">
+
+                    <h2 class="modal-title h5">
+                        Create Alert Rule
+                    </h2>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                    >
+                    </button>
+
+                </div>
+
+
+                <div class="modal-body">
+
+                    <div class="row g-3">
+
+
+                        <!-- SYMBOL -->
+
+                        <div class="col-md-4">
+
+                            <label
+                                for="createAlertSymbol"
+                                class="form-label"
+                            >
+                                Symbol
+                            </label>
+
+                            <input
+                                type="text"
+                                id="createAlertSymbol"
+                                name="symbol"
+                                class="form-control"
+                                value="AAPL"
+                                required
+                            >
+
+                        </div>
+
+
+                        <!-- METRIC -->
+
+                        <div class="col-md-4">
+
+                            <label class="form-label">
+                                Metric
+                            </label>
+
+                            <select
+                                name="metric"
+                                class="form-select"
+                                required
+                            >
+
+                                <option value="price">
+                                    Price
+                                </option>
+
+                                <option value="volume">
+                                    Volume
+                                </option>
+
+                                <option value="percent_change">
+                                    Percent Change
+                                </option>
+
+                                <option value="volatility">
+                                    Volatility
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <!-- OPERATOR -->
+
+                        <div class="col-md-4">
+
+                            <label class="form-label">
+                                Operator
+                            </label>
+
+                            <select
+                                name="operator"
+                                class="form-select"
+                                required
+                            >
+
+                                <option value="gt">
+                                    Greater Than (&gt;)
+                                </option>
+
+                                <option value="gte">
+                                    Greater Than or Equal (≥)
+                                </option>
+
+                                <option value="lt">
+                                    Less Than (&lt;)
+                                </option>
+
+                                <option value="lte">
+                                    Less Than or Equal (≤)
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <!-- THRESHOLD -->
+
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+                                Threshold
+                            </label>
+
+                            <input
+                                type="number"
+                                name="threshold"
+                                class="form-control"
+                                step="0.000001"
+                                required
+                            >
+
+                        </div>
+
+
+                        <!-- COOLDOWN -->
+
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+                                Cooldown (minutes)
+                            </label>
+
+                            <input
+                                type="number"
+                                name="cooldown_minutes"
+                                class="form-control"
+                                value="60"
+                                min="1"
+                                required
+                            >
+
+                        </div>
+
+
+                        <!-- MESSAGE -->
+
+                        <div class="col-12">
+
+                            <label class="form-label">
+                                Alert Message
+                            </label>
+
+                            <input
+                                type="text"
+                                name="message"
+                                class="form-control"
+                                placeholder="Example: AAPL has moved above my review level"
+                            >
+
+                        </div>
+
+
+                        <!-- ENABLED -->
+
+                        <div class="col-12">
+
+                            <div class="form-check">
+
+                                <input
+                                    type="checkbox"
+                                    name="is_enabled"
+                                    class="form-check-input"
+                                    id="createAlertEnabled"
+                                    checked
+                                >
+
+                                <label
+                                    class="form-check-label"
+                                    for="createAlertEnabled"
+                                >
+                                    Enable this rule immediately
+                                </label>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        Create Alert
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- 6. EDIT ALERT RULE MODALS                              -->
+<!-- ====================================================== -->
+
+{% for rule in alert_rules %}
+
+<div
+    class="modal fade"
+    id="editAlertRuleModal{{ rule.id }}"
+    tabindex="-1"
+    aria-hidden="true"
+>
+
+    <div class="modal-dialog modal-lg">
+
+        <div class="modal-content">
+
+            <form
+                method="post"
+                action="{% url 'alert_rule_edit' rule.id %}"
+            >
+
+                {% csrf_token %}
+
+
+                <div class="modal-header">
+
+                    <h2 class="modal-title h5">
+                        Edit {{ rule.symbol }} Alert
+                    </h2>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                    >
+                    </button>
+
+                </div>
+
+
+                <div class="modal-body">
+
+                    <div class="row g-3">
+
+
+                        <!-- SYMBOL -->
+
+                        <div class="col-md-4">
+
+                            <label class="form-label">
+                                Symbol
+                            </label>
+
+                            <input
+                                type="text"
+                                name="symbol"
+                                class="form-control"
+                                value="{{ rule.symbol }}"
+                                required
+                            >
+
+                        </div>
+
+
+                        <!-- METRIC -->
+
+                        <div class="col-md-4">
+
+                            <label class="form-label">
+                                Metric
+                            </label>
+
+                            <select
+                                name="metric"
+                                class="form-select"
+                                required
+                            >
+
+                                <option
+                                    value="price"
+                                    {% if rule.metric == "price" %}selected{% endif %}
+                                >
+                                    Price
+                                </option>
+
+                                <option
+                                    value="volume"
+                                    {% if rule.metric == "volume" %}selected{% endif %}
+                                >
+                                    Volume
+                                </option>
+
+                                <option
+                                    value="percent_change"
+                                    {% if rule.metric == "percent_change" %}selected{% endif %}
+                                >
+                                    Percent Change
+                                </option>
+
+                                <option
+                                    value="volatility"
+                                    {% if rule.metric == "volatility" %}selected{% endif %}
+                                >
+                                    Volatility
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <!-- OPERATOR -->
+
+                        <div class="col-md-4">
+
+                            <label class="form-label">
+                                Operator
+                            </label>
+
+                            <select
+                                name="operator"
+                                class="form-select"
+                                required
+                            >
+
+                                <option
+                                    value="gt"
+                                    {% if rule.operator == "gt" %}selected{% endif %}
+                                >
+                                    Greater Than (&gt;)
+                                </option>
+
+                                <option
+                                    value="gte"
+                                    {% if rule.operator == "gte" %}selected{% endif %}
+                                >
+                                    Greater Than or Equal (≥)
+                                </option>
+
+                                <option
+                                    value="lt"
+                                    {% if rule.operator == "lt" %}selected{% endif %}
+                                >
+                                    Less Than (&lt;)
+                                </option>
+
+                                <option
+                                    value="lte"
+                                    {% if rule.operator == "lte" %}selected{% endif %}
+                                >
+                                    Less Than or Equal (≤)
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <!-- THRESHOLD -->
+
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+                                Threshold
+                            </label>
+
+                            <input
+                                type="number"
+                                name="threshold"
+                                class="form-control"
+                                value="{{ rule.threshold }}"
+                                step="0.000001"
+                                required
+                            >
+
+                        </div>
+
+
+                        <!-- COOLDOWN -->
+
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+                                Cooldown (minutes)
+                            </label>
+
+                            <input
+                                type="number"
+                                name="cooldown_minutes"
+                                class="form-control"
+                                value="{{ rule.cooldown_minutes }}"
+                                min="1"
+                                required
+                            >
+
+                        </div>
+
+
+                        <!-- MESSAGE -->
+
+                        <div class="col-12">
+
+                            <label class="form-label">
+                                Message
+                            </label>
+
+                            <input
+                                type="text"
+                                name="message"
+                                class="form-control"
+                                value="{{ rule.message }}"
+                            >
+
+                        </div>
+
+
+                        <!-- ENABLED -->
+
+                        <div class="col-12">
+
+                            <div class="form-check">
+
+                                <input
+                                    type="checkbox"
+                                    name="is_enabled"
+                                    class="form-check-input"
+                                    id="editEnabled{{ rule.id }}"
+                                    {% if rule.is_enabled %}checked{% endif %}
+                                >
+
+                                <label
+                                    class="form-check-label"
+                                    for="editEnabled{{ rule.id }}"
+                                >
+                                    Alert enabled
+                                </label>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        Save Changes
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endfor %}
+
+
+<!-- ====================================================== -->
+<!-- 7. MARKETPULSE SUMMARY                                 -->
+<!-- ====================================================== -->
+
+<div class="row g-3 mb-4">
+
+
+    <div class="col-md-3">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body">
+
+                <div class="small text-muted">
+                    ACTIVE STRATEGIES
+                </div>
+
+                <div class="fs-3 fw-bold">
+                    {{ active_strategy_count }}
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="col-md-3">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body">
+
+                <div class="small text-muted">
+                    BACKTESTS
+                </div>
+
+                <div class="fs-3 fw-bold">
+                    {{ backtest_count }}
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="col-md-3">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body">
+
+                <div class="small text-muted">
+                    ACTIVE ALERT RULES
+                </div>
+
+                <div class="fs-3 fw-bold">
+                    {{ enabled_alert_rule_count|default:"0" }}
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="col-md-3">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body">
+
+                <div class="small text-muted">
+                    HISTORICAL ROWS
+                </div>
+
+                <div class="fs-3 fw-bold">
+                    {{ market_data_count }}
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- 8. EDUCATIONAL NOTICE                                  -->
+<!-- ====================================================== -->
+
+<div class="alert alert-light border">
+
+    <strong>
+        Educational project:
+    </strong>
+
+    MarketPulse provides simulated financial analysis and
+    market-data visualisation. It is not investment advice.
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- 9. TRADINGVIEW LIGHTWEIGHT CHARTS                      -->
+<!-- ====================================================== -->
+
+<script
+    src="https://unpkg.com/lightweight-charts@5.2.1/dist/lightweight-charts.standalone.production.js"
+></script>
+
+
+<!-- ====================================================== -->
+<!-- 10. MARKET WORKSPACE JAVASCRIPT                        -->
+<!-- ====================================================== -->
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+
+        // ====================================================
+        // 10.1 WORKSPACE STATE
+        // ====================================================
+
+        let selectedSymbol =
+            "AAPL";
+
+
+        let selectedPeriod =
+            "1M";
+
+
+        let selectedChartType =
+            "candlestick";
+
+
+        let chartInstance =
+            null;
+
+
+        let searchTimer =
+            null;
+
+
+        let currentHistory =
+            [];
+
+
+        // ====================================================
+        // 10.2 GENERAL HELPERS
+        // ====================================================
+
+        function setText(
+            id,
+            value
+        ) {
+
+            const element =
+                document.getElementById(
+                    id
+                );
+
+
+            if (element) {
+
+                element.textContent =
+                    value;
+
+            }
+
+        }
+
+
+        function money(
+            value
+        ) {
+
+            const number =
+                Number(
+                    value
+                );
+
+
+            if (
+                !Number.isFinite(
+                    number
+                )
+            ) {
+
+                return "—";
+
+            }
+
+
+            return (
+                "$"
+                +
+                number.toFixed(
+                    2
+                )
+            );
+
+        }
+
+
+        function percent(
+            value
+        ) {
+
+            const number =
+                Number(
+                    value
+                );
+
+
+            if (
+                !Number.isFinite(
+                    number
+                )
+            ) {
+
+                return "—";
+
+            }
+
+
+            return (
+                (
+                    number >= 0
+                    ?
+                    "+"
+                    :
+                    ""
+                )
+                +
+                number.toFixed(
+                    2
+                )
+                +
+                "%"
+            );
+
+        }
+
+
+        function formatVolume(
+            value
+        ) {
+
+            const number =
+                Number(
+                    value
+                );
+
+
+            if (
+                !Number.isFinite(
+                    number
+                )
+            ) {
+
+                return "—";
+
+            }
+
+
+            if (
+                number >= 1000000000
+            ) {
+
+                return (
+                    (
+                        number
+                        /
+                        1000000000
+                    )
+                    .toFixed(
+                        2
+                    )
+                    +
+                    "B"
+                );
+
+            }
+
+
+            if (
+                number >= 1000000
+            ) {
+
+                return (
+                    (
+                        number
+                        /
+                        1000000
+                    )
+                    .toFixed(
+                        2
+                    )
+                    +
+                    "M"
+                );
+
+            }
+
+
+            if (
+                number >= 1000
+            ) {
+
+                return (
+                    (
+                        number
+                        /
+                        1000
+                    )
+                    .toFixed(
+                        1
+                    )
+                    +
+                    "K"
+                );
+
+            }
+
+
+            return (
+                number.toLocaleString()
+            );
+
+        }
+
+
+        function localDateTime(
+            value
+        ) {
+
+            if (!value) {
+
+                return "—";
+
+            }
+
+
+            const date =
+                new Date(
+                    value
+                );
+
+
+            if (
+                Number.isNaN(
+                    date.getTime()
+                )
+            ) {
+
+                return value;
+
+            }
+
+
+            return (
+                date.toLocaleString()
+            );
+
+        }
+
+
+        // ====================================================
+        // 10.3 MARKET CLOCK
+        // ====================================================
+
+        async function loadMarketClock() {
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/api/dashboard/market-overview/?symbol=SPY&period=1M",
+                        {
+                            credentials:
+                                "same-origin",
+
+                            headers: {
+                                "Accept":
+                                    "application/json"
+                            }
+                        }
+                    );
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        "Market status request failed."
+                    );
+
+                }
+
+
+                const data =
+                    await response.json();
+
+
+                const clock =
+                    data.market_clock
+                    ||
+                    {};
+
+
+                if (
+                    clock.available
+                    &&
+                    clock.is_open
+                ) {
+
+                    setText(
+                        "marketStatus",
+                        "● US Market Open"
+                    );
+
+
+                    setText(
+                        "marketNextEvent",
+                        (
+                            "Next close: "
+                            +
+                            localDateTime(
+                                clock.next_close
+                            )
+                        )
+                    );
+
+                }
+
+
+                else if (
+                    clock.available
+                ) {
+
+                    setText(
+                        "marketStatus",
+                        "○ US Market Closed"
+                    );
+
+
+                    setText(
+                        "marketNextEvent",
+                        (
+                            "Next open: "
+                            +
+                            localDateTime(
+                                clock.next_open
+                            )
+                        )
+                    );
+
+                }
+
+
+                else {
+
+                    setText(
+                        "marketStatus",
+                        "Market status unavailable"
+                    );
+
+                }
+
+
+                setText(
+                    "marketUpdatedAt",
+                    localDateTime(
+                        data.updated_at
+                    )
+                );
+
+            }
+
+
+            catch (
+                error
+            ) {
+
+                console.error(
+                    error
+                );
+
+
+                setText(
+                    "marketStatus",
+                    "Market status unavailable"
+                );
+
+            }
+
+        }
+
+
+        // ====================================================
+        // 10.4 UPDATE SELECTED ASSET VISUAL STATE
+        // ====================================================
+
+        function highlightSelectedAsset() {
+
+            document
+                .querySelectorAll(
+                    ".asset-select-button"
+                )
+                .forEach(
+                    function (
+                        button
+                    ) {
+
+                        button.classList.remove(
+                            "active"
+                        );
+
+
+                        if (
+                            button.dataset.symbol
+                            ===
+                            selectedSymbol
+                        ) {
+
+                            button.classList.add(
+                                "active"
+                            );
+
+                        }
+
+                    }
+                );
+
+
+            const createAlertSymbol =
+                document.getElementById(
+                    "createAlertSymbol"
+                );
+
+
+            if (
+                createAlertSymbol
+            ) {
+
+                createAlertSymbol.value =
+                    selectedSymbol;
+
+            }
+
+        }
+
+
+        // ====================================================
+        // 10.5 LOAD SELECTED ASSET
+        // ====================================================
+
+        async function loadSelectedAsset() {
+
+            highlightSelectedAsset();
+
+
+            setText(
+                "selectedAssetSymbol",
+                selectedSymbol
+            );
+
+
+            setText(
+                "selectedAssetName",
+                "Loading asset..."
+            );
+
+
+            setText(
+                "chartStatus",
+                (
+                    "Loading "
+                    +
+                    selectedSymbol
+                    +
+                    " market data..."
+                )
+            );
+
+
+            try {
+
+                const snapshotUrl =
+                    (
+                        "/api/alpaca/stocks/"
+                        +
+                        encodeURIComponent(
+                            selectedSymbol
+                        )
+                        +
+                        "/snapshot/"
+                    );
+
+
+                const historyUrl =
+                    (
+                        "/api/alpaca/stocks/"
+                        +
+                        encodeURIComponent(
+                            selectedSymbol
+                        )
+                        +
+                        "/history/?period="
+                        +
+                        encodeURIComponent(
+                            selectedPeriod
+                        )
+                    );
+
+
+                const results =
+                    await Promise.all(
+                        [
+
+                            fetch(
+                                snapshotUrl,
+                                {
+                                    credentials:
+                                        "same-origin",
+
+                                    headers: {
+                                        "Accept":
+                                            "application/json"
+                                    }
+                                }
+                            ),
+
+                            fetch(
+                                historyUrl,
+                                {
+                                    credentials:
+                                        "same-origin",
+
+                                    headers: {
+                                        "Accept":
+                                            "application/json"
+                                    }
+                                }
+                            )
+
+                        ]
+                    );
+
+
+                const snapshotResponse =
+                    results[0];
+
+
+                const historyResponse =
+                    results[1];
+
+
+                if (
+                    !snapshotResponse.ok
+                ) {
+
+                    throw new Error(
+                        "Asset snapshot could not be loaded."
+                    );
+
+                }
+
+
+                if (
+                    !historyResponse.ok
+                ) {
+
+                    throw new Error(
+                        "Historical market data could not be loaded."
+                    );
+
+                }
+
+
+                const snapshotData =
+                    await snapshotResponse.json();
+
+
+                const historyData =
+                    await historyResponse.json();
+
+
+                updateSelectedAssetHeader(
+                    snapshotData
+                );
+
+
+                currentHistory =
+                    (
+                        historyData.history
+                        &&
+                        Array.isArray(
+                            historyData.history.points
+                        )
+                    )
+                    ?
+                    historyData.history.points
+                    :
+                    [];
+
+
+                renderProfessionalChart();
+
+            }
+
+
+            catch (
+                error
+            ) {
+
+                console.error(
+                    error
+                );
+
+
+                setText(
+                    "selectedAssetName",
+                    "Market data unavailable"
+                );
+
+
+                setText(
+                    "chartStatus",
+                    error.message
+                );
+
+            }
+
+        }
+
+
+        // ====================================================
+        // 10.6 UPDATE ASSET HEADER
+        // ====================================================
+
+        function updateSelectedAssetHeader(
+            data
+        ) {
+
+            const asset =
+                data.asset
+                ||
+                {};
+
+
+            const snapshot =
+                data.snapshot
+                ||
+                {};
+
+
+            const dailyBar =
+                snapshot.daily_bar
+                ||
+                {};
+
+
+            setText(
+                "selectedAssetSymbol",
+                (
+                    asset.symbol
+                    ||
+                    selectedSymbol
+                )
+            );
+
+
+            setText(
+                "selectedAssetName",
+                (
+                    asset.name
+                    ||
+                    selectedSymbol
+                )
+            );
+
+
+            setText(
+                "selectedAssetExchange",
+                (
+                    asset.exchange
+                    ||
+                    "US"
+                )
+            );
+
+
+            setText(
+                "selectedAssetPrice",
+                money(
+                    snapshot.latest_price
+                )
+            );
+
+
+            const changeElement =
+                document.getElementById(
+                    "selectedAssetChange"
+                );
+
+
+            const change =
+                Number(
+                    snapshot.daily_change_pct
+                );
+
+
+            if (
+                changeElement
+            ) {
+
+                changeElement.textContent =
+                    percent(
+                        change
+                    );
+
+
+                changeElement.classList.remove(
+                    "text-success",
+                    "text-danger",
+                    "text-muted"
+                );
+
+
+                changeElement.classList.add(
+                    (
+                        Number.isFinite(
+                            change
+                        )
+                        ?
+                        (
+                            change >= 0
+                            ?
+                            "text-success"
+                            :
+                            "text-danger"
+                        )
+                        :
+                        "text-muted"
+                    )
+                );
+
+            }
+
+
+            setText(
+                "selectedAssetOpen",
+                money(
+                    dailyBar.open
+                )
+            );
+
+
+            setText(
+                "selectedAssetHigh",
+                money(
+                    dailyBar.high
+                )
+            );
+
+
+            setText(
+                "selectedAssetLow",
+                money(
+                    dailyBar.low
+                )
+            );
+
+
+            setText(
+                "selectedAssetPreviousClose",
+                money(
+                    snapshot.previous_close
+                )
+            );
+
+
+            setText(
+                "selectedAssetVolume",
+                formatVolume(
+                    dailyBar.volume
+                )
+            );
+
+        }
+
+
+        // ====================================================
+        // 10.7 HEIKIN-ASHI CALCULATION
+        // ====================================================
+
+        function buildHeikinAshi(
+            source
+        ) {
+
+            const result =
+                [];
+
+
+            let previousOpen =
+                null;
+
+
+            let previousClose =
+                null;
+
+
+            source.forEach(
+                function (
+                    bar,
+                    index
+                ) {
+
+                    const open =
+                        Number(
+                            bar.open
+                        );
+
+
+                    const high =
+                        Number(
+                            bar.high
+                        );
+
+
+                    const low =
+                        Number(
+                            bar.low
+                        );
+
+
+                    const close =
+                        Number(
+                            bar.close
+                        );
+
+
+                    if (
+                        !Number.isFinite(
+                            open
+                        )
+                        ||
+                        !Number.isFinite(
+                            high
+                        )
+                        ||
+                        !Number.isFinite(
+                            low
+                        )
+                        ||
+                        !Number.isFinite(
+                            close
+                        )
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    const heikinClose =
+                        (
+                            open
+                            +
+                            high
+                            +
+                            low
+                            +
+                            close
+                        )
+                        /
+                        4;
+
+
+                    let heikinOpen;
+
+
+                    if (
+                        index === 0
+                        ||
+                        previousOpen === null
+                        ||
+                        previousClose === null
+                    ) {
+
+                        heikinOpen =
+                            (
+                                open
+                                +
+                                close
+                            )
+                            /
+                            2;
+
+                    }
+
+
+                    else {
+
+                        heikinOpen =
+                            (
+                                previousOpen
+                                +
+                                previousClose
+                            )
+                            /
+                            2;
+
+                    }
+
+
+                    const heikinHigh =
+                        Math.max(
+                            high,
+                            heikinOpen,
+                            heikinClose
+                        );
+
+
+                    const heikinLow =
+                        Math.min(
+                            low,
+                            heikinOpen,
+                            heikinClose
+                        );
+
+
+                    result.push(
+                        {
+                            time:
+                                bar.date,
+
+                            open:
+                                heikinOpen,
+
+                            high:
+                                heikinHigh,
+
+                            low:
+                                heikinLow,
+
+                            close:
+                                heikinClose
+                        }
+                    );
+
+
+                    previousOpen =
+                        heikinOpen;
+
+
+                    previousClose =
+                        heikinClose;
+
+                }
+            );
+
+
+            return result;
+
+        }
+
+
+        // ====================================================
+        // 10.8 DESTROY OLD CHART
+        // ====================================================
+
+        function destroyProfessionalChart() {
+
+            if (
+                chartInstance
+            ) {
+
+                chartInstance.remove();
+
+                chartInstance =
+                    null;
+
+            }
+
+
+            const container =
+                document.getElementById(
+                    "professionalChart"
+                );
+
+
+            if (
+                container
+            ) {
+
+                container.innerHTML =
+                    "";
+
+            }
+
+        }
+
+
+        // ====================================================
+        // 10.9 RENDER PROFESSIONAL CHART
+        // ====================================================
+
+        function renderProfessionalChart() {
+
+            destroyProfessionalChart();
+
+
+            const container =
+                document.getElementById(
+                    "professionalChart"
+                );
+
+
+            const message =
+                document.getElementById(
+                    "unsupportedChartMessage"
+                );
+
+
+            if (!container) {
+
+                return;
+
+            }
+
+
+            if (
+                message
+            ) {
+
+                message.classList.add(
+                    "d-none"
+                );
+
+
+                message.textContent =
+                    "";
+
+            }
+
+
+            // ------------------------------------------------
+            // VOLUME PROFILE
+            // ------------------------------------------------
+            //
+            // A genuine Volume Profile normally requires
+            // materially finer price/volume observations than
+            // our current daily OHLCV feed.
+            // ------------------------------------------------
+
+            if (
+                selectedChartType
+                ===
+                "volume_profile"
+            ) {
+
+                if (
+                    message
+                ) {
+
+                    message.textContent =
+                        (
+                            "Volume Profile is available in the "
+                            +
+                            "interface but requires intraday or "
+                            +
+                            "trade-level volume-at-price data "
+                            +
+                            "for a defensible implementation. "
+                            +
+                            "MarketPulse will not manufacture "
+                            +
+                            "a false profile from daily bars."
+                        );
+
+
+                    message.classList.remove(
+                        "d-none"
+                    );
+
+                }
+
+
+                setText(
+                    "chartDescription",
+                    (
+                        "Volume Profile / Market Profile "
+                        +
+                        "requires higher-resolution market data."
+                    )
+                );
+
+
+                setText(
+                    "chartStatus",
+                    "Volume Profile data requirements not yet available."
+                );
+
+
+                return;
+
+            }
+
+
+            // ------------------------------------------------
+            // FUTURES CURVE
+            // ------------------------------------------------
+            //
+            // Futures curves require multiple dated futures
+            // contracts, not equity OHLCV.
+            // ------------------------------------------------
+
+            if (
+                selectedChartType
+                ===
+                "futures_curve"
+            ) {
+
+                if (
+                    message
+                ) {
+
+                    message.textContent =
+                        (
+                            "A Futures Curve requires futures "
+                            +
+                            "contracts across different expiry "
+                            +
+                            "dates. The current MarketPulse "
+                            +
+                            "Alpaca equity feed provides stocks "
+                            +
+                            "and ETFs, so this chart will be "
+                            +
+                            "enabled when a futures data source "
+                            +
+                            "is integrated."
+                        );
+
+
+                    message.classList.remove(
+                        "d-none"
+                    );
+
+                }
+
+
+                setText(
+                    "chartDescription",
+                    (
+                        "Term structure of futures prices "
+                        +
+                        "across contract maturities."
+                    )
+                );
+
+
+                setText(
+                    "chartStatus",
+                    "Futures contract data source required."
+                );
+
+
+                return;
+
+            }
+
+
+            if (
+                typeof LightweightCharts
+                ===
+                "undefined"
+            ) {
+
+                setText(
+                    "chartStatus",
+                    "The financial chart library could not be loaded."
+                );
+
+
+                return;
+
+            }
+
+
+            if (
+                !currentHistory.length
+            ) {
+
+                setText(
+                    "chartStatus",
+                    (
+                        "No historical bars were returned "
+                        +
+                        "for "
+                        +
+                        selectedSymbol
+                        +
+                        "."
+                    )
+                );
+
+
+                return;
+
+            }
+
+
+            // =================================================
+            // CREATE CHART
+            // =================================================
+
+            chartInstance =
+                LightweightCharts.createChart(
+                    container,
+                    {
+
+                        autoSize:
+                            true,
+
+                        layout: {
+
+                            background: {
+                                type:
+                                    "solid",
+
+                                color:
+                                    "#ffffff"
+                            },
+
+                            textColor:
+                                "#5f6368"
+
+                        },
+
+
+                        grid: {
+
+                            vertLines: {
+                                color:
+                                    "#eef1f5"
+                            },
+
+                            horzLines: {
+                                color:
+                                    "#eef1f5"
+                            }
+
+                        },
+
+
+                        rightPriceScale: {
+
+                            borderColor:
+                                "#dfe3e8"
+
+                        },
+
+
+                        timeScale: {
+
+                            borderColor:
+                                "#dfe3e8",
+
+                            timeVisible:
+                                selectedPeriod === "1D"
+                                ||
+                                selectedPeriod === "5D",
+
+                            secondsVisible:
+                                false
+
+                        },
+
+                    }
+                );
+
+
+            // =================================================
+            // NORMALISED OHLC DATA
+            // =================================================
+
+            const candleData =
+                currentHistory
+
+                .filter(
+                    function (
+                        bar
+                    ) {
+
+                        return (
+                            bar.date
+                            &&
+                            Number.isFinite(
+                                Number(
+                                    bar.open
+                                )
+                            )
+                            &&
+                            Number.isFinite(
+                                Number(
+                                    bar.high
+                                )
+                            )
+                            &&
+                            Number.isFinite(
+                                Number(
+                                    bar.low
+                                )
+                            )
+                            &&
+                            Number.isFinite(
+                                Number(
+                                    bar.close
+                                )
+                            )
+                        );
+
+                    }
+                )
+
+                .map(
+                    function (
+                        bar
+                    ) {
+
+                        return {
+
+                            time:
+                                bar.date,
+
+                            open:
+                                Number(
+                                    bar.open
+                                ),
+
+                            high:
+                                Number(
+                                    bar.high
+                                ),
+
+                            low:
+                                Number(
+                                    bar.low
+                                ),
+
+                            close:
+                                Number(
+                                    bar.close
+                                )
+
+                        };
+
+                    }
+                );
+
+
+            // =================================================
+            // CANDLESTICK
+            // =================================================
+
+            if (
+                selectedChartType
+                ===
+                "candlestick"
+            ) {
+
+                const candleSeries =
+                    chartInstance.addSeries(
+                        LightweightCharts.CandlestickSeries,
+                        {
+                            upColor:
+                                "#198754",
+
+                            downColor:
+                                "#dc3545",
+
+                            wickUpColor:
+                                "#198754",
+
+                            wickDownColor:
+                                "#dc3545",
+
+                            borderVisible:
+                                false
+                        }
+                    );
+
+
+                candleSeries.setData(
+                    candleData
+                );
+
+
+                // ---------------------------------------------
+                // VOLUME OVERLAY
+                // ---------------------------------------------
+
+                const volumeSeries =
+                    chartInstance.addSeries(
+                        LightweightCharts.HistogramSeries,
+                        {
+
+                            priceFormat: {
+                                type:
+                                    "volume"
+                            },
+
+                            priceScaleId:
+                                ""
+
+                        }
+                    );
+
+
+                volumeSeries
+                    .priceScale()
+                    .applyOptions(
+                        {
+
+                            scaleMargins: {
+                                top:
+                                    0.80,
+
+                                bottom:
+                                    0
+                            }
+
+                        }
+                    );
+
+
+                volumeSeries.setData(
+                    currentHistory.map(
+                        function (
+                            bar
+                        ) {
+
+                            return {
+
+                                time:
+                                    bar.date,
+
+                                value:
+                                    Number(
+                                        bar.volume
+                                        ||
+                                        0
+                                    ),
+
+                                color:
+                                    (
+                                        Number(
+                                            bar.close
+                                        )
+                                        >=
+                                        Number(
+                                            bar.open
+                                        )
+                                        ?
+                                        "rgba(25,135,84,0.35)"
+                                        :
+                                        "rgba(220,53,69,0.35)"
+                                    )
+
+                            };
+
+                        }
+                    )
+                );
+
+
+                setText(
+                    "chartDescription",
+                    (
+                        "Candlestick price action with "
+                        +
+                        "trading volume."
+                    )
+                );
+
+            }
+
+
+            // =================================================
+            // LINE
+            // =================================================
+
+            else if (
+                selectedChartType
+                ===
+                "line"
+            ) {
+
+                const lineSeries =
+                    chartInstance.addSeries(
+                        LightweightCharts.LineSeries,
+                        {
+
+                            lineWidth:
+                                2
+
+                        }
+                    );
+
+
+                lineSeries.setData(
+                    currentHistory.map(
+                        function (
+                            bar
+                        ) {
+
+                            return {
+
+                                time:
+                                    bar.date,
+
+                                value:
+                                    Number(
+                                        bar.close
+                                    )
+
+                            };
+
+                        }
+                    )
+                );
+
+
+                setText(
+                    "chartDescription",
+                    (
+                        "Closing-price line chart for "
+                        +
+                        "macro trend analysis."
+                    )
+                );
+
+            }
+
+
+            // =================================================
+            // HEIKIN-ASHI
+            // =================================================
+
+            else if (
+                selectedChartType
+                ===
+                "heikin_ashi"
+            ) {
+
+                const heikinSeries =
+                    chartInstance.addSeries(
+                        LightweightCharts.CandlestickSeries,
+                        {
+
+                            upColor:
+                                "#198754",
+
+                            downColor:
+                                "#dc3545",
+
+                            wickUpColor:
+                                "#198754",
+
+                            wickDownColor:
+                                "#dc3545",
+
+                            borderVisible:
+                                false
+
+                        }
+                    );
+
+
+                heikinSeries.setData(
+                    buildHeikinAshi(
+                        currentHistory
+                    )
+                );
+
+
+                setText(
+                    "chartDescription",
+                    (
+                        "Heikin-Ashi candles smooth ordinary "
+                        +
+                        "OHLC price action to make trend "
+                        +
+                        "direction easier to observe."
+                    )
+                );
+
+            }
+
+
+            // =================================================
+            // VOLUME
+            // =================================================
+
+            else if (
+                selectedChartType
+                ===
+                "volume"
+            ) {
+
+                const volumeSeries =
+                    chartInstance.addSeries(
+                        LightweightCharts.HistogramSeries,
+                        {
+
+                            priceFormat: {
+                                type:
+                                    "volume"
+                            }
+
+                        }
+                    );
+
+
+                volumeSeries.setData(
+                    currentHistory.map(
+                        function (
+                            bar
+                        ) {
+
+                            return {
+
+                                time:
+                                    bar.date,
+
+                                value:
+                                    Number(
+                                        bar.volume
+                                        ||
+                                        0
+                                    ),
+
+                                color:
+                                    (
+                                        Number(
+                                            bar.close
+                                        )
+                                        >=
+                                        Number(
+                                            bar.open
+                                        )
+                                        ?
+                                        "#198754"
+                                        :
+                                        "#dc3545"
+                                    )
+
+                            };
+
+                        }
+                    )
+                );
+
+
+                setText(
+                    "chartDescription",
+                    (
+                        "Trading volume by market session."
+                    )
+                );
+
+            }
+
+
+            // =================================================
+            // FIT CHART TO AVAILABLE DATA
+            // =================================================
+
+            chartInstance
+                .timeScale()
+                .fitContent();
+
+
+            setText(
+                "chartStatus",
+                (
+                    currentHistory.length
+                    +
+                    " "
+                    +
+                    selectedPeriod
+                    +
+                    " market observations loaded for "
+                    +
+                    selectedSymbol
+                    +
+                    " from Alpaca · IEX."
+                )
+            );
+
+        }
+
+
+        // ====================================================
+        // 10.10 SEARCH ALPACA ASSETS
+        // ====================================================
+
+        async function searchAssets(
+            query
+        ) {
+
+            const resultsContainer =
+                document.getElementById(
+                    "assetSearchResults"
+                );
+
+
+            const popularSection =
+                document.getElementById(
+                    "popularAssetsSection"
+                );
+
+
+            if (!resultsContainer) {
+
+                return;
+
+            }
+
+
+            if (
+                query.length < 1
+            ) {
+
+                resultsContainer.innerHTML =
+                    "";
+
+
+                if (
+                    popularSection
+                ) {
+
+                    popularSection.classList.remove(
+                        "d-none"
+                    );
+
+                }
+
+
+                setText(
+                    "assetSearchMessage",
+                    "Search by ticker or company name."
+                );
+
+
+                return;
+
+            }
+
+
+            if (
+                popularSection
+            ) {
+
+                popularSection.classList.add(
+                    "d-none"
+                );
+
+            }
+
+
+            setText(
+                "assetSearchMessage",
+                "Searching Alpaca..."
+            );
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        (
+                            "/api/alpaca/assets/search/?q="
+                            +
+                            encodeURIComponent(
+                                query
+                            )
+                        ),
+                        {
+
+                            credentials:
+                                "same-origin",
+
+                            headers: {
+                                "Accept":
+                                    "application/json"
+                            }
+
+                        }
+                    );
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        "Search failed."
+                    );
+
+                }
+
+
+                const data =
+                    await response.json();
+
+
+                resultsContainer.innerHTML =
+                    "";
+
+
+                const results =
+                    data.results
+                    ||
+                    [];
+
+
+                if (
+                    results.length === 0
+                ) {
+
+                    setText(
+                        "assetSearchMessage",
+                        "No matching Alpaca assets found."
+                    );
+
+
+                    return;
+
+                }
+
+
+                setText(
+                    "assetSearchMessage",
+                    (
+                        results.length
+                        +
+                        " matching asset(s)"
+                    )
+                );
+
+
+                results.forEach(
+                    function (
+                        asset
+                    ) {
+
+                        const button =
+                            document.createElement(
+                                "button"
+                            );
+
+
+                        button.type =
+                            "button";
+
+
+                        button.className =
+                            (
+                                "list-group-item "
+                                +
+                                "list-group-item-action"
+                            );
+
+
+                        const row =
+                            document.createElement(
+                                "div"
+                            );
+
+
+                        row.className =
+                            (
+                                "d-flex "
+                                +
+                                "justify-content-between "
+                                +
+                                "align-items-start"
+                            );
+
+
+                        const left =
+                            document.createElement(
+                                "div"
+                            );
+
+
+                        const symbol =
+                            document.createElement(
+                                "div"
+                            );
+
+
+                        symbol.className =
+                            "fw-bold";
+
+
+                        symbol.textContent =
+                            asset.symbol;
+
+
+                        const name =
+                            document.createElement(
+                                "div"
+                            );
+
+
+                        name.className =
+                            "small text-muted";
+
+
+                        name.textContent =
+                            (
+                                asset.name
+                                ||
+                                ""
+                            );
+
+
+                        left.appendChild(
+                            symbol
+                        );
+
+
+                        left.appendChild(
+                            name
+                        );
+
+
+                        const exchange =
+                            document.createElement(
+                                "span"
+                            );
+
+
+                        exchange.className =
+                            (
+                                "badge "
+                                +
+                                "bg-light "
+                                +
+                                "text-dark "
+                                +
+                                "border"
+                            );
+
+
+                        exchange.textContent =
+                            (
+                                asset.exchange
+                                ||
+                                "US"
+                            );
+
+
+                        row.appendChild(
+                            left
+                        );
+
+
+                        row.appendChild(
+                            exchange
+                        );
+
+
+                        button.appendChild(
+                            row
+                        );
+
+
+                        button.addEventListener(
+                            "click",
+                            function () {
+
+                                selectedSymbol =
+                                    asset.symbol;
+
+
+                                const searchInput =
+                                    document.getElementById(
+                                        "assetSearchInput"
+                                    );
+
+
+                                if (
+                                    searchInput
+                                ) {
+
+                                    searchInput.value =
+                                        "";
+
+                                }
+
+
+                                resultsContainer.innerHTML =
+                                    "";
+
+
+                                if (
+                                    popularSection
+                                ) {
+
+                                    popularSection.classList.remove(
+                                        "d-none"
+                                    );
+
+                                }
+
+
+                                loadSelectedAsset();
+
+                            }
+                        );
+
+
+                        resultsContainer.appendChild(
+                            button
+                        );
+
+                    }
+                );
+
+            }
+
+
+            catch (
+                error
+            ) {
+
+                console.error(
+                    error
+                );
+
+
+                setText(
+                    "assetSearchMessage",
+                    "Asset search is currently unavailable."
+                );
+
+            }
+
+        }
+
+
+        // ====================================================
+        // 10.11 SEARCH EVENT
+        // ====================================================
+
+        const searchInput =
+            document.getElementById(
+                "assetSearchInput"
+            );
+
+
+        if (
+            searchInput
+        ) {
+
+            searchInput.addEventListener(
+                "input",
+                function () {
+
+                    clearTimeout(
+                        searchTimer
+                    );
+
+
+                    const query =
+                        searchInput
+                        .value
+                        .trim();
+
+
+                    searchTimer =
+                        setTimeout(
+                            function () {
+
+                                searchAssets(
+                                    query
+                                );
+
+                            },
+                            300
+                        );
+
+                }
+            );
+
+        }
+
+
+        // ====================================================
+        // 10.12 QUICK ASSET BUTTONS
+        // ====================================================
+
+        document
+            .querySelectorAll(
+                ".asset-select-button"
+            )
+            .forEach(
+                function (
+                    button
+                ) {
+
+                    button.addEventListener(
+                        "click",
+                        function () {
+
+                            selectedSymbol =
+                                button.dataset.symbol;
+
+
+                            loadSelectedAsset();
+
+                        }
+                    );
+
+                }
+            );
+
+
+        // ====================================================
+        // 10.13 ALERT SYMBOL BUTTONS
+        // ====================================================
+
+        document
+            .querySelectorAll(
+                ".alert-symbol-button"
+            )
+            .forEach(
+                function (
+                    button
+                ) {
+
+                    button.addEventListener(
+                        "click",
+                        function () {
+
+                            selectedSymbol =
+                                button.dataset.symbol;
+
+
+                            loadSelectedAsset();
+
+
+                            window.scrollTo(
+                                {
+                                    top:
+                                        0,
+
+                                    behavior:
+                                        "smooth"
+                                }
+                            );
+
+                        }
+                    );
+
+                }
+            );
+
+
+        // ====================================================
+        // 10.14 PERIOD BUTTONS
+        // ====================================================
+
+        document
+            .querySelectorAll(
+                ".period-button"
+            )
+            .forEach(
+                function (
+                    button
+                ) {
+
+                    button.addEventListener(
+                        "click",
+                        function () {
+
+                            selectedPeriod =
+                                button.dataset.period;
+
+
+                            document
+                                .querySelectorAll(
+                                    ".period-button"
+                                )
+                                .forEach(
+                                    function (
+                                        other
+                                    ) {
+
+                                        other.classList.remove(
+                                            "btn-primary"
+                                        );
+
+
+                                        other.classList.add(
+                                            "btn-outline-secondary"
+                                        );
+
+                                    }
+                                );
+
+
+                            button.classList.remove(
+                                "btn-outline-secondary"
+                            );
+
+
+                            button.classList.add(
+                                "btn-primary"
+                            );
+
+
+                            loadSelectedAsset();
+
+                        }
+                    );
+
+                }
+            );
+
+
+        // ====================================================
+        // 10.15 CHART TYPE SELECTOR
+        // ====================================================
+
+        const chartTypeSelect =
+            document.getElementById(
+                "chartTypeSelect"
+            );
+
+
+        if (
+            chartTypeSelect
+        ) {
+
+            chartTypeSelect.addEventListener(
+                "change",
+                function () {
+
+                    selectedChartType =
+                        chartTypeSelect.value;
+
+
+                    renderProfessionalChart();
+
+                }
+            );
+
+        }
+
+
+        // ====================================================
+        // 10.16 REFRESH WORKSPACE
+        // ====================================================
+
+        const refreshButton =
+            document.getElementById(
+                "refreshWorkspaceButton"
+            );
+
+
+        if (
+            refreshButton
+        ) {
+
+            refreshButton.addEventListener(
+                "click",
+                function () {
+
+                    loadMarketClock();
+
+                    loadSelectedAsset();
+
+                }
+            );
+
+        }
+
+
+        // ====================================================
+        // 10.17 INITIAL LOAD
+        // ====================================================
+
+        loadMarketClock();
+
+        loadSelectedAsset();
+
+
+        // ====================================================
+        // 10.18 AUTOMATIC MARKET CLOCK REFRESH
+        // ====================================================
+
+        window.setInterval(
+            loadMarketClock,
+            60000
+        );
+
+    }
+);
+
+</script>
+
+{% endblock %}

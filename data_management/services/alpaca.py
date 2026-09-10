@@ -58,7 +58,13 @@ variables.
 # 1. STANDARD LIBRARY IMPORTS
 # ============================================================
 
-from datetime import timedelta
+from datetime import (
+    date,
+    datetime,
+    time,
+    timedelta,
+    timezone as datetime_timezone,
+)
 
 from urllib.parse import quote
 
@@ -2320,21 +2326,48 @@ def get_chart_history(
     period="1M",
 ):
     """
-    ------------------------------------------------------------
-    GET DASHBOARD PRICE-CHART HISTORY
-    ------------------------------------------------------------
+    ============================================================
+    MARKETPULSE - DASHBOARD CHART HISTORY
+    ============================================================
 
-    Supported periods:
+    Framework mapping:
 
-        1D
-        5D
-        1M
-        3M
+    Dashboard
+        ↓
+    API dashboard market overview
+        ↓
+    get_chart_history()
+        ↓
+    get_historical_bars()
+        ↓
+    Alpaca Historical Market Data API
+        ↓
+    Normalised OHLCV observations
+        ↓
+    Chart.js
 
-    MarketPulse chooses a sensible Alpaca timeframe for each
-    period so the graph remains readable.
-    ------------------------------------------------------------
+
+    PURPOSE:
+
+    Retrieve a useful historical price series for the
+    Dashboard graph.
+
+    IMPORTANT:
+
+    30 calendar days are NOT the same as 30 trading sessions.
+
+    Weekends and exchange holidays contain no daily bars.
+
+    Therefore MarketPulse requests a wider calendar window and
+    then keeps the latest required number of actual trading
+    observations.
+    ============================================================
     """
+
+
+    # ========================================================
+    # 25.1 NORMALISE SYMBOL
+    # ========================================================
 
     symbol = (
         symbol
@@ -2344,11 +2377,22 @@ def get_chart_history(
 
 
     symbol = (
-        str(symbol)
+        str(
+            symbol
+        )
         .strip()
         .upper()
     )
 
+
+    if not symbol:
+
+        symbol = "SPY"
+
+
+    # ========================================================
+    # 25.2 NORMALISE PERIOD
+    # ========================================================
 
     period = (
         period
@@ -2358,45 +2402,103 @@ def get_chart_history(
 
 
     period = (
-        str(period)
+        str(
+            period
+        )
         .strip()
         .upper()
     )
 
 
+    # ========================================================
+    # 25.3 PERIOD CONFIGURATION
+    # ========================================================
+
     period_config = {
 
+
+        # ----------------------------------------------------
+        # ONE-DAY / RECENT INTRADAY VIEW
+        # ----------------------------------------------------
+
         "1D": {
-            "days":
-                1,
 
-            "timeframe":
-                "5Min",
-        },
-
-        "5D": {
-            "days":
+            "calendar_days":
                 7,
 
             "timeframe":
-                "30Min",
+                "5Min",
+
+            "max_points":
+                120,
+
+            "date_only":
+                False,
         },
 
-        "1M": {
-            "days":
-                35,
+
+        # ----------------------------------------------------
+        # FIVE-DAY VIEW
+        # ----------------------------------------------------
+
+        "5D": {
+
+            "calendar_days":
+                14,
 
             "timeframe":
-                "1Day",
-        },
+                "30Min",
 
-        "3M": {
-            "days":
+            "max_points":
                 100,
 
+            "date_only":
+                False,
+        },
+
+
+        # ----------------------------------------------------
+        # 30 TRADING SESSIONS
+        # ----------------------------------------------------
+        #
+        # MarketPulse requests 60 calendar days because
+        # weekends and market holidays do not produce bars.
+
+        "1M": {
+
+            "calendar_days":
+                60,
+
             "timeframe":
                 "1Day",
+
+            "max_points":
+                30,
+
+            "date_only":
+                True,
         },
+
+
+        # ----------------------------------------------------
+        # APPROXIMATELY THREE MONTHS
+        # ----------------------------------------------------
+
+        "3M": {
+
+            "calendar_days":
+                140,
+
+            "timeframe":
+                "1Day",
+
+            "max_points":
+                70,
+
+            "date_only":
+                True,
+        },
+
     }
 
 
@@ -2417,90 +2519,206 @@ def get_chart_history(
         )
 
 
-    end_time = (
-        timezone.now()
-    )
+    # ========================================================
+    # 25.4 BUILD ALPACA DATE RANGE
+    # ========================================================
+
+    if config[
+        "date_only"
+    ]:
+
+        # Daily bars work cleanly with YYYY-MM-DD dates.
+        #
+        # Adding one day to today's date creates a safe
+        # inclusive upper boundary for the latest completed
+        # trading session.
+
+        end_value = (
+            timezone.localdate()
+            +
+            timedelta(
+                days=1
+            )
+        )
 
 
-    start_time = (
-        end_time
-        -
-        timedelta(
-            days=config[
-                "days"
-            ]
+        start_value = (
+            end_value
+            -
+            timedelta(
+                days=config[
+                    "calendar_days"
+                ]
+            )
+        )
+
+
+    else:
+
+        # Intraday data requires datetime values.
+
+        end_value = (
+            timezone.now()
+        )
+
+
+        start_value = (
+            end_value
+            -
+            timedelta(
+                days=config[
+                    "calendar_days"
+                ]
+            )
+        )
+
+
+    # ========================================================
+    # 25.5 REQUEST HISTORICAL BARS FROM ALPACA
+    # ========================================================
+
+    bars = (
+        get_historical_bars(
+            symbol=symbol,
+            start_date=start_value,
+            end_date=end_value,
+            timeframe=config[
+                "timeframe"
+            ],
+            adjustment="raw",
         )
     )
 
 
-    bars = get_historical_bars(
-        symbol=symbol,
-        start_date=start_time,
-        end_date=end_time,
-        timeframe=config[
-            "timeframe"
-        ],
-        adjustment="raw",
+    # ========================================================
+    # 25.6 KEEP THE LATEST REQUIRED OBSERVATIONS
+    # ========================================================
+
+    max_points = (
+        config[
+            "max_points"
+        ]
     )
 
+
+    if (
+        max_points
+        and
+        len(
+            bars
+        )
+        >
+        max_points
+    ):
+
+        bars = (
+            bars[
+                -max_points:
+            ]
+        )
+
+
+    # ========================================================
+    # 25.7 BUILD CHART.JS POINTS
+    # ========================================================
 
     chart_points = []
 
 
     for bar in bars:
 
-        if (
+        timestamp = (
             bar.get(
                 "timestamp"
             )
-            and
+        )
+
+
+        close_price = (
             bar.get(
                 "close"
             )
-            is not None
-        ):
+        )
 
-            chart_points.append(
-                {
-                    "timestamp":
-                        bar.get(
-                            "timestamp"
-                        ),
 
-                    "date":
-                        bar.get(
-                            "date"
-                        ),
+        # Chart.js cannot plot a useful price observation when
+        # either the timestamp or close price is missing.
+        if not timestamp:
 
-                    "open":
-                        bar.get(
-                            "open"
-                        ),
+            continue
 
-                    "high":
-                        bar.get(
-                            "high"
-                        ),
 
-                    "low":
-                        bar.get(
-                            "low"
-                        ),
+        if close_price is None:
 
-                    "close":
-                        bar.get(
-                            "close"
-                        ),
+            continue
 
-                    "volume":
-                        bar.get(
-                            "volume"
-                        ),
-                }
-            )
 
+        chart_points.append(
+            {
+
+                "timestamp":
+                    timestamp,
+
+                "date":
+                    bar.get(
+                        "date"
+                    ),
+
+                "open":
+                    bar.get(
+                        "open"
+                    ),
+
+                "high":
+                    bar.get(
+                        "high"
+                    ),
+
+                "low":
+                    bar.get(
+                        "low"
+                    ),
+
+                "close":
+                    close_price,
+
+                "volume":
+                    bar.get(
+                        "volume"
+                    ),
+
+            }
+        )
+
+
+    # ========================================================
+    # 25.8 BUILD USER-FRIENDLY STATUS MESSAGE
+    # ========================================================
+
+    if chart_points:
+
+        message = (
+            f"{len(chart_points)} historical "
+            f"{config['timeframe']} bars were returned "
+            f"from Alpaca."
+        )
+
+
+    else:
+
+        message = (
+            "Alpaca returned no historical bars "
+            f"for {symbol} using the "
+            f"{_data_feed().upper()} feed."
+        )
+
+
+    # ========================================================
+    # 25.9 RETURN DASHBOARD CHART DATA
+    # ========================================================
 
     return {
+
         "symbol":
             symbol,
 
@@ -2519,6 +2737,30 @@ def get_chart_history(
             _data_feed()
             .upper(),
 
+        "requested_start":
+            (
+                start_value.isoformat()
+                if hasattr(
+                    start_value,
+                    "isoformat",
+                )
+                else str(
+                    start_value
+                )
+            ),
+
+        "requested_end":
+            (
+                end_value.isoformat()
+                if hasattr(
+                    end_value,
+                    "isoformat",
+                )
+                else str(
+                    end_value
+                )
+            ),
+
         "points":
             chart_points,
 
@@ -2526,9 +2768,15 @@ def get_chart_history(
             len(
                 chart_points
             ),
+
+        "has_data":
+            bool(
+                chart_points
+            ),
+
+        "message":
+            message,
     }
-
-
 # ============================================================
 # 26. TEST ALPACA CONNECTION
 # ============================================================

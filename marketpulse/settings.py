@@ -695,7 +695,7 @@ BOOTSTRAP5 = {
 
 ALPACA_API_KEY_ID = config(
     "ALPACA_API_KEY_ID",
-    default="PKNUISCSVQQPNLFD07NDPVGT4",
+    default="PKBCNWDEXMY7YVBM3CQ4GON7TC",
 ).strip()
 
 
@@ -705,7 +705,7 @@ ALPACA_API_KEY_ID = config(
 
 ALPACA_API_SECRET_KEY = config(
     "ALPACA_API_SECRET_KEY",
-    default="DGHo6depce7e8xXCGBnJfo8pDnoNzzfFi9oivWhm6bDW",
+    default="B3Etu4RCt3pTg2F8KoZ8iUoc2QohRKQwch6QgonN5AMe",
 ).strip()
 
 

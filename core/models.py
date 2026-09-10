@@ -53,7 +53,25 @@ Risk Calculations
 Stress Testing
 
 
-ALERT WORKFLOW:
+CONFIGURABLE ALERT WORKFLOW:
+
+User
+    ↓
+Dashboard
+    ↓
+AlertRule
+    ↓
+MarketPulse monitors:
+    Price / Volume / % Change / Volatility
+    ↓
+Rule condition becomes true
+    ↓
+Alert.create_or_update()
+    ↓
+Dashboard notification
+
+
+ALERT EVENT WORKFLOW:
 
 MarketPulse detects a condition
     ↓
@@ -70,6 +88,15 @@ User investigates the issue
 Alert.resolve()
     ↓
 Alert remains stored for history
+
+
+IMPORTANT DISTINCTION:
+
+AlertRule
+    Defines WHAT MarketPulse should monitor.
+
+Alert
+    Records WHAT happened or what requires attention.
 
 
 IMPORTANT:
@@ -97,8 +124,8 @@ Risk
 # ============================================================
 
 # settings is used so ForeignKey relationships point to
-# Django's configured user model instead of hard-coding
-# a particular User class.
+# Django's configured user model instead of hard-coding a
+# particular User class.
 from django.conf import settings
 
 
@@ -108,7 +135,7 @@ from django.db import models
 
 
 # timezone provides timezone-aware timestamps when alerts are
-# resolved.
+# resolved or triggered.
 from django.utils import timezone
 
 
@@ -548,8 +575,10 @@ class Alert(TimeStampedModel):
 
         "Is there something the user should investigate?"
 
-    Alerts should therefore represent meaningful conditions
-    rather than ordinary information.
+    An Alert represents an EVENT or NOTIFICATION.
+
+    AlertRule, defined later in this file, represents the user's
+    configurable monitoring condition.
 
     Examples:
 
@@ -569,6 +598,9 @@ class Alert(TimeStampedModel):
 
     MARKET CONDITION
         A significant change in market behaviour was detected.
+
+    PRICE
+        A configurable AlertRule price threshold was reached.
 
     SYSTEM
         Alpaca market information could not be retrieved.
@@ -638,6 +670,30 @@ class Alert(TimeStampedModel):
         ),
 
     ]
+
+
+    # ========================================================
+    # 6.2.1 BACKWARD-COMPATIBLE ALERT TYPE ALIAS
+    # ========================================================
+
+    # Some earlier MarketPulse views referred to the alert
+    # choices using:
+    #
+    #     Alert.ALERT_TYPES
+    #
+    # The canonical collection in this model is TYPES.
+    #
+    # Keeping this alias prevents older code from failing while
+    # allowing new code to use either:
+    #
+    #     Alert.TYPES
+    #
+    # or preferably:
+    #
+    #     Alert._meta.get_field("alert_type").choices
+    #
+    # No additional database field is created by this alias.
+    ALERT_TYPES = TYPES
 
 
     # ========================================================
@@ -741,6 +797,8 @@ class Alert(TimeStampedModel):
     #
     # ALPACA_CONNECTION
     #
+    # ALERT_RULE_15
+    #
     # This prevents the Dashboard from creating another copy of
     # the same active warning every time the page is refreshed.
     alert_key = models.CharField(
@@ -756,14 +814,6 @@ class Alert(TimeStampedModel):
 
     # action_url allows an alert to direct the user to the part
     # of MarketPulse where the problem can be investigated.
-    #
-    # Examples:
-    #
-    # /data/import/?symbol=AAPL
-    #
-    # /strategy/robustness/
-    #
-    # /risk/stress-test/results/
     action_url = models.CharField(
         max_length=500,
         blank=True,
@@ -777,14 +827,6 @@ class Alert(TimeStampedModel):
     # Optional JSON metadata can preserve values related to the
     # detected condition without requiring a new database field
     # for every possible alert type.
-    #
-    # Example:
-    #
-    # {
-    #     "symbol": "AAPL",
-    #     "days_old": 4,
-    #     "provider": "Alpaca"
-    # }
     metadata = models.JSONField(
         default=dict,
         blank=True,
@@ -839,19 +881,6 @@ class Alert(TimeStampedModel):
             #
             # One user should not have multiple active alerts
             # representing exactly the same condition.
-            #
-            # Example:
-            #
-            # user1
-            # +
-            # DATA_STALE_AAPL
-            # +
-            # active
-            #
-            # may only exist once.
-            #
-            # Once an alert has been resolved, the same condition
-            # can generate a new active alert in the future.
             models.UniqueConstraint(
                 fields=[
                     "user",
@@ -907,20 +936,9 @@ class Alert(TimeStampedModel):
         Create one active alert or update the existing active
         alert representing the same condition.
 
-        This is important for the Dashboard because automatic
-        checks may run many times.
+        Automatic checks may run repeatedly.
 
-        Without this helper:
-
-            Refresh Dashboard
-                ↓
-            Alert created
-
-            Refresh Dashboard again
-                ↓
-            Duplicate alert created
-
-        With this helper:
+        Instead of creating duplicate alerts:
 
             Condition detected
                 ↓
@@ -928,9 +946,6 @@ class Alert(TimeStampedModel):
                 ↓
             YES → update it
             NO  → create it
-
-        The user's is_read status is deliberately preserved when
-        an existing alert is updated.
         """
 
 
@@ -950,12 +965,6 @@ class Alert(TimeStampedModel):
             metadata = {}
 
 
-        # update_or_create looks for an already-active alert
-        # belonging to this user and condition.
-        #
-        # If one exists, its descriptive information is updated.
-        #
-        # If one does not exist, Django creates a new record.
         alert, created = (
             cls.objects.update_or_create(
 
@@ -1012,23 +1021,7 @@ class Alert(TimeStampedModel):
         """
         Resolve an active alert using its stable alert key.
 
-        This is useful for automatic checks.
-
-        Example:
-
-        AAPL was stale
-            ↓
-        DATA_STALE_AAPL created
-
-        Data refreshed
-            ↓
-        resolve_by_key(
-            user=user,
-            alert_key="DATA_STALE_AAPL"
-        )
-
-        The database record remains available as historical
-        evidence that the condition previously occurred.
+        The record remains in PostgreSQL as historical evidence.
         """
 
 
@@ -1085,7 +1078,7 @@ class Alert(TimeStampedModel):
         Resolve this particular alert.
 
         The record remains in PostgreSQL so MarketPulse
-        preserves an alert history instead of deleting it.
+        preserves alert history instead of deleting it.
         """
 
         if self.is_active:
@@ -1114,10 +1107,6 @@ class Alert(TimeStampedModel):
         """
         Reopen this alert record if the same condition becomes
         relevant again.
-
-        Normally automatic Dashboard logic should use
-        create_or_update(), but this helper remains useful for
-        manually reopening a specific historical record.
         """
 
         self.is_active = True
@@ -1144,9 +1133,7 @@ class Alert(TimeStampedModel):
     @property
     def is_resolved(self):
         """
-        Convenience property used by templates and views.
-
-        Returns True when the alert is no longer active.
+        Return True when the alert is no longer active.
         """
 
         return (
@@ -1161,14 +1148,7 @@ class Alert(TimeStampedModel):
     @property
     def bootstrap_class(self):
         """
-        Return a Bootstrap-compatible class name for the alert
-        severity.
-
-        This allows templates to use:
-
-            alert-{{ alert.bootstrap_class }}
-
-        rather than containing repeated severity mapping logic.
+        Return a Bootstrap-compatible severity class.
         """
 
         mapping = {
@@ -1209,4 +1189,554 @@ class Alert(TimeStampedModel):
 
         return bool(
             self.action_url
+        )
+
+
+# ============================================================
+# 7. ALERT RULE
+# ============================================================
+
+class AlertRule(TimeStampedModel):
+    """
+    ============================================================
+    MARKETPULSE - CONFIGURABLE ALERT RULE
+    ============================================================
+
+    PURPOSE:
+
+    AlertRule stores a market condition configured by a user.
+
+    It answers:
+
+        "What should MarketPulse monitor for me?"
+
+
+    EXAMPLES:
+
+    PRICE ABOVE:
+
+        Symbol:
+            AAPL
+
+        Metric:
+            Price
+
+        Operator:
+            Greater Than
+
+        Threshold:
+            260
+
+
+    PRICE BELOW:
+
+        SPY
+        Price
+        Less Than
+        730
+
+
+    VOLUME:
+
+        QQQ
+        Volume
+        Greater Than
+        100000000
+
+
+    PERCENTAGE MOVE:
+
+        IWM
+        Percent Change
+        Less Than
+        -3
+
+
+    VOLATILITY:
+
+        SPY
+        Volatility
+        Greater Than
+        25
+
+
+    WORKFLOW:
+
+    Dashboard
+        ↓
+    User creates AlertRule
+        ↓
+    PostgreSQL
+        ↓
+    MarketPulse evaluates market information
+        ↓
+    Condition TRUE?
+        ↓
+    Alert.create_or_update()
+        ↓
+    Dashboard notification
+
+
+    IMPORTANT:
+
+    AlertRule and Alert are intentionally separate.
+
+    AlertRule
+        = user configuration
+
+    Alert
+        = generated event / notification
+    ============================================================
+    """
+
+
+    # ========================================================
+    # 7.1 METRIC CONSTANTS
+    # ========================================================
+
+    METRIC_PRICE = "price"
+
+    METRIC_VOLUME = "volume"
+
+    METRIC_PERCENT_CHANGE = "percent_change"
+
+    METRIC_VOLATILITY = "volatility"
+
+
+    # ========================================================
+    # 7.2 METRIC CHOICES
+    # ========================================================
+
+    METRICS = [
+
+        (
+            METRIC_PRICE,
+            "Price",
+        ),
+
+        (
+            METRIC_VOLUME,
+            "Volume",
+        ),
+
+        (
+            METRIC_PERCENT_CHANGE,
+            "Percent Change",
+        ),
+
+        (
+            METRIC_VOLATILITY,
+            "Volatility",
+        ),
+
+    ]
+
+
+    # ========================================================
+    # 7.3 OPERATOR CONSTANTS
+    # ========================================================
+
+    OPERATOR_GREATER_THAN = "gt"
+
+    OPERATOR_GREATER_EQUAL = "gte"
+
+    OPERATOR_LESS_THAN = "lt"
+
+    OPERATOR_LESS_EQUAL = "lte"
+
+
+    # ========================================================
+    # 7.4 OPERATOR CHOICES
+    # ========================================================
+
+    OPERATORS = [
+
+        (
+            OPERATOR_GREATER_THAN,
+            "Greater Than",
+        ),
+
+        (
+            OPERATOR_GREATER_EQUAL,
+            "Greater Than or Equal",
+        ),
+
+        (
+            OPERATOR_LESS_THAN,
+            "Less Than",
+        ),
+
+        (
+            OPERATOR_LESS_EQUAL,
+            "Less Than or Equal",
+        ),
+
+    ]
+
+
+    # ========================================================
+    # 7.5 USER
+    # ========================================================
+
+    # Every rule belongs to exactly one authenticated
+    # MarketPulse user.
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="marketpulse_alert_rules",
+    )
+
+
+    # ========================================================
+    # 7.6 MARKET SYMBOL
+    # ========================================================
+
+    # Examples:
+    #
+    # AAPL
+    # MSFT
+    # SPY
+    # QQQ
+    # DIA
+    # IWM
+    symbol = models.CharField(
+        max_length=20,
+        db_index=True,
+        help_text=(
+            "US equity or ETF symbol monitored by this rule."
+        ),
+    )
+
+
+    # ========================================================
+    # 7.7 METRIC
+    # ========================================================
+
+    # Defines which market quantity is monitored.
+    metric = models.CharField(
+        max_length=30,
+        choices=METRICS,
+        default=METRIC_PRICE,
+    )
+
+
+    # ========================================================
+    # 7.8 COMPARISON OPERATOR
+    # ========================================================
+
+    # Examples:
+    #
+    # gt
+    #     Price > threshold
+    #
+    # gte
+    #     Price >= threshold
+    #
+    # lt
+    #     Price < threshold
+    #
+    # lte
+    #     Price <= threshold
+    operator = models.CharField(
+        max_length=10,
+        choices=OPERATORS,
+        default=OPERATOR_GREATER_THAN,
+    )
+
+
+    # ========================================================
+    # 7.9 THRESHOLD
+    # ========================================================
+
+    # DecimalField is used rather than FloatField because some
+    # alert thresholds represent financial values.
+    threshold = models.DecimalField(
+        max_digits=20,
+        decimal_places=6,
+        help_text=(
+            "Numeric threshold used when evaluating the rule."
+        ),
+    )
+
+
+    # ========================================================
+    # 7.10 OPTIONAL USER MESSAGE
+    # ========================================================
+
+    # Example:
+    #
+    # "AAPL has broken above my target level."
+    message = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text=(
+            "Optional explanation displayed when the rule "
+            "creates an alert."
+        ),
+    )
+
+
+    # ========================================================
+    # 7.11 ENABLE / DISABLE
+    # ========================================================
+
+    # A disabled rule remains stored but MarketPulse should not
+    # evaluate it until the user enables it again.
+    is_enabled = models.BooleanField(
+        default=True,
+        db_index=True,
+    )
+
+
+    # ========================================================
+    # 7.12 COOLDOWN
+    # ========================================================
+
+    # Prevent repeated alerts from being generated every time
+    # the market-data refresh runs while a condition remains
+    # true.
+    #
+    # Example:
+    #
+    # cooldown_minutes = 60
+    #
+    # means the rule cannot generate another notification for
+    # at least one hour after being triggered.
+    cooldown_minutes = models.PositiveIntegerField(
+        default=60,
+        help_text=(
+            "Minimum number of minutes before this rule may "
+            "trigger another alert."
+        ),
+    )
+
+
+    # ========================================================
+    # 7.13 LAST TRIGGERED TIME
+    # ========================================================
+
+    # This is nullable because a newly created rule may never
+    # have triggered.
+    last_triggered_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+
+    # ========================================================
+    # 7.14 DATABASE CONFIGURATION
+    # ========================================================
+
+    class Meta:
+
+        # Enabled rules appear first.
+        #
+        # Rules are then grouped by symbol and metric.
+        ordering = [
+
+            "-is_enabled",
+
+            "symbol",
+
+            "metric",
+
+            "-created_at",
+
+        ]
+
+
+        # This index makes common rule-monitoring queries more
+        # efficient:
+        #
+        # AlertRule.objects.filter(
+        #     user=user,
+        #     symbol="SPY",
+        #     is_enabled=True,
+        # )
+        indexes = [
+
+            models.Index(
+                fields=[
+                    "user",
+                    "symbol",
+                    "is_enabled",
+                ],
+            ),
+
+        ]
+
+
+    # ========================================================
+    # 7.15 NORMALISE SYMBOL BEFORE SAVING
+    # ========================================================
+
+    def save(
+        self,
+        *args,
+        **kwargs,
+    ):
+        """
+        Store symbols consistently in uppercase.
+
+        Examples:
+
+            aapl
+                ↓
+            AAPL
+
+            spy
+                ↓
+            SPY
+
+        This avoids separate database records being treated as
+        different assets merely because of letter casing.
+        """
+
+
+        self.symbol = (
+
+            str(
+                self.symbol
+                or
+                ""
+            )
+
+            .strip()
+
+            .upper()
+
+        )
+
+
+        super().save(
+            *args,
+            **kwargs,
+        )
+
+
+    # ========================================================
+    # 7.16 OPERATOR SYMBOL
+    # ========================================================
+
+    @property
+    def operator_symbol(self):
+        """
+        Convert the database-friendly operator into a
+        user-friendly mathematical symbol.
+
+        Examples:
+
+            gt
+                ↓
+            >
+
+            gte
+                ↓
+            ≥
+        """
+
+
+        symbols = {
+
+            self.OPERATOR_GREATER_THAN:
+                ">",
+
+            self.OPERATOR_GREATER_EQUAL:
+                "≥",
+
+            self.OPERATOR_LESS_THAN:
+                "<",
+
+            self.OPERATOR_LESS_EQUAL:
+                "≤",
+
+        }
+
+
+        return (
+            symbols.get(
+                self.operator,
+                self.operator,
+            )
+        )
+
+
+    # ========================================================
+    # 7.17 CONDITION DISPLAY
+    # ========================================================
+
+    @property
+    def condition_display(self):
+        """
+        Return a concise human-readable rule.
+
+        Example:
+
+            Price > 260.000000
+        """
+
+
+        return (
+
+            f"{self.get_metric_display()} "
+            f"{self.operator_symbol} "
+            f"{self.threshold}"
+
+        )
+
+
+    # ========================================================
+    # 7.18 RULE ACTIVE / PAUSED LABEL
+    # ========================================================
+
+    @property
+    def status_display(self):
+        """
+        Return a user-friendly rule status for templates.
+        """
+
+
+        if self.is_enabled:
+
+            return "Active"
+
+
+        return "Paused"
+
+
+    # ========================================================
+    # 7.19 HAS TRIGGERED
+    # ========================================================
+
+    @property
+    def has_triggered(self):
+        """
+        Return True when this rule has generated at least one
+        alert event.
+        """
+
+
+        return (
+            self.last_triggered_at
+            is not None
+        )
+
+
+    # ========================================================
+    # 7.20 STRING REPRESENTATION
+    # ========================================================
+
+    def __str__(self):
+        """
+        Example:
+
+            SPY: Price > 800.000000
+        """
+
+
+        return (
+
+            f"{self.symbol}: "
+            f"{self.condition_display}"
+
         )

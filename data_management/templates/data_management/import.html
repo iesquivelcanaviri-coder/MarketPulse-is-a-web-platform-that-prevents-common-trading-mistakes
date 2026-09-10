@@ -3,7 +3,7 @@
 
 {% comment %}
 ============================================================
-MARKETPULSE - MARKET DATA & MODEL LAB
+MARKETPULSE - MARKET DATA WORKSPACE
 ============================================================
 
 MAIN DATA FLOW:
@@ -14,7 +14,7 @@ data_management
     ↓
 core.MarketData
     ↓
-Historical OHLCV Database
+Historical Open, High, Low, Close and Volume Database
     ↓
 This Data Workspace
 
@@ -29,9 +29,13 @@ analysis_tools/analyzers.py
     ↓
 Market Regime Analysis
     ↓
-Data tab
+MarketRegime
     ↓
-User-friendly "Market Condition" result
+Data Workspace
+    ↓
+Compact latest-result summary
+    ↓
+Dedicated Market Condition workspace
 
 
 STRATEGY / MODEL LIBRARY FLOW:
@@ -48,44 +52,40 @@ strategy_categories
     ↓
 This template
     ↓
-User selects a quantitative model
+User selects quantitative model
     ↓
 Model details are displayed
 
 
 PURPOSE:
 
-The Data tab answers the question:
+The Data tab answers:
 
-"What is happening in the market data?"
+"What historical market data do I have,
+what can I understand from it,
+and where can I use it?"
 
-The user can:
 
-- Import historical market data
-- Inspect imported datasets
-- Review OHLCV observations
-- Understand the historical date range
-- Analyse the current market condition
-- Identify trending / falling / sideways / volatile behaviour
-- Select quantitative models for an imported dataset
-- Review model requirements and parameters
-- Review recent imports
+USER WORKFLOW:
+
+1. Import historical market data
+2. Select a stored dataset
+3. Review dataset coverage
+4. Optionally open Market Condition analysis
+5. Select a quantitative model
+6. Inspect stored historical observations
 
 
 ANALYTICS RESPONSIBILITIES:
 
 Data
-    → Market Condition / Regime Analysis
+    → Market Condition / Market Regime Analysis
 
 Strategies
     → Strategy Robustness / Overfitting Analysis
 
 Risk
     → Stress Testing
-
-
-This keeps the MarketPulse navigation clean and gives each
-advanced analytical tool a clear purpose.
 
 ============================================================
 {% endcomment %}
@@ -96,53 +96,1270 @@ Market Data | MarketPulse
 {% endblock %}
 
 
+{% block extra_css %}
+
+<style>
+
+/* ======================================================== */
+/* MARKETPULSE DATA WORKSPACE                               */
+/* ======================================================== */
+
+
+/* -------------------------------------------------------- */
+/* 1. PAGE FOUNDATION                                       */
+/* -------------------------------------------------------- */
+
+.data-workspace {
+    --data-blue: #0d6efd;
+    --data-blue-dark: #0a58ca;
+    --data-blue-soft: #edf5ff;
+
+    --data-text: #172033;
+    --data-muted: #667085;
+
+    --data-border: #e3e9f1;
+    --data-background: #f6f8fc;
+
+    --data-success: #168654;
+    --data-success-soft: #e8f8ef;
+
+    --data-warning: #a16207;
+    --data-warning-soft: #fff8e6;
+
+    color: var(--data-text);
+}
+
+
+.data-workspace a {
+    text-decoration: none;
+}
+
+
+/* -------------------------------------------------------- */
+/* 2. PAGE HEADER                                           */
+/* -------------------------------------------------------- */
+
+.data-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+
+    gap: 1.5rem;
+
+    margin-bottom: 1.5rem;
+}
+
+
+.data-page-title {
+    margin: 0 0 .4rem;
+
+    font-size: clamp(2rem, 4vw, 2.7rem);
+    line-height: 1.05;
+
+    font-weight: 750;
+    letter-spacing: -.035em;
+}
+
+
+.data-page-subtitle {
+    max-width: 820px;
+
+    margin: 0;
+
+    color: var(--data-muted);
+
+    font-size: .98rem;
+    line-height: 1.55;
+}
+
+
+/* -------------------------------------------------------- */
+/* 3. COMMON PANELS                                         */
+/* -------------------------------------------------------- */
+
+.data-panel {
+    margin-bottom: 1.5rem;
+
+    padding: 1.5rem;
+
+    background: #ffffff;
+
+    border: 1px solid var(--data-border);
+    border-radius: 16px;
+
+    box-shadow:
+        0 8px 24px
+        rgba(16, 24, 40, .045);
+}
+
+
+.data-panel-compact {
+    padding: 1.05rem 1.25rem;
+}
+
+
+.data-section-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+
+    gap: 1rem;
+
+    margin-bottom: 1.25rem;
+}
+
+
+.data-section-heading {
+    display: flex;
+    align-items: flex-start;
+
+    gap: .9rem;
+}
+
+
+.data-section-heading h2 {
+    margin: 0 0 .25rem;
+
+    font-size: 1.22rem;
+    font-weight: 700;
+}
+
+
+.data-section-heading p {
+    margin: 0;
+
+    color: var(--data-muted);
+
+    font-size: .9rem;
+    line-height: 1.5;
+}
+
+
+.data-eyebrow {
+    margin-bottom: .25rem;
+
+    color: var(--data-blue);
+
+    font-size: .7rem;
+    font-weight: 750;
+
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+
+
+.workspace-divider {
+    margin: 1.25rem 0;
+
+    border-color: var(--data-border);
+    opacity: 1;
+}
+
+
+/* -------------------------------------------------------- */
+/* 4. ICON BOXES                                            */
+/* -------------------------------------------------------- */
+
+.data-section-icon,
+.data-step-icon,
+.data-info-icon,
+.data-stat-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 auto;
+
+    color: var(--data-blue);
+    background: var(--data-blue-soft);
+
+    border-radius: 12px;
+}
+
+
+.data-section-icon {
+    width: 48px;
+    height: 48px;
+
+    font-size: 1.05rem;
+}
+
+
+.data-step-icon {
+    width: 42px;
+    height: 42px;
+}
+
+
+.data-info-icon {
+    width: 42px;
+    height: 42px;
+}
+
+
+.data-stat-icon {
+    width: 44px;
+    height: 44px;
+}
+
+
+/* -------------------------------------------------------- */
+/* 5. THREE-STEP DATA JOURNEY                               */
+/* -------------------------------------------------------- */
+
+.data-flow {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        auto
+        minmax(0, 1fr)
+        auto
+        minmax(0, 1fr);
+
+    align-items: center;
+
+    gap: 1rem;
+
+    margin-bottom: 1.5rem;
+
+    padding: 1.25rem 1.4rem;
+
+    background: #ffffff;
+
+    border: 1px solid var(--data-border);
+    border-radius: 16px;
+
+    box-shadow:
+        0 8px 24px
+        rgba(16, 24, 40, .04);
+}
+
+
+.data-flow-step {
+    display: grid;
+
+    grid-template-columns:
+        auto
+        auto
+        minmax(0, 1fr);
+
+    align-items: center;
+
+    gap: .75rem;
+}
+
+
+.data-step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 32px;
+    height: 32px;
+
+    color: #ffffff;
+    background: var(--data-blue);
+
+    border-radius: 50%;
+
+    font-size: .82rem;
+    font-weight: 750;
+}
+
+
+.data-flow-step strong {
+    display: block;
+
+    margin-bottom: .15rem;
+
+    font-size: .9rem;
+}
+
+
+.data-flow-step p {
+    margin: 0;
+
+    color: var(--data-muted);
+
+    font-size: .78rem;
+    line-height: 1.4;
+}
+
+
+.data-flow-arrow {
+    color: #aab5c5;
+
+    font-size: .8rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 6. IMPORT FORM                                           */
+/* -------------------------------------------------------- */
+
+.data-import-form .form-label {
+    margin-bottom: .4rem;
+
+    font-size: .82rem;
+    font-weight: 700;
+}
+
+
+.data-import-form input,
+.data-import-form select {
+    width: 100%;
+
+    min-height: 46px;
+
+    padding: .6rem .8rem;
+
+    color: var(--data-text);
+    background-color: #ffffff;
+
+    border: 1px solid #d6dfeb;
+    border-radius: 10px;
+}
+
+
+.data-import-form input:focus,
+.data-import-form select:focus {
+    outline: 0;
+
+    border-color: var(--data-blue);
+
+    box-shadow:
+        0 0 0 .2rem
+        rgba(13, 110, 253, .10);
+}
+
+
+.data-form-hint {
+    margin-top: .35rem;
+
+    color: var(--data-muted);
+
+    font-size: .75rem;
+    line-height: 1.4;
+}
+
+
+.data-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: .7rem;
+
+    margin-top: 1.35rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 7. PROVIDER INFORMATION                                  */
+/* -------------------------------------------------------- */
+
+.data-info-box {
+    height: 100%;
+
+    padding: 1.2rem;
+
+    background:
+        linear-gradient(
+            145deg,
+            #f8fbff,
+            #edf5ff
+        );
+
+    border: 1px solid #dbe7f7;
+    border-radius: 14px;
+}
+
+
+.data-info-title {
+    margin: .8rem 0 .3rem;
+
+    color: var(--data-blue);
+
+    font-size: .9rem;
+    font-weight: 700;
+}
+
+
+.data-info-box p {
+    margin-bottom: .8rem;
+
+    color: var(--data-muted);
+
+    font-size: .8rem;
+    line-height: 1.5;
+}
+
+
+.data-info-examples {
+    padding-top: .8rem;
+
+    color: var(--data-muted);
+
+    border-top: 1px solid #dce6f3;
+
+    font-size: .76rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 8. DATASET WORKSPACE                                     */
+/* -------------------------------------------------------- */
+
+.dataset-selector-layout {
+    display: grid;
+
+    grid-template-columns:
+        minmax(205px, .85fr)
+        minmax(250px, 1.2fr)
+        auto;
+
+    align-items: center;
+
+    gap: 1rem;
+}
+
+
+.dataset-selector-heading {
+    display: flex;
+    align-items: center;
+
+    gap: .7rem;
+}
+
+
+.dataset-selector-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 auto;
+
+    width: 40px;
+    height: 40px;
+
+    color: var(--data-blue);
+    background: var(--data-blue-soft);
+
+    border-radius: 10px;
+}
+
+
+.dataset-selector-heading h2 {
+    margin: 0 0 .1rem;
+
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+
+.dataset-selector-heading p {
+    margin: 0;
+
+    color: var(--data-muted);
+
+    font-size: .7rem;
+    line-height: 1.35;
+}
+
+
+.dataset-selector-form {
+    margin: 0;
+}
+
+
+.dataset-selector-form .form-select {
+    width: 100%;
+
+    min-height: 44px;
+
+    padding: .55rem .85rem;
+
+    color: var(--data-text);
+    background-color: #ffffff;
+
+    border: 1px solid #d6dfeb;
+    border-radius: 9px;
+
+    font-size: .84rem;
+}
+
+
+.dataset-selector-form .form-select:focus {
+    border-color: var(--data-blue);
+
+    box-shadow:
+        0 0 0 .2rem
+        rgba(13, 110, 253, .10);
+}
+
+
+.dataset-selector-status {
+    display: flex;
+    align-items: center;
+
+    gap: .55rem;
+
+    min-height: 44px;
+
+    padding: .45rem .7rem;
+
+    background: #f5fbf7;
+
+    border: 1px solid #d6eddf;
+    border-radius: 9px;
+
+    white-space: nowrap;
+}
+
+
+.dataset-selector-status-icon {
+    color: var(--data-success);
+
+    font-size: .9rem;
+}
+
+
+.dataset-selector-status-label {
+    display: block;
+
+    color: var(--data-muted);
+
+    font-size: .6rem;
+    line-height: 1;
+}
+
+
+.dataset-selector-status strong {
+    display: block;
+
+    margin-top: .1rem;
+
+    font-size: .82rem;
+}
+
+
+.dataset-selector-count {
+    margin-left: .35rem;
+
+    padding-left: .65rem;
+
+    color: var(--data-muted);
+
+    border-left: 1px solid #d6e3db;
+
+    font-size: .68rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 9. SELECTED HISTORICAL DATASET                           */
+/* -------------------------------------------------------- */
+
+.dataset-summary-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+
+    gap: 1rem;
+
+    margin-bottom: 1rem;
+}
+
+
+.dataset-summary-title {
+    display: flex;
+    align-items: center;
+
+    gap: .85rem;
+}
+
+
+.dataset-summary-title h2 {
+    margin: 0 0 .15rem;
+
+    font-size: 1.18rem;
+    font-weight: 700;
+}
+
+
+.dataset-summary-title p {
+    margin: 0;
+
+    color: var(--data-muted);
+
+    font-size: .78rem;
+}
+
+
+.dataset-symbol-badge {
+    padding: .4rem .7rem;
+
+    color: #25324a;
+    background: #eef2f7;
+
+    border-radius: 8px;
+
+    font-size: .76rem;
+    font-weight: 750;
+}
+
+
+.dataset-stat-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            3,
+            minmax(0, 1fr)
+        );
+
+    gap: .75rem;
+}
+
+
+.dataset-stat {
+    display: flex;
+    align-items: center;
+
+    gap: .7rem;
+
+    padding: .8rem;
+
+    background: #fbfcfe;
+
+    border: 1px solid var(--data-border);
+    border-radius: 11px;
+}
+
+
+.dataset-stat-label {
+    display: block;
+
+    margin-bottom: .15rem;
+
+    color: var(--data-muted);
+
+    font-size: .67rem;
+}
+
+
+.dataset-stat-value {
+    display: block;
+
+    color: var(--data-text);
+
+    font-size: 1.02rem;
+    font-weight: 750;
+}
+
+
+/* -------------------------------------------------------- */
+/* 10. DATASET AVAILABILITY                                 */
+/* -------------------------------------------------------- */
+
+.dataset-readiness {
+    margin-top: .9rem;
+
+    padding-top: .9rem;
+
+    border-top: 1px solid var(--data-border);
+}
+
+
+.dataset-ready-state {
+    display: flex;
+    align-items: center;
+
+    gap: .4rem;
+
+    margin-bottom: .65rem;
+
+    color: var(--data-success);
+
+    font-size: .77rem;
+    font-weight: 700;
+}
+
+
+.dataset-warning-state {
+    display: flex;
+    align-items: center;
+
+    gap: .4rem;
+
+    margin-bottom: .65rem;
+
+    color: var(--data-warning);
+
+    font-size: .77rem;
+    font-weight: 700;
+}
+
+
+.dataset-uses {
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: .45rem;
+}
+
+
+.dataset-use-item {
+    display: inline-flex;
+    align-items: center;
+
+    gap: .32rem;
+
+    padding: .32rem .5rem;
+
+    color: #475467;
+    background: #f8fafc;
+
+    border: 1px solid var(--data-border);
+    border-radius: 7px;
+
+    font-size: .68rem;
+}
+
+
+.dataset-use-item i {
+    color: var(--data-success);
+}
+
+
+/* -------------------------------------------------------- */
+/* 11. MARKET CONDITION SIDE PANEL                          */
+/* -------------------------------------------------------- */
+
+.market-condition-panel {
+    position: relative;
+
+    overflow: hidden;
+
+    background:
+        linear-gradient(
+            145deg,
+            #ffffff,
+            #f5f9ff
+        );
+}
+
+
+.market-condition-panel::before {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 3px;
+
+    background:
+        linear-gradient(
+            90deg,
+            var(--data-blue),
+            #6ea8fe
+        );
+}
+
+
+.market-condition-intro {
+    display: flex;
+    align-items: flex-start;
+
+    gap: .75rem;
+
+    margin: .35rem 0 .85rem;
+}
+
+
+.market-condition-intro h2 {
+    margin: 0 0 .2rem;
+
+    font-size: 1.08rem;
+    font-weight: 700;
+}
+
+
+.market-condition-intro p {
+    margin: 0;
+
+    color: var(--data-muted);
+
+    font-size: .74rem;
+    line-height: 1.45;
+}
+
+
+.market-helper-box {
+    margin-bottom: .75rem;
+
+    padding: .75rem;
+
+    background: #ffffff;
+
+    border: 1px solid var(--data-border);
+    border-radius: 9px;
+}
+
+
+.market-helper-title {
+    display: flex;
+    align-items: center;
+
+    gap: .35rem;
+
+    margin-bottom: .3rem;
+
+    color: var(--data-text);
+
+    font-size: .72rem;
+    font-weight: 700;
+}
+
+
+.market-helper-box p {
+    margin: 0;
+
+    color: var(--data-muted);
+
+    font-size: .69rem;
+    line-height: 1.45;
+}
+
+
+.market-result-summary {
+    margin-bottom: .75rem;
+
+    padding: .8rem;
+
+    background: #edf5ff;
+
+    border: 1px solid #cfe2ff;
+    border-radius: 9px;
+}
+
+
+.market-result-name {
+    margin-bottom: .3rem;
+
+    color: var(--data-text);
+
+    font-size: 1.08rem;
+    font-weight: 750;
+}
+
+
+.market-result-meta {
+    color: var(--data-muted);
+
+    font-size: .69rem;
+    line-height: 1.55;
+}
+
+
+.market-result-empty {
+    margin-bottom: .75rem;
+
+    padding: .8rem;
+
+    background: #fafbfc;
+
+    border: 1px dashed #ccd5e2;
+    border-radius: 9px;
+}
+
+
+.market-result-empty strong {
+    display: block;
+
+    margin-bottom: .2rem;
+
+    font-size: .76rem;
+}
+
+
+.market-result-empty p {
+    margin: 0;
+
+    color: var(--data-muted);
+
+    font-size: .69rem;
+    line-height: 1.45;
+}
+
+
+.market-condition-when {
+    margin-bottom: .8rem;
+}
+
+
+.market-condition-when strong {
+    display: block;
+
+    margin-bottom: .25rem;
+
+    font-size: .73rem;
+}
+
+
+.market-condition-when p {
+    margin: 0;
+
+    color: var(--data-muted);
+
+    font-size: .69rem;
+    line-height: 1.45;
+}
+
+
+.market-condition-disclaimer {
+    margin-top: .5rem;
+
+    color: var(--data-muted);
+
+    text-align: center;
+
+    font-size: .63rem;
+    line-height: 1.35;
+}
+
+
+/* -------------------------------------------------------- */
+/* 12. MODEL SELECTOR                                       */
+/* -------------------------------------------------------- */
+
+.model-selector-layout {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        auto;
+
+    align-items: end;
+
+    gap: 1rem;
+}
+
+
+.model-selector-layout .form-select {
+    min-height: 46px;
+
+    border-color: #d6dfeb;
+    border-radius: 10px;
+}
+
+
+.model-selector-layout .btn {
+    min-width: 190px;
+    min-height: 46px;
+}
+
+
+/* -------------------------------------------------------- */
+/* 13. SELECTED MODEL DETAILS                               */
+/* -------------------------------------------------------- */
+
+.model-detail-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(0, 1fr)
+        );
+
+    gap: 1rem;
+
+    margin-bottom: 1rem;
+}
+
+
+.model-detail-box {
+    padding: 1rem;
+
+    background: #fbfcfe;
+
+    border: 1px solid var(--data-border);
+    border-radius: 12px;
+}
+
+
+.model-detail-box h3 {
+    margin-bottom: .5rem;
+
+    font-size: .85rem;
+    font-weight: 700;
+}
+
+
+.model-detail-box p {
+    margin-bottom: 0;
+
+    color: var(--data-muted);
+
+    font-size: .8rem;
+    line-height: 1.5;
+}
+
+
+/* -------------------------------------------------------- */
+/* 14. HISTORICAL DATA TABLE                                */
+/* -------------------------------------------------------- */
+
+.data-table-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+
+    gap: 1rem;
+
+    margin-bottom: 1rem;
+}
+
+
+.data-table-heading h2 {
+    margin: 0 0 .2rem;
+
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+
+.data-table-heading p {
+    margin: 0;
+
+    color: var(--data-muted);
+
+    font-size: .8rem;
+}
+
+
+.data-table-wrapper {
+    overflow: auto;
+
+    max-height: 540px;
+
+    border: 1px solid var(--data-border);
+    border-radius: 12px;
+}
+
+
+.market-data-table {
+    margin-bottom: 0;
+}
+
+
+.market-data-table thead th {
+    position: sticky;
+
+    top: 0;
+    z-index: 2;
+
+    padding: .75rem .8rem;
+
+    color: #ffffff;
+    background: #202938;
+
+    border: 0;
+
+    font-size: .75rem;
+    font-weight: 700;
+}
+
+
+.market-data-table tbody td {
+    padding: .7rem .8rem;
+
+    border-color: #edf1f5;
+
+    font-size: .8rem;
+}
+
+
+.market-data-table tbody tr:hover td {
+    background: #f5f9ff;
+}
+
+
+.market-data-table .numeric {
+    text-align: right;
+
+    font-variant-numeric: tabular-nums;
+}
+
+
+/* -------------------------------------------------------- */
+/* 15. RECENT IMPORTS                                       */
+/* -------------------------------------------------------- */
+
+.recent-imports-toggle {
+    cursor: pointer;
+
+    list-style: none;
+
+    font-weight: 700;
+}
+
+
+.recent-imports-toggle::-webkit-details-marker {
+    display: none;
+}
+
+
+.recent-imports-toggle::after {
+    content: "+";
+
+    float: right;
+
+    color: var(--data-blue);
+
+    font-size: 1.2rem;
+}
+
+
+details[open] .recent-imports-toggle::after {
+    content: "−";
+}
+
+
+/* -------------------------------------------------------- */
+/* 16. BUTTON REFINEMENTS                                   */
+/* -------------------------------------------------------- */
+
+.data-workspace .btn {
+    border-radius: 9px;
+
+    font-weight: 600;
+}
+
+
+.data-workspace .btn-primary {
+    box-shadow:
+        0 5px 14px
+        rgba(13, 110, 253, .15);
+}
+
+
+/* -------------------------------------------------------- */
+/* 17. RESPONSIVE                                           */
+/* -------------------------------------------------------- */
+
+@media (max-width: 991.98px) {
+
+    .data-flow {
+        grid-template-columns: 1fr;
+    }
+
+
+    .data-flow-arrow {
+        display: none;
+    }
+
+
+    .dataset-selector-layout {
+        grid-template-columns: 1fr;
+    }
+
+
+    .dataset-selector-status {
+        justify-self: start;
+    }
+
+
+    .model-selector-layout {
+        grid-template-columns: 1fr;
+    }
+
+
+    .model-selector-layout .btn {
+        width: 100%;
+    }
+
+}
+
+
+@media (max-width: 767.98px) {
+
+    .data-page-header,
+    .data-section-header,
+    .dataset-summary-header,
+    .data-table-heading {
+        flex-direction: column;
+    }
+
+
+    .dataset-selector-status {
+        width: 100%;
+    }
+
+
+    .dataset-stat-grid,
+    .model-detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+
+    .data-panel {
+        padding: 1.1rem;
+    }
+
+}
+
+</style>
+
+{% endblock %}
+
+
 {% block content %}
+
+
+<div class="data-workspace">
 
 
 <!-- ====================================================== -->
 <!-- 1. PAGE HEADER                                         -->
 <!-- ====================================================== -->
 
-<div
-    class="
-        d-flex
-        justify-content-between
-        align-items-start
-        flex-wrap
-        gap-3
-        mb-4
-    "
->
+<div class="data-page-header">
+
 
     <div>
 
-        <h1 class="h2 mb-1">
+        <h1 class="data-page-title">
             Market Data
         </h1>
 
-        <p class="text-muted mb-0">
+
+        <p class="data-page-subtitle">
 
             Import historical market data, understand the
-            current market environment and prepare datasets
-            for quantitative strategy and model testing.
+            recent historical environment and prepare datasets
+            for strategy, model and risk analysis.
 
         </p>
 
     </div>
 
 
-    <div class="d-flex gap-2 flex-wrap">
+    <a
+        href="{% url 'data_management:history' %}"
+        class="btn btn-outline-secondary"
+    >
 
-        <a
-            href="{% url 'data_management:history' %}"
-            class="btn btn-outline-secondary"
-        >
-            <i class="fa-solid fa-clock-rotate-left me-2"></i>
+        <i class="fa-solid fa-clock-rotate-left me-2"></i>
 
-            Import History
-        </a>
+        Import History
 
-    </div>
+    </a>
+
 
 </div>
 
@@ -151,915 +1368,563 @@ Market Data | MarketPulse
 <!-- 2. DATA WORKFLOW                                       -->
 <!-- ====================================================== -->
 
-<div class="card shadow-sm mb-4">
+<div class="data-flow">
 
-    <div class="card-body">
 
-        <h2 class="h5 mb-3">
-            How the Data Workspace Works
-        </h2>
+    <!-- STEP 1 -->
 
+    <div class="data-flow-step">
 
-        <div class="row g-3">
+        <span class="data-step-number">
+            1
+        </span>
 
+        <span class="data-step-icon">
 
-            <!-- Import -->
+            <i class="fa-solid fa-database"></i>
 
-            <div class="col-md-4">
+        </span>
 
-                <div class="border rounded p-3 h-100">
+        <div>
 
-                    <div
-                        class="
-                            text-primary
-                            fw-semibold
-                            small
-                            mb-1
-                        "
-                    >
-                        STEP 1
-                    </div>
+            <strong>
+                Import Market Data
+            </strong>
 
-                    <h3 class="h6">
-                        Import Market Data
-                    </h3>
+            <p>
 
-                    <p class="small text-muted mb-0">
-
-                        Store historical Open, High, Low,
-                        Close and Volume observations.
-
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <!-- Understand -->
-
-            <div class="col-md-4">
-
-                <div class="border rounded p-3 h-100">
-
-                    <div
-                        class="
-                            text-primary
-                            fw-semibold
-                            small
-                            mb-1
-                        "
-                    >
-                        STEP 2
-                    </div>
-
-                    <h3 class="h6">
-                        Understand the Market
-                    </h3>
-
-                    <p class="small text-muted mb-0">
-
-                        Check whether the market has recently
-                        been rising, falling, moving sideways
-                        or experiencing high volatility.
-
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <!-- Use -->
-
-            <div class="col-md-4">
-
-                <div class="border rounded p-3 h-100">
-
-                    <div
-                        class="
-                            text-primary
-                            fw-semibold
-                            small
-                            mb-1
-                        "
-                    >
-                        STEP 3
-                    </div>
-
-                    <h3 class="h6">
-                        Use the Dataset
-                    </h3>
-
-                    <p class="small text-muted mb-0">
-
-                        Send stored market data into strategy,
-                        risk and quantitative modelling
-                        workflows.
-
-                    </p>
-
-                </div>
-
-            </div>
-
-
-        </div>
-
-    </div>
-
-</div>
-
-
-<!-- ====================================================== -->
-<!-- 3. IMPORT HISTORICAL DATA                              -->
-<!-- ====================================================== -->
-
-<div class="card shadow-sm mb-4">
-
-    <div class="card-body">
-
-
-        <h2 class="h4 mb-2">
-            Import Historical Market Data
-        </h2>
-
-
-        <p class="text-muted mb-4">
-
-            Historical data imported here becomes the common
-            dataset used throughout MarketPulse.
-
-        </p>
-
-
-        <form method="post">
-
-            {% csrf_token %}
-
-
-            <!-- ------------------------------------------ -->
-            <!-- SOURCE                                     -->
-            <!-- ------------------------------------------ -->
-
-            <div class="mb-3">
-
-                <label
-                    for="{{ form.source.id_for_label }}"
-                    class="form-label fw-semibold"
-                >
-                    Data Source
-                </label>
-
-                {{ form.source }}
-
-                <div class="form-text">
-
-                    Select the provider used to retrieve
-                    historical market observations.
-
-                </div>
-
-            </div>
-
-
-            <!-- ------------------------------------------ -->
-            <!-- SYMBOL                                     -->
-            <!-- ------------------------------------------ -->
-
-            <div class="mb-3">
-
-                <label
-                    for="{{ form.symbol.id_for_label }}"
-                    class="form-label fw-semibold"
-                >
-                    Asset / Symbol
-                </label>
-
-                {{ form.symbol }}
-
-
-                <div class="form-text">
-
-                    Examples:
-                    AAPL,
-                    MSFT,
-                    NVDA,
-                    SPY,
-                    BTC-USD,
-                    NESN.SW,
-                    MC.PA
-
-                </div>
-
-            </div>
-
-
-            <!-- ------------------------------------------ -->
-            <!-- DATES                                      -->
-            <!-- ------------------------------------------ -->
-
-            <div class="row g-3">
-
-
-                <div class="col-md-6">
-
-                    <label
-                        for="{{ form.start_date.id_for_label }}"
-                        class="form-label fw-semibold"
-                    >
-                        Start Date
-                    </label>
-
-                    {{ form.start_date }}
-
-                </div>
-
-
-                <div class="col-md-6">
-
-                    <label
-                        for="{{ form.end_date.id_for_label }}"
-                        class="form-label fw-semibold"
-                    >
-                        End Date
-                    </label>
-
-                    {{ form.end_date }}
-
-                </div>
-
-
-            </div>
-
-
-            <!-- ------------------------------------------ -->
-            <!-- ERRORS                                     -->
-            <!-- ------------------------------------------ -->
-
-            {% if form.errors %}
-
-                <div class="alert alert-danger mt-3">
-
-                    <strong>
-                        Please correct the following:
-                    </strong>
-
-                    {{ form.errors }}
-
-                </div>
-
-            {% endif %}
-
-
-            <!-- ------------------------------------------ -->
-            <!-- ACTIONS                                    -->
-            <!-- ------------------------------------------ -->
-
-            <div class="d-flex gap-2 flex-wrap mt-4">
-
-                <button
-                    type="submit"
-                    class="btn btn-primary"
-                >
-                    <i class="fa-solid fa-download me-2"></i>
-
-                    Import Historical Data
-                </button>
-
-
-                <a
-                    href="{% url 'data_management:history' %}"
-                    class="btn btn-outline-secondary"
-                >
-                    <i class="fa-solid fa-clock-rotate-left me-2"></i>
-
-                    Import History
-                </a>
-
-            </div>
-
-
-        </form>
-
-    </div>
-
-</div>
-
-
-<!-- ====================================================== -->
-<!-- 4. IMPORTED DATASETS                                   -->
-<!-- ====================================================== -->
-
-{% if available_symbols %}
-
-<div class="card shadow-sm mb-4">
-
-    <div class="card-body">
-
-
-        <h2 class="h5 mb-2">
-            Imported Datasets
-        </h2>
-
-
-        <p class="text-muted">
-
-            Select an asset to inspect its historical dataset,
-            analyse its market condition and use it in
-            quantitative models.
-
-        </p>
-
-
-        <div class="d-flex flex-wrap gap-2">
-
-
-            {% for symbol in available_symbols %}
-
-                <a
-                    href="{% url 'data_management:import' %}?symbol={{ symbol }}"
-                    class="
-                        btn
-
-                        {% if symbol == selected_symbol %}
-                            btn-primary
-                        {% else %}
-                            btn-outline-primary
-                        {% endif %}
-                    "
-                >
-
-                    <i class="fa-solid fa-chart-line me-1"></i>
-
-                    {{ symbol }}
-
-                </a>
-
-            {% endfor %}
-
-
-        </div>
-
-    </div>
-
-</div>
-
-{% endif %}
-
-
-<!-- ====================================================== -->
-<!-- 5. SELECTED DATASET SUMMARY                            -->
-<!-- ====================================================== -->
-
-{% if selected_symbol %}
-
-<div class="card shadow-sm mb-4">
-
-    <div class="card-body">
-
-
-        <div
-            class="
-                d-flex
-                justify-content-between
-                align-items-start
-                flex-wrap
-                gap-3
-            "
-        >
-
-
-            <div>
-
-                <h2 class="h4 mb-1">
-
-                    {{ selected_symbol }}
-                    Historical Dataset
-
-                </h2>
-
-
-                <p class="text-muted mb-0">
-
-                    Historical observations available for
-                    market analysis, modelling and backtesting.
-
-                </p>
-
-            </div>
-
-
-            <span class="badge bg-primary fs-6">
-
-                <i class="fa-solid fa-database me-1"></i>
-
-                Stored Dataset
-
-            </span>
-
-
-        </div>
-
-
-        <hr>
-
-
-        <div class="row g-3">
-
-
-            <!-- Records -->
-
-            <div class="col-md-4">
-
-                <div class="border rounded p-3 h-100">
-
-                    <div class="text-muted small">
-                        Stored Observations
-                    </div>
-
-                    <div class="fs-4 fw-bold">
-                        {{ total_records }}
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <!-- Earliest -->
-
-            <div class="col-md-4">
-
-                <div class="border rounded p-3 h-100">
-
-                    <div class="text-muted small">
-                        Earliest Date
-                    </div>
-
-                    <div class="fs-5 fw-bold">
-
-                        {% if earliest_record %}
-
-                            {{ earliest_record.date|date:"d/m/Y" }}
-
-                        {% else %}
-
-                            —
-
-                        {% endif %}
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <!-- Latest -->
-
-            <div class="col-md-4">
-
-                <div class="border rounded p-3 h-100">
-
-                    <div class="text-muted small">
-                        Latest Date
-                    </div>
-
-                    <div class="fs-5 fw-bold">
-
-                        {% if latest_record %}
-
-                            {{ latest_record.date|date:"d/m/Y" }}
-
-                        {% else %}
-
-                            —
-
-                        {% endif %}
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-        </div>
-
-    </div>
-
-</div>
-
-{% endif %}
-
-
-<!-- ====================================================== -->
-<!-- 6. MARKET CONDITION / REGIME ANALYSIS                  -->
-<!-- ====================================================== -->
-
-{% if selected_symbol %}
-
-<div
-    class="
-        card
-        shadow-sm
-        mb-4
-        border-primary
-    "
->
-
-    <div class="card-body">
-
-
-        <div
-            class="
-                d-flex
-                justify-content-between
-                align-items-start
-                flex-wrap
-                gap-3
-            "
-        >
-
-
-            <!-- ========================================== -->
-            <!-- EXPLANATION                                -->
-            <!-- ========================================== -->
-
-            <div class="flex-grow-1">
-
-                <div
-                    class="
-                        text-primary
-                        fw-semibold
-                        small
-                        mb-1
-                    "
-                >
-                    UNDERSTAND THE MARKET
-                </div>
-
-
-                <h2 class="h4 mb-2">
-                    Market Condition
-                </h2>
-
-
-                <p class="mb-2">
-
-                    What type of market environment has
-
-                    <strong>
-                        {{ selected_symbol }}
-                    </strong>
-
-                    been experiencing?
-
-                </p>
-
-
-                <p class="text-muted mb-2">
-
-                    MarketPulse examines recent historical
-                    price behaviour and volatility to identify
-                    whether the market is trending, falling,
-                    moving sideways or experiencing unusually
-                    high volatility.
-
-                </p>
-
-
-                <div class="small text-muted">
-
-                    Technical method:
-
-                    <strong>
-                        Market Regime Analysis
-                    </strong>
-
-                </div>
-
-            </div>
-
-
-            <!-- ========================================== -->
-            <!-- ACTION                                     -->
-            <!-- ========================================== -->
-
-            <div>
-
-                <a
-                    href="{% url 'data_management:market_condition' %}?symbol={{ selected_symbol }}"
-                    class="btn btn-primary"
-                >
-
-                    <i class="fa-solid fa-chart-area me-2"></i>
-
-                    Analyse Market Condition
-
-                </a>
-
-            </div>
-
-
-        </div>
-
-
-        <hr>
-
-
-        <!-- ============================================== -->
-        <!-- EASY EXPLANATION OF POSSIBLE CONDITIONS        -->
-        <!-- ============================================== -->
-
-        <div class="row g-3">
-
-
-            <div class="col-sm-6 col-xl-3">
-
-                <div class="border rounded p-3 h-100">
-
-                    <div class="fw-semibold">
-                        Uptrend
-                    </div>
-
-                    <div class="small text-muted">
-
-                        Prices have generally been moving
-                        upward over the analysed period.
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="col-sm-6 col-xl-3">
-
-                <div class="border rounded p-3 h-100">
-
-                    <div class="fw-semibold">
-                        Downtrend
-                    </div>
-
-                    <div class="small text-muted">
-
-                        Prices have generally been moving
-                        downward over the analysed period.
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="col-sm-6 col-xl-3">
-
-                <div class="border rounded p-3 h-100">
-
-                    <div class="fw-semibold">
-                        Sideways
-                    </div>
-
-                    <div class="small text-muted">
-
-                        The market has shown limited directional
-                        movement.
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="col-sm-6 col-xl-3">
-
-                <div class="border rounded p-3 h-100">
-
-                    <div class="fw-semibold">
-                        High Volatility
-                    </div>
-
-                    <div class="small text-muted">
-
-                        Price movements have been larger or more
-                        variable than normal.
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-        </div>
-
-
-        <!-- ============================================== -->
-        <!-- OPTIONAL LATEST RESULT                         -->
-        <!-- ============================================== -->
-
-        {% if latest_regime %}
-
-            <div class="alert alert-info mt-3 mb-0">
-
-
-                <div class="small text-muted">
-                    Latest MarketPulse Classification
-                </div>
-
-
-                <div class="fw-bold fs-5">
-
-                    {{ latest_regime.get_regime_display }}
-
-                </div>
-
-
-                <div class="small mt-1">
-
-                    Confidence:
-
-                    <strong>
-                        {{ latest_regime.confidence|floatformat:2 }}
-                    </strong>
-
-                    ·
-
-                    Volatility:
-
-                    <strong>
-                        {{ latest_regime.volatility|floatformat:2 }}
-                    </strong>
-
-                </div>
-
-
-                <div class="small text-muted mt-2">
-
-                    This classification describes historical
-                    market behaviour. It is not a forecast of
-                    future prices.
-
-                </div>
-
-
-            </div>
-
-        {% endif %}
-
-
-    </div>
-
-</div>
-
-{% endif %}
-
-
-{% comment %}
-============================================================
-7. STRATEGY / MODEL TESTING LAB
-============================================================
-
-This section receives:
-
-strategy_categories
-selected_model
-
-from:
-
-data_management/views.py
-
-The strategy categories come from:
-
-strategy_builder/library.py
-
-and the underlying database model is:
-
-StrategyLibraryItem
-
-============================================================
-{% endcomment %}
-
-
-<!-- ====================================================== -->
-<!-- 7. STRATEGY / MODEL TESTING LAB                        -->
-<!-- ====================================================== -->
-
-{% if selected_symbol %}
-
-<div class="card shadow-sm mb-4">
-
-    <div class="card-body">
-
-
-        <div class="mb-4">
-
-            <div
-                class="
-                    text-primary
-                    fw-semibold
-                    small
-                    mb-1
-                "
-            >
-                USE THE DATASET
-            </div>
-
-
-            <h2 class="h4 mb-1">
-
-                <i class="fa-solid fa-flask me-2"></i>
-
-                Test a Model on {{ selected_symbol }}
-
-            </h2>
-
-
-            <p class="text-muted mb-0">
-
-                Select a quantitative method from the
-                MarketPulse Strategy & Model Library and
-                inspect how it is intended to use this dataset.
+                Store historical Open, High, Low,
+                Close and Volume observations.
 
             </p>
 
         </div>
 
+    </div>
 
-        <form
-            method="get"
-            action="{% url 'data_management:import' %}"
+
+    <i
+        class="
+            fa-solid
+            fa-chevron-right
+            data-flow-arrow
+        "
+    >
+    </i>
+
+
+    <!-- STEP 2 -->
+
+    <div class="data-flow-step">
+
+        <span class="data-step-number">
+            2
+        </span>
+
+        <span class="data-step-icon">
+
+            <i class="fa-solid fa-chart-column"></i>
+
+        </span>
+
+        <div>
+
+            <strong>
+                Understand the Data
+            </strong>
+
+            <p>
+
+                Review its coverage and optionally
+                analyse the recent Market Condition.
+
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <i
+        class="
+            fa-solid
+            fa-chevron-right
+            data-flow-arrow
+        "
+    >
+    </i>
+
+
+    <!-- STEP 3 -->
+
+    <div class="data-flow-step">
+
+        <span class="data-step-number">
+            3
+        </span>
+
+        <span class="data-step-icon">
+
+            <i class="fa-solid fa-gears"></i>
+
+        </span>
+
+        <div>
+
+            <strong>
+                Use the Dataset
+            </strong>
+
+            <p>
+
+                Reuse stored data in strategy,
+                risk and model-testing workflows.
+
+            </p>
+
+        </div>
+
+    </div>
+
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- 3. IMPORT HISTORICAL MARKET DATA                       -->
+<!-- ====================================================== -->
+
+<section class="data-panel">
+
+
+    <div class="data-section-header">
+
+
+        <div class="data-section-heading">
+
+
+            <span class="data-section-icon">
+
+                <i class="fa-solid fa-download"></i>
+
+            </span>
+
+
+            <div>
+
+                <h2>
+                    Import Historical Market Data
+                </h2>
+
+                <p>
+
+                    Fetch and store historical market observations.
+                    Imported data becomes reusable throughout
+                    MarketPulse.
+
+                </p>
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+    <div class="row g-4">
+
+
+        <!-- ============================================== -->
+        <!-- IMPORT FORM                                    -->
+        <!-- ============================================== -->
+
+        <div class="col-lg-9">
+
+
+            <form
+                method="post"
+                class="data-import-form"
+            >
+
+                {% csrf_token %}
+
+
+                <div class="row g-3">
+
+
+                    <!-- SOURCE -->
+
+                    <div class="col-md-6">
+
+                        <label
+                            for="{{ form.source.id_for_label }}"
+                            class="form-label"
+                        >
+                            Data Source
+                        </label>
+
+
+                        {{ form.source }}
+
+
+                        <div class="data-form-hint">
+
+                            Select the provider used to retrieve
+                            historical market observations.
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- SYMBOL -->
+
+                    <div class="col-md-6">
+
+                        <label
+                            for="{{ form.symbol.id_for_label }}"
+                            class="form-label"
+                        >
+                            Asset / Symbol
+                        </label>
+
+
+                        {{ form.symbol }}
+
+
+                        <div class="data-form-hint">
+
+                            Examples:
+                            AAPL,
+                            MSFT,
+                            NVDA,
+                            SPY,
+                            QQQ,
+                            DIA,
+                            IWM.
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- START DATE -->
+
+                    <div class="col-md-6">
+
+                        <label
+                            for="{{ form.start_date.id_for_label }}"
+                            class="form-label"
+                        >
+                            Start Date
+                        </label>
+
+
+                        {{ form.start_date }}
+
+                    </div>
+
+
+                    <!-- END DATE -->
+
+                    <div class="col-md-6">
+
+                        <label
+                            for="{{ form.end_date.id_for_label }}"
+                            class="form-label"
+                        >
+                            End Date
+                        </label>
+
+
+                        {{ form.end_date }}
+
+                    </div>
+
+
+                </div>
+
+
+                <!-- ====================================== -->
+                <!-- FORM ERRORS                            -->
+                <!-- ====================================== -->
+
+                {% if form.errors %}
+
+                    <div
+                        class="
+                            alert
+                            alert-danger
+                            mt-3
+                            mb-0
+                        "
+                    >
+
+                        <div class="fw-semibold mb-2">
+
+                            <i
+                                class="
+                                    fa-solid
+                                    fa-circle-exclamation
+                                    me-2
+                                "
+                            >
+                            </i>
+
+                            Please correct the information below.
+
+                        </div>
+
+
+                        {{ form.errors }}
+
+                    </div>
+
+                {% endif %}
+
+
+                <!-- ====================================== -->
+                <!-- ACTIONS                                -->
+                <!-- ====================================== -->
+
+                <div class="data-form-actions">
+
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+
+                        <i class="fa-solid fa-download me-2"></i>
+
+                        Import Historical Data
+
+                    </button>
+
+
+                    <a
+                        href="{% url 'data_management:history' %}"
+                        class="btn btn-outline-secondary"
+                    >
+
+                        <i
+                            class="
+                                fa-solid
+                                fa-clock-rotate-left
+                                me-2
+                            "
+                        >
+                        </i>
+
+                        Import History
+
+                    </a>
+
+
+                </div>
+
+
+            </form>
+
+
+        </div>
+
+
+        <!-- ============================================== -->
+        <!-- PROVIDER INFORMATION                           -->
+        <!-- ============================================== -->
+
+        <div class="col-lg-3">
+
+
+            <aside class="data-info-box">
+
+
+                <span class="data-info-icon">
+
+                    <i class="fa-solid fa-database"></i>
+
+                </span>
+
+
+                <div class="data-info-title">
+                    Market Data Provider
+                </div>
+
+
+                <p>
+
+                    MarketPulse uses
+
+                    <strong>
+                        {{ market_data_provider|default:"Alpaca" }}
+                    </strong>
+
+                    to retrieve historical market observations.
+
+                </p>
+
+
+                <div class="data-info-examples">
+
+                    <strong>
+                        Feed
+                    </strong>
+
+                    <br>
+
+                    {{ market_data_feed|default:"IEX" }}
+
+                    <br><br>
+
+                    <strong>
+                        Common examples
+                    </strong>
+
+                    <br>
+
+                    AAPL · MSFT · NVDA · SPY · QQQ
+
+                </div>
+
+
+            </aside>
+
+
+        </div>
+
+
+    </div>
+
+
+</section>
+
+
+<!-- ====================================================== -->
+<!-- 4. DATASET WORKSPACE                                   -->
+<!-- ====================================================== -->
+
+{% if available_symbols %}
+
+
+<div
+    class="
+        row
+        g-4
+        mb-4
+        align-items-stretch
+    "
+>
+
+
+    <!-- ================================================== -->
+    <!-- LEFT: STORED DATA + SELECTED DATASET               -->
+    <!-- ================================================== -->
+
+    <div class="col-lg-8">
+
+
+        <section
+            class="
+                data-panel
+                h-100
+                mb-0
+            "
         >
 
 
-            <input
-                type="hidden"
-                name="symbol"
-                value="{{ selected_symbol }}"
-            >
+            <!-- ========================================== -->
+            <!-- STORED DATA SELECTOR                       -->
+            <!-- ========================================== -->
+
+            <div class="dataset-selector-layout">
 
 
-            <div class="row g-3 align-items-end">
+                <div class="dataset-selector-heading">
 
 
-                <div class="col-lg-9">
+                    <span class="dataset-selector-icon">
+
+                        <i class="fa-solid fa-database"></i>
+
+                    </span>
+
+
+                    <div>
+
+
+                        <div class="data-eyebrow">
+                            Stored Market Data
+                        </div>
+
+
+                        <h2>
+                            Imported Dataset
+                        </h2>
+
+
+                        <p>
+                            Select the dataset you want to work with.
+                        </p>
+
+
+                    </div>
+
+
+                </div>
+
+
+                <!-- ====================================== -->
+                <!-- DATASET DROPDOWN                       -->
+                <!-- ====================================== -->
+
+                <form
+                    method="get"
+                    action="{% url 'data_management:import' %}"
+                    class="dataset-selector-form"
+                >
 
 
                     <label
-                        for="strategyModel"
-                        class="form-label fw-semibold"
+                        for="datasetSymbol"
+                        class="visually-hidden"
                     >
-                        Strategy / Quantitative Model
+                        Select imported dataset
                     </label>
 
 
                     <select
-                        id="strategyModel"
-                        name="model"
+                        id="datasetSymbol"
+                        name="symbol"
                         class="form-select"
-                        required
+                        onchange="
+                            if (this.value) {
+                                this.form.submit();
+                            }
+                        "
                     >
 
 
                         <option value="">
-                            Select a strategy or model...
+                            Select an imported dataset...
                         </option>
 
 
-                        {% for category in strategy_categories %}
+                        {% for symbol in available_symbols %}
 
+                            <option
+                                value="{{ symbol }}"
 
-                            <optgroup
-                                label="{{ category.label }}"
+                                {% if symbol == selected_symbol %}
+                                    selected
+                                {% endif %}
                             >
 
+                                {{ symbol }}
 
-                                {% for item in category.items %}
-
-
-                                    <option
-                                        value="{{ item.code }}"
-
-                                        {% if selected_model and selected_model.code == item.code %}
-                                            selected
-                                        {% endif %}
-                                    >
-
-                                        {{ item.name }}
-
-                                    </option>
-
-
-                                {% endfor %}
-
-
-                            </optgroup>
-
+                            </option>
 
                         {% endfor %}
 
@@ -1067,484 +1932,1270 @@ StrategyLibraryItem
                     </select>
 
 
-                    <div class="form-text">
+                </form>
 
-                        Models are grouped into stochastic,
-                        time-series, machine learning, factor,
-                        portfolio, derivatives and Monte Carlo
-                        categories.
+
+                <!-- ====================================== -->
+                <!-- QUICK STATUS                           -->
+                <!-- ====================================== -->
+
+                {% if selected_symbol %}
+
+                    <div class="dataset-selector-status">
+
+
+                        <span class="dataset-selector-status-icon">
+
+                            <i class="fa-solid fa-circle-check"></i>
+
+                        </span>
+
+
+                        <div>
+
+                            <span class="dataset-selector-status-label">
+                                Selected
+                            </span>
+
+                            <strong>
+                                {{ selected_symbol }}
+                            </strong>
+
+                        </div>
+
+
+                        <span class="dataset-selector-count">
+
+                            {{ total_records }}
+                            observations
+
+                        </span>
+
 
                     </div>
 
-                </div>
-
-
-                <div class="col-lg-3">
-
-                    <button
-                        type="submit"
-                        class="btn btn-primary w-100"
-                    >
-
-                        <i class="fa-solid fa-microscope me-2"></i>
-
-                        Select Model
-
-                    </button>
-
-                </div>
-
-
-            </div>
-
-        </form>
-
-    </div>
-
-</div>
-
-{% endif %}
-
-
-<!-- ====================================================== -->
-<!-- 8. SELECTED MODEL DETAILS                              -->
-<!-- ====================================================== -->
-
-{% if selected_model %}
-
-<div class="card shadow-sm mb-4">
-
-    <div class="card-body">
-
-
-        <div
-            class="
-                d-flex
-                justify-content-between
-                align-items-start
-                flex-wrap
-                gap-3
-            "
-        >
-
-
-            <div>
-
-                <h2 class="h4 mb-1">
-                    {{ selected_model.name }}
-                </h2>
-
-                <p class="text-muted mb-0">
-                    {{ selected_model.get_category_display }}
-                </p>
-
-            </div>
-
-
-            <div>
-
-
-                {% if selected_model.implementation_status == "ready" %}
-
-                    <span class="badge bg-success fs-6">
-
-                        <i class="fa-solid fa-circle-check me-1"></i>
-
-                        Ready to Run
-
-                    </span>
-
-
-                {% elif selected_model.implementation_status == "experimental" %}
-
-                    <span class="badge bg-warning text-dark fs-6">
-
-                        <i class="fa-solid fa-flask me-1"></i>
-
-                        Experimental
-
-                    </span>
-
-
-                {% else %}
-
-                    <span class="badge bg-secondary fs-6">
-
-                        <i class="fa-solid fa-code me-1"></i>
-
-                        Catalogued
-
-                    </span>
-
                 {% endif %}
 
 
             </div>
 
-        </div>
+
+            <!-- ========================================== -->
+            <!-- SELECTED DATASET DETAILS                   -->
+            <!-- ========================================== -->
+
+            {% if selected_symbol %}
 
 
-        <hr>
+                <hr class="workspace-divider">
 
 
-        <!-- ============================================== -->
-        <!-- DESCRIPTION / PURPOSE                          -->
-        <!-- ============================================== -->
-
-        <div class="row g-4">
+                <div class="dataset-summary-header">
 
 
-            <div class="col-lg-6">
-
-                <h3 class="h6">
-
-                    <i class="fa-solid fa-book-open me-2"></i>
-
-                    What Does This Model Do?
-
-                </h3>
+                    <div class="dataset-summary-title">
 
 
-                <p>
-                    {{ selected_model.description }}
-                </p>
+                        <span class="data-section-icon">
 
-            </div>
+                            <i class="fa-solid fa-chart-line"></i>
 
-
-            <div class="col-lg-6">
-
-                <h3 class="h6">
-
-                    <i class="fa-solid fa-bullseye me-2"></i>
-
-                    Why Would I Use It?
-
-                </h3>
+                        </span>
 
 
-                <p>
+                        <div>
 
-                    {% if selected_model.purpose %}
 
-                        {{ selected_model.purpose }}
+                            <div class="data-eyebrow">
+                                Selected Historical Dataset
+                            </div>
+
+
+                            <h2>
+
+                                {{ selected_symbol }}
+                                Historical Dataset
+
+                            </h2>
+
+
+                            <p>
+
+                                Review the amount and date coverage
+                                of the historical data currently
+                                stored in MarketPulse.
+
+                            </p>
+
+
+                        </div>
+
+
+                    </div>
+
+
+                    <span class="dataset-symbol-badge">
+
+                        {{ selected_symbol }}
+
+                    </span>
+
+
+                </div>
+
+
+                <!-- ====================================== -->
+                <!-- SUMMARY STATISTICS                     -->
+                <!-- ====================================== -->
+
+                <div class="dataset-stat-grid">
+
+
+                    <div class="dataset-stat">
+
+
+                        <span class="data-stat-icon">
+
+                            <i class="fa-solid fa-database"></i>
+
+                        </span>
+
+
+                        <div>
+
+                            <span class="dataset-stat-label">
+                                Stored Observations
+                            </span>
+
+                            <span class="dataset-stat-value">
+
+                                {{ total_records }}
+
+                            </span>
+
+                        </div>
+
+
+                    </div>
+
+
+                    <div class="dataset-stat">
+
+
+                        <span class="data-stat-icon">
+
+                            <i class="fa-regular fa-calendar"></i>
+
+                        </span>
+
+
+                        <div>
+
+                            <span class="dataset-stat-label">
+                                Earliest Date
+                            </span>
+
+                            <span class="dataset-stat-value">
+
+                                {% if earliest_record %}
+
+                                    {{ earliest_record.date|date:"d/m/Y" }}
+
+                                {% else %}
+
+                                    —
+
+                                {% endif %}
+
+                            </span>
+
+                        </div>
+
+
+                    </div>
+
+
+                    <div class="dataset-stat">
+
+
+                        <span class="data-stat-icon">
+
+                            <i class="fa-solid fa-calendar-check"></i>
+
+                        </span>
+
+
+                        <div>
+
+                            <span class="dataset-stat-label">
+                                Latest Date
+                            </span>
+
+                            <span class="dataset-stat-value">
+
+                                {% if latest_record %}
+
+                                    {{ latest_record.date|date:"d/m/Y" }}
+
+                                {% else %}
+
+                                    —
+
+                                {% endif %}
+
+                            </span>
+
+                        </div>
+
+
+                    </div>
+
+
+                </div>
+
+
+                <!-- ====================================== -->
+                <!-- DATASET AVAILABILITY                   -->
+                <!-- ====================================== -->
+
+                <div class="dataset-readiness">
+
+
+                    <div class="data-eyebrow">
+                        Available For
+                    </div>
+
+
+                    {% if total_records >= 20 %}
+
+                        <div class="dataset-ready-state">
+
+                            <i class="fa-solid fa-circle-check"></i>
+
+                            Sufficient observations for
+                            Market Condition analysis
+
+                        </div>
+
 
                     {% else %}
 
-                        No additional purpose information
-                        has been supplied.
+                        <div class="dataset-warning-state">
+
+                            <i
+                                class="
+                                    fa-solid
+                                    fa-triangle-exclamation
+                                "
+                            >
+                            </i>
+
+                            More historical observations are required
+                            for Market Condition analysis
+
+                        </div>
 
                     {% endif %}
 
-                </p>
 
-            </div>
+                    <div class="dataset-uses">
 
 
-        </div>
+                        {% if total_records >= 20 %}
 
+                            <span class="dataset-use-item">
 
-        <!-- ============================================== -->
-        <!-- DATA REQUIREMENTS                              -->
-        <!-- ============================================== -->
+                                <i class="fa-solid fa-check"></i>
 
-        <div class="mb-4">
+                                Market Condition
 
-            <h3 class="h6">
+                            </span>
 
-                <i class="fa-solid fa-database me-2"></i>
+                        {% endif %}
 
-                Data Required
 
-            </h3>
+                        <span class="dataset-use-item">
 
+                            <i class="fa-solid fa-database"></i>
 
-            <div>
+                            Strategy Research Input
 
+                        </span>
 
-                {% for requirement in selected_model.data_requirements %}
 
-                    <span
-                        class="
-                            badge
-                            bg-light
-                            text-dark
-                            border
-                            me-1
-                            mb-1
-                        "
-                    >
+                        <span class="dataset-use-item">
 
-                        {{ requirement }}
+                            <i class="fa-solid fa-database"></i>
 
-                    </span>
+                            Historical Risk Context
 
+                        </span>
 
-                {% empty %}
 
-                    <span class="text-muted">
+                        <span class="dataset-use-item">
 
-                        No additional data requirements
-                        have been configured.
+                            <i class="fa-solid fa-database"></i>
 
-                    </span>
+                            Backtesting Input
 
-                {% endfor %}
+                        </span>
 
 
-            </div>
+                    </div>
 
-        </div>
 
-
-        <!-- ============================================== -->
-        <!-- PARAMETERS                                     -->
-        <!-- ============================================== -->
-
-        <div class="mb-4">
-
-            <h3 class="h6">
-
-                <i class="fa-solid fa-sliders me-2"></i>
-
-                Default Model Parameters
-
-            </h3>
-
-
-            <div class="table-responsive">
-
-
-                <table
-                    class="
-                        table
-                        table-sm
-                        table-bordered
-                    "
-                >
-
-
-                    <thead class="table-light">
-
-                        <tr>
-
-                            <th>
-                                Parameter
-                            </th>
-
-                            <th>
-                                Default Value
-                            </th>
-
-                        </tr>
-
-                    </thead>
-
-
-                    <tbody>
-
-
-                        {% for key, value in selected_model.default_parameters.items %}
-
-
-                            <tr>
-
-                                <td class="fw-semibold">
-                                    {{ key }}
-                                </td>
-
-                                <td>
-                                    {{ value }}
-                                </td>
-
-                            </tr>
-
-
-                        {% empty %}
-
-
-                            <tr>
-
-                                <td
-                                    colspan="2"
-                                    class="text-muted"
-                                >
-
-                                    This model currently has no
-                                    configurable default parameters.
-
-                                </td>
-
-                            </tr>
-
-
-                        {% endfor %}
-
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
-        </div>
-
-
-        <!-- ============================================== -->
-        <!-- OUTPUT                                         -->
-        <!-- ============================================== -->
-
-        <div class="mb-4">
-
-            <h3 class="h6">
-
-                <i class="fa-solid fa-chart-column me-2"></i>
-
-                Expected Output
-
-            </h3>
-
-
-            <p class="mb-0">
-
-                {% if selected_model.output_type %}
-
-                    {{ selected_model.output_type }}
-
-                {% else %}
-
-                    Output specification will be added when
-                    the execution engine is implemented.
-
-                {% endif %}
-
-            </p>
-
-        </div>
-
-
-        <hr>
-
-
-        <!-- ============================================== -->
-        <!-- MODEL ACTION                                   -->
-        <!-- ============================================== -->
-
-        <div
-            class="
-                d-flex
-                align-items-center
-                gap-3
-                flex-wrap
-            "
-        >
-
-
-            {% if selected_model.implementation_status == "ready" %}
-
-
-                <button
-                    type="button"
-                    class="btn btn-success"
-                >
-
-                    <i class="fa-solid fa-play me-2"></i>
-
-                    Run {{ selected_model.name }}
-
-                </button>
-
-
-            {% elif selected_model.implementation_status == "experimental" %}
-
-
-                <button
-                    type="button"
-                    class="btn btn-warning"
-                >
-
-                    <i class="fa-solid fa-flask me-2"></i>
-
-                    Run Experimental Model
-
-                </button>
-
-
-            {% else %}
-
-
-                <button
-                    type="button"
-                    class="btn btn-secondary"
-                    disabled
-                >
-
-                    <i class="fa-solid fa-code me-2"></i>
-
-                    Execution Engine Not Yet Implemented
-
-                </button>
+                </div>
 
 
             {% endif %}
 
 
-            <span class="text-muted small">
+        </section>
 
-                Dataset:
 
-                <strong>
-                    {{ selected_symbol }}
-                </strong>
+    </div>
 
-                ·
 
-                {{ total_records }}
-                observations
+    <!-- ================================================== -->
+    <!-- RIGHT: MARKET CONDITION                            -->
+    <!-- ================================================== -->
 
-            </span>
+    {% if selected_symbol %}
+
+
+        <div class="col-lg-4">
+
+
+            <aside
+                class="
+                    data-panel
+                    market-condition-panel
+                    h-100
+                    mb-0
+                "
+            >
+
+
+                <div class="data-eyebrow">
+                    Understand the Market
+                </div>
+
+
+                <!-- ====================================== -->
+                <!-- TITLE                                  -->
+                <!-- ====================================== -->
+
+                <div class="market-condition-intro">
+
+
+                    <span class="data-section-icon">
+
+                        <i class="fa-solid fa-chart-column"></i>
+
+                    </span>
+
+
+                    <div>
+
+
+                        <h2>
+                            Market Condition
+                        </h2>
+
+
+                        <p>
+
+                            Understand how
+
+                            <strong>
+                                {{ selected_symbol }}
+                            </strong>
+
+                            has behaved recently using the
+                            historical data stored above.
+
+                        </p>
+
+
+                    </div>
+
+
+                </div>
+
+
+                <!-- ====================================== -->
+                <!-- WHAT DOES IT DO?                       -->
+                <!-- ====================================== -->
+
+                <div class="market-helper-box">
+
+
+                    <div class="market-helper-title">
+
+                        <i
+                            class="
+                                fa-solid
+                                fa-circle-question
+                                text-primary
+                            "
+                        >
+                        </i>
+
+                        What does this analysis do?
+
+                    </div>
+
+
+                    <p>
+
+                        MarketPulse examines recent price direction,
+                        trend behaviour and volatility and converts
+                        them into an easy-to-read historical
+                        classification.
+
+                    </p>
+
+
+                </div>
+
+
+                <!-- ====================================== -->
+                <!-- WHAT CAN IT RETURN?                    -->
+                <!-- ====================================== -->
+
+                <div class="market-helper-box">
+
+
+                    <div class="market-helper-title">
+
+                        <i
+                            class="
+                                fa-solid
+                                fa-list-check
+                                text-primary
+                            "
+                        >
+                        </i>
+
+                        Possible results
+
+                    </div>
+
+
+                    <p>
+
+                        Uptrend · Downtrend · Sideways ·
+                        High Volatility
+
+                    </p>
+
+
+                </div>
+
+
+                <!-- ====================================== -->
+                <!-- LATEST RESULT                          -->
+                <!-- ====================================== -->
+
+                {% if latest_regime %}
+
+
+                    <div class="market-result-summary">
+
+
+                        <div class="data-eyebrow">
+                            Latest Analysis
+                        </div>
+
+
+                        <div class="market-result-name">
+
+                            {{ latest_regime.get_regime_display }}
+
+                        </div>
+
+
+                        <div class="market-result-meta">
+
+                            Confidence score:
+
+                            <strong>
+
+                                {{ latest_regime.confidence|floatformat:2 }}
+                                / 1.00
+
+                            </strong>
+
+
+                            <br>
+
+
+                            Volatility score:
+
+                            <strong>
+
+                                {{ latest_regime.volatility|floatformat:2 }}
+
+                            </strong>
+
+
+                        </div>
+
+
+                    </div>
+
+
+                {% else %}
+
+
+                    <div class="market-result-empty">
+
+
+                        <strong>
+                            No analysis has been run yet
+                        </strong>
+
+
+                        <p>
+
+                            Open Market Condition Analysis to
+                            classify the recent historical
+                            behaviour of
+                            {{ selected_symbol }}.
+
+                        </p>
+
+
+                    </div>
+
+
+                {% endif %}
+
+
+                <!-- ====================================== -->
+                <!-- WHEN SHOULD USER USE IT?               -->
+                <!-- ====================================== -->
+
+                <div class="market-condition-when">
+
+
+                    <strong>
+                        When should I use this?
+                    </strong>
+
+
+                    <p>
+
+                        Use Market Condition when you want
+                        context about the recent market environment
+                        before researching a strategy or reviewing
+                        historical risk.
+
+                    </p>
+
+
+                </div>
+
+
+                <!-- ====================================== -->
+                <!-- ACTION                                 -->
+                <!-- ====================================== -->
+
+                {% if total_records >= 20 %}
+
+
+                    <a
+                        href="{% url 'data_management:market_condition' %}?symbol={{ selected_symbol }}"
+                        class="btn btn-primary w-100"
+                    >
+
+                        <i class="fa-solid fa-chart-line me-2"></i>
+
+                        Open Market Condition Analysis
+
+                        <i class="fa-solid fa-arrow-right ms-2"></i>
+
+                    </a>
+
+
+                {% else %}
+
+
+                    <button
+                        type="button"
+                        class="btn btn-secondary w-100"
+                        disabled
+                    >
+
+                        <i class="fa-solid fa-database me-2"></i>
+
+                        More Historical Data Required
+
+                    </button>
+
+
+                {% endif %}
+
+
+                <div class="market-condition-disclaimer">
+
+                    Historical classification only.
+                    It does not predict future prices.
+
+                </div>
+
+
+            </aside>
 
 
         </div>
 
-    </div>
+
+    {% endif %}
+
 
 </div>
+
 
 {% endif %}
 
 
 <!-- ====================================================== -->
-<!-- 9. HISTORICAL OHLCV TABLE                              -->
+<!-- 5. USE THE DATASET / MODEL SELECTOR                    -->
 <!-- ====================================================== -->
 
-{% if market_data %}
-
-<div class="card shadow-sm mb-4">
-
-    <div class="card-body">
+{% if selected_symbol %}
 
 
-        <div
-            class="
-                d-flex
-                justify-content-between
-                align-items-center
-                mb-3
-                flex-wrap
-                gap-2
-            "
+<section
+    class="
+        data-panel
+        data-panel-compact
+    "
+>
+
+
+    <div class="data-section-heading mb-3">
+
+
+        <span class="data-section-icon">
+
+            <i class="fa-solid fa-flask"></i>
+
+        </span>
+
+
+        <div>
+
+
+            <div class="data-eyebrow">
+                Use the Dataset
+            </div>
+
+
+            <h2>
+
+                Test a Model on
+                {{ selected_symbol }}
+
+            </h2>
+
+
+            <p>
+
+                Select a quantitative method from the
+                MarketPulse Strategy & Model Library and
+                inspect how it is intended to use this dataset.
+
+            </p>
+
+
+        </div>
+
+
+    </div>
+
+
+    <form
+        method="get"
+        action="{% url 'data_management:import' %}"
+    >
+
+
+        <input
+            type="hidden"
+            name="symbol"
+            value="{{ selected_symbol }}"
         >
+
+
+        <div class="model-selector-layout">
 
 
             <div>
 
-                <h2 class="h4 mb-1">
-                    Historical OHLCV Data
+
+                <label
+                    for="strategyModel"
+                    class="form-label fw-semibold small"
+                >
+                    Strategy / Quantitative Model
+                </label>
+
+
+                <select
+                    id="strategyModel"
+                    name="model"
+                    class="form-select"
+                    required
+                >
+
+
+                    <option value="">
+
+                        Select a strategy or model...
+
+                    </option>
+
+
+                    {% for category in strategy_categories %}
+
+
+                        <optgroup
+                            label="{{ category.label }}"
+                        >
+
+
+                            {% for item in category.items %}
+
+
+                                <option
+                                    value="{{ item.code }}"
+
+                                    {% if selected_model and selected_model.code == item.code %}
+                                        selected
+                                    {% endif %}
+                                >
+
+                                    {{ item.name }}
+
+                                </option>
+
+
+                            {% endfor %}
+
+
+                        </optgroup>
+
+
+                    {% endfor %}
+
+
+                </select>
+
+
+                <div class="data-form-hint">
+
+                    Models are grouped by quantitative
+                    research category and implementation status.
+
+                </div>
+
+
+            </div>
+
+
+            <button
+                type="submit"
+                class="btn btn-primary"
+            >
+
+                <i class="fa-solid fa-microscope me-2"></i>
+
+                Select Model
+
+            </button>
+
+
+        </div>
+
+
+    </form>
+
+
+</section>
+
+
+{% endif %}
+
+
+<!-- ====================================================== -->
+<!-- 6. SELECTED MODEL DETAILS                              -->
+<!-- ====================================================== -->
+
+{% if selected_model %}
+
+
+<section class="data-panel">
+
+
+    <div class="data-section-header">
+
+
+        <div>
+
+
+            <div class="data-eyebrow">
+                Selected Quantitative Model
+            </div>
+
+
+            <h2 class="h4 mb-1">
+
+                {{ selected_model.name }}
+
+            </h2>
+
+
+            <p class="text-muted mb-0">
+
+                {{ selected_model.get_category_display }}
+
+            </p>
+
+
+        </div>
+
+
+        <div>
+
+
+            {% if selected_model.implementation_status == "ready" %}
+
+
+                <span class="badge bg-success">
+
+                    <i class="fa-solid fa-circle-check me-1"></i>
+
+                    Ready to Run
+
+                </span>
+
+
+            {% elif selected_model.implementation_status == "experimental" %}
+
+
+                <span class="badge bg-warning text-dark">
+
+                    <i class="fa-solid fa-flask me-1"></i>
+
+                    Experimental
+
+                </span>
+
+
+            {% else %}
+
+
+                <span class="badge bg-secondary">
+
+                    <i class="fa-solid fa-code me-1"></i>
+
+                    Catalogued
+
+                </span>
+
+
+            {% endif %}
+
+
+        </div>
+
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- MODEL OVERVIEW                                     -->
+    <!-- ================================================== -->
+
+    <div class="model-detail-grid">
+
+
+        <div class="model-detail-box">
+
+
+            <h3>
+
+                <i class="fa-solid fa-book-open me-2"></i>
+
+                What Does This Model Do?
+
+            </h3>
+
+
+            <p>
+
+                {{ selected_model.description }}
+
+            </p>
+
+
+        </div>
+
+
+        <div class="model-detail-box">
+
+
+            <h3>
+
+                <i class="fa-solid fa-bullseye me-2"></i>
+
+                Why Would I Use It?
+
+            </h3>
+
+
+            <p>
+
+                {% if selected_model.purpose %}
+
+                    {{ selected_model.purpose }}
+
+                {% else %}
+
+                    No additional purpose information
+                    has been supplied.
+
+                {% endif %}
+
+            </p>
+
+
+        </div>
+
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- DATA REQUIREMENTS                                  -->
+    <!-- ================================================== -->
+
+    <div class="mb-4">
+
+
+        <h3 class="h6 mb-2">
+
+            <i class="fa-solid fa-database me-2"></i>
+
+            Data Required
+
+        </h3>
+
+
+        {% for requirement in selected_model.data_requirements %}
+
+
+            <span
+                class="
+                    badge
+                    bg-light
+                    text-dark
+                    border
+                    me-1
+                    mb-1
+                "
+            >
+
+                {{ requirement }}
+
+            </span>
+
+
+        {% empty %}
+
+
+            <span class="text-muted small">
+
+                No additional data requirements
+                have been configured.
+
+            </span>
+
+
+        {% endfor %}
+
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- PARAMETERS                                         -->
+    <!-- ================================================== -->
+
+    <div class="mb-4">
+
+
+        <h3 class="h6 mb-2">
+
+            <i class="fa-solid fa-sliders me-2"></i>
+
+            Default Model Parameters
+
+        </h3>
+
+
+        <div class="table-responsive">
+
+
+            <table
+                class="
+                    table
+                    table-sm
+                    table-bordered
+                    align-middle
+                    mb-0
+                "
+            >
+
+
+                <thead class="table-light">
+
+
+                    <tr>
+
+                        <th>
+                            Parameter
+                        </th>
+
+                        <th>
+                            Default Value
+                        </th>
+
+                    </tr>
+
+
+                </thead>
+
+
+                <tbody>
+
+
+                    {% for key, value in selected_model.default_parameters.items %}
+
+
+                        <tr>
+
+                            <td class="fw-semibold">
+
+                                {{ key }}
+
+                            </td>
+
+                            <td>
+
+                                {{ value }}
+
+                            </td>
+
+                        </tr>
+
+
+                    {% empty %}
+
+
+                        <tr>
+
+                            <td
+                                colspan="2"
+                                class="text-muted"
+                            >
+
+                                This model currently has no
+                                configurable default parameters.
+
+                            </td>
+
+                        </tr>
+
+
+                    {% endfor %}
+
+
+                </tbody>
+
+
+            </table>
+
+
+        </div>
+
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- EXPECTED OUTPUT                                    -->
+    <!-- ================================================== -->
+
+    <div class="mb-4">
+
+
+        <h3 class="h6 mb-2">
+
+            <i class="fa-solid fa-chart-column me-2"></i>
+
+            Expected Output
+
+        </h3>
+
+
+        <p class="mb-0 text-muted">
+
+            {% if selected_model.output_type %}
+
+                {{ selected_model.output_type }}
+
+            {% else %}
+
+                Output specification will be added when
+                the execution engine is implemented.
+
+            {% endif %}
+
+        </p>
+
+
+    </div>
+
+
+    <hr>
+
+
+    <!-- ================================================== -->
+    <!-- MODEL ACTION                                       -->
+    <!-- ================================================== -->
+
+    <div
+        class="
+            d-flex
+            align-items-center
+            gap-3
+            flex-wrap
+        "
+    >
+
+
+        {% if selected_model.implementation_status == "ready" %}
+
+
+            <button
+                type="button"
+                class="btn btn-success"
+            >
+
+                <i class="fa-solid fa-play me-2"></i>
+
+                Run {{ selected_model.name }}
+
+            </button>
+
+
+        {% elif selected_model.implementation_status == "experimental" %}
+
+
+            <button
+                type="button"
+                class="btn btn-warning"
+            >
+
+                <i class="fa-solid fa-flask me-2"></i>
+
+                Run Experimental Model
+
+            </button>
+
+
+        {% else %}
+
+
+            <button
+                type="button"
+                class="btn btn-secondary"
+                disabled
+            >
+
+                <i class="fa-solid fa-code me-2"></i>
+
+                Execution Engine Not Yet Implemented
+
+            </button>
+
+
+        {% endif %}
+
+
+        <span class="text-muted small">
+
+            Dataset:
+
+            <strong>
+                {{ selected_symbol }}
+            </strong>
+
+            &nbsp;·&nbsp;
+
+            {{ total_records }}
+            observations
+
+        </span>
+
+
+    </div>
+
+
+</section>
+
+
+{% endif %}
+
+
+<!-- ====================================================== -->
+<!-- 7. HISTORICAL MARKET DATA                              -->
+<!-- ====================================================== -->
+
+{% if market_data %}
+
+
+<section class="data-panel">
+
+
+    <div class="data-table-heading">
+
+
+        <div class="data-section-heading">
+
+
+            <span class="data-section-icon">
+
+                <i class="fa-solid fa-table"></i>
+
+            </span>
+
+
+            <div>
+
+
+                <h2>
+
+                    Historical Open, High, Low, Close
+                    and Volume Data
+
                 </h2>
 
 
-                <p class="text-muted mb-0">
+                <p>
 
                     Latest
                     {{ market_data|length }}
@@ -1556,123 +3207,159 @@ StrategyLibraryItem
 
                 </p>
 
+
             </div>
 
 
-            <span class="badge bg-dark fs-6">
-                {{ selected_symbol }}
-            </span>
-
-
         </div>
 
 
-        <div class="table-responsive">
+        <span class="dataset-symbol-badge">
 
+            {{ selected_symbol }}
 
-            <table
-                class="
-                    table
-                    table-striped
-                    table-hover
-                    table-bordered
-                    align-middle
-                "
-            >
+        </span>
 
-
-                <thead class="table-dark">
-
-                    <tr>
-
-                        <th>
-                            Date
-                        </th>
-
-                        <th class="text-end">
-                            Open
-                        </th>
-
-                        <th class="text-end">
-                            High
-                        </th>
-
-                        <th class="text-end">
-                            Low
-                        </th>
-
-                        <th class="text-end">
-                            Close
-                        </th>
-
-                        <th class="text-end">
-                            Volume
-                        </th>
-
-                    </tr>
-
-                </thead>
-
-
-                <tbody>
-
-
-                    {% for row in market_data %}
-
-                        <tr>
-
-                            <td class="text-nowrap">
-                                {{ row.date|date:"d/m/Y" }}
-                            </td>
-
-                            <td class="text-end">
-                                {{ row.open_price|floatformat:2 }}
-                            </td>
-
-                            <td class="text-end">
-                                {{ row.high_price|floatformat:2 }}
-                            </td>
-
-                            <td class="text-end">
-                                {{ row.low_price|floatformat:2 }}
-                            </td>
-
-                            <td class="text-end fw-bold">
-                                {{ row.close_price|floatformat:2 }}
-                            </td>
-
-                            <td class="text-end">
-                                {{ row.volume }}
-                            </td>
-
-                        </tr>
-
-                    {% endfor %}
-
-
-                </tbody>
-
-            </table>
-
-        </div>
 
     </div>
 
-</div>
+
+    <div class="data-table-wrapper">
+
+
+        <table
+            class="
+                table
+                table-hover
+                align-middle
+                market-data-table
+            "
+        >
+
+
+            <thead>
+
+
+                <tr>
+
+                    <th>
+                        Date
+                    </th>
+
+                    <th class="numeric">
+                        Open
+                    </th>
+
+                    <th class="numeric">
+                        High
+                    </th>
+
+                    <th class="numeric">
+                        Low
+                    </th>
+
+                    <th class="numeric">
+                        Close
+                    </th>
+
+                    <th class="numeric">
+                        Volume
+                    </th>
+
+                </tr>
+
+
+            </thead>
+
+
+            <tbody>
+
+
+                {% for row in market_data %}
+
+
+                    <tr>
+
+                        <td class="text-nowrap">
+
+                            {{ row.date|date:"d/m/Y" }}
+
+                        </td>
+
+                        <td class="numeric">
+
+                            {{ row.open_price|floatformat:2 }}
+
+                        </td>
+
+                        <td class="numeric">
+
+                            {{ row.high_price|floatformat:2 }}
+
+                        </td>
+
+                        <td class="numeric">
+
+                            {{ row.low_price|floatformat:2 }}
+
+                        </td>
+
+                        <td class="numeric fw-bold">
+
+                            {{ row.close_price|floatformat:2 }}
+
+                        </td>
+
+                        <td class="numeric">
+
+                            {{ row.volume }}
+
+                        </td>
+
+                    </tr>
+
+
+                {% endfor %}
+
+
+            </tbody>
+
+
+        </table>
+
+
+    </div>
+
+
+</section>
 
 
 {% elif selected_symbol %}
 
 
 <!-- ====================================================== -->
-<!-- 10. SYMBOL SELECTED BUT NO DATA                        -->
+<!-- 8. NO DATA FOR SELECTED SYMBOL                         -->
 <!-- ====================================================== -->
 
-<div class="alert alert-warning">
+<div
+    class="
+        alert
+        alert-warning
+        shadow-sm
+    "
+>
 
-    <h4 class="alert-heading">
 
-        <i class="fa-solid fa-triangle-exclamation me-2"></i>
+    <h4 class="alert-heading h6">
+
+        <i
+            class="
+                fa-solid
+                fa-triangle-exclamation
+                me-2
+            "
+        >
+        </i>
 
         No Historical Data Found
 
@@ -1687,10 +3374,11 @@ StrategyLibraryItem
             {{ selected_symbol }}
         </strong>.
 
-        Import the asset using the form above before running
+        Import the asset above before running
         historical analytics.
 
     </p>
+
 
 </div>
 
@@ -1699,74 +3387,101 @@ StrategyLibraryItem
 
 
 <!-- ====================================================== -->
-<!-- 11. EMPTY DATA STATE                                   -->
+<!-- 9. EMPTY STATE                                         -->
 <!-- ====================================================== -->
 
-<div class="card shadow-sm">
-
-    <div class="card-body text-center py-5">
+<section class="data-panel">
 
 
-        <i
+    <div class="text-center py-5">
+
+
+        <span
             class="
-                fa-solid
-                fa-database
-                fa-3x
-                text-muted
+                data-section-icon
                 mb-3
             "
         >
-        </i>
+
+            <i class="fa-solid fa-database"></i>
+
+        </span>
 
 
         <h2 class="h4">
-            No Historical Market Data Yet
+
+            Start by Importing Market Data
+
         </h2>
 
 
-        <p class="text-muted mb-0">
+        <p
+            class="
+                text-muted
+                mx-auto
+                mb-0
+            "
+            style="max-width: 620px;"
+        >
 
-            Import an asset above.
+            Import an asset using the form above.
 
             Historical Open, High, Low, Close and Volume
             observations will then become available for
-            Market Condition analysis, strategy testing
-            and risk calculations.
+            Market Condition analysis, strategy research
+            and historical risk calculations.
 
         </p>
 
 
     </div>
 
-</div>
+
+</section>
+
 
 {% endif %}
 
 
 <!-- ====================================================== -->
-<!-- 12. RECENT IMPORTS                                     -->
+<!-- 10. RECENT IMPORTS                                     -->
 <!-- ====================================================== -->
 
 {% if recent_imports %}
 
-<div class="card shadow-sm mt-4">
 
-    <div class="card-body">
+<section
+    class="
+        data-panel
+        data-panel-compact
+    "
+>
 
 
-        <h2 class="h4 mb-2">
+    <details>
+
+
+        <summary class="recent-imports-toggle">
+
             Recent Imports
-        </h2>
+
+            <span
+                class="
+                    text-muted
+                    fw-normal
+                    small
+                    ms-2
+                "
+            >
+
+                View recently requested historical datasets
+
+            </span>
+
+        </summary>
 
 
-        <p class="text-muted">
-
-            Recently requested historical market datasets.
-
-        </p>
-
-
-        <div class="table-responsive">
+        <div class="table-responsive mt-3">
 
 
             <table
@@ -1775,11 +3490,13 @@ StrategyLibraryItem
                     table-sm
                     table-hover
                     align-middle
+                    mb-0
                 "
             >
 
 
-                <thead>
+                <thead class="table-light">
+
 
                     <tr>
 
@@ -1805,6 +3522,7 @@ StrategyLibraryItem
 
                     </tr>
 
+
                 </thead>
 
 
@@ -1813,6 +3531,7 @@ StrategyLibraryItem
 
                     {% for item in recent_imports %}
 
+
                         <tr>
 
 
@@ -1820,19 +3539,20 @@ StrategyLibraryItem
 
                                 <a
                                     href="{% url 'data_management:import' %}?symbol={{ item.symbol }}"
-                                    class="
-                                        fw-semibold
-                                        text-decoration-none
-                                    "
+                                    class="fw-semibold"
                                 >
+
                                     {{ item.symbol }}
+
                                 </a>
 
                             </td>
 
 
                             <td>
+
                                 {{ item.source.name }}
+
                             </td>
 
 
@@ -1841,19 +3561,26 @@ StrategyLibraryItem
 
                                 {% if item.status == "completed" %}
 
+
                                     <span class="badge bg-success">
+
                                         Completed
+
                                     </span>
 
 
                                 {% elif item.status == "failed" %}
 
+
                                     <span class="badge bg-danger">
+
                                         Failed
+
                                     </span>
 
 
                                 {% elif item.status == "processing" %}
+
 
                                     <span
                                         class="
@@ -1862,15 +3589,21 @@ StrategyLibraryItem
                                             text-dark
                                         "
                                     >
+
                                         Processing
+
                                     </span>
 
 
                                 {% else %}
 
+
                                     <span class="badge bg-secondary">
+
                                         {{ item.status|title }}
+
                                     </span>
+
 
                                 {% endif %}
 
@@ -1879,44 +3612,63 @@ StrategyLibraryItem
 
 
                             <td>
+
                                 {{ item.records_imported }}
+
                             </td>
 
 
                             <td>
+
                                 {{ item.created_at|date:"d/m/Y H:i" }}
+
                             </td>
 
 
                         </tr>
+
 
                     {% endfor %}
 
 
                 </tbody>
 
+
             </table>
+
 
         </div>
 
 
         <a
             href="{% url 'data_management:history' %}"
-            class="btn btn-outline-secondary mt-2"
+            class="btn btn-outline-secondary mt-3"
         >
 
-            <i class="fa-solid fa-clock-rotate-left me-2"></i>
+            <i
+                class="
+                    fa-solid
+                    fa-clock-rotate-left
+                    me-2
+                "
+            >
+            </i>
 
             View Full Import History
 
         </a>
 
 
-    </div>
+    </details>
 
-</div>
+
+</section>
+
 
 {% endif %}
+
+
+</div>
 
 
 {% endblock %}
