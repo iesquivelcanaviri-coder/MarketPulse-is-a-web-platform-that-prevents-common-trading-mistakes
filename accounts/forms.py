@@ -22,6 +22,14 @@ PostgreSQL
 
 Profile Page
     ↓
+UserAccountUpdateForm
+    ↓
+accounts.User
+    ↓
+PostgreSQL
+
+        +
+
 UserProfileForm
     ↓
 accounts.UserProfile
@@ -34,6 +42,16 @@ PURPOSE:
 This file validates account information before Django
 attempts to save the information into the database.
 
+The forms in this file are responsible for:
+
+- Registering new MarketPulse users
+- Preventing duplicate usernames
+- Preventing duplicate email addresses
+- Allowing logged-in users to update account information
+- Allowing logged-in users to update profile information
+- Applying Bootstrap styling to form controls
+
+
 This is particularly important for fields that must remain
 unique, such as:
 
@@ -41,7 +59,7 @@ unique, such as:
 - Email address
 
 
-EXAMPLE:
+REGISTRATION EXAMPLE:
 
 User enters:
 
@@ -63,6 +81,31 @@ YES
 
 NO
     → Continue registration
+
+
+PROFILE UPDATE EXAMPLE:
+
+Logged-in user changes:
+
+    first_name = Irene
+    last_name = Esquivel
+    email = newemail@example.com
+
+        ↓
+
+UserAccountUpdateForm
+
+        ↓
+
+Validate username and email
+
+        ↓
+
+Update existing accounts.User record
+
+        ↓
+
+PostgreSQL
 
 
 This prevents PostgreSQL errors such as:
@@ -191,6 +234,9 @@ class UserRegistrationForm(UserCreationForm):
 
                 "placeholder":
                     "Enter your email address",
+
+                "autocomplete":
+                    "email",
             }
         ),
     )
@@ -210,6 +256,9 @@ class UserRegistrationForm(UserCreationForm):
 
                 "placeholder":
                     "Enter your first name",
+
+                "autocomplete":
+                    "given-name",
             }
         ),
     )
@@ -229,6 +278,9 @@ class UserRegistrationForm(UserCreationForm):
 
                 "placeholder":
                     "Enter your last name",
+
+                "autocomplete":
+                    "family-name",
             }
         ),
     )
@@ -471,7 +523,337 @@ class UserRegistrationForm(UserCreationForm):
 
 
 # ============================================================
-# 5. USER PROFILE FORM
+# 5. USER ACCOUNT UPDATE FORM
+# ============================================================
+
+class UserAccountUpdateForm(forms.ModelForm):
+    """
+    ============================================================
+    MARKETPULSE USER ACCOUNT UPDATE
+    ============================================================
+
+    Allows an authenticated user to update information stored
+    directly inside the accounts.User model.
+
+    This is different from UserProfileForm.
+
+    UserAccountUpdateForm updates:
+
+    - Username
+    - First name
+    - Last name
+    - Email address
+
+
+    UserProfileForm updates:
+
+    - Biography
+    - Location
+    - Trading experience
+    - Risk tolerance
+    - Maximum daily loss
+    - Preferred markets
+
+
+    Framework flow:
+
+    Logged-in User
+        ↓
+    profile.html
+        ↓
+    UserAccountUpdateForm
+        ↓
+    Validate username
+        ↓
+    Validate email
+        ↓
+    Update existing accounts.User
+        ↓
+    PostgreSQL
+
+
+    IMPORTANT:
+
+    This form does NOT manage passwords.
+
+    Password changes and forgotten-password recovery should
+    use Django's dedicated password-management functionality.
+    ============================================================
+    """
+
+
+    # ========================================================
+    # 5.1 EMAIL FIELD
+    # ========================================================
+
+    email = forms.EmailField(
+        required=True,
+        widget=forms.EmailInput(
+            attrs={
+                "class":
+                    "form-control",
+
+                "placeholder":
+                    "Enter your email address",
+
+                "autocomplete":
+                    "email",
+            }
+        ),
+    )
+
+
+    # ========================================================
+    # 5.2 FIRST NAME
+    # ========================================================
+
+    first_name = forms.CharField(
+        max_length=30,
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                "class":
+                    "form-control",
+
+                "placeholder":
+                    "Enter your first name",
+
+                "autocomplete":
+                    "given-name",
+            }
+        ),
+    )
+
+
+    # ========================================================
+    # 5.3 LAST NAME
+    # ========================================================
+
+    last_name = forms.CharField(
+        max_length=30,
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                "class":
+                    "form-control",
+
+                "placeholder":
+                    "Enter your last name",
+
+                "autocomplete":
+                    "family-name",
+            }
+        ),
+    )
+
+
+    # ========================================================
+    # 5.4 FORM MODEL CONFIGURATION
+    # ========================================================
+
+    class Meta:
+
+        # Use the same custom MarketPulse user model.
+        model = User
+
+
+        # These fields can be edited from the profile page.
+        fields = (
+            "username",
+            "first_name",
+            "last_name",
+            "email",
+        )
+
+
+        widgets = {
+
+            "username":
+                forms.TextInput(
+                    attrs={
+                        "class":
+                            "form-control",
+
+                        "placeholder":
+                            "Enter your username",
+
+                        "autocomplete":
+                            "username",
+                    }
+                ),
+        }
+
+
+    # ========================================================
+    # 5.5 VALIDATE UPDATED USERNAME
+    # ========================================================
+
+    def clean_username(self):
+        """
+        Check that the new username is not already being used
+        by another MarketPulse account.
+
+        The currently logged-in user's own database record is
+        excluded from the duplicate check.
+
+        Example:
+
+        Current user:
+            username = irene
+
+        User saves profile without changing username:
+            irene
+
+        This remains valid because the current user's record
+        is excluded.
+
+        However, if another account already uses:
+            trader1
+
+        and the current user attempts to change to:
+            trader1
+
+        the form displays a validation error.
+        """
+
+
+        username = (
+            self.cleaned_data
+            .get(
+                "username",
+                "",
+            )
+            .strip()
+        )
+
+
+        # ----------------------------------------------------
+        # Require username
+        # ----------------------------------------------------
+
+        if not username:
+
+            raise forms.ValidationError(
+                "Please enter a username."
+            )
+
+
+        # ----------------------------------------------------
+        # Search for another user with this username
+        # ----------------------------------------------------
+
+        duplicate_username = User.objects.filter(
+            username__iexact=username
+        )
+
+
+        # ----------------------------------------------------
+        # Exclude the user currently being edited
+        # ----------------------------------------------------
+
+        if self.instance and self.instance.pk:
+
+            duplicate_username = (
+                duplicate_username.exclude(
+                    pk=self.instance.pk
+                )
+            )
+
+
+        # ----------------------------------------------------
+        # Reject username when another account owns it
+        # ----------------------------------------------------
+
+        if duplicate_username.exists():
+
+            raise forms.ValidationError(
+                (
+                    "This username is already in use. "
+                    "Please choose another username."
+                )
+            )
+
+
+        return username
+
+
+    # ========================================================
+    # 5.6 VALIDATE UPDATED EMAIL
+    # ========================================================
+
+    def clean_email(self):
+        """
+        Check that another MarketPulse account is not already
+        using the requested email address.
+
+        The currently logged-in user's own account is excluded
+        from the duplicate check.
+        """
+
+
+        email = (
+            self.cleaned_data
+            .get(
+                "email",
+                "",
+            )
+            .strip()
+            .lower()
+        )
+
+
+        # ----------------------------------------------------
+        # Require email
+        # ----------------------------------------------------
+
+        if not email:
+
+            raise forms.ValidationError(
+                "Please enter an email address."
+            )
+
+
+        # ----------------------------------------------------
+        # Search for another account using the email
+        # ----------------------------------------------------
+
+        duplicate_email = User.objects.filter(
+            email__iexact=email
+        )
+
+
+        # ----------------------------------------------------
+        # Exclude the currently logged-in user
+        # ----------------------------------------------------
+
+        if self.instance and self.instance.pk:
+
+            duplicate_email = (
+                duplicate_email.exclude(
+                    pk=self.instance.pk
+                )
+            )
+
+
+        # ----------------------------------------------------
+        # Reject duplicate email
+        # ----------------------------------------------------
+
+        if duplicate_email.exists():
+
+            raise forms.ValidationError(
+                (
+                    "Another MarketPulse account is already "
+                    "using this email address."
+                )
+            )
+
+
+        return email
+
+
+# ============================================================
+# 6. USER PROFILE FORM
 # ============================================================
 
 class UserProfileForm(forms.ModelForm):
@@ -481,26 +863,47 @@ class UserProfileForm(forms.ModelForm):
     ============================================================
 
     Allows an authenticated MarketPulse user to update
-    additional profile information.
+    additional information stored inside UserProfile.
+
+    This information is separate from the main accounts.User
+    model.
+
+    Profile information includes:
+
+    - Biography
+    - Location
+    - Trading experience
+    - Risk tolerance
+    - Maximum daily loss
+    - Preferred markets
+
 
     Framework flow:
 
-    Profile Page
+    Logged-in User
+        ↓
+    profile.html
         ↓
     UserProfileForm
         ↓
-    UserProfile
+    accounts.UserProfile
         ↓
     PostgreSQL
     ============================================================
     """
 
 
+    # ========================================================
+    # 6.1 FORM MODEL CONFIGURATION
+    # ========================================================
+
     class Meta:
 
         model = UserProfile
 
 
+        # These are the additional profile fields currently
+        # available in the MarketPulse UserProfile model.
         fields = (
             "bio",
             "location",
@@ -530,11 +933,44 @@ class UserProfileForm(forms.ModelForm):
                             "Tell us a little about yourself",
                     }
                 ),
+
+            # ------------------------------------------------
+            # Location
+            # ------------------------------------------------
+
+            "location":
+                forms.TextInput(
+                    attrs={
+                        "class":
+                            "form-control",
+
+                        "placeholder":
+                            "Enter your location",
+                    }
+                ),
+
+            # ------------------------------------------------
+            # Maximum daily loss
+            # ------------------------------------------------
+
+            "max_daily_loss":
+                forms.NumberInput(
+                    attrs={
+                        "class":
+                            "form-control",
+
+                        "placeholder":
+                            "Enter your maximum daily loss",
+
+                        "step":
+                            "0.01",
+                    }
+                ),
         }
 
 
     # ========================================================
-    # 5.1 PROFILE FORM INITIALISATION
+    # 6.2 PROFILE FORM INITIALISATION
     # ========================================================
 
     def __init__(
@@ -545,6 +981,20 @@ class UserProfileForm(forms.ModelForm):
         """
         Add consistent Bootstrap styling to profile fields
         without changing the underlying UserProfile model.
+
+        Different widget types use different Bootstrap CSS
+        classes.
+
+        Examples:
+
+        Text field
+            → form-control
+
+        Dropdown
+            → form-select
+
+        Checkbox
+            → form-check-input
         """
 
 
@@ -560,8 +1010,6 @@ class UserProfileForm(forms.ModelForm):
 
         for field_name, field in self.fields.items():
 
-            # The bio field already has its CSS class set
-            # above, but updating it here is harmless.
             current_class = (
                 field.widget.attrs.get(
                     "class",
@@ -570,8 +1018,10 @@ class UserProfileForm(forms.ModelForm):
             )
 
 
-            # Checkbox widgets should use Bootstrap's
-            # form-check-input class rather than form-control.
+            # ------------------------------------------------
+            # Individual checkbox
+            # ------------------------------------------------
+
             if isinstance(
                 field.widget,
                 forms.CheckboxInput,
@@ -582,8 +1032,10 @@ class UserProfileForm(forms.ModelForm):
                 ] = "form-check-input"
 
 
-            # Multiple checkbox fields may use a
-            # CheckboxSelectMultiple widget.
+            # ------------------------------------------------
+            # Multiple checkbox options
+            # ------------------------------------------------
+
             elif isinstance(
                 field.widget,
                 forms.CheckboxSelectMultiple,
@@ -593,6 +1045,28 @@ class UserProfileForm(forms.ModelForm):
                     "class"
                 ] = "form-check-input"
 
+
+            # ------------------------------------------------
+            # Dropdown / select menu
+            # ------------------------------------------------
+
+            elif isinstance(
+                field.widget,
+                forms.Select,
+            ):
+
+                field.widget.attrs[
+                    "class"
+                ] = (
+                    current_class
+                    +
+                    " form-select"
+                ).strip()
+
+
+            # ------------------------------------------------
+            # Normal text, number and textarea controls
+            # ------------------------------------------------
 
             else:
 

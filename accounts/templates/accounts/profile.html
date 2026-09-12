@@ -1,3 +1,885 @@
 {% extends 'base.html' %}
-<!-- ======================================================== PROFILE TEMPLATE: edits risk preferences used across MarketPulse. -->
-{% block title %}Profile | MarketPulse{% endblock %}{% block content %}<h1 class="h3">Trading & Risk Profile</h1><div class="card shadow-sm"><div class="card-body"><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Save</button></form></div></div>{% endblock %}
+
+<!-- ========================================================
+     PROFILE TEMPLATE
+
+     Framework mapping:
+     accounts/views.py sends the logged-in user's account
+     information, profile information, and update forms here.
+
+     This page allows the user to:
+
+     - View their account information
+     - View their MarketPulse trading/risk profile
+     - Edit their personal information
+     - Edit their trading and risk preferences
+     - Save updated information
+     - Change their account password securely
+
+     Related files:
+
+     accounts/views.py
+            ↓
+     accounts/forms.py
+            ↓
+     accounts/templates/accounts/profile.html
+            ↓
+     accounts/urls.py
+========================================================= -->
+
+
+{% block title %}
+Profile | MarketPulse
+{% endblock %}
+
+
+{% block content %}
+
+
+<!-- ========================================================
+     1. PROFILE PAGE CONTAINER
+========================================================= -->
+
+<div class="container py-4">
+
+
+    <!-- ----------------------------------------------------
+         PAGE HEADER
+    ----------------------------------------------------- -->
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
+
+        <div>
+
+            <h1 class="h3 mb-1">
+                My Profile
+            </h1>
+
+            <p class="text-muted mb-0">
+                View and manage your MarketPulse account,
+                personal information, and trading risk preferences.
+            </p>
+
+        </div>
+
+
+        <!-- ------------------------------------------------
+             EDIT PROFILE BUTTON
+        ------------------------------------------------- -->
+
+        <div class="mt-3 mt-md-0">
+
+            <button
+                class="btn btn-primary"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#editProfile"
+                aria-expanded="false"
+                aria-controls="editProfile">
+
+                Edit Profile
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- ====================================================
+         2. DJANGO MESSAGES
+    ===================================================== -->
+
+    {% if messages %}
+
+        {% for message in messages %}
+
+            <div
+                class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show"
+                role="alert">
+
+                {{ message }}
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Close">
+                </button>
+
+            </div>
+
+        {% endfor %}
+
+    {% endif %}
+
+
+    <!-- ====================================================
+         3. PROFILE OVERVIEW
+    ===================================================== -->
+
+    <div class="row g-4">
+
+
+        <!-- =================================================
+             ACCOUNT INFORMATION
+        ================================================== -->
+
+        <div class="col-lg-6">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-header bg-white">
+
+                    <h5 class="mb-0">
+                        Account Information
+                    </h5>
+
+                </div>
+
+
+                <div class="card-body">
+
+
+                    <!-- -------------------------------------
+                         ACCOUNT DETAILS FROM DJANGO USER
+                    -------------------------------------- -->
+
+                    {% for label, value in account_details %}
+
+                        <div class="row py-3 border-bottom">
+
+                            <div class="col-sm-5">
+
+                                <strong>
+                                    {{ label }}
+                                </strong>
+
+                            </div>
+
+
+                            <div class="col-sm-7 text-muted">
+
+                                {% if value %}
+
+                                    {{ value }}
+
+                                {% else %}
+
+                                    <span class="text-muted">
+                                        Not provided
+                                    </span>
+
+                                {% endif %}
+
+                            </div>
+
+                        </div>
+
+                    {% empty %}
+
+                        <div class="alert alert-light border mb-0">
+
+                            No account information is currently available.
+
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             TRADING & RISK PROFILE INFORMATION
+        ================================================== -->
+
+        <div class="col-lg-6">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-header bg-white">
+
+                    <h5 class="mb-0">
+                        Trading & Risk Profile
+                    </h5>
+
+                </div>
+
+
+                <div class="card-body">
+
+
+                    <!-- -------------------------------------
+                         PROFILE DETAILS FROM USERPROFILE
+                    -------------------------------------- -->
+
+                    {% for label, value in profile_details %}
+
+                        <div class="row py-3 border-bottom">
+
+                            <div class="col-sm-5">
+
+                                <strong>
+                                    {{ label }}
+                                </strong>
+
+                            </div>
+
+
+                            <div class="col-sm-7 text-muted">
+
+
+                                <!-- -------------------------
+                                     BOOLEAN VALUE = YES
+                                -------------------------- -->
+
+                                {% if value is True %}
+
+                                    <span class="badge bg-success">
+                                        Yes
+                                    </span>
+
+
+                                <!-- -------------------------
+                                     BOOLEAN VALUE = NO
+                                -------------------------- -->
+
+                                {% elif value is False %}
+
+                                    <span class="badge bg-secondary">
+                                        No
+                                    </span>
+
+
+                                <!-- -------------------------
+                                     NORMAL VALUE
+                                -------------------------- -->
+
+                                {% elif value %}
+
+                                    {{ value }}
+
+
+                                <!-- -------------------------
+                                     EMPTY VALUE
+                                -------------------------- -->
+
+                                {% else %}
+
+                                    <span class="text-muted">
+                                        Not provided
+                                    </span>
+
+                                {% endif %}
+
+                            </div>
+
+                        </div>
+
+                    {% empty %}
+
+                        <div class="alert alert-light border mb-0">
+
+                            No trading or risk preferences
+                            have been added yet.
+
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ====================================================
+         4. EDIT PROFILE SECTION
+    ===================================================== -->
+
+    <div
+        class="collapse mt-4"
+        id="editProfile">
+
+        <div class="card shadow-sm">
+
+            <div class="card-header bg-white">
+
+                <h5 class="mb-1">
+                    Edit Profile
+                </h5>
+
+                <small class="text-muted">
+                    Update your account information
+                    and MarketPulse preferences.
+                </small>
+
+            </div>
+
+
+            <div class="card-body">
+
+
+                <!-- -----------------------------------------
+                     PROFILE UPDATE FORM
+
+                     user_form:
+                     Updates Django User information.
+
+                     profile_form:
+                     Updates MarketPulse UserProfile information.
+                ------------------------------------------ -->
+
+                <form
+                    method="post"
+                    enctype="multipart/form-data">
+
+                    {% csrf_token %}
+
+
+                    <!-- =====================================
+                         FORM-WIDE USER FORM ERRORS
+                    ====================================== -->
+
+                    {% if user_form.non_field_errors %}
+
+                        <div class="alert alert-danger">
+
+                            {% for error in user_form.non_field_errors %}
+
+                                <div>
+                                    {{ error }}
+                                </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                    {% endif %}
+
+
+                    <!-- =====================================
+                         FORM-WIDE PROFILE FORM ERRORS
+                    ====================================== -->
+
+                    {% if profile_form.non_field_errors %}
+
+                        <div class="alert alert-danger">
+
+                            {% for error in profile_form.non_field_errors %}
+
+                                <div>
+                                    {{ error }}
+                                </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                    {% endif %}
+
+
+                    <!-- =====================================
+                         PERSONAL & ACCOUNT DETAILS
+                    ====================================== -->
+
+                    <div class="mb-4">
+
+                        <h6 class="mb-1">
+                            Personal & Account Details
+                        </h6>
+
+                        <p class="small text-muted mb-3">
+
+                            Update the personal information
+                            connected to your MarketPulse account.
+
+                        </p>
+
+
+                        <div class="row g-3">
+
+
+                            <!-- --------------------------------
+                                 LOOP THROUGH USER FORM FIELDS
+                            --------------------------------- -->
+
+                            {% for field in user_form %}
+
+                                <div class="col-md-6">
+
+                                    <label
+                                        for="{{ field.id_for_label }}"
+                                        class="form-label">
+
+                                        {{ field.label }}
+
+
+                                        <!-- -----------------
+                                             REQUIRED FIELD
+                                        ------------------ -->
+
+                                        {% if field.field.required %}
+
+                                            <span class="text-danger">
+                                                *
+                                            </span>
+
+                                        {% endif %}
+
+                                    </label>
+
+
+                                    <!-- ---------------------
+                                         DJANGO FORM FIELD
+                                    ---------------------- -->
+
+                                    {{ field }}
+
+
+                                    <!-- ---------------------
+                                         FIELD HELP TEXT
+                                    ---------------------- -->
+
+                                    {% if field.help_text %}
+
+                                        <div class="form-text">
+
+                                            {{ field.help_text }}
+
+                                        </div>
+
+                                    {% endif %}
+
+
+                                    <!-- ---------------------
+                                         FIELD VALIDATION ERRORS
+                                    ---------------------- -->
+
+                                    {% for error in field.errors %}
+
+                                        <div class="text-danger small mt-1">
+
+                                            {{ error }}
+
+                                        </div>
+
+                                    {% endfor %}
+
+                                </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                    </div>
+
+
+                    <hr class="my-4">
+
+
+                    <!-- =====================================
+                         TRADING & RISK PROFILE
+                    ====================================== -->
+
+                    <div class="mb-4">
+
+                        <h6 class="mb-1">
+                            Trading & Risk Preferences
+                        </h6>
+
+
+                        <p class="small text-muted mb-3">
+
+                            These preferences help MarketPulse provide
+                            a more suitable risk-management experience.
+
+                        </p>
+
+
+                        <div class="row g-3">
+
+
+                            <!-- --------------------------------
+                                 LOOP THROUGH PROFILE FORM
+                            --------------------------------- -->
+
+                            {% for field in profile_form %}
+
+
+                                <!-- =========================
+                                     CHECKBOX FIELD
+                                ========================== -->
+
+                                {% if field.field.widget.input_type == "checkbox" %}
+
+                                    <div class="col-md-6">
+
+                                        <div class="form-check mt-4">
+
+                                            {{ field }}
+
+                                            <label
+                                                class="form-check-label"
+                                                for="{{ field.id_for_label }}">
+
+                                                {{ field.label }}
+
+                                            </label>
+
+                                        </div>
+
+
+                                        <!-- -----------------
+                                             HELP TEXT
+                                        ------------------ -->
+
+                                        {% if field.help_text %}
+
+                                            <div class="form-text">
+
+                                                {{ field.help_text }}
+
+                                            </div>
+
+                                        {% endif %}
+
+
+                                        <!-- -----------------
+                                             VALIDATION ERRORS
+                                        ------------------ -->
+
+                                        {% for error in field.errors %}
+
+                                            <div class="text-danger small mt-1">
+
+                                                {{ error }}
+
+                                            </div>
+
+                                        {% endfor %}
+
+                                    </div>
+
+
+                                <!-- =========================
+                                     NORMAL FORM FIELD
+                                ========================== -->
+
+                                {% else %}
+
+                                    <div class="col-md-6">
+
+                                        <label
+                                            for="{{ field.id_for_label }}"
+                                            class="form-label">
+
+                                            {{ field.label }}
+
+
+                                            <!-- -----------------
+                                                 REQUIRED FIELD
+                                            ------------------ -->
+
+                                            {% if field.field.required %}
+
+                                                <span class="text-danger">
+                                                    *
+                                                </span>
+
+                                            {% endif %}
+
+                                        </label>
+
+
+                                        <!-- -----------------
+                                             FIELD INPUT
+                                        ------------------ -->
+
+                                        {{ field }}
+
+
+                                        <!-- -----------------
+                                             HELP TEXT
+                                        ------------------ -->
+
+                                        {% if field.help_text %}
+
+                                            <div class="form-text">
+
+                                                {{ field.help_text }}
+
+                                            </div>
+
+                                        {% endif %}
+
+
+                                        <!-- -----------------
+                                             VALIDATION ERRORS
+                                        ------------------ -->
+
+                                        {% for error in field.errors %}
+
+                                            <div class="text-danger small mt-1">
+
+                                                {{ error }}
+
+                                            </div>
+
+                                        {% endfor %}
+
+                                    </div>
+
+                                {% endif %}
+
+
+                            <!-- =============================
+                                 NO PROFILE FIELDS
+                            ============================== -->
+
+                            {% empty %}
+
+                                <div class="col-12">
+
+                                    <div class="alert alert-light border mb-0">
+
+                                        No additional profile fields
+                                        are currently configured.
+
+                                    </div>
+
+                                </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- =====================================
+                         FORM ACTION BUTTONS
+                    ====================================== -->
+
+                    <div class="d-flex flex-wrap gap-2 mt-4">
+
+
+                        <!-- ---------------------------------
+                             SAVE PROFILE
+                        ---------------------------------- -->
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary">
+
+                            Save Changes
+
+                        </button>
+
+
+                        <!-- ---------------------------------
+                             CANCEL EDITING
+                        ---------------------------------- -->
+
+                        <button
+                            type="button"
+                            class="btn btn-outline-secondary"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#editProfile"
+                            aria-controls="editProfile">
+
+                            Cancel
+
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ====================================================
+         5. ACCOUNT SECURITY
+    ===================================================== -->
+
+    <div class="card shadow-sm mt-4">
+
+        <div class="card-header bg-white">
+
+            <h5 class="mb-0">
+                Account Security
+            </h5>
+
+        </div>
+
+
+        <div class="card-body">
+
+            <div class="row align-items-center">
+
+
+                <!-- ------------------------------------------------
+                     SECURITY INFORMATION
+                ------------------------------------------------- -->
+
+                <div class="col-lg-8">
+
+                    <h6>
+                        Password & Account Protection
+                    </h6>
+
+
+                    <p class="text-muted mb-1">
+
+                        Your password is securely managed through
+                        Django's authentication system.
+
+                    </p>
+
+
+                    <p class="text-muted mb-lg-0">
+
+                        For security reasons, your existing password
+                        is never displayed on your profile. You can
+                        change your password securely using your
+                        current password.
+
+                    </p>
+
+                </div>
+
+
+                <!-- ------------------------------------------------
+                     CHANGE PASSWORD BUTTON
+                ------------------------------------------------- -->
+
+                <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+
+                    <a
+                        href="{% url 'accounts:password_change' %}"
+                        class="btn btn-outline-primary">
+
+                        Change Password
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ====================================================
+         6. PROFILE & PASSWORD MANAGEMENT EXPLANATION
+    ===================================================== -->
+
+    <div class="card shadow-sm mt-4">
+
+        <div class="card-body">
+
+            <h5 class="mb-3">
+                Account Management
+            </h5>
+
+
+            <div class="row g-4">
+
+
+                <!-- ------------------------------------------------
+                     PROFILE MANAGEMENT
+                ------------------------------------------------- -->
+
+                <div class="col-md-6">
+
+                    <h6>
+                        Profile Information
+                    </h6>
+
+                    <p class="text-muted mb-0">
+
+                        Use the Edit Profile option to update your
+                        personal information, trading preferences,
+                        and risk-management settings.
+
+                    </p>
+
+                </div>
+
+
+                <!-- ------------------------------------------------
+                     PASSWORD MANAGEMENT
+                ------------------------------------------------- -->
+
+                <div class="col-md-6">
+
+                    <h6>
+                        Password Management
+                    </h6>
+
+                    <p class="text-muted mb-0">
+
+                        If you know your current password, use
+                        Change Password above. If you forget your
+                        password, use the password recovery option
+                        available from the login page.
+
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ====================================================
+         7. MARKETPULSE PROFILE INFORMATION
+    ===================================================== -->
+
+    <div class="card shadow-sm mt-4">
+
+        <div class="card-body">
+
+            <h5>
+                Why does MarketPulse use this information?
+            </h5>
+
+
+            <p class="text-muted mb-0">
+
+                Your trading and risk preferences can be used across
+                MarketPulse features such as risk-management tools,
+                strategy analysis, backtesting, alerts, and
+                decision-support functionality.
+
+                Keeping this information up to date helps the
+                platform provide results that better reflect your
+                trading preferences and risk limits.
+
+            </p>
+
+        </div>
+
+    </div>
+
+
+</div>
+
+{% endblock %}
