@@ -1,3 +1,948 @@
-{% extends 'base.html' %}
-<!-- ======================================================== REGISTER TEMPLATE: accounts/views.py passes UserRegistrationForm here. -->
-{% block title %}Register | MarketPulse{% endblock %}{% block content %}<div class="row justify-content-center"><div class="col-lg-7"><div class="card shadow-sm"><div class="card-body"><h2>Create Account</h2><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Register</button></form></div></div></div></div>{% endblock %}
+{% extends "base.html" %}
+{% load django_bootstrap5 %}
+
+
+{% comment %}
+============================================================
+MARKETPULSE - USER REGISTRATION
+============================================================
+
+FRONT-END WORKFLOW:
+
+User
+    ↓
+Open Register Page
+    ↓
+Enter Account Details
+    ↓
+Submit Form
+    ↓
+accounts.views.register
+    ↓
+UserRegistrationForm
+    ↓
+Validation
+    ↓
+Username Available?
+    ├── No
+    │     ↓
+    │   Display Username Error
+    │
+    └── Yes
+          ↓
+        Create User
+          ↓
+        Create UserProfile
+          ↓
+        PostgreSQL
+          ↓
+        Redirect to Login
+
+
+PURPOSE:
+
+This page allows a new MarketPulse user to create
+an account safely.
+
+The template deliberately displays:
+
+- Field validation errors
+- Duplicate username errors
+- Password validation errors
+- Non-field errors
+
+The actual validation and database operations happen
+inside accounts/views.py and accounts/forms.py.
+
+============================================================
+{% endcomment %}
+
+
+{% block title %}
+Create Account | MarketPulse
+{% endblock %}
+
+
+{% block extra_css %}
+
+<style>
+
+/* ======================================================== */
+/* MARKETPULSE - REGISTRATION PAGE                          */
+/* ======================================================== */
+
+
+/* -------------------------------------------------------- */
+/* 1. PAGE LAYOUT                                           */
+/* -------------------------------------------------------- */
+
+.register-page {
+
+    min-height: calc(100vh - 140px);
+
+    display: flex;
+    align-items: center;
+
+    padding: 2rem 0;
+}
+
+
+.register-wrapper {
+
+    width: 100%;
+    max-width: 760px;
+
+    margin: 0 auto;
+}
+
+
+/* -------------------------------------------------------- */
+/* 2. REGISTRATION CARD                                     */
+/* -------------------------------------------------------- */
+
+.register-card {
+
+    overflow: hidden;
+
+    background: #ffffff;
+
+    border: 1px solid #e5eaf1;
+    border-radius: 16px;
+
+    box-shadow:
+        0 12px 35px
+        rgba(16, 24, 40, 0.07);
+}
+
+
+.register-card-header {
+
+    padding: 1.7rem 1.8rem 1.2rem;
+
+    border-bottom: 1px solid #eef1f5;
+}
+
+
+.register-brand {
+
+    display: inline-flex;
+    align-items: center;
+
+    gap: .45rem;
+
+    margin-bottom: .6rem;
+
+    color: #0d6efd;
+
+    font-size: .75rem;
+    font-weight: 700;
+
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+
+.register-title {
+
+    margin-bottom: .35rem;
+
+    font-size: 1.75rem;
+    font-weight: 750;
+
+    color: #1d2939;
+}
+
+
+.register-subtitle {
+
+    max-width: 590px;
+
+    margin: 0;
+
+    color: #667085;
+
+    font-size: .9rem;
+    line-height: 1.5;
+}
+
+
+/* -------------------------------------------------------- */
+/* 3. FORM BODY                                             */
+/* -------------------------------------------------------- */
+
+.register-card-body {
+
+    padding: 1.8rem;
+}
+
+
+.register-section-title {
+
+    margin-bottom: 1rem;
+
+    font-size: .8rem;
+    font-weight: 700;
+
+    color: #344054;
+}
+
+
+.register-form-row {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(0, 1fr)
+        );
+
+    gap: 1rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 4. FORM FIELDS                                           */
+/* -------------------------------------------------------- */
+
+.register-field {
+
+    margin-bottom: 1rem;
+}
+
+
+.register-field label {
+
+    margin-bottom: .4rem;
+
+    color: #344054;
+
+    font-size: .78rem;
+    font-weight: 650;
+}
+
+
+.register-field input {
+
+    min-height: 44px;
+
+    border-color: #d6dde8;
+    border-radius: 9px;
+}
+
+
+.register-field input:focus {
+
+    border-color: #0d6efd;
+
+    box-shadow:
+        0 0 0 .2rem
+        rgba(13, 110, 253, .10);
+}
+
+
+.register-help {
+
+    margin-top: .35rem;
+
+    color: #667085;
+
+    font-size: .68rem;
+    line-height: 1.45;
+}
+
+
+/* -------------------------------------------------------- */
+/* 5. ERRORS                                                */
+/* -------------------------------------------------------- */
+
+.register-error {
+
+    display: flex;
+    align-items: flex-start;
+
+    gap: .4rem;
+
+    margin-top: .4rem;
+
+    color: #b42318;
+
+    font-size: .72rem;
+    line-height: 1.4;
+}
+
+
+.register-error i {
+
+    margin-top: .15rem;
+}
+
+
+.register-error-summary {
+
+    margin-bottom: 1.25rem;
+
+    padding: .85rem 1rem;
+
+    color: #842029;
+    background: #f8d7da;
+
+    border: 1px solid #f5c2c7;
+    border-radius: 9px;
+
+    font-size: .78rem;
+}
+
+
+/* -------------------------------------------------------- */
+/* 6. PASSWORD INFORMATION                                  */
+/* -------------------------------------------------------- */
+
+.password-information {
+
+    margin: .5rem 0 1.3rem;
+
+    padding: .85rem 1rem;
+
+    background: #f8fafc;
+
+    border: 1px solid #e4e9f0;
+    border-radius: 9px;
+}
+
+
+.password-information strong {
+
+    display: block;
+
+    margin-bottom: .35rem;
+
+    color: #344054;
+
+    font-size: .72rem;
+}
+
+
+.password-information ul {
+
+    margin: 0;
+
+    padding-left: 1.1rem;
+
+    color: #667085;
+
+    font-size: .67rem;
+    line-height: 1.6;
+}
+
+
+/* -------------------------------------------------------- */
+/* 7. ACTIONS                                               */
+/* -------------------------------------------------------- */
+
+.register-actions {
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 1rem;
+
+    margin-top: 1.3rem;
+}
+
+
+.register-button {
+
+    min-width: 150px;
+
+    padding: .65rem 1rem;
+
+    border-radius: 9px;
+
+    font-weight: 650;
+}
+
+
+.register-login {
+
+    color: #667085;
+
+    font-size: .76rem;
+}
+
+
+.register-login a {
+
+    color: #0d6efd;
+
+    font-weight: 650;
+    text-decoration: none;
+}
+
+
+.register-login a:hover {
+    text-decoration: underline;
+}
+
+
+/* -------------------------------------------------------- */
+/* 8. SECURITY NOTE                                         */
+/* -------------------------------------------------------- */
+
+.register-security {
+
+    display: flex;
+    align-items: flex-start;
+
+    gap: .55rem;
+
+    margin-top: 1.2rem;
+
+    padding-top: 1rem;
+
+    color: #667085;
+
+    border-top: 1px solid #edf0f4;
+
+    font-size: .66rem;
+    line-height: 1.45;
+}
+
+
+.register-security i {
+
+    margin-top: .1rem;
+
+    color: #168654;
+}
+
+
+/* -------------------------------------------------------- */
+/* 9. RESPONSIVE                                            */
+/* -------------------------------------------------------- */
+
+@media (max-width: 767.98px) {
+
+    .register-form-row {
+
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+
+    .register-actions {
+
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+
+    .register-button {
+
+        width: 100%;
+    }
+
+
+    .register-login {
+
+        text-align: center;
+    }
+
+}
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+
+<div class="register-page">
+
+
+    <div class="register-wrapper">
+
+
+        <div class="register-card">
+
+
+            <!-- ================================================= -->
+            <!-- 1. PAGE HEADER                                    -->
+            <!-- ================================================= -->
+
+            <div class="register-card-header">
+
+
+                <div class="register-brand">
+
+                    <i class="fa-solid fa-chart-line"></i>
+
+                    MarketPulse
+
+                </div>
+
+
+                <h1 class="register-title">
+
+                    Create Your Account
+
+                </h1>
+
+
+                <p class="register-subtitle">
+
+                    Create a MarketPulse account to access the
+                    dashboard, analyse market data, build and test
+                    strategies, and use the risk-management tools.
+
+                </p>
+
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- 2. REGISTRATION FORM                              -->
+            <!-- ================================================= -->
+
+            <div class="register-card-body">
+
+
+                <form
+                    method="post"
+                    novalidate
+                >
+
+                    {% csrf_token %}
+
+
+                    <!-- ========================================= -->
+                    <!-- NON-FIELD ERRORS                          -->
+                    <!-- ========================================= -->
+
+                    {% if form.non_field_errors %}
+
+
+                        <div
+                            class="register-error-summary"
+                            role="alert"
+                        >
+
+
+                            <strong>
+                                We could not create your account.
+                            </strong>
+
+
+                            {% for error in form.non_field_errors %}
+
+                                <div class="mt-1">
+                                    {{ error }}
+                                </div>
+
+                            {% endfor %}
+
+
+                        </div>
+
+
+                    {% endif %}
+
+
+                    <!-- ========================================= -->
+                    <!-- ACCOUNT INFORMATION                       -->
+                    <!-- ========================================= -->
+
+                    <div class="register-section-title">
+
+                        Account Information
+
+                    </div>
+
+
+                    <!-- ========================================= -->
+                    <!-- USERNAME                                  -->
+                    <!-- ========================================= -->
+
+                    <div class="register-field">
+
+
+                        <label
+                            for="{{ form.username.id_for_label }}"
+                            class="form-label"
+                        >
+
+                            Username
+
+                        </label>
+
+
+                        {{ form.username }}
+
+
+                        <div class="register-help">
+
+                            Choose a unique username for your
+                            MarketPulse account.
+
+                        </div>
+
+
+                        {% for error in form.username.errors %}
+
+
+                            <div
+                                class="register-error"
+                                role="alert"
+                            >
+
+                                <i class="fa-solid fa-circle-exclamation"></i>
+
+                                <span>
+                                    {{ error }}
+                                </span>
+
+                            </div>
+
+
+                        {% endfor %}
+
+
+                    </div>
+
+
+                    <!-- ========================================= -->
+                    <!-- FIRST + LAST NAME                         -->
+                    <!-- ========================================= -->
+
+                    <div class="register-form-row">
+
+
+                        <!-- First name -->
+
+                        <div class="register-field">
+
+
+                            <label
+                                for="{{ form.first_name.id_for_label }}"
+                                class="form-label"
+                            >
+
+                                First Name
+
+                            </label>
+
+
+                            {{ form.first_name }}
+
+
+                            {% for error in form.first_name.errors %}
+
+
+                                <div class="register-error">
+
+                                    <i class="fa-solid fa-circle-exclamation"></i>
+
+                                    <span>
+                                        {{ error }}
+                                    </span>
+
+                                </div>
+
+
+                            {% endfor %}
+
+
+                        </div>
+
+
+                        <!-- Last name -->
+
+                        <div class="register-field">
+
+
+                            <label
+                                for="{{ form.last_name.id_for_label }}"
+                                class="form-label"
+                            >
+
+                                Last Name
+
+                            </label>
+
+
+                            {{ form.last_name }}
+
+
+                            {% for error in form.last_name.errors %}
+
+
+                                <div class="register-error">
+
+                                    <i class="fa-solid fa-circle-exclamation"></i>
+
+                                    <span>
+                                        {{ error }}
+                                    </span>
+
+                                </div>
+
+
+                            {% endfor %}
+
+
+                        </div>
+
+
+                    </div>
+
+
+                    <!-- ========================================= -->
+                    <!-- EMAIL                                     -->
+                    <!-- ========================================= -->
+
+                    <div class="register-field">
+
+
+                        <label
+                            for="{{ form.email.id_for_label }}"
+                            class="form-label"
+                        >
+
+                            Email Address
+
+                        </label>
+
+
+                        {{ form.email }}
+
+
+                        <div class="register-help">
+
+                            Enter a valid email address associated
+                            with your account.
+
+                        </div>
+
+
+                        {% for error in form.email.errors %}
+
+
+                            <div class="register-error">
+
+                                <i class="fa-solid fa-circle-exclamation"></i>
+
+                                <span>
+                                    {{ error }}
+                                </span>
+
+                            </div>
+
+
+                        {% endfor %}
+
+
+                    </div>
+
+
+                    <!-- ========================================= -->
+                    <!-- PASSWORD                                  -->
+                    <!-- ========================================= -->
+
+                    <div class="register-section-title mt-4">
+
+                        Account Security
+
+                    </div>
+
+
+                    <!-- Password 1 -->
+
+                    <div class="register-field">
+
+
+                        <label
+                            for="{{ form.password1.id_for_label }}"
+                            class="form-label"
+                        >
+
+                            Password
+
+                        </label>
+
+
+                        {{ form.password1 }}
+
+
+                        {% for error in form.password1.errors %}
+
+
+                            <div class="register-error">
+
+                                <i class="fa-solid fa-circle-exclamation"></i>
+
+                                <span>
+                                    {{ error }}
+                                </span>
+
+                            </div>
+
+
+                        {% endfor %}
+
+
+                    </div>
+
+
+                    <!-- Password 2 -->
+
+                    <div class="register-field">
+
+
+                        <label
+                            for="{{ form.password2.id_for_label }}"
+                            class="form-label"
+                        >
+
+                            Confirm Password
+
+                        </label>
+
+
+                        {{ form.password2 }}
+
+
+                        {% for error in form.password2.errors %}
+
+
+                            <div class="register-error">
+
+                                <i class="fa-solid fa-circle-exclamation"></i>
+
+                                <span>
+                                    {{ error }}
+                                </span>
+
+                            </div>
+
+
+                        {% endfor %}
+
+
+                    </div>
+
+
+                    <!-- ========================================= -->
+                    <!-- PASSWORD GUIDANCE                         -->
+                    <!-- ========================================= -->
+
+                    <div class="password-information">
+
+
+                        <strong>
+
+                            Password requirements
+
+                        </strong>
+
+
+                        <ul>
+
+                            <li>
+                                Use a password that is difficult
+                                for somebody else to guess.
+                            </li>
+
+                            <li>
+                                Avoid using only numbers or very
+                                common passwords.
+                            </li>
+
+                            <li>
+                                Both password fields must match.
+                            </li>
+
+                        </ul>
+
+
+                    </div>
+
+
+                    <!-- ========================================= -->
+                    <!-- SUBMIT                                    -->
+                    <!-- ========================================= -->
+
+                    <div class="register-actions">
+
+
+                        <button
+                            type="submit"
+                            class="
+                                btn
+                                btn-primary
+                                register-button
+                            "
+                        >
+
+                            <i class="fa-solid fa-user-plus me-2"></i>
+
+                            Create Account
+
+                        </button>
+
+
+                        <div class="register-login">
+
+                            Already have an account?
+
+                            <a href="{% url 'accounts:login' %}">
+                                Log in
+                            </a>
+
+                        </div>
+
+
+                    </div>
+
+
+                    <!-- ========================================= -->
+                    <!-- SECURITY INFORMATION                      -->
+                    <!-- ========================================= -->
+
+                    <div class="register-security">
+
+
+                        <i class="fa-solid fa-shield-halved"></i>
+
+
+                        <div>
+
+                            MarketPulse uses Django's authentication
+                            system to validate registration details
+                            and securely hash passwords before they
+                            are stored in the database.
+
+                        </div>
+
+
+                    </div>
+
+
+                </form>
+
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+</div>
+
+
+{% endblock %}

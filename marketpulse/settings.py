@@ -640,50 +640,72 @@ BOOTSTRAP5 = {
 #
 # MarketPulse uses Alpaca as an external market-data provider.
 #
-# Planned architecture:
+# Framework mapping:
 #
-# Browser / React / Django Template
+# Browser / Django Template / React
 #           ↓
-# MarketPulse API
+# MarketPulse Django API
 #           ↓
-# Django Alpaca Service Layer
+# data_management/services/alpaca.py
 #           ↓
 # Alpaca REST API
 #
 #
-# Alpaca will provide:
+# Alpaca provides MarketPulse with:
 #
-# - searchable US-equity asset universe
-# - stock names
-# - exchange information
-# - tradability information
-# - fractional-trading information
-# - shortability information
-# - latest trade
-# - latest bid
-# - latest ask
-# - bid/ask spread
-# - current daily market information
+# - Searchable US-equity assets
+# - Company names
+# - Exchange information
+# - Tradability information
+# - Fractional-trading information
+# - Shortability information
+# - Latest trade information
+# - Latest bid and ask prices
+# - Daily market snapshots
+# - Historical market bars
 #
 #
-# IMPORTANT SECURITY RULE:
+# SECURITY:
 #
-# The API key and API secret must NEVER be placed directly
-# inside this settings.py file.
+# Real credentials must NOT be written directly inside
+# settings.py.
 #
-# They are read from:
+# Local development:
 #
-# .env
+#     .env
 #
-# locally, and from Render Environment Variables in production.
+# Production:
 #
-# They must never be sent to:
+#     Render Environment Variables
 #
-# - templates
+#
+# Required environment variables:
+#
+# ALPACA_API_KEY_ID
+# ALPACA_API_SECRET_KEY
+#
+#
+# IMPORTANT:
+#
+# Django's SECRET_KEY and Alpaca's API secret are completely
+# different values.
+#
+# Django:
+#
+#     SECRET_KEY
+#
+# Alpaca:
+#
+#     ALPACA_API_SECRET_KEY
+#
+#
+# Never expose the Alpaca credentials to:
+#
+# - Templates
 # - JavaScript
 # - React
-# - GitHub
 # - API responses
+# - GitHub
 #
 # Only the Django backend communicates directly with Alpaca.
 # ------------------------------------------------------------
@@ -693,6 +715,11 @@ BOOTSTRAP5 = {
 # 23.1 ALPACA API KEY ID
 # ============================================================
 
+# Example .env:
+#
+# ALPACA_API_KEY_ID=your-alpaca-key
+#
+# No real credential is used as the default.
 ALPACA_API_KEY_ID = config(
     "ALPACA_API_KEY_ID",
     default="",
@@ -703,6 +730,14 @@ ALPACA_API_KEY_ID = config(
 # 23.2 ALPACA API SECRET KEY
 # ============================================================
 
+# Example .env:
+#
+# ALPACA_API_SECRET_KEY=your-alpaca-secret
+#
+# IMPORTANT:
+#
+# Do not call this SECRET_KEY because SECRET_KEY is already
+# reserved for Django's cryptographic application secret.
 ALPACA_API_SECRET_KEY = config(
     "ALPACA_API_SECRET_KEY",
     default="",
@@ -710,30 +745,50 @@ ALPACA_API_SECRET_KEY = config(
 
 
 # ============================================================
-# 23.3 ALPACA PAPER TRADING BASE URL
+# 23.3 ALPACA CONFIGURATION STATUS
+# ============================================================
+
+# This gives other backend code a simple way to determine
+# whether both Alpaca credentials were supplied.
+#
+# It does NOT expose the values themselves.
+ALPACA_CONFIGURED = bool(
+    ALPACA_API_KEY_ID
+    and
+    ALPACA_API_SECRET_KEY
+)
+
+
+# ============================================================
+# 23.4 ALPACA PAPER TRADING BASE URL
 # ============================================================
 
 # IMPORTANT:
 #
-# Do NOT add "/v2" here.
+# Do not include "/v2" here.
 #
 # Correct:
 #
-# https://paper-api.alpaca.markets
+#     https://paper-api.alpaca.markets
 #
-# The MarketPulse service layer will add paths such as:
+# The Alpaca service layer adds the endpoint path.
 #
-# /v2/assets
+# Example:
 #
-# /v2/assets/AAPL
+# Base:
+#     https://paper-api.alpaca.markets
 #
-# This produces:
+# Service path:
+#     /v2/assets
 #
-# https://paper-api.alpaca.markets/v2/assets
+# Final request:
+#     https://paper-api.alpaca.markets/v2/assets
 #
-# instead of accidentally producing:
 #
-# https://paper-api.alpaca.markets/v2/v2/assets
+# If "/v2" were included here and the service also added
+# "/v2/assets", MarketPulse could incorrectly produce:
+#
+#     /v2/v2/assets
 ALPACA_TRADING_BASE_URL = config(
     "ALPACA_TRADING_BASE_URL",
     default="https://paper-api.alpaca.markets",
@@ -741,12 +796,12 @@ ALPACA_TRADING_BASE_URL = config(
 
 
 # ============================================================
-# 23.4 ALPACA MARKET DATA BASE URL
+# 23.5 ALPACA MARKET DATA BASE URL
 # ============================================================
 
-# Market-data endpoints use a separate Alpaca hostname.
+# Market-data endpoints use Alpaca's data hostname.
 #
-# Example endpoint:
+# Example:
 #
 # https://data.alpaca.markets/v2/stocks/AAPL/snapshot
 ALPACA_DATA_BASE_URL = config(
@@ -756,20 +811,14 @@ ALPACA_DATA_BASE_URL = config(
 
 
 # ============================================================
-# 23.5 ALPACA STOCK DATA FEED
+# 23.6 ALPACA STOCK DATA FEED
 # ============================================================
 
-# IEX is used as the default MarketPulse stock feed.
+# MarketPulse currently uses the IEX stock-data feed.
 #
-# Alpaca's free market-data access generally provides the
-# IEX exchange feed.
+# Example .env:
 #
-# If the account later has the appropriate consolidated
-# market-data entitlement, this can be changed in .env.
-#
-# Example:
-#
-# ALPACA_DATA_FEED=sip
+# ALPACA_DATA_FEED=iex
 ALPACA_DATA_FEED = config(
     "ALPACA_DATA_FEED",
     default="iex",
@@ -777,13 +826,10 @@ ALPACA_DATA_FEED = config(
 
 
 # ============================================================
-# 23.6 ALPACA REQUEST TIMEOUT
+# 23.7 ALPACA REQUEST TIMEOUT
 # ============================================================
 
-# External API calls should never be allowed to wait forever.
-#
-# The Alpaca service layer can use this setting when performing
-# requests.
+# Prevent external API requests from waiting indefinitely.
 ALPACA_REQUEST_TIMEOUT = config(
     "ALPACA_REQUEST_TIMEOUT",
     default=8,
@@ -792,15 +838,13 @@ ALPACA_REQUEST_TIMEOUT = config(
 
 
 # ============================================================
-# 23.7 ALPACA ASSET CACHE
+# 23.8 ALPACA ASSET CACHE
 # ============================================================
 
-# Alpaca contains thousands of assets.
+# Asset information changes relatively slowly.
 #
-# MarketPulse should NOT download the complete asset list every
-# time somebody enters one character into the Risk search box.
-#
-# The asset catalogue can therefore be cached for 30 minutes.
+# Cache for 30 minutes to avoid repeatedly downloading
+# the Alpaca asset catalogue during search operations.
 ALPACA_ASSET_CACHE_SECONDS = config(
     "ALPACA_ASSET_CACHE_SECONDS",
     default=1800,
@@ -809,14 +853,13 @@ ALPACA_ASSET_CACHE_SECONDS = config(
 
 
 # ============================================================
-# 23.8 ALPACA SNAPSHOT CACHE
+# 23.9 ALPACA SNAPSHOT CACHE
 # ============================================================
 
-# Latest stock snapshots are much more time-sensitive than
-# the asset catalogue.
+# Stock snapshots change much more frequently.
 #
-# A short cache reduces unnecessary API calls while keeping
-# the Risk interface reasonably current.
+# A short cache reduces unnecessary requests while keeping
+# the Dashboard and Risk workspace reasonably current.
 ALPACA_SNAPSHOT_CACHE_SECONDS = config(
     "ALPACA_SNAPSHOT_CACHE_SECONDS",
     default=15,
