@@ -23,9 +23,32 @@ Risk
 API
 
 
+AUTHENTICATION / PASSWORD RECOVERY:
+
+User
+    ↓
+Login
+    ↓
+Forgot Password
+    ↓
+Django PasswordResetView
+    ↓
+Password Reset Email
+    ↓
+Secure UID + Token Link
+    ↓
+PasswordResetConfirmView
+    ↓
+New Password
+    ↓
+PasswordResetCompleteView
+    ↓
+Return to Login
+
+
 DASHBOARD ALERT ARCHITECTURE:
 
-There are now two related but different concepts:
+There are two related but different concepts:
 
 1. AlertRule
        ↓
@@ -38,6 +61,7 @@ There are now two related but different concepts:
        Greater Than
        800
 
+
 2. Alert
        ↓
    A notification/event generated when attention is required.
@@ -49,19 +73,21 @@ Dashboard
     ↓
 Alert Rule
     ↓
-Market monitoring
+Market Monitoring
     ↓
-Condition triggered
+Condition Triggered
     ↓
 Alert
     ↓
-User acknowledgement / resolution
+User Acknowledgement / Resolution
 
+
+INTERNAL ANALYTICS:
 
 The old public /analysis/ route has been removed.
 
-The analysis_tools app remains installed internally because
-its models and analytical functions are still used by:
+The analysis_tools app can remain installed internally
+because analytical functionality may still be used by:
 
 Data
     → Market Condition / Regime Analysis
@@ -69,8 +95,18 @@ Data
 Strategies
     → Strategy Robustness / Overfitting Analysis
 
+
+Risk now focuses on:
+
 Risk
-    → Stress Testing
+    → Trade Risk Planning
+    → Position Sizing
+    → Stop-Loss Analysis
+    → Reward / Risk
+
+
+Stress Testing has been removed from the current
+user-facing MarketPulse project.
 
 ============================================================
 """
@@ -81,6 +117,11 @@ Risk
 # ============================================================
 
 from django.contrib import admin
+
+# Django's built-in authentication views provide the complete
+# password-reset workflow without MarketPulse having to create
+# its own reset-token security system.
+from django.contrib.auth import views as auth_views
 
 from django.urls import (
     include,
@@ -340,7 +381,7 @@ urlpatterns = [
     #
     # SECURITY:
     #
-    # The view should retrieve the rule using:
+    # The view retrieves the rule using:
     #
     #     user=request.user
     #
@@ -367,8 +408,6 @@ urlpatterns = [
     # Allows the user to temporarily stop monitoring a rule
     # without deleting its configuration.
     #
-    #
-    # Example:
     #
     # Enabled:
     #
@@ -423,16 +462,224 @@ urlpatterns = [
 
 
     # ========================================================
-    # 3.11 ACCOUNTS
+    # 3.11 PASSWORD RECOVERY - REQUEST RESET
     # ========================================================
 
-    # Includes:
+    # Browser URL:
+    #
+    # /accounts/password-reset/
+    #
+    #
+    # User workflow:
+    #
+    # Login
+    #     ↓
+    # Forgot Password?
+    #     ↓
+    # Enter registered email
+    #     ↓
+    # PasswordResetView
+    #
+    #
+    # Django handles:
+    #
+    # - Looking for an account with the submitted email
+    # - Creating the secure reset token
+    # - Creating the encoded user identifier
+    # - Building the reset email
+    # - Sending the email using EMAIL_BACKEND
+    #
+    #
+    # MarketPulse customises:
+    #
+    # - Page template
+    # - Email message template
+    # - Email subject template
+    #
+    #
+    # The actual email provider is configured separately in:
+    #
+    # marketpulse/settings.py
+
+    path(
+        "accounts/password-reset/",
+
+        auth_views.PasswordResetView.as_view(
+
+            template_name=(
+                "accounts/password_reset.html"
+            ),
+
+            email_template_name=(
+                "accounts/password_reset_email.html"
+            ),
+
+            subject_template_name=(
+                "accounts/password_reset_subject.txt"
+            ),
+
+        ),
+
+        name="password_reset",
+    ),
+
+
+    # ========================================================
+    # 3.12 PASSWORD RECOVERY - EMAIL REQUEST COMPLETE
+    # ========================================================
+
+    # Browser URL:
+    #
+    # /accounts/password-reset/done/
+    #
+    #
+    # Framework mapping:
+    #
+    # Password Reset Form
+    #     ↓
+    # Successful submission
+    #     ↓
+    # PasswordResetDoneView
+    #     ↓
+    # "Check your email" page
+    #
+    #
+    # SECURITY:
+    #
+    # The page should use neutral wording such as:
+    #
+    # "If an account exists for this email..."
+    #
+    # This avoids revealing whether a particular email
+    # address is registered with MarketPulse.
+
+    path(
+        "accounts/password-reset/done/",
+
+        auth_views.PasswordResetDoneView.as_view(
+
+            template_name=(
+                "accounts/password_reset_done.html"
+            ),
+
+        ),
+
+        name="password_reset_done",
+    ),
+
+
+    # ========================================================
+    # 3.13 PASSWORD RECOVERY - SECURE RESET LINK
+    # ========================================================
+
+    # Example email URL:
+    #
+    # /accounts/password-reset-confirm/
+    # <uidb64>/<token>/
+    #
+    #
+    # uidb64:
+    #
+    #     Encoded identifier for the account.
+    #
+    #
+    # token:
+    #
+    #     Secure Django-generated password-reset token.
+    #
+    #
+    # Framework mapping:
+    #
+    # User opens email
+    #     ↓
+    # Clicks secure reset URL
+    #     ↓
+    # Django validates UID + token
+    #     ↓
+    # PasswordResetConfirmView
+    #     ↓
+    # User enters new password twice
+    #     ↓
+    # Django validates password
+    #     ↓
+    # Password changed
+    #
+    #
+    # MarketPulse does NOT need to create or store its own
+    # password-reset tokens.
+
+    path(
+        (
+            "accounts/password-reset-confirm/"
+            "<uidb64>/<token>/"
+        ),
+
+        auth_views.PasswordResetConfirmView.as_view(
+
+            template_name=(
+                "accounts/password_reset_confirm.html"
+            ),
+
+        ),
+
+        name="password_reset_confirm",
+    ),
+
+
+    # ========================================================
+    # 3.14 PASSWORD RECOVERY - RESET COMPLETE
+    # ========================================================
+
+    # Browser URL:
+    #
+    # /accounts/password-reset-complete/
+    #
+    #
+    # Framework mapping:
+    #
+    # New password accepted
+    #     ↓
+    # PasswordResetCompleteView
+    #     ↓
+    # Password Updated page
+    #     ↓
+    # User returns to Login
+    #
+    #
+    # No password or token is exposed by this page.
+
+    path(
+        "accounts/password-reset-complete/",
+
+        auth_views.PasswordResetCompleteView.as_view(
+
+            template_name=(
+                "accounts/password_reset_complete.html"
+            ),
+
+        ),
+
+        name="password_reset_complete",
+    ),
+
+
+    # ========================================================
+    # 3.15 ACCOUNTS
+    # ========================================================
+
+    # Includes the existing MarketPulse account system:
     #
     # - Registration
     # - Login
     # - Logout
     # - Profile
-    # - Password-related account workflows
+    #
+    #
+    # Password recovery is intentionally defined above rather
+    # than replacing the existing accounts application.
+    #
+    # This means MarketPulse keeps its existing custom User
+    # model and registration/login workflow.
 
     path(
         "accounts/",
@@ -443,7 +690,7 @@ urlpatterns = [
 
 
     # ========================================================
-    # 3.12 DATA MANAGEMENT
+    # 3.16 DATA MANAGEMENT
     # ========================================================
 
     # Includes:
@@ -462,7 +709,7 @@ urlpatterns = [
 
 
     # ========================================================
-    # 3.13 STRATEGY BUILDER
+    # 3.17 STRATEGY BUILDER
     # ========================================================
 
     # Includes:
@@ -483,7 +730,7 @@ urlpatterns = [
 
 
     # ========================================================
-    # 3.14 RISK MANAGEMENT
+    # 3.18 RISK MANAGEMENT
     # ========================================================
 
     # Includes:
@@ -491,8 +738,12 @@ urlpatterns = [
     # - Trade Risk Planner
     # - Position sizing
     # - Stop-loss analysis
-    # - Stress testing
-    # - Portfolio risk analysis
+    # - Reward-to-risk calculations
+    # - Historical risk context
+    #
+    #
+    # Stress testing has been removed from the current
+    # MarketPulse user-facing Risk workflow.
 
     path(
         "risk/",
@@ -503,7 +754,7 @@ urlpatterns = [
 
 
     # ========================================================
-    # 3.15 REST API
+    # 3.19 REST API
     # ========================================================
 
     # Includes:
@@ -516,7 +767,7 @@ urlpatterns = [
     # - Strategy API
     # - Backtest API
     # - Risk APIs
-    # - MATLAB bridge endpoints
+    # - Optional MATLAB bridge endpoints
 
     path(
         "api/",
