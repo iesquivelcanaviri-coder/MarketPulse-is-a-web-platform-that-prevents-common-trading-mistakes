@@ -1030,64 +1030,72 @@ MATLAB_DIR = BASE_DIR / "matlab"
 # EMAIL ARCHITECTURE
 # ============================================================
 #
-# MarketPulse User
-#       ↓
+# MarketPulse password recovery works as follows:
+#
+# User
+#     ↓
+# Login Page
+#     ↓
 # Forgot Password
-#       ↓
+#     ↓
 # Django PasswordResetView
-#       ↓
+#     ↓
 # Django Email Framework
-#       ↓
+#     ↓
 # Django-Anymail
-#       ↓
+#     ↓
 # Mailjet HTTPS API
-#       ↓
-# User Email Inbox
+#     ↓
+# Password Reset Email
+#     ↓
+# Secure Django Reset Link
+#     ↓
+# User Creates New Password
 #
 #
 # IMPORTANT:
 #
-# MarketPulse does NOT store email provider credentials
-# directly inside settings.py.
+# Django is responsible for:
+#
+# - finding the user
+# - generating the reset token
+# - validating the reset token
+# - changing the password
 #
 #
-# LOCAL:
+# Mailjet is responsible only for:
 #
-# .env
+# - delivering the email
+#
+#
+# No passwords or API credentials are sent to templates,
+# JavaScript or the browser.
+#
+#
+# LOCAL DEVELOPMENT:
+#
+# Credentials are stored in:
+#
+#     .env
 #
 #
 # PRODUCTION:
 #
-# Render
-#     ↓
-# Environment
-#     ↓
-# Environment Variables
+# Credentials are stored in:
+#
+#     Render
+#         ↓
+#     Environment
+#         ↓
+#     Environment Variables
 #
 #
-# REQUIRED PRODUCTION VARIABLES:
+# Required production variables:
 #
 # MAILJET_API_KEY
 # MAILJET_SECRET_KEY
 # DEFAULT_FROM_EMAIL
 #
-#
-# Example:
-#
-# DEFAULT_FROM_EMAIL=MarketPulse <your-email@example.com>
-#
-#
-# The sender email must first be verified in Mailjet.
-#
-#
-# IMPORTANT:
-#
-# Django's password-reset functionality creates and validates
-# the secure reset token.
-#
-# Mailjet only delivers the email.
-#
-# Mailjet never receives or changes the user's password.
 # ============================================================
 
 
@@ -1095,6 +1103,9 @@ MATLAB_DIR = BASE_DIR / "matlab"
 # 21.1 MAILJET API KEY
 # ============================================================
 
+# Mailjet public API key.
+#
+# Never place the real key directly in settings.py.
 MAILJET_API_KEY = config(
     "MAILJET_API_KEY",
     default="",
@@ -1105,6 +1116,9 @@ MAILJET_API_KEY = config(
 # 21.2 MAILJET SECRET KEY
 # ============================================================
 
+# Mailjet private / secret API key.
+#
+# Never commit this value to GitHub.
 MAILJET_SECRET_KEY = config(
     "MAILJET_SECRET_KEY",
     default="",
@@ -1115,34 +1129,26 @@ MAILJET_SECRET_KEY = config(
 # 21.3 MAILJET CONFIGURATION STATUS
 # ============================================================
 
-# This boolean tells MarketPulse whether both Mailjet
-# credentials are available.
+# True only when both Mailjet credentials exist.
 #
-# It does not reveal either credential.
+# This boolean can safely be used internally because it does
+# not expose either credential.
 MAILJET_CONFIGURED = bool(
-
     MAILJET_API_KEY
-
     and
-
     MAILJET_SECRET_KEY
-
 )
 
 
 # ============================================================
-# 21.4 ANYMAIL CONFIGURATION
+# 21.4 DJANGO-ANYMAIL CONFIGURATION
 # ============================================================
 
-# Django-Anymail acts as the bridge between Django's normal
-# email framework and the Mailjet HTTPS API.
+# Django-Anymail provides the connection between Django's
+# standard email framework and Mailjet's HTTPS API.
 #
-# This means Django code can continue to use:
-#
-# django.core.mail
-#
-# and Django's built-in authentication views can send email
-# normally without needing Mailjet-specific code.
+# Django password-reset views therefore continue using
+# Django's normal email system.
 ANYMAIL = {
 
     "MAILJET_API_KEY":
@@ -1159,10 +1165,10 @@ ANYMAIL = {
 # ============================================================
 
 # ------------------------------------------------------------
-# PRODUCTION / CONFIGURED ENVIRONMENT
+# MAILJET CONFIGURED
 # ------------------------------------------------------------
 #
-# If the Mailjet credentials are available:
+# When both Mailjet credentials exist:
 #
 # Django
 #     ↓
@@ -1170,24 +1176,24 @@ ANYMAIL = {
 #     ↓
 # Mailjet API
 #     ↓
-# Real email
+# Real email inbox
 #
 #
 # ------------------------------------------------------------
-# LOCAL FALLBACK
+# MAILJET NOT CONFIGURED
 # ------------------------------------------------------------
 #
-# If Mailjet credentials are NOT available:
+# During local development, if the credentials are absent:
 #
 # Django
 #     ↓
-# Console email backend
+# Console backend
 #     ↓
-# Password-reset email appears in the terminal
+# Password-reset email printed in Terminal
 #
 #
-# This makes development easier because the password reset
-# flow can still be tested locally before Mailjet is configured.
+# This means the complete Django password-reset workflow can
+# be tested locally before sending real emails.
 
 if MAILJET_CONFIGURED:
 
@@ -1195,7 +1201,6 @@ if MAILJET_CONFIGURED:
         "anymail.backends.mailjet."
         "EmailBackend"
     )
-
 
 else:
 
@@ -1209,26 +1214,23 @@ else:
 # 21.6 DEFAULT SENDER EMAIL
 # ============================================================
 
-# This sender should match an email address verified inside
-# the Mailjet dashboard.
+# IMPORTANT:
+#
+# This email address must be verified inside Mailjet.
+#
+# Example Render environment variable:
+#
+# DEFAULT_FROM_EMAIL=MarketPulse <your-verified-email@example.com>
 #
 #
-# LOCAL EXAMPLE:
-#
-# DEFAULT_FROM_EMAIL=MarketPulse <example@gmail.com>
-#
-#
-# RENDER:
-#
-# Store the same value as an Environment Variable.
+# Do not leave no-reply@example.com as the production value.
 DEFAULT_FROM_EMAIL = config(
     "DEFAULT_FROM_EMAIL",
     default="MarketPulse <no-reply@example.com>",
-)
+).strip()
 
 
-# Django-generated administrative email can use the
-# same sender.
+# Django system messages can use the same verified sender.
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 
@@ -1236,12 +1238,9 @@ SERVER_EMAIL = DEFAULT_FROM_EMAIL
 # 21.7 PASSWORD RESET TOKEN LIFETIME
 # ============================================================
 
-# Number of seconds that a password-reset token remains valid.
+# Django password-reset links will remain valid for:
 #
 # 3600 seconds = 1 hour.
-#
-# The value can be changed later without modifying the
-# password-reset views or templates.
 PASSWORD_RESET_TIMEOUT = config(
     "PASSWORD_RESET_TIMEOUT",
     default=3600,
@@ -1250,29 +1249,42 @@ PASSWORD_RESET_TIMEOUT = config(
 
 
 # ============================================================
-# 21.8 EMAIL SECURITY NOTES
+# 21.8 EMAIL CONNECTION TIMEOUT
 # ============================================================
 
-# Password reset emails should never contain:
+# Prevent an external email request from hanging indefinitely.
+EMAIL_TIMEOUT = config(
+    "EMAIL_TIMEOUT",
+    default=15,
+    cast=int,
+)
+
+
+# ============================================================
+# 21.9 PASSWORD RESET SECURITY
+# ============================================================
+
+# Django password-reset emails contain a temporary URL such as:
 #
-# - passwords
+# https://your-marketpulse-site.onrender.com/
+# accounts/password-reset-confirm/<uid>/<token>/
+#
+#
+# The message does NOT contain:
+#
+# - the user's existing password
+# - the user's new password
 # - Django SECRET_KEY
-# - Mailjet API credentials
-# - Alpaca API credentials
+# - Mailjet credentials
+# - Alpaca credentials
 #
 #
-# Django sends only a temporary secure reset URL containing:
-#
-# - encoded user identifier
-# - reset token
+# Django validates the UID and token when the user opens the
+# link and then allows the user to create a new password.
 #
 #
-# The user then creates the new password directly through
-# MarketPulse.
-#
-#
-# The actual password is handled by Django's authentication
-# framework and stored as a secure password hash.
+# The password itself is stored by Django as a secure hash.
+
 
 
 # ============================================================

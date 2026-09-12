@@ -1,3 +1,661 @@
-{% extends 'base.html' %}
-<!-- ======================================================== LOGIN TEMPLATE: Django LoginView → this file → base.html. -->
-{% block title %}Login | MarketPulse{% endblock %}{% block content %}<div class="row justify-content-center"><div class="col-lg-5"><div class="card shadow-sm"><div class="card-body"><h2>Login</h2><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary w-100">Login</button></form></div></div></div></div>{% endblock %}
+{% extends "base.html" %}
+
+
+{% comment %}
+============================================================
+MARKETPULSE - LOGIN PAGE
+============================================================
+
+PURPOSE:
+
+This page allows an existing MarketPulse user to sign in.
+
+Framework workflow:
+
+User
+    ↓
+Login Page
+    ↓
+Django LoginView
+    ↓
+Authentication
+    ↓
+Successful Login
+    ↓
+MarketPulse Dashboard
+
+
+PASSWORD RECOVERY WORKFLOW:
+
+User
+    ↓
+Forgot your password?
+    ↓
+password_reset
+    ↓
+User enters registered email
+    ↓
+Django generates secure reset token
+    ↓
+MarketPulse email service
+    ↓
+User receives password-reset link
+    ↓
+User creates a new password
+
+
+REGISTRATION WORKFLOW:
+
+User
+    ↓
+Create Account
+    ↓
+accounts:register
+
+
+IMPORTANT:
+
+The login template does not authenticate the user itself.
+
+Django handles authentication on the backend.
+
+This template is responsible for:
+
+- displaying the login form
+- displaying validation errors
+- linking to registration
+- linking to password recovery
+
+============================================================
+{% endcomment %}
+
+
+{% block title %}
+Login | MarketPulse
+{% endblock %}
+
+
+{% block extra_css %}
+
+<style>
+
+/* ======================================================== */
+/* MARKETPULSE - LOGIN PAGE                                 */
+/* ======================================================== */
+
+
+/* -------------------------------------------------------- */
+/* 1. LOGIN PAGE WRAPPER                                    */
+/* -------------------------------------------------------- */
+
+.login-page {
+
+    min-height: calc(100vh - 150px);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 3rem 1rem;
+
+}
+
+
+/* -------------------------------------------------------- */
+/* 2. LOGIN CARD                                            */
+/* -------------------------------------------------------- */
+
+.login-card {
+
+    width: 100%;
+    max-width: 480px;
+
+    background: #ffffff;
+
+    border: 1px solid #e5e9f0;
+    border-radius: 16px;
+
+    box-shadow:
+        0 12px 35px
+        rgba(16, 24, 40, .08);
+
+    overflow: hidden;
+
+}
+
+
+.login-card-body {
+
+    padding: 2rem;
+
+}
+
+
+/* -------------------------------------------------------- */
+/* 3. LOGIN HEADER                                          */
+/* -------------------------------------------------------- */
+
+.login-icon {
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 52px;
+    height: 52px;
+
+    margin-bottom: 1rem;
+
+    color: #0d6efd;
+    background: #edf5ff;
+
+    border-radius: 14px;
+
+    font-size: 1.2rem;
+
+}
+
+
+.login-title {
+
+    margin-bottom: .35rem;
+
+    font-size: 1.6rem;
+    font-weight: 750;
+
+    letter-spacing: -.02em;
+
+}
+
+
+.login-subtitle {
+
+    margin-bottom: 1.5rem;
+
+    color: #667085;
+
+    font-size: .88rem;
+    line-height: 1.5;
+
+}
+
+
+/* -------------------------------------------------------- */
+/* 4. DJANGO FORM                                           */
+/* -------------------------------------------------------- */
+
+.login-form p {
+
+    margin-bottom: 1rem;
+
+}
+
+
+.login-form label {
+
+    display: block;
+
+    margin-bottom: .4rem;
+
+    font-size: .82rem;
+    font-weight: 650;
+
+}
+
+
+.login-form input {
+
+    display: block;
+
+    width: 100%;
+
+    min-height: 44px;
+
+    padding: .55rem .75rem;
+
+    color: #172033;
+    background: #ffffff;
+
+    border: 1px solid #d6dfeb;
+    border-radius: 9px;
+
+    outline: none;
+
+    transition:
+        border-color .15s ease,
+        box-shadow .15s ease;
+
+}
+
+
+.login-form input:focus {
+
+    border-color: #0d6efd;
+
+    box-shadow:
+        0 0 0 .2rem
+        rgba(13, 110, 253, .10);
+
+}
+
+
+/* -------------------------------------------------------- */
+/* 5. FORM ERRORS                                           */
+/* -------------------------------------------------------- */
+
+.login-error {
+
+    margin-bottom: 1rem;
+
+    padding: .8rem 1rem;
+
+    color: #842029;
+    background: #f8d7da;
+
+    border: 1px solid #f5c2c7;
+    border-radius: 9px;
+
+    font-size: .78rem;
+    line-height: 1.45;
+
+}
+
+
+/* -------------------------------------------------------- */
+/* 6. PASSWORD RECOVERY                                     */
+/* -------------------------------------------------------- */
+
+.login-password-row {
+
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+
+    margin-top: -.35rem;
+    margin-bottom: 1.15rem;
+
+}
+
+
+.login-forgot-link {
+
+    color: #0d6efd;
+
+    font-size: .8rem;
+    font-weight: 600;
+
+    text-decoration: none;
+
+}
+
+
+.login-forgot-link:hover {
+
+    color: #0a58ca;
+
+    text-decoration: underline;
+
+}
+
+
+/* -------------------------------------------------------- */
+/* 7. LOGIN BUTTON                                          */
+/* -------------------------------------------------------- */
+
+.login-button {
+
+    min-height: 45px;
+
+    border-radius: 9px;
+
+    font-weight: 650;
+
+    box-shadow:
+        0 5px 14px
+        rgba(13, 110, 253, .16);
+
+}
+
+
+/* -------------------------------------------------------- */
+/* 8. REGISTRATION                                          */
+/* -------------------------------------------------------- */
+
+.login-register {
+
+    margin-top: 1.4rem;
+    padding-top: 1.25rem;
+
+    text-align: center;
+
+    border-top: 1px solid #edf0f4;
+
+}
+
+
+.login-register-text {
+
+    margin: 0;
+
+    color: #667085;
+
+    font-size: .82rem;
+
+}
+
+
+.login-register-link {
+
+    color: #0d6efd;
+
+    font-weight: 650;
+
+    text-decoration: none;
+
+}
+
+
+.login-register-link:hover {
+
+    color: #0a58ca;
+
+    text-decoration: underline;
+
+}
+
+
+/* -------------------------------------------------------- */
+/* 9. SECURITY NOTE                                         */
+/* -------------------------------------------------------- */
+
+.login-security-note {
+
+    display: flex;
+    align-items: flex-start;
+
+    gap: .5rem;
+
+    margin-top: 1.25rem;
+
+    padding: .7rem .8rem;
+
+    color: #667085;
+    background: #f8fafc;
+
+    border: 1px solid #edf0f4;
+    border-radius: 9px;
+
+    font-size: .68rem;
+    line-height: 1.45;
+
+}
+
+
+.login-security-note i {
+
+    margin-top: .1rem;
+
+    color: #168654;
+
+}
+
+
+/* -------------------------------------------------------- */
+/* 10. RESPONSIVE                                           */
+/* -------------------------------------------------------- */
+
+@media (max-width: 575.98px) {
+
+    .login-page {
+
+        padding:
+            1.5rem
+            .5rem;
+
+    }
+
+
+    .login-card-body {
+
+        padding: 1.4rem;
+
+    }
+
+}
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+
+<!-- ====================================================== -->
+<!-- 1. LOGIN WORKSPACE                                     -->
+<!-- ====================================================== -->
+
+<div class="login-page">
+
+
+    <div class="login-card">
+
+
+        <div class="login-card-body">
+
+
+            <!-- ========================================== -->
+            <!-- PAGE HEADER                               -->
+            <!-- ========================================== -->
+
+            <div class="text-center">
+
+
+                <span class="login-icon">
+
+                    <i class="fa-solid fa-user-lock"></i>
+
+                </span>
+
+
+                <h1 class="login-title">
+
+                    Welcome Back
+
+                </h1>
+
+
+                <p class="login-subtitle">
+
+                    Sign in to access your MarketPulse
+                    dashboard, market data, strategies
+                    and risk-management tools.
+
+                </p>
+
+
+            </div>
+
+
+            <!-- ========================================== -->
+            <!-- LOGIN ERRORS                              -->
+            <!-- ========================================== -->
+
+            {% if form.non_field_errors %}
+
+                <div
+                    class="login-error"
+                    role="alert"
+                >
+
+                    <i
+                        class="
+                            fa-solid
+                            fa-circle-exclamation
+                            me-1
+                        "
+                    >
+                    </i>
+
+
+                    {% for error in form.non_field_errors %}
+
+                        {{ error }}
+
+                    {% endfor %}
+
+                </div>
+
+            {% endif %}
+
+
+            <!-- ========================================== -->
+            <!-- LOGIN FORM                                -->
+            <!-- ========================================== -->
+
+            <form
+                method="post"
+                class="login-form"
+            >
+
+                {% csrf_token %}
+
+
+                {{ form.as_p }}
+
+
+                <!-- ====================================== -->
+                <!-- FORGOT PASSWORD                       -->
+                <!-- ====================================== -->
+
+                <div class="login-password-row">
+
+
+                    <a
+                        href="{% url 'password_reset' %}"
+                        class="login-forgot-link"
+                    >
+
+                        <i class="fa-solid fa-key me-1"></i>
+
+                        Forgot your password?
+
+                    </a>
+
+
+                </div>
+
+
+                <!-- ====================================== -->
+                <!-- LOGIN BUTTON                          -->
+                <!-- ====================================== -->
+
+                <button
+                    type="submit"
+                    class="
+                        btn
+                        btn-primary
+                        w-100
+                        login-button
+                    "
+                >
+
+                    <i
+                        class="
+                            fa-solid
+                            fa-right-to-bracket
+                            me-2
+                        "
+                    >
+                    </i>
+
+                    Login
+
+                </button>
+
+
+                <!-- ====================================== -->
+                <!-- REDIRECT TARGET                       -->
+                <!-- ====================================== -->
+
+                {% if next %}
+
+                    <input
+                        type="hidden"
+                        name="next"
+                        value="{{ next }}"
+                    >
+
+                {% endif %}
+
+
+            </form>
+
+
+            <!-- ========================================== -->
+            <!-- REGISTRATION                              -->
+            <!-- ========================================== -->
+
+            <div class="login-register">
+
+
+                <p class="login-register-text">
+
+                    Don't have a MarketPulse account?
+
+                    <a
+                        href="{% url 'accounts:register' %}"
+                        class="login-register-link"
+                    >
+
+                        Create an account
+
+                    </a>
+
+                </p>
+
+
+            </div>
+
+
+            <!-- ========================================== -->
+            <!-- SECURITY EXPLANATION                      -->
+            <!-- ========================================== -->
+
+            <div class="login-security-note">
+
+
+                <i class="fa-solid fa-shield-halved"></i>
+
+
+                <div>
+
+                    <strong>
+                        Secure authentication
+                    </strong>
+
+                    <br>
+
+                    MarketPulse uses Django's authentication
+                    framework to validate your account.
+
+                    If you forget your password, use the
+                    password-recovery link above rather than
+                    creating another account.
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+</div>
+
+
+{% endblock %}
