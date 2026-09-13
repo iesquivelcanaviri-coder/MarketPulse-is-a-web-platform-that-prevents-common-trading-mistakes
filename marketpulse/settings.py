@@ -20,6 +20,9 @@ It connects:
 - Optional MATLAB execution
 - Alpaca market-data integration
 - Authentication
+- User profiles
+- Community posts
+- Private user messaging / inbox
 - Password recovery email delivery
 - Render production deployment
 - Security settings
@@ -35,6 +38,41 @@ Django applications
 CUSTOM USER MODEL:
 
 accounts/models.py
+
+
+COMMUNITY ARCHITECTURE:
+
+Authenticated User
+        ↓
+community/
+        ↓
+CommunityPost
+        ↓
+Public MarketPulse Community Feed
+
+
+Authenticated User
+        ↓
+community/
+        ↓
+PrivateMessage
+        ↓
+Inbox / Sent Messages
+        ↓
+Another MarketPulse User
+
+
+HOMEPAGE COMMUNITY PREVIEW:
+
+community/models.py
+        ↓
+core/views.py
+        ↓
+templates/home.html
+        ↓
+Recent Community Posts
+        +
+Inbox Preview
 
 
 PASSWORD RECOVERY:
@@ -102,9 +140,13 @@ from decouple import config
 #     templates/
 #     static/
 #     accounts/
+#     community/
+#     core/
 #     data_management/
 #     strategy_builder/
 #     risk_management/
+#     analysis_tools/
+#     api/
 #
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -242,6 +284,8 @@ ALLOWED_HOSTS = config(
 #
 # http://localhost:8000
 # http://127.0.0.1:8000
+# http://localhost:8001
+# http://127.0.0.1:8001
 #
 #
 # RENDER:
@@ -252,7 +296,9 @@ CSRF_TRUSTED_ORIGINS = config(
     "CSRF_TRUSTED_ORIGINS",
     default=(
         "http://localhost:8000,"
-        "http://127.0.0.1:8000"
+        "http://127.0.0.1:8000,"
+        "http://localhost:8001,"
+        "http://127.0.0.1:8001"
     ),
     cast=lambda value: [
         origin.strip()
@@ -393,7 +439,21 @@ X_FRAME_OPTIONS = "DENY"
 # Login
 # Logout
 # User profile
+# Password change
 # Password recovery
+#
+#
+# community
+#     ↓
+# Community posts
+# Trading updates
+# Market warnings
+# Risk alerts
+# Trading discussions
+# Private user messages
+# Inbox
+# Sent messages
+# Read / unread message status
 #
 #
 # core
@@ -402,6 +462,9 @@ X_FRAME_OPTIONS = "DENY"
 # Alerts
 # Alert rules
 # Dashboard data
+# Homepage
+# Community homepage preview
+# Inbox homepage preview
 #
 #
 # data_management
@@ -478,18 +541,28 @@ INSTALLED_APPS = [
     # MarketPulse applications
     # --------------------------------------------------------
 
+    # Authentication, registration and user profiles.
     "accounts",
 
+    # Main homepage, dashboard and shared application logic.
     "core",
 
+    # Community posts and private user-to-user messaging.
+    "community",
+
+    # Historical and current market-data workflows.
     "data_management",
 
+    # Strategy creation, testing and backtesting.
     "strategy_builder",
 
+    # Position sizing and trading-risk functionality.
     "risk_management",
 
+    # Market regime and strategy analytics.
     "analysis_tools",
 
+    # Django REST Framework endpoints.
     "api",
 ]
 
@@ -556,6 +629,14 @@ MIDDLEWARE = [
     # Django messages
     # --------------------------------------------------------
 
+    # This is used for temporary messages such as:
+    #
+    # "Your community post has been published."
+    #
+    # "Your message has been sent."
+    #
+    # It is different from the MarketPulse PrivateMessage
+    # database model.
     "django.contrib.messages.middleware.MessageMiddleware",
 
 
@@ -574,6 +655,15 @@ MIDDLEWARE = [
 # All incoming Django URLs begin routing from:
 #
 # marketpulse/urls.py
+#
+#
+# Community routing will follow:
+#
+# marketpulse/urls.py
+#       ↓
+# community/urls.py
+#       ↓
+# community/views.py
 ROOT_URLCONF = "marketpulse.urls"
 
 
@@ -604,6 +694,13 @@ TEMPLATES = [
         # Also search application templates directories
         # ----------------------------------------------------
 
+        # Because APP_DIRS=True, Django can also discover:
+        #
+        # community/templates/community/
+        #
+        # accounts/templates/accounts/
+        #
+        # and other app-level template directories.
         "APP_DIRS":
             True,
 
@@ -641,6 +738,13 @@ WSGI_APPLICATION = "marketpulse.wsgi.application"
 
 # ASGI remains available for future asynchronous
 # functionality such as WebSockets.
+#
+# IMPORTANT:
+#
+# The current Community Inbox does NOT require WebSockets.
+#
+# Messages are stored normally in PostgreSQL and retrieved
+# through Django views.
 ASGI_APPLICATION = "marketpulse.asgi.application"
 
 
@@ -665,6 +769,10 @@ ASGI_APPLICATION = "marketpulse.asgi.application"
 # When DATABASE_URL does not exist:
 #
 #     Local SQLite fallback
+#
+#
+# CommunityPost and PrivateMessage will be stored in the same
+# database as the rest of MarketPulse.
 #
 #
 # The production database password must never be stored
@@ -728,6 +836,15 @@ else:
 # MarketPulse's custom user model lives inside:
 #
 # accounts/models.py
+#
+#
+# The CommunityPost.author field and PrivateMessage sender /
+# recipient fields should use:
+#
+# settings.AUTH_USER_MODEL
+#
+# rather than importing the User model directly inside
+# community/models.py.
 AUTH_USER_MODEL = "accounts.User"
 
 
@@ -777,6 +894,10 @@ AUTH_PASSWORD_VALIDATORS = [
 # ============================================================
 
 # @login_required sends unauthenticated users here.
+#
+# Community posting and private messaging use
+# @login_required so anonymous visitors cannot create posts
+# or send private messages.
 LOGIN_URL = "accounts:login"
 
 
@@ -943,6 +1064,13 @@ CORS_ALLOW_CREDENTIALS = True
 # - automated monitoring
 # - long-running market-data jobs
 # - scheduled strategy analysis
+# - future community notification jobs
+#
+#
+# IMPORTANT:
+#
+# The current Community Feed and Inbox DO NOT require
+# Celery or Redis.
 
 USE_CELERY = config(
     "USE_CELERY",
@@ -1066,6 +1194,19 @@ MATLAB_DIR = BASE_DIR / "matlab"
 # Mailjet is responsible only for:
 #
 # - delivering the email
+#
+#
+# COMMUNITY INBOX:
+#
+# The MarketPulse Community Inbox is completely separate from
+# Mailjet.
+#
+# Mailjet:
+#     Sends external password-recovery email.
+#
+# Community PrivateMessage:
+#     Stores messages between MarketPulse users inside the
+#     MarketPulse PostgreSQL database.
 #
 #
 # No passwords or API credentials are sent to templates,
@@ -1284,7 +1425,6 @@ EMAIL_TIMEOUT = config(
 #
 #
 # The password itself is stored by Django as a secure hash.
-
 
 
 # ============================================================

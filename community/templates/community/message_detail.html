@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Message | MarketPulse
+{% endblock %}
+
+
+{% block content %}
+
+<div class="container py-4">
+
+    <div class="row justify-content-center">
+
+        <div class="col-lg-8">
+
+            <div class="card shadow-sm">
+
+                <div class="card-header bg-white">
+
+                    <h5 class="mb-0">
+
+                        {{ message_object.subject }}
+
+                    </h5>
+
+                </div>
+
+
+                <div class="card-body">
+
+                    <p>
+
+                        <strong>
+                            From:
+                        </strong>
+
+                        {{ message_object.sender.username }}
+
+                    </p>
+
+
+                    <p>
+
+                        <strong>
+                            Received:
+                        </strong>
+
+                        {{ message_object.created_at|date:"d M Y H:i" }}
+
+                    </p>
+
+
+                    <hr>
+
+
+                    <p>
+
+                        {{ message_object.body|linebreaksbr }}
+
+                    </p>
+
+
+                    <a
+                        href="{% url 'community:inbox' %}"
+                        class="btn btn-outline-secondary">
+
+                        Back to Inbox
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

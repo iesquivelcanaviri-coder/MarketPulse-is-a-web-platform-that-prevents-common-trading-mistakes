@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Inbox | MarketPulse
+{% endblock %}
+
+
+{% block content %}
+
+<div class="container py-4">
+
+
+    <!-- ====================================================
+         INBOX HEADER
+    ===================================================== -->
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+
+            <h1 class="h3 mb-1">
+                Inbox
+            </h1>
+
+            <p class="text-muted mb-0">
+
+                Send private messages to other
+                MarketPulse users.
+
+            </p>
+
+        </div>
+
+
+        <a
+            href="{% url 'community:compose_message' %}"
+            class="btn btn-primary">
+
+            New Message
+
+        </a>
+
+    </div>
+
+
+    <!-- ====================================================
+         RECEIVED MESSAGES
+    ===================================================== -->
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header bg-white">
+
+            <h5 class="mb-0">
+                Received Messages
+            </h5>
+
+        </div>
+
+
+        <div class="list-group list-group-flush">
+
+            {% for message in received_messages %}
+
+                <a
+                    href="{% url 'community:message_detail' message.pk %}"
+                    class="list-group-item list-group-item-action">
+
+                    <div class="d-flex justify-content-between">
+
+                        <div>
+
+                            {% if not message.is_read %}
+
+                                <strong>
+                                    {{ message.sender.username }}
+                                </strong>
+
+                            {% else %}
+
+                                {{ message.sender.username }}
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <small class="text-muted">
+
+                            {{ message.created_at|date:"d M Y H:i" }}
+
+                        </small>
+
+                    </div>
+
+
+                    <div>
+
+                        {{ message.subject }}
+
+                        {% if not message.is_read %}
+
+                            <span class="badge bg-primary ms-2">
+                                New
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </a>
+
+
+            {% empty %}
+
+                <div class="p-4 text-muted">
+
+                    You currently have no messages.
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+
+    <!-- ====================================================
+         SENT MESSAGES
+    ===================================================== -->
+
+    <div class="card shadow-sm">
+
+        <div class="card-header bg-white">
+
+            <h5 class="mb-0">
+                Sent Messages
+            </h5>
+
+        </div>
+
+
+        <div class="list-group list-group-flush">
+
+            {% for message in sent_messages %}
+
+                <div class="list-group-item">
+
+                    <strong>
+                        To:
+                        {{ message.recipient.username }}
+                    </strong>
+
+                    <div>
+                        {{ message.subject }}
+                    </div>
+
+                    <small class="text-muted">
+
+                        {{ message.created_at|date:"d M Y H:i" }}
+
+                    </small>
+
+                </div>
+
+
+            {% empty %}
+
+                <div class="p-4 text-muted">
+
+                    You have not sent any messages yet.
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+
+</div>
+
+{% endblock %}

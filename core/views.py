@@ -15,7 +15,59 @@ Django Forms / Django ORM
     ↓
 PostgreSQL / Neon
     ↓
+templates/home.html
 templates/dashboard.html
+
+
+HOME PAGE PURPOSE:
+
+The public MarketPulse Home page introduces the platform and
+also provides a lightweight community workspace.
+
+The Home page can display:
+
+1. Latest MarketPulse community posts
+2. Market warnings shared by users
+3. Trading discussions
+4. Risk alerts
+5. Trading ideas
+6. Recent private inbox messages for the logged-in user
+7. Unread private message count
+
+The full Community Feed and Inbox remain inside the separate
+community application.
+
+This avoids putting all social functionality directly inside
+the core application.
+
+
+COMMUNITY ARCHITECTURE:
+
+CommunityPost
+    ↓
+Stores public MarketPulse posts
+
+Examples:
+
+    Market Update
+    Trading Warning
+    Risk Alert
+    Trading Idea
+    Discussion
+
+
+PrivateMessage
+    ↓
+Stores private communication between MarketPulse users
+
+Example:
+
+    user2
+        ↓
+    user3
+
+    Subject:
+        MSFT risk discussion
 
 
 DASHBOARD PURPOSE:
@@ -152,6 +204,31 @@ from .forms import (
 
 
 # ============================================================
+# 3.2 COMMUNITY MODELS
+# ============================================================
+
+# CommunityPost:
+#
+#     Stores user-generated MarketPulse community posts such
+#     as market updates, trading warnings, risk alerts,
+#     trading ideas and discussions.
+#
+# PrivateMessage:
+#
+#     Stores private messages sent from one authenticated
+#     MarketPulse user to another.
+#
+# These models belong to the community application rather than
+# core because community communication is a separate feature
+# from the trading Dashboard.
+
+from community.models import (
+    CommunityPost,
+    PrivateMessage,
+)
+
+
+# ============================================================
 # 4. DASHBOARD CONFIGURATION
 # ============================================================
 
@@ -186,10 +263,12 @@ DASHBOARD_BENCHMARKS = {
 
 # Number of stored PostgreSQL observations initially available
 # to the traditional Dashboard context.
+
 DASHBOARD_CHART_LIMIT = 60
 
 
 # Browser refresh interval for live Alpaca market information.
+
 DASHBOARD_REFRESH_SECONDS = 60
 
 
@@ -201,12 +280,164 @@ def home(
     request,
 ):
     """
-    Render the public MarketPulse landing page.
+    Render the MarketPulse landing page.
+
+    The page combines the existing MarketPulse introduction
+    with community information.
+
+    Public visitors can see recent community activity.
+
+    Authenticated users can additionally see:
+
+    - recent private messages
+    - unread private message count
+
+    Actual post creation and private-message management remain
+    inside community/views.py.
     """
+
+
+    # ========================================================
+    # 5.1 RECENT COMMUNITY POSTS
+    # ========================================================
+
+    # Load only a small number of posts because the Home page
+    # should provide a preview rather than reproduce the whole
+    # Community Feed.
+    #
+    # select_related("author") also retrieves the post author's
+    # user record efficiently with the same database query.
+
+    recent_posts = (
+
+        CommunityPost.objects
+
+        .select_related(
+            "author"
+        )
+
+        .order_by(
+            "-created_at"
+        )[:4]
+
+    )
+
+
+    # ========================================================
+    # 5.2 DEFAULT INBOX VALUES
+    # ========================================================
+
+    # Anonymous visitors do not have an Inbox.
+    #
+    # An empty QuerySet is used so the Home template can safely
+    # loop over recent_messages without requiring special data
+    # structures.
+
+    recent_messages = (
+        PrivateMessage.objects.none()
+    )
+
+
+    unread_messages = 0
+
+
+    # ========================================================
+    # 5.3 AUTHENTICATED USER INBOX
+    # ========================================================
+
+    if request.user.is_authenticated:
+
+
+        # ----------------------------------------------------
+        # RECENT RECEIVED MESSAGES
+        # ----------------------------------------------------
+
+        # Only messages belonging to the currently logged-in
+        # recipient are returned.
+        #
+        # This is important because private messages must never
+        # expose another user's Inbox.
+
+        recent_messages = (
+
+            PrivateMessage.objects
+
+            .filter(
+                recipient=request.user
+            )
+
+            .select_related(
+                "sender"
+            )
+
+            .order_by(
+                "-created_at"
+            )[:4]
+
+        )
+
+
+        # ----------------------------------------------------
+        # UNREAD MESSAGE COUNT
+        # ----------------------------------------------------
+
+        unread_messages = (
+
+            PrivateMessage.objects
+
+            .filter(
+                recipient=request.user,
+                is_read=False,
+            )
+
+            .count()
+
+        )
+
+
+    # ========================================================
+    # 5.4 HOME PAGE CONTEXT
+    # ========================================================
+
+    context = {
+
+
+        # ----------------------------------------------------
+        # COMMUNITY
+        # ----------------------------------------------------
+
+        "recent_posts":
+            recent_posts,
+
+
+        # ----------------------------------------------------
+        # PRIVATE MESSAGING
+        # ----------------------------------------------------
+
+        "recent_messages":
+            recent_messages,
+
+        "unread_messages":
+            unread_messages,
+
+        # Alternative descriptive name is also supplied so
+        # future templates can use either variable without
+        # changing this view.
+
+        "unread_message_count":
+            unread_messages,
+
+    }
+
+
+    # ========================================================
+    # 5.5 RENDER HOME PAGE
+    # ========================================================
 
     return render(
         request,
         "home.html",
+        context,
     )
 
 
@@ -841,11 +1072,6 @@ def dashboard(
     # 12.4 GENERATED USER ALERTS
     # ========================================================
 
-    # Alert represents an event or notification already created
-    # by MarketPulse.
-    #
-    # These are intentionally separate from AlertRule.
-
     alerts = (
 
         Alert.objects
@@ -896,19 +1122,6 @@ def dashboard(
     # 12.5 CONFIGURABLE ALERT RULES
     # ========================================================
 
-    # AlertRule represents what the user wants MarketPulse to
-    # monitor.
-    #
-    # Example:
-    #
-    #     AAPL
-    #     Price
-    #     >
-    #     260
-    #
-    # The rules will appear underneath the professional chart
-    # and can be created, edited, enabled/disabled or deleted.
-
     alert_rules = (
 
         AlertRule.objects
@@ -955,9 +1168,6 @@ def dashboard(
     # 12.6 GENERATED ALERT FORM OPTIONS
     # ========================================================
 
-    # Read directly from model metadata rather than depending
-    # on hard-coded constants.
-
     alert_type_choices = (
         _get_alert_type_choices()
     )
@@ -984,15 +1194,6 @@ def dashboard(
     # ========================================================
     # 12.8 STORED POSTGRESQL HISTORICAL GRAPH DATA
     # ========================================================
-
-    # This remains available for:
-    #
-    # - fallback rendering
-    # - data-health information
-    # - analytics
-    #
-    # The new interactive trading chart will primarily request
-    # current historical data from Alpaca through the API.
 
     chart_rows = (
 
@@ -1199,11 +1400,6 @@ def edit_alert(
     changing the numeric identifier in the URL.
     """
 
-
-    # ========================================================
-    # 13.1 FIND CURRENT USER'S ALERT
-    # ========================================================
-
     alert = get_object_or_404(
         Alert,
         pk=alert_id,
@@ -1211,19 +1407,11 @@ def edit_alert(
     )
 
 
-    # ========================================================
-    # 13.2 BIND SUBMITTED VALUES
-    # ========================================================
-
     form = AlertEditForm(
         request.POST,
         instance=alert,
     )
 
-
-    # ========================================================
-    # 13.3 SAVE VALID ALERT
-    # ========================================================
 
     if form.is_valid():
 
@@ -1241,10 +1429,6 @@ def edit_alert(
         )
 
 
-    # ========================================================
-    # 13.4 INVALID ALERT FORM
-    # ========================================================
-
     else:
 
         messages.error(
@@ -1255,10 +1439,6 @@ def edit_alert(
             ),
         )
 
-
-    # ========================================================
-    # 13.5 RETURN TO DASHBOARD
-    # ========================================================
 
     return redirect(
         "dashboard"
@@ -1277,23 +1457,7 @@ def mark_alert_read(
 ):
     """
     Acknowledge a generated Alert notification.
-
-    Read and resolved intentionally mean different things.
-
-    Read:
-
-        User has seen the alert.
-
-    Resolved:
-
-        The condition represented by the alert no longer needs
-        active attention.
     """
-
-
-    # ========================================================
-    # 14.1 FIND USER ALERT
-    # ========================================================
 
     alert = get_object_or_404(
         Alert,
@@ -1302,26 +1466,14 @@ def mark_alert_read(
     )
 
 
-    # ========================================================
-    # 14.2 MARK AS READ
-    # ========================================================
-
     alert.mark_as_read()
 
-
-    # ========================================================
-    # 14.3 USER FEEDBACK
-    # ========================================================
 
     messages.success(
         request,
         f'Alert "{alert.title}" was marked as read.',
     )
 
-
-    # ========================================================
-    # 14.4 RETURN TO DASHBOARD
-    # ========================================================
 
     return redirect(
         "dashboard"
@@ -1341,16 +1493,7 @@ def toggle_alert_resolution(
     """
     Resolve an active generated Alert or reopen a previously
     resolved Alert.
-
-    Alert records are preserved instead of deleted because they
-    provide historical evidence of conditions detected by
-    MarketPulse.
     """
-
-
-    # ========================================================
-    # 15.1 FIND USER ALERT
-    # ========================================================
 
     alert = get_object_or_404(
         Alert,
@@ -1358,10 +1501,6 @@ def toggle_alert_resolution(
         user=request.user,
     )
 
-
-    # ========================================================
-    # 15.2 ACTIVE → RESOLVED
-    # ========================================================
 
     if alert.is_active:
 
@@ -1374,10 +1513,6 @@ def toggle_alert_resolution(
         )
 
 
-    # ========================================================
-    # 15.3 RESOLVED → ACTIVE
-    # ========================================================
-
     else:
 
         alert.reopen()
@@ -1388,10 +1523,6 @@ def toggle_alert_resolution(
             f'Alert "{alert.title}" was reopened.',
         )
 
-
-    # ========================================================
-    # 15.4 RETURN TO DASHBOARD
-    # ========================================================
 
     return redirect(
         "dashboard"
@@ -1409,47 +1540,7 @@ def create_alert_rule(
 ):
     """
     Create a configurable market-monitoring rule.
-
-    Framework mapping:
-
-    Dashboard
-        ↓
-    Add Alert
-        ↓
-    POST
-        ↓
-    AlertRuleForm
-        ↓
-    AlertRule
-        ↓
-    PostgreSQL
-
-
-    Example:
-
-        Symbol:
-            AAPL
-
-        Metric:
-            Price
-
-        Operator:
-            Greater Than
-
-        Threshold:
-            260
-
-        Result:
-
-            MarketPulse can later monitor whether:
-
-                AAPL price > 260
     """
-
-
-    # ========================================================
-    # 16.1 BIND CREATE FORM
-    # ========================================================
 
     form = (
         AlertRuleForm(
@@ -1457,10 +1548,6 @@ def create_alert_rule(
         )
     )
 
-
-    # ========================================================
-    # 16.2 VALID RULE
-    # ========================================================
 
     if form.is_valid():
 
@@ -1470,14 +1557,6 @@ def create_alert_rule(
             )
         )
 
-
-        # ----------------------------------------------------
-        # SECURITY:
-        #
-        # User ownership is assigned server-side.
-        #
-        # It is intentionally NOT trusted from form input.
-        # ----------------------------------------------------
 
         alert_rule.user = (
             request.user
@@ -1496,10 +1575,6 @@ def create_alert_rule(
         )
 
 
-    # ========================================================
-    # 16.3 INVALID RULE
-    # ========================================================
-
     else:
 
         messages.error(
@@ -1510,10 +1585,6 @@ def create_alert_rule(
             ),
         )
 
-
-    # ========================================================
-    # 16.4 RETURN TO DASHBOARD
-    # ========================================================
 
     return redirect(
         "dashboard"
@@ -1532,15 +1603,7 @@ def edit_alert_rule(
 ):
     """
     Modify an existing AlertRule owned by the current user.
-
-    The ownership constraint prevents one authenticated user
-    from changing another user's monitoring rules.
     """
-
-
-    # ========================================================
-    # 17.1 FIND CURRENT USER'S RULE
-    # ========================================================
 
     alert_rule = (
         get_object_or_404(
@@ -1551,10 +1614,6 @@ def edit_alert_rule(
     )
 
 
-    # ========================================================
-    # 17.2 BIND EDIT FORM
-    # ========================================================
-
     form = (
         AlertRuleForm(
             request.POST,
@@ -1562,10 +1621,6 @@ def edit_alert_rule(
         )
     )
 
-
-    # ========================================================
-    # 17.3 SAVE VALID RULE
-    # ========================================================
 
     if form.is_valid():
 
@@ -1583,10 +1638,6 @@ def edit_alert_rule(
         )
 
 
-    # ========================================================
-    # 17.4 INVALID RULE
-    # ========================================================
-
     else:
 
         messages.error(
@@ -1597,10 +1648,6 @@ def edit_alert_rule(
             ),
         )
 
-
-    # ========================================================
-    # 17.5 RETURN TO DASHBOARD
-    # ========================================================
 
     return redirect(
         "dashboard"
@@ -1620,22 +1667,7 @@ def toggle_alert_rule(
     """
     Toggle whether MarketPulse should actively evaluate an
     AlertRule.
-
-    Example:
-
-        Enabled
-            ↓
-        rule can be evaluated
-
-        Disabled
-            ↓
-        rule remains stored but is ignored
     """
-
-
-    # ========================================================
-    # 18.1 FIND CURRENT USER'S RULE
-    # ========================================================
 
     alert_rule = (
         get_object_or_404(
@@ -1646,19 +1678,11 @@ def toggle_alert_rule(
     )
 
 
-    # ========================================================
-    # 18.2 TOGGLE STATE
-    # ========================================================
-
     alert_rule.is_enabled = (
         not
         alert_rule.is_enabled
     )
 
-
-    # ========================================================
-    # 18.3 SAVE STATE
-    # ========================================================
 
     alert_rule.save(
         update_fields=[
@@ -1667,10 +1691,6 @@ def toggle_alert_rule(
         ]
     )
 
-
-    # ========================================================
-    # 18.4 BUILD USER MESSAGE
-    # ========================================================
 
     state = (
 
@@ -1692,10 +1712,6 @@ def toggle_alert_rule(
     )
 
 
-    # ========================================================
-    # 18.5 RETURN TO DASHBOARD
-    # ========================================================
-
     return redirect(
         "dashboard"
     )
@@ -1714,19 +1730,9 @@ def delete_alert_rule(
     """
     Permanently delete a monitoring AlertRule.
 
-    IMPORTANT:
-
-    Deleting a rule does NOT delete existing generated Alert
-    records.
-
-    This preserves historical notification information while
-    allowing the user to stop monitoring a condition.
+    Existing generated Alert records are intentionally
+    preserved.
     """
-
-
-    # ========================================================
-    # 19.1 FIND CURRENT USER'S RULE
-    # ========================================================
 
     alert_rule = (
         get_object_or_404(
@@ -1736,8 +1742,6 @@ def delete_alert_rule(
         )
     )
 
-
-    # Save information before deleting the database object.
 
     symbol = (
         alert_rule.symbol
@@ -1749,16 +1753,8 @@ def delete_alert_rule(
     )
 
 
-    # ========================================================
-    # 19.2 DELETE RULE
-    # ========================================================
-
     alert_rule.delete()
 
-
-    # ========================================================
-    # 19.3 USER FEEDBACK
-    # ========================================================
 
     messages.success(
         request,
@@ -1768,10 +1764,6 @@ def delete_alert_rule(
         ),
     )
 
-
-    # ========================================================
-    # 19.4 RETURN TO DASHBOARD
-    # ========================================================
 
     return redirect(
         "dashboard"
