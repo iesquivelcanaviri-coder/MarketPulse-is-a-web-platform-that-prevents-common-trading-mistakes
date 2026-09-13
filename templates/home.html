@@ -2,6 +2,7 @@
 
 <!-- ========================================================
      HOME TEMPLATE
+
      Framework mapping:
 
      core/views.py
@@ -10,38 +11,65 @@
             ↓
      templates/home.html
 
+
+     PURPOSE:
+
      This is the public MarketPulse landing page.
 
-     Main sections:
+     The homepage is intentionally kept concise so that
+     application information is not repeated unnecessarily.
 
-     1. MarketPulse hero section
-     2. Main platform features
-     3. MarketPulse Community Pulse
-     4. User Inbox preview
-     5. Community disclaimer
 
-     Community data comes from:
+     MAIN PAGE STRUCTURE:
+
+     1. MarketPulse Hero
+        - Main purpose
+        - Technology stack
+        - Quick navigation
+
+     2. Community Pulse
+        - Live CommunityPost records
+
+     3. Inbox Preview
+        - Live PrivateMessage records
+
+     4. About MarketPulse
+        - Overall purpose
+        - Trading workflow
+        - Application feature guide
+        - Account and Community tools
+        - Educational notice
+
+
+     COMMUNITY DATA FLOW:
 
      community/models.py
             ↓
      CommunityPost
      PrivateMessage
+            ↓
+     core/views.py
+            ↓
+     recent_posts
+     recent_messages
+     unread_messages
+            ↓
+     templates/home.html
 
-     Authenticated users can:
-     - Open the dashboard
-     - View the community
-     - Create community posts
-     - View their private inbox
-     - Send private messages
 
-     Visitors who are not logged in can:
-     - View the MarketPulse landing page
-     - Register or log in
+     IMPORTANT DESIGN DECISION:
+
+     Dashboard, Data, Strategies and Risk are described only
+     once in the detailed About section.
+
+     The Hero provides only a short introduction and quick
+     access to the application.
+
 ========================================================= -->
 
 
 {% block title %}
-MarketPulse | Smart Trading Analysis
+MarketPulse | Trading Decision Support
 {% endblock %}
 
 
@@ -49,104 +77,246 @@ MarketPulse | Smart Trading Analysis
 
 
 <!-- ========================================================
-     1. MARKETPULSE HERO SECTION
+     1. MARKETPULSE HERO
 ========================================================= -->
 
-<section class="hero p-5 rounded-4 mb-4">
+<section class="hero p-4 p-lg-5 rounded-4 mb-4">
 
-    <div class="row align-items-center">
+    <div class="row align-items-center g-4">
 
 
-        <!-- ------------------------------------------------
-             MAIN HERO CONTENT
-        ------------------------------------------------- -->
+        <!-- =================================================
+             HERO INTRODUCTION
+        ================================================== -->
 
         <div class="col-lg-7">
 
             <span class="badge bg-light text-primary mb-3">
+
                 Django + React + MATLAB
+
             </span>
 
 
-            <h1 class="display-4 fw-bold">
+            <!-- ------------------------------------------------
+                 MAIN MARKETPULSE MESSAGE
+            ------------------------------------------------- -->
 
-                Test strategies.
-                Measure risk.
-                Challenge “perfect” backtests.
+            <h1 class="display-4 fw-bold mb-3">
+
+                Research markets.<br>
+                Test strategies.<br>
+                Manage trading risk.
 
             </h1>
 
 
-            <p class="lead">
+            <!-- ------------------------------------------------
+                 SHORT PLATFORM DESCRIPTION
 
-                Historical market data, realistic execution assumptions,
-                risk management, overfitting checks and regime analysis
-                in one educational platform.
+                 This is deliberately concise because detailed
+                 explanations are provided later only once.
+            ------------------------------------------------- -->
+
+            <p class="lead mb-4">
+
+                MarketPulse brings market research, strategy
+                testing, risk management and trading
+                decision-support tools together in one
+                educational platform.
 
             </p>
 
 
-            <!-- --------------------------------------------
-                 AUTHENTICATED USER
-            --------------------------------------------- -->
+            <!-- =================================================
+                 PRIMARY USER ACTION
+            ================================================== -->
 
-            {% if user.is_authenticated %}
-
-                <a
-                    class="btn btn-light btn-lg"
-                    href="{% url 'dashboard' %}">
-
-                    Open Dashboard
-
-                </a>
+            <div class="d-flex flex-wrap gap-2">
 
 
-            <!-- --------------------------------------------
-                 VISITOR
-            --------------------------------------------- -->
+                {% if user.is_authenticated %}
 
-            {% else %}
+                    <a
+                        class="btn btn-light btn-lg"
+                        href="{% url 'dashboard' %}">
 
-                <a
-                    class="btn btn-light btn-lg"
-                    href="{% url 'accounts:register' %}">
+                        Open Dashboard
 
-                    Get Started
+                    </a>
 
-                </a>
 
-            {% endif %}
+                    <a
+                        class="btn btn-outline-light btn-lg"
+                        href="{% url 'community:feed' %}">
+
+                        Open Community
+
+                    </a>
+
+
+                {% else %}
+
+                    <a
+                        class="btn btn-light btn-lg"
+                        href="{% url 'accounts:register' %}">
+
+                        Get Started
+
+                    </a>
+
+
+                    <a
+                        class="btn btn-outline-light btn-lg"
+                        href="{% url 'accounts:login' %}">
+
+                        Log In
+
+                    </a>
+
+                {% endif %}
+
+            </div>
 
         </div>
 
 
-        <!-- ------------------------------------------------
-             TECHNOLOGY STACK
-        ------------------------------------------------- -->
+        <!-- =================================================
+             PLATFORM AT A GLANCE
+        ================================================== -->
 
         <div class="col-lg-5">
 
             <div class="glass-card">
 
-                <h5>
-                    Technology Stack
+
+                <!-- =============================================
+                     TECHNOLOGY STACK
+                ============================================== -->
+
+                <h5 class="mb-3">
+
+                    Platform Technology
+
                 </h5>
 
-                <p>
-                    Django 5.2 + PostgreSQL + DRF
-                </p>
 
-                <p>
-                    React + Bootstrap + Chart.js
-                </p>
+                <div class="small">
 
-                <p>
-                    pandas + NumPy + yfinance
-                </p>
 
-                <p>
-                    Celery/Redis + MATLAB bridge
-                </p>
+                    <p class="mb-2">
+
+                        <strong>
+                            Backend:
+                        </strong>
+
+                        Django 5.2, PostgreSQL and DRF
+
+                    </p>
+
+
+                    <p class="mb-2">
+
+                        <strong>
+                            Frontend:
+                        </strong>
+
+                        React, Bootstrap 5 and Chart.js
+
+                    </p>
+
+
+                    <p class="mb-2">
+
+                        <strong>
+                            Market Data:
+                        </strong>
+
+                        Alpaca, pandas and NumPy
+
+                    </p>
+
+
+                    <p class="mb-2">
+
+                        <strong>
+                            Analytics:
+                        </strong>
+
+                        MATLAB integration
+
+                    </p>
+
+
+                    <p class="mb-0">
+
+                        <strong>
+                            Email & Security:
+                        </strong>
+
+                        Django Authentication and Mailjet
+
+                    </p>
+
+                </div>
+
+
+                <!-- =============================================
+                     QUICK APPLICATION ACCESS
+                ============================================== -->
+
+                {% if user.is_authenticated %}
+
+                    <hr class="my-3">
+
+
+                    <small class="d-block mb-2">
+
+                        Quick Access
+
+                    </small>
+
+
+                    <div class="d-flex flex-wrap gap-2">
+
+                        <a
+                            href="{% url 'dashboard' %}"
+                            class="btn btn-sm btn-outline-light">
+
+                            Dashboard
+
+                        </a>
+
+
+                        <a
+                            href="/data/"
+                            class="btn btn-sm btn-outline-light">
+
+                            Data
+
+                        </a>
+
+
+                        <a
+                            href="/strategy/"
+                            class="btn btn-sm btn-outline-light">
+
+                            Strategies
+
+                        </a>
+
+
+                        <a
+                            href="/risk/"
+                            class="btn btn-sm btn-outline-light">
+
+                            Risk
+
+                        </a>
+
+                    </div>
+
+                {% endif %}
 
             </div>
 
@@ -158,123 +328,14 @@ MarketPulse | Smart Trading Analysis
 
 
 <!-- ========================================================
-     2. MAIN MARKETPULSE FEATURES
+     2. LIVE COMMUNITY & MESSAGING
+
+     These are kept outside the About section because they
+     display real database-driven content rather than static
+     descriptions of the application.
 ========================================================= -->
 
-<div class="row g-3">
-
-
-    <!-- ----------------------------------------------------
-         SMART TESTING
-    ----------------------------------------------------- -->
-
-    <div class="col-md-3">
-
-        <div class="card h-100">
-
-            <div class="card-body">
-
-                <h5>
-                    Smart Testing
-                </h5>
-
-                <p>
-                    Compare strategy behaviour across unseen
-                    time windows.
-                </p>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- ----------------------------------------------------
-         RISK MANAGEMENT
-    ----------------------------------------------------- -->
-
-    <div class="col-md-3">
-
-        <div class="card h-100">
-
-            <div class="card-body">
-
-                <h5>
-                    Risk Management
-                </h5>
-
-                <p>
-                    Position sizing, stop loss and volatility
-                    adjustment.
-                </p>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- ----------------------------------------------------
-         EXECUTION SIMULATION
-    ----------------------------------------------------- -->
-
-    <div class="col-md-3">
-
-        <div class="card h-100">
-
-            <div class="card-body">
-
-                <h5>
-                    Execution Simulation
-                </h5>
-
-                <p>
-                    Commissions, slippage, overnight gaps
-                    and partial fills.
-                </p>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- ----------------------------------------------------
-         MARKET REGIMES
-    ----------------------------------------------------- -->
-
-    <div class="col-md-3">
-
-        <div class="card h-100">
-
-            <div class="card-body">
-
-                <h5>
-                    Market Regimes
-                </h5>
-
-                <p>
-                    Bull, bear, sideways and high-volatility
-                    detection.
-                </p>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-
-
-<!-- ========================================================
-     3. COMMUNITY AND MESSAGING SECTION
-========================================================= -->
-
-<div class="row g-4 mt-4">
+<div class="row g-4">
 
 
     <!-- ====================================================
@@ -286,31 +347,35 @@ MarketPulse | Smart Trading Analysis
         <div class="card shadow-sm h-100">
 
 
-            <!-- ------------------------------------------------
+            <!-- =================================================
                  COMMUNITY HEADER
-            ------------------------------------------------- -->
+            ================================================== -->
 
             <div class="card-header bg-white d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
 
                 <div>
 
                     <h5 class="mb-1">
+
                         Community Pulse
+
                     </h5>
+
 
                     <small class="text-muted">
 
-                        Latest market updates, risk alerts and
-                        trading discussions from MarketPulse users.
+                        Recent market updates, warnings,
+                        observations and discussions shared
+                        by MarketPulse users.
 
                     </small>
 
                 </div>
 
 
-                <!-- --------------------------------------------
+                <!-- =============================================
                      COMMUNITY ACTION
-                --------------------------------------------- -->
+                ============================================== -->
 
                 {% if user.is_authenticated %}
 
@@ -337,11 +402,12 @@ MarketPulse | Smart Trading Analysis
             </div>
 
 
-            <!-- ------------------------------------------------
+            <!-- =================================================
                  COMMUNITY POSTS
-            ------------------------------------------------- -->
+            ================================================== -->
 
             <div class="card-body">
+
 
                 {% for post in recent_posts %}
 
@@ -354,7 +420,7 @@ MarketPulse | Smart Trading Analysis
 
 
                         <!-- -------------------------------------
-                             AUTHOR AND POST CATEGORY
+                             AUTHOR / CATEGORY / TIME
                         -------------------------------------- -->
 
                         <div class="d-flex flex-column flex-sm-row justify-content-between gap-2">
@@ -362,7 +428,9 @@ MarketPulse | Smart Trading Analysis
                             <div>
 
                                 <strong>
+
                                     {{ post.author.username }}
+
                                 </strong>
 
 
@@ -385,7 +453,7 @@ MarketPulse | Smart Trading Analysis
 
 
                         <!-- -------------------------------------
-                             OPTIONAL STOCK TICKER
+                             OPTIONAL TICKER
                         -------------------------------------- -->
 
                         {% if post.ticker %}
@@ -417,7 +485,7 @@ MarketPulse | Smart Trading Analysis
 
 
                 <!-- ============================================
-                     NO POSTS
+                     NO COMMUNITY POSTS
                 ============================================= -->
 
                 {% empty %}
@@ -425,13 +493,17 @@ MarketPulse | Smart Trading Analysis
                     <div class="text-center py-4">
 
                         <h6>
+
                             No Community Posts Yet
+
                         </h6>
+
 
                         <p class="text-muted mb-3">
 
-                            MarketPulse users have not shared any
-                            market updates or trading discussions yet.
+                            MarketPulse users have not shared
+                            any market observations or trading
+                            discussions yet.
 
                         </p>
 
@@ -454,7 +526,7 @@ MarketPulse | Smart Trading Analysis
 
 
                 <!-- ============================================
-                     COMMUNITY BUTTONS
+                     COMMUNITY ACTIONS
                 ============================================= -->
 
                 {% if recent_posts and user.is_authenticated %}
@@ -490,7 +562,7 @@ MarketPulse | Smart Trading Analysis
 
 
     <!-- ====================================================
-         USER INBOX
+         INBOX PREVIEW
     ===================================================== -->
 
     <div class="col-lg-4">
@@ -498,24 +570,18 @@ MarketPulse | Smart Trading Analysis
         <div class="card shadow-sm h-100">
 
 
-            <!-- ------------------------------------------------
+            <!-- =================================================
                  INBOX HEADER
-            ------------------------------------------------- -->
+            ================================================== -->
 
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
 
-                <div>
+                <h5 class="mb-0">
 
-                    <h5 class="mb-0">
-                        Inbox
-                    </h5>
+                    Inbox
 
-                </div>
+                </h5>
 
-
-                <!-- --------------------------------------------
-                     UNREAD MESSAGE COUNTER
-                --------------------------------------------- -->
 
                 {% if user.is_authenticated %}
 
@@ -542,23 +608,19 @@ MarketPulse | Smart Trading Analysis
             </div>
 
 
-            <!-- ------------------------------------------------
+            <!-- =================================================
                  INBOX CONTENT
-            ------------------------------------------------- -->
+            ================================================== -->
 
             <div class="card-body">
 
 
-                <!-- ============================================
-                     LOGGED-IN USER
-                ============================================= -->
-
                 {% if user.is_authenticated %}
 
 
-                    <!-- ----------------------------------------
-                         RECENT MESSAGES
-                    ----------------------------------------- -->
+                    <!-- =========================================
+                         RECENT PRIVATE MESSAGES
+                    ========================================== -->
 
                     {% for message in recent_messages %}
 
@@ -568,10 +630,6 @@ MarketPulse | Smart Trading Analysis
 
                             <div class="border-bottom pb-3 mb-3">
 
-
-                                <!-- --------------------------------
-                                     MESSAGE SENDER
-                                --------------------------------- -->
 
                                 <div class="d-flex justify-content-between gap-2">
 
@@ -595,20 +653,12 @@ MarketPulse | Smart Trading Analysis
                                 </div>
 
 
-                                <!-- --------------------------------
-                                     MESSAGE SUBJECT
-                                --------------------------------- -->
-
                                 <div class="mt-1">
 
                                     {{ message.subject|truncatechars:55 }}
 
                                 </div>
 
-
-                                <!-- --------------------------------
-                                     MESSAGE TIME
-                                --------------------------------- -->
 
                                 <small class="text-muted">
 
@@ -621,17 +671,20 @@ MarketPulse | Smart Trading Analysis
                         </a>
 
 
-                    <!-- ============================================
+                    <!-- =========================================
                          EMPTY INBOX
-                    ============================================= -->
+                    ========================================== -->
 
                     {% empty %}
 
                         <div class="text-center py-3">
 
                             <h6>
+
                                 Your Inbox is Empty
+
                             </h6>
+
 
                             <p class="text-muted">
 
@@ -645,9 +698,9 @@ MarketPulse | Smart Trading Analysis
                     {% endfor %}
 
 
-                    <!-- ============================================
-                         INBOX ACTION BUTTONS
-                    ============================================= -->
+                    <!-- =========================================
+                         INBOX ACTIONS
+                    ========================================== -->
 
                     <div class="d-grid gap-2 mt-3">
 
@@ -671,23 +724,25 @@ MarketPulse | Smart Trading Analysis
                     </div>
 
 
-                <!-- ============================================
-                     VISITOR NOT LOGGED IN
-                ============================================= -->
-
                 {% else %}
+
+                    <!-- =========================================
+                         VISITOR INBOX MESSAGE
+                    ========================================== -->
 
                     <div class="text-center py-4">
 
                         <h6>
+
                             Private Messaging
+
                         </h6>
 
 
                         <p class="text-muted">
 
-                            Log in to send and receive private
-                            messages with other MarketPulse users.
+                            Log in to communicate privately
+                            with other MarketPulse users.
 
                         </p>
 
@@ -714,62 +769,81 @@ MarketPulse | Smart Trading Analysis
 
 
 <!-- ========================================================
-     4. COMMUNITY INFORMATION AND DISCLAIMER
+     3. ABOUT MARKETPULSE
+
+     This is now the ONLY detailed application explanation
+     on the homepage.
+
+     The previous separate Dashboard / Data / Strategies /
+     Risk description cards have been removed to prevent
+     repeating information.
 ========================================================= -->
 
-<div class="card shadow-sm mt-4">
+<div class="card shadow-sm mt-4 mb-4">
 
-    <div class="card-body">
-
-        <div class="row g-4 align-items-center">
+    <div class="card-body p-4">
 
 
-            <!-- ------------------------------------------------
-                 COMMUNITY DESCRIPTION
-            ------------------------------------------------- -->
+        <!-- =================================================
+             ABOUT HEADER
+        ================================================== -->
+
+        <div class="row g-4 align-items-start">
+
+
+            <!-- =============================================
+                 PLATFORM PURPOSE
+            ============================================== -->
 
             <div class="col-lg-8">
 
-                <h5>
-                    MarketPulse Community
-                </h5>
+                <h4 class="mb-2">
+
+                    About MarketPulse
+
+                </h4>
 
 
                 <p class="text-muted mb-0">
 
-                    Connect with other MarketPulse users to discuss
-                    market developments, share trading observations,
-                    highlight potential risks and exchange ideas about
-                    strategy testing and risk management.
+                    MarketPulse is an educational trading
+                    decision-support platform that combines
+                    market research, strategy testing, risk
+                    management, monitoring and user
+                    communication.
+
+                    Its purpose is to encourage a more
+                    structured approach to trading decisions
+                    by bringing market information, analytical
+                    tools and risk controls together in one
+                    application.
 
                 </p>
 
             </div>
 
 
-            <!-- ------------------------------------------------
-                 COMMUNITY CATEGORIES
-            ------------------------------------------------- -->
+            <!-- =============================================
+                 MAIN PURPOSE
+            ============================================== -->
 
             <div class="col-lg-4">
 
-                <div class="d-flex flex-wrap gap-2">
+                <div class="border rounded p-3 h-100">
 
-                    <span class="badge bg-primary">
-                        Market Updates
-                    </span>
+                    <small class="text-muted d-block mb-2">
 
-                    <span class="badge bg-danger">
-                        Risk Alerts
-                    </span>
+                        MarketPulse Workflow
 
-                    <span class="badge bg-success">
-                        Trading Ideas
-                    </span>
+                    </small>
 
-                    <span class="badge bg-secondary">
-                        Discussions
-                    </span>
+
+                    <strong>
+
+                        Research → Test → Analyse →
+                        Manage Risk → Monitor → Communicate
+
+                    </strong>
 
                 </div>
 
@@ -778,27 +852,122 @@ MarketPulse | Smart Trading Analysis
         </div>
 
 
-        <hr>
+        <hr class="my-4">
 
 
-        <!-- ----------------------------------------------------
-             USER-GENERATED CONTENT DISCLAIMER
-        ----------------------------------------------------- -->
+        <!-- =================================================
+             CORE TRADING WORKFLOW
+        ================================================== -->
 
-        <p class="small text-muted mb-0">
+        <h5 class="mb-3">
 
-            <strong>
-                Community Notice:
-            </strong>
+            Trading & Analysis
 
-            Community posts and private messages are user-generated
-            content provided for educational and discussion purposes.
-            They do not constitute personalised financial,
-            investment or trading advice. Users should perform their
-            own research and risk assessment before making financial
-            decisions.
+        </h5>
 
-        </p>
+
+        <div class="row g-4">
+
+
+            <!-- =============================================
+                 MARKET DATA
+            ============================================== -->
+
+            <div class="col-md-6 col-xl-3">
+
+                <h6 class="mb-1">
+
+                    Data
+
+                </h6>
+
+
+                <p class="small text-muted mb-0">
+
+                    Explore Alpaca assets, historical OHLCV
+                    prices, charts and changing market
+                    conditions.
+
+                </p>
+
+            </div>
+
+
+            <!-- =============================================
+                 STRATEGIES
+            ============================================== -->
+
+            <div class="col-md-6 col-xl-3">
+
+                <h6 class="mb-1">
+
+                    Strategies
+
+                </h6>
+
+
+                <p class="small text-muted mb-0">
+
+                    Build, backtest and compare trading
+                    strategies while checking robustness
+                    and potential overfitting.
+
+                </p>
+
+            </div>
+
+
+            <!-- =============================================
+                 RISK
+            ============================================== -->
+
+            <div class="col-md-6 col-xl-3">
+
+                <h6 class="mb-1">
+
+                    Risk
+
+                </h6>
+
+
+                <p class="small text-muted mb-0">
+
+                    Calculate position size, examine
+                    stop-loss levels and evaluate
+                    reward-to-risk before entering a trade.
+
+                </p>
+
+            </div>
+
+
+            <!-- =============================================
+                 DASHBOARD
+            ============================================== -->
+
+            <div class="col-md-6 col-xl-3">
+
+                <h6 class="mb-1">
+
+                    Dashboard
+
+                </h6>
+
+
+                <p class="small text-muted mb-0">
+
+                    Brings strategies, backtests, market
+                    information and alerts together in one
+                    monitoring workspace.
+
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <hr class="my-4">
 
     </div>
 
