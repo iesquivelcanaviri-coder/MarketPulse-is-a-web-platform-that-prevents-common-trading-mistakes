@@ -20,7 +20,91 @@ Accounts
 Data
 Strategies
 Risk
+Community
+Inbox
 API
+
+
+COMMUNITY / MESSAGING ARCHITECTURE:
+
+User
+    ↓
+Community
+    ↓
+Community Feed
+    ↓
+Create Trading / Market Post
+    ↓
+CommunityPost
+    ↓
+PostgreSQL
+
+
+User
+    ↓
+Inbox
+    ↓
+Received Messages / Sent Messages
+    ↓
+Compose Message
+    ↓
+PrivateMessage
+    ↓
+PostgreSQL
+
+
+Framework mapping:
+
+templates/home.html
+        ↓
+{% url 'community:feed' %}
+        ↓
+marketpulse/urls.py
+        ↓
+community/urls.py
+        ↓
+community.views.feed
+
+
+templates/home.html
+        ↓
+{% url 'community:inbox' %}
+        ↓
+marketpulse/urls.py
+        ↓
+community/urls.py
+        ↓
+community.views.inbox
+
+
+IMPORTANT:
+
+The following root URL registration:
+
+    path(
+        "community/",
+        include("community.urls"),
+    )
+
+connects the MarketPulse project-level URL configuration
+to the URL patterns defined inside:
+
+    community/urls.py
+
+
+community/urls.py must contain:
+
+    app_name = "community"
+
+This allows Django templates to use namespaced URLs such as:
+
+    {% url 'community:feed' %}
+
+    {% url 'community:inbox' %}
+
+    {% url 'community:compose_message' %}
+
+    {% url 'community:message_detail' message.pk %}
 
 
 AUTHENTICATION / PASSWORD RECOVERY:
@@ -673,6 +757,7 @@ urlpatterns = [
     # - Login
     # - Logout
     # - Profile
+    # - Change Password
     #
     #
     # Password recovery is intentionally defined above rather
@@ -754,7 +839,95 @@ urlpatterns = [
 
 
     # ========================================================
-    # 3.19 REST API
+    # 3.19 COMMUNITY & PRIVATE MESSAGING
+    # ========================================================
+
+    # This route connects:
+    #
+    # marketpulse/urls.py
+    #       ↓
+    # community/urls.py
+    #
+    #
+    # The community app provides:
+    #
+    # - Community trading feed
+    # - Market updates
+    # - Trading warnings
+    # - Risk alerts
+    # - Trading discussions
+    # - Private user-to-user messaging
+    # - Inbox
+    # - Sent messages
+    # - Message detail
+    # - Compose message
+    #
+    #
+    # Browser URLs:
+    #
+    # /community/
+    #
+    #     → Community Feed
+    #
+    #
+    # /community/inbox/
+    #
+    #     → User Inbox
+    #
+    #
+    # /community/inbox/compose/
+    #
+    #     → Compose New Message
+    #
+    #
+    # /community/inbox/<id>/
+    #
+    #     → Open Individual Message
+    #
+    #
+    # IMPORTANT:
+    #
+    # community/urls.py must contain:
+    #
+    #     app_name = "community"
+    #
+    #
+    # This creates the URL namespace used by templates:
+    #
+    #     community:feed
+    #
+    #     community:inbox
+    #
+    #     community:compose_message
+    #
+    #     community:message_detail
+    #
+    #
+    # Example from home.html:
+    #
+    #     {% url 'community:feed' %}
+    #
+    #
+    # Django resolves that as:
+    #
+    # community
+    #     ↓
+    # community/urls.py
+    #     ↓
+    # name="feed"
+    #     ↓
+    # community.views.feed
+
+    path(
+        "community/",
+        include(
+            "community.urls"
+        ),
+    ),
+
+
+    # ========================================================
+    # 3.20 REST API
     # ========================================================
 
     # Includes:
