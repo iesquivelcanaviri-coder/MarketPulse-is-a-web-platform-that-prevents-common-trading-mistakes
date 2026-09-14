@@ -16,32 +16,22 @@
 
      This is the public MarketPulse landing page.
 
-     The homepage is intentionally kept concise so that
-     application information is not repeated unnecessarily.
+     The page is intentionally concise.
+
+     Detailed application functionality belongs inside the
+     relevant MarketPulse pages rather than being repeated
+     several times on the homepage.
 
 
-     MAIN PAGE STRUCTURE:
+     FINAL PAGE STRUCTURE:
 
-     1. MarketPulse Hero
-        - Main purpose
-        - Technology stack
-        - Quick navigation
-
-     2. Community Pulse
-        - Live CommunityPost records
-
-     3. Inbox Preview
-        - Live PrivateMessage records
-
-     4. About MarketPulse
-        - Overall purpose
-        - Trading workflow
-        - Application feature guide
-        - Account and Community tools
-        - Educational notice
+     1. Hero
+     2. Quick Access
+     3. Community Pulse + Inbox
+     4. About MarketPulse + Educational Notice
 
 
-     COMMUNITY DATA FLOW:
+     COMMUNITY DATA:
 
      community/models.py
             ↓
@@ -55,15 +45,6 @@
      unread_messages
             ↓
      templates/home.html
-
-
-     IMPORTANT DESIGN DECISION:
-
-     Dashboard, Data, Strategies and Risk are described only
-     once in the detailed About section.
-
-     The Hero provides only a short introduction and quick
-     access to the application.
 
 ========================================================= -->
 
@@ -80,7 +61,7 @@ MarketPulse | Trading Decision Support
      1. MARKETPULSE HERO
 ========================================================= -->
 
-<section class="hero p-4 p-lg-5 rounded-4 mb-4">
+<section class="hero p-5 rounded-4 mb-4">
 
     <div class="row align-items-center g-4">
 
@@ -99,10 +80,13 @@ MarketPulse | Trading Decision Support
 
 
             <!-- ------------------------------------------------
-                 MAIN MARKETPULSE MESSAGE
+                 MAIN MESSAGE
+
+                 Keep this short because the detailed explanation
+                 appears only once later in the About section.
             ------------------------------------------------- -->
 
-            <h1 class="display-4 fw-bold mb-3">
+            <h1 class="display-4 fw-bold">
 
                 Research markets.<br>
                 Test strategies.<br>
@@ -111,98 +95,64 @@ MarketPulse | Trading Decision Support
             </h1>
 
 
-            <!-- ------------------------------------------------
-                 SHORT PLATFORM DESCRIPTION
-
-                 This is deliberately concise because detailed
-                 explanations are provided later only once.
-            ------------------------------------------------- -->
-
             <p class="lead mb-4">
 
-                MarketPulse brings market research, strategy
-                testing, risk management and trading
-                decision-support tools together in one
-                educational platform.
+                A trading decision-support platform for market
+                research, strategy testing and risk management.
 
             </p>
 
 
             <!-- =================================================
-                 PRIMARY USER ACTION
+                 PRIMARY ACTION
             ================================================== -->
 
-            <div class="d-flex flex-wrap gap-2">
+            {% if user.is_authenticated %}
 
+                <a
+                    class="btn btn-light btn-lg"
+                    href="{% url 'dashboard' %}">
 
-                {% if user.is_authenticated %}
+                    Open Dashboard
 
-                    <a
-                        class="btn btn-light btn-lg"
-                        href="{% url 'dashboard' %}">
+                </a>
 
-                        Open Dashboard
+            {% else %}
 
-                    </a>
+                <a
+                    class="btn btn-light btn-lg"
+                    href="{% url 'accounts:register' %}">
 
+                    Get Started
 
-                    <a
-                        class="btn btn-outline-light btn-lg"
-                        href="{% url 'community:feed' %}">
+                </a>
 
-                        Open Community
-
-                    </a>
-
-
-                {% else %}
-
-                    <a
-                        class="btn btn-light btn-lg"
-                        href="{% url 'accounts:register' %}">
-
-                        Get Started
-
-                    </a>
-
-
-                    <a
-                        class="btn btn-outline-light btn-lg"
-                        href="{% url 'accounts:login' %}">
-
-                        Log In
-
-                    </a>
-
-                {% endif %}
-
-            </div>
+            {% endif %}
 
         </div>
 
 
         <!-- =================================================
-             PLATFORM AT A GLANCE
+             TECHNOLOGY STACK
         ================================================== -->
 
         <div class="col-lg-5">
 
             <div class="glass-card">
 
-
-                <!-- =============================================
-                     TECHNOLOGY STACK
-                ============================================== -->
-
                 <h5 class="mb-3">
 
-                    Platform Technology
+                    Technology Stack
 
                 </h5>
 
 
-                <div class="small">
+                <!-- -----------------------------------------
+                     Technology is shown only here so that it
+                     is not repeated again in the About area.
+                ------------------------------------------ -->
 
+                <div class="small">
 
                     <p class="mb-2">
 
@@ -210,7 +160,7 @@ MarketPulse | Trading Decision Support
                             Backend:
                         </strong>
 
-                        Django 5.2, PostgreSQL and DRF
+                        Django 5.2 + PostgreSQL + DRF
 
                     </p>
 
@@ -221,7 +171,7 @@ MarketPulse | Trading Decision Support
                             Frontend:
                         </strong>
 
-                        React, Bootstrap 5 and Chart.js
+                        React + Bootstrap 5 + Chart.js
 
                     </p>
 
@@ -232,7 +182,7 @@ MarketPulse | Trading Decision Support
                             Market Data:
                         </strong>
 
-                        Alpaca, pandas and NumPy
+                        Alpaca + pandas + NumPy
 
                     </p>
 
@@ -243,7 +193,7 @@ MarketPulse | Trading Decision Support
                             Analytics:
                         </strong>
 
-                        MATLAB integration
+                        MATLAB Integration
 
                     </p>
 
@@ -254,69 +204,11 @@ MarketPulse | Trading Decision Support
                             Email & Security:
                         </strong>
 
-                        Django Authentication and Mailjet
+                        Mailjet + Django Authentication
 
                     </p>
 
                 </div>
-
-
-                <!-- =============================================
-                     QUICK APPLICATION ACCESS
-                ============================================== -->
-
-                {% if user.is_authenticated %}
-
-                    <hr class="my-3">
-
-
-                    <small class="d-block mb-2">
-
-                        Quick Access
-
-                    </small>
-
-
-                    <div class="d-flex flex-wrap gap-2">
-
-                        <a
-                            href="{% url 'dashboard' %}"
-                            class="btn btn-sm btn-outline-light">
-
-                            Dashboard
-
-                        </a>
-
-
-                        <a
-                            href="/data/"
-                            class="btn btn-sm btn-outline-light">
-
-                            Data
-
-                        </a>
-
-
-                        <a
-                            href="/strategy/"
-                            class="btn btn-sm btn-outline-light">
-
-                            Strategies
-
-                        </a>
-
-
-                        <a
-                            href="/risk/"
-                            class="btn btn-sm btn-outline-light">
-
-                            Risk
-
-                        </a>
-
-                    </div>
-
-                {% endif %}
 
             </div>
 
@@ -328,11 +220,172 @@ MarketPulse | Trading Decision Support
 
 
 <!-- ========================================================
-     2. LIVE COMMUNITY & MESSAGING
+     2. QUICK ACCESS
 
-     These are kept outside the About section because they
-     display real database-driven content rather than static
-     descriptions of the application.
+     These replace the previous large descriptive feature
+     cards.
+
+     Their purpose is navigation only.
+
+     Detailed explanations are available inside each feature
+     itself, so the homepage does not need to repeat them.
+========================================================= -->
+
+<div class="row g-3 mb-4">
+
+
+    <!-- ====================================================
+         DASHBOARD
+    ===================================================== -->
+
+    <div class="col-6 col-lg-3">
+
+        <a
+            href="{% url 'dashboard' %}"
+            class="text-decoration-none text-reset">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body text-center">
+
+                    <h5 class="mb-1">
+
+                        Dashboard
+
+                    </h5>
+
+
+                    <small class="text-muted">
+
+                        Overview & Alerts
+
+                    </small>
+
+                </div>
+
+            </div>
+
+        </a>
+
+    </div>
+
+
+    <!-- ====================================================
+         MARKET DATA
+    ===================================================== -->
+
+    <div class="col-6 col-lg-3">
+
+        <a
+            href="/data/"
+            class="text-decoration-none text-reset">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body text-center">
+
+                    <h5 class="mb-1">
+
+                        Market Data
+
+                    </h5>
+
+
+                    <small class="text-muted">
+
+                        Research & Market Conditions
+
+                    </small>
+
+                </div>
+
+            </div>
+
+        </a>
+
+    </div>
+
+
+    <!-- ====================================================
+         STRATEGIES
+    ===================================================== -->
+
+    <div class="col-6 col-lg-3">
+
+        <a
+            href="/strategy/"
+            class="text-decoration-none text-reset">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body text-center">
+
+                    <h5 class="mb-1">
+
+                        Strategies
+
+                    </h5>
+
+
+                    <small class="text-muted">
+
+                        Build & Backtest
+
+                    </small>
+
+                </div>
+
+            </div>
+
+        </a>
+
+    </div>
+
+
+    <!-- ====================================================
+         RISK MANAGEMENT
+    ===================================================== -->
+
+    <div class="col-6 col-lg-3">
+
+        <a
+            href="/risk/"
+            class="text-decoration-none text-reset">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body text-center">
+
+                    <h5 class="mb-1">
+
+                        Risk
+
+                    </h5>
+
+
+                    <small class="text-muted">
+
+                        Plan & Measure Risk
+
+                    </small>
+
+                </div>
+
+            </div>
+
+        </a>
+
+    </div>
+
+</div>
+
+
+<!-- ========================================================
+     3. COMMUNITY & PRIVATE MESSAGING
+
+     These remain prominent because they contain live,
+     database-driven user content rather than static
+     explanations about the application.
 ========================================================= -->
 
 <div class="row g-4">
@@ -364,9 +417,8 @@ MarketPulse | Trading Decision Support
 
                     <small class="text-muted">
 
-                        Recent market updates, warnings,
-                        observations and discussions shared
-                        by MarketPulse users.
+                        Latest market observations and discussions
+                        shared by MarketPulse users.
 
                     </small>
 
@@ -403,7 +455,7 @@ MarketPulse | Trading Decision Support
 
 
             <!-- =================================================
-                 COMMUNITY POSTS
+                 COMMUNITY CONTENT
             ================================================== -->
 
             <div class="card-body">
@@ -420,7 +472,7 @@ MarketPulse | Trading Decision Support
 
 
                         <!-- -------------------------------------
-                             AUTHOR / CATEGORY / TIME
+                             AUTHOR / TYPE / TIME
                         -------------------------------------- -->
 
                         <div class="d-flex flex-column flex-sm-row justify-content-between gap-2">
@@ -485,7 +537,7 @@ MarketPulse | Trading Decision Support
 
 
                 <!-- ============================================
-                     NO COMMUNITY POSTS
+                     EMPTY COMMUNITY
                 ============================================= -->
 
                 {% empty %}
@@ -501,9 +553,9 @@ MarketPulse | Trading Decision Support
 
                         <p class="text-muted mb-3">
 
-                            MarketPulse users have not shared
-                            any market observations or trading
-                            discussions yet.
+                            Community posts will appear here
+                            when MarketPulse users begin sharing
+                            market observations.
 
                         </p>
 
@@ -562,7 +614,7 @@ MarketPulse | Trading Decision Support
 
 
     <!-- ====================================================
-         INBOX PREVIEW
+         INBOX
     ===================================================== -->
 
     <div class="col-lg-4">
@@ -618,9 +670,9 @@ MarketPulse | Trading Decision Support
                 {% if user.is_authenticated %}
 
 
-                    <!-- =========================================
+                    <!-- -----------------------------------------
                          RECENT PRIVATE MESSAGES
-                    ========================================== -->
+                    ------------------------------------------ -->
 
                     {% for message in recent_messages %}
 
@@ -688,8 +740,8 @@ MarketPulse | Trading Decision Support
 
                             <p class="text-muted">
 
-                                Private messages from other
-                                MarketPulse users will appear here.
+                                Messages from other MarketPulse
+                                users will appear here.
 
                             </p>
 
@@ -726,8 +778,9 @@ MarketPulse | Trading Decision Support
 
                 {% else %}
 
+
                     <!-- =========================================
-                         VISITOR INBOX MESSAGE
+                         VISITOR
                     ========================================== -->
 
                     <div class="text-center py-4">
@@ -741,7 +794,7 @@ MarketPulse | Trading Decision Support
 
                         <p class="text-muted">
 
-                            Log in to communicate privately
+                            Log in to exchange private messages
                             with other MarketPulse users.
 
                         </p>
@@ -769,14 +822,18 @@ MarketPulse | Trading Decision Support
 
 
 <!-- ========================================================
-     3. ABOUT MARKETPULSE
+     4. ABOUT MARKETPULSE
 
-     This is now the ONLY detailed application explanation
-     on the homepage.
+     The previous detailed feature guide has been removed.
 
-     The previous separate Dashboard / Data / Strategies /
-     Risk description cards have been removed to prevent
-     repeating information.
+     Dashboard, Data, Strategies and Risk are already
+     represented by the Quick Access section.
+
+     Community and Inbox are already represented by the
+     live sections above.
+
+     Therefore this section explains only the overall
+     purpose and educational scope of MarketPulse.
 ========================================================= -->
 
 <div class="card shadow-sm mt-4 mb-4">
@@ -784,16 +841,12 @@ MarketPulse | Trading Decision Support
     <div class="card-body p-4">
 
 
-        <!-- =================================================
-             ABOUT HEADER
-        ================================================== -->
-
         <div class="row g-4 align-items-start">
 
 
-            <!-- =============================================
-                 PLATFORM PURPOSE
-            ============================================== -->
+            <!-- =================================================
+                 ABOUT
+            ================================================== -->
 
             <div class="col-lg-8">
 
@@ -809,39 +862,37 @@ MarketPulse | Trading Decision Support
                     MarketPulse is an educational trading
                     decision-support platform that combines
                     market research, strategy testing, risk
-                    management, monitoring and user
-                    communication.
+                    management and user collaboration.
 
-                    Its purpose is to encourage a more
-                    structured approach to trading decisions
-                    by bringing market information, analytical
-                    tools and risk controls together in one
-                    application.
+                    Its purpose is to encourage a more structured
+                    approach to evaluating trading decisions,
+                    rather than relying only on price movements
+                    or historical backtest performance.
 
                 </p>
 
             </div>
 
 
-            <!-- =============================================
+            <!-- =================================================
                  MAIN PURPOSE
-            ============================================== -->
+            ================================================== -->
 
             <div class="col-lg-4">
 
-                <div class="border rounded p-3 h-100">
+                <div class="border rounded p-3">
 
                     <small class="text-muted d-block mb-2">
 
-                        MarketPulse Workflow
+                        Main Purpose
 
                     </small>
 
 
                     <strong>
 
-                        Research → Test → Analyse →
-                        Manage Risk → Monitor → Communicate
+                        Research • Test • Analyse •
+                        Manage Risk • Communicate
 
                     </strong>
 
@@ -852,122 +903,32 @@ MarketPulse | Trading Decision Support
         </div>
 
 
-        <hr class="my-4">
-
-
         <!-- =================================================
-             CORE TRADING WORKFLOW
+             EDUCATIONAL NOTICE
         ================================================== -->
 
-        <h5 class="mb-3">
-
-            Trading & Analysis
-
-        </h5>
-
-
-        <div class="row g-4">
-
-
-            <!-- =============================================
-                 MARKET DATA
-            ============================================== -->
-
-            <div class="col-md-6 col-xl-3">
-
-                <h6 class="mb-1">
-
-                    Data
-
-                </h6>
-
-
-                <p class="small text-muted mb-0">
-
-                    Explore Alpaca assets, historical OHLCV
-                    prices, charts and changing market
-                    conditions.
-
-                </p>
-
-            </div>
-
-
-            <!-- =============================================
-                 STRATEGIES
-            ============================================== -->
-
-            <div class="col-md-6 col-xl-3">
-
-                <h6 class="mb-1">
-
-                    Strategies
-
-                </h6>
-
-
-                <p class="small text-muted mb-0">
-
-                    Build, backtest and compare trading
-                    strategies while checking robustness
-                    and potential overfitting.
-
-                </p>
-
-            </div>
-
-
-            <!-- =============================================
-                 RISK
-            ============================================== -->
-
-            <div class="col-md-6 col-xl-3">
-
-                <h6 class="mb-1">
-
-                    Risk
-
-                </h6>
-
-
-                <p class="small text-muted mb-0">
-
-                    Calculate position size, examine
-                    stop-loss levels and evaluate
-                    reward-to-risk before entering a trade.
-
-                </p>
-
-            </div>
-
-
-            <!-- =============================================
-                 DASHBOARD
-            ============================================== -->
-
-            <div class="col-md-6 col-xl-3">
-
-                <h6 class="mb-1">
-
-                    Dashboard
-
-                </h6>
-
-
-                <p class="small text-muted mb-0">
-
-                    Brings strategies, backtests, market
-                    information and alerts together in one
-                    monitoring workspace.
-
-                </p>
-
-            </div>
-
-        </div>
-
-
         <hr class="my-4">
+
+
+        <p class="small text-muted mb-0">
+
+            <strong>
+                Educational Notice:
+            </strong>
+
+            MarketPulse is designed for educational and
+            decision-support purposes.
+
+            Market information, backtesting results, strategy
+            analysis, risk calculations and user-generated
+            content do not constitute personalised financial,
+            investment or trading advice.
+
+            Users remain responsible for conducting their own
+            research and evaluating risk before making financial
+            decisions.
+
+        </p>
 
     </div>
 
