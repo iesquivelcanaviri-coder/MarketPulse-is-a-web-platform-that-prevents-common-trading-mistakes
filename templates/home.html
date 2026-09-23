@@ -386,7 +386,14 @@ MarketPulse | Trading Decision Support
      These remain prominent because they contain live,
      database-driven user content rather than static
      explanations about the application.
+
+     AUTHENTICATION RULE:
+
+     Community Pulse and Inbox are rendered only when the
+     visitor is logged in.
 ========================================================= -->
+
+{% if user.is_authenticated %}
 
 <div class="row g-4">
 
@@ -819,6 +826,8 @@ MarketPulse | Trading Decision Support
     </div>
 
 </div>
+
+{% endif %}
 
 
 <!-- ========================================================
