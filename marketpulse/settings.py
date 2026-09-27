@@ -20,9 +20,6 @@ It connects:
 - Optional MATLAB execution
 - Alpaca market-data integration
 - Authentication
-- User profiles
-- Community posts
-- Private user messaging / inbox
 - Password recovery email delivery
 - Render production deployment
 - Security settings
@@ -40,41 +37,6 @@ CUSTOM USER MODEL:
 accounts/models.py
 
 
-COMMUNITY ARCHITECTURE:
-
-Authenticated User
-        ↓
-community/
-        ↓
-CommunityPost
-        ↓
-Public MarketPulse Community Feed
-
-
-Authenticated User
-        ↓
-community/
-        ↓
-PrivateMessage
-        ↓
-Inbox / Sent Messages
-        ↓
-Another MarketPulse User
-
-
-HOMEPAGE COMMUNITY PREVIEW:
-
-community/models.py
-        ↓
-core/views.py
-        ↓
-templates/home.html
-        ↓
-Recent Community Posts
-        +
-Inbox Preview
-
-
 PASSWORD RECOVERY:
 
 Login
@@ -85,7 +47,7 @@ Django PasswordResetView
     ↓
 Django-Anymail
     ↓
-Mailjet HTTPS API
+Brevo HTTPS API
     ↓
 Reset Email
     ↓
@@ -140,13 +102,9 @@ from decouple import config
 #     templates/
 #     static/
 #     accounts/
-#     community/
-#     core/
 #     data_management/
 #     strategy_builder/
 #     risk_management/
-#     analysis_tools/
-#     api/
 #
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -191,7 +149,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 #
 # This is NOT the Alpaca API secret.
 #
-# It is also NOT the Mailjet secret key.
+# It is also NOT the Brevo API key.
 SECRET_KEY = config(
     "SECRET_KEY",
     default="django-insecure-local-only-change-me",
@@ -284,8 +242,6 @@ ALLOWED_HOSTS = config(
 #
 # http://localhost:8000
 # http://127.0.0.1:8000
-# http://localhost:8001
-# http://127.0.0.1:8001
 #
 #
 # RENDER:
@@ -296,9 +252,7 @@ CSRF_TRUSTED_ORIGINS = config(
     "CSRF_TRUSTED_ORIGINS",
     default=(
         "http://localhost:8000,"
-        "http://127.0.0.1:8000,"
-        "http://localhost:8001,"
-        "http://127.0.0.1:8001"
+        "http://127.0.0.1:8000"
     ),
     cast=lambda value: [
         origin.strip()
@@ -439,21 +393,7 @@ X_FRAME_OPTIONS = "DENY"
 # Login
 # Logout
 # User profile
-# Password change
 # Password recovery
-#
-#
-# community
-#     ↓
-# Community posts
-# Trading updates
-# Market warnings
-# Risk alerts
-# Trading discussions
-# Private user messages
-# Inbox
-# Sent messages
-# Read / unread message status
 #
 #
 # core
@@ -462,9 +402,6 @@ X_FRAME_OPTIONS = "DENY"
 # Alerts
 # Alert rules
 # Dashboard data
-# Homepage
-# Community homepage preview
-# Inbox homepage preview
 #
 #
 # data_management
@@ -505,7 +442,7 @@ X_FRAME_OPTIONS = "DENY"
 #
 # anymail
 #     ↓
-# Connects Django's email framework to Mailjet
+# Connects Django's email framework to Brevo
 # through an HTTPS API.
 #
 INSTALLED_APPS = [
@@ -533,7 +470,7 @@ INSTALLED_APPS = [
     "django_bootstrap5",
 
     # Django-Anymail connects Django's normal email system
-    # to transactional email providers such as Mailjet.
+    # to transactional email providers such as Brevo.
     "anymail",
 
 
@@ -541,28 +478,18 @@ INSTALLED_APPS = [
     # MarketPulse applications
     # --------------------------------------------------------
 
-    # Authentication, registration and user profiles.
     "accounts",
-
-    # Main homepage, dashboard and shared application logic.
     "core",
-
-    # Community posts and private user-to-user messaging.
+    
     "community",
-
-    # Historical and current market-data workflows.
     "data_management",
 
-    # Strategy creation, testing and backtesting.
     "strategy_builder",
 
-    # Position sizing and trading-risk functionality.
     "risk_management",
 
-    # Market regime and strategy analytics.
     "analysis_tools",
 
-    # Django REST Framework endpoints.
     "api",
 ]
 
@@ -629,14 +556,6 @@ MIDDLEWARE = [
     # Django messages
     # --------------------------------------------------------
 
-    # This is used for temporary messages such as:
-    #
-    # "Your community post has been published."
-    #
-    # "Your message has been sent."
-    #
-    # It is different from the MarketPulse PrivateMessage
-    # database model.
     "django.contrib.messages.middleware.MessageMiddleware",
 
 
@@ -655,15 +574,6 @@ MIDDLEWARE = [
 # All incoming Django URLs begin routing from:
 #
 # marketpulse/urls.py
-#
-#
-# Community routing will follow:
-#
-# marketpulse/urls.py
-#       ↓
-# community/urls.py
-#       ↓
-# community/views.py
 ROOT_URLCONF = "marketpulse.urls"
 
 
@@ -694,13 +604,6 @@ TEMPLATES = [
         # Also search application templates directories
         # ----------------------------------------------------
 
-        # Because APP_DIRS=True, Django can also discover:
-        #
-        # community/templates/community/
-        #
-        # accounts/templates/accounts/
-        #
-        # and other app-level template directories.
         "APP_DIRS":
             True,
 
@@ -738,13 +641,6 @@ WSGI_APPLICATION = "marketpulse.wsgi.application"
 
 # ASGI remains available for future asynchronous
 # functionality such as WebSockets.
-#
-# IMPORTANT:
-#
-# The current Community Inbox does NOT require WebSockets.
-#
-# Messages are stored normally in PostgreSQL and retrieved
-# through Django views.
 ASGI_APPLICATION = "marketpulse.asgi.application"
 
 
@@ -769,10 +665,6 @@ ASGI_APPLICATION = "marketpulse.asgi.application"
 # When DATABASE_URL does not exist:
 #
 #     Local SQLite fallback
-#
-#
-# CommunityPost and PrivateMessage will be stored in the same
-# database as the rest of MarketPulse.
 #
 #
 # The production database password must never be stored
@@ -836,15 +728,6 @@ else:
 # MarketPulse's custom user model lives inside:
 #
 # accounts/models.py
-#
-#
-# The CommunityPost.author field and PrivateMessage sender /
-# recipient fields should use:
-#
-# settings.AUTH_USER_MODEL
-#
-# rather than importing the User model directly inside
-# community/models.py.
 AUTH_USER_MODEL = "accounts.User"
 
 
@@ -894,10 +777,6 @@ AUTH_PASSWORD_VALIDATORS = [
 # ============================================================
 
 # @login_required sends unauthenticated users here.
-#
-# Community posting and private messaging use
-# @login_required so anonymous visitors cannot create posts
-# or send private messages.
 LOGIN_URL = "accounts:login"
 
 
@@ -1064,13 +943,6 @@ CORS_ALLOW_CREDENTIALS = True
 # - automated monitoring
 # - long-running market-data jobs
 # - scheduled strategy analysis
-# - future community notification jobs
-#
-#
-# IMPORTANT:
-#
-# The current Community Feed and Inbox DO NOT require
-# Celery or Redis.
 
 USE_CELERY = config(
     "USE_CELERY",
@@ -1172,7 +1044,7 @@ MATLAB_DIR = BASE_DIR / "matlab"
 #     ↓
 # Django-Anymail
 #     ↓
-# Mailjet HTTPS API
+# Brevo HTTPS API
 #     ↓
 # Password Reset Email
 #     ↓
@@ -1191,22 +1063,9 @@ MATLAB_DIR = BASE_DIR / "matlab"
 # - changing the password
 #
 #
-# Mailjet is responsible only for:
+# Brevo is responsible only for:
 #
 # - delivering the email
-#
-#
-# COMMUNITY INBOX:
-#
-# The MarketPulse Community Inbox is completely separate from
-# Mailjet.
-#
-# Mailjet:
-#     Sends external password-recovery email.
-#
-# Community PrivateMessage:
-#     Stores messages between MarketPulse users inside the
-#     MarketPulse PostgreSQL database.
 #
 #
 # No passwords or API credentials are sent to templates,
@@ -1233,95 +1092,82 @@ MATLAB_DIR = BASE_DIR / "matlab"
 #
 # Required production variables:
 #
-# MAILJET_API_KEY
-# MAILJET_SECRET_KEY
+# BREVO_API_KEY
 # DEFAULT_FROM_EMAIL
 #
 # ============================================================
 
 
 # ============================================================
-# 21.1 MAILJET API KEY
+# 21.1 BREVO API KEY
 # ============================================================
 
-# Mailjet public API key.
+# Brevo v3 API key from the Brevo "API keys & MCP" page.
+#
+# The value normally begins with "xkeysib-". Use the API key,
+# not the SMTP key shown on Brevo's separate SMTP tab.
+#
+# Django-Anymail's Brevo backend needs only this one API key.
+# There is no BREVO_SECRET_KEY setting.
 #
 # Never place the real key directly in settings.py.
-MAILJET_API_KEY = config(
-    "MAILJET_API_KEY",
+BREVO_API_KEY = config(
+    "BREVO_API_KEY",
     default="",
 ).strip()
 
 
 # ============================================================
-# 21.2 MAILJET SECRET KEY
+# 21.2 BREVO CONFIGURATION STATUS
 # ============================================================
 
-# Mailjet private / secret API key.
+# True only when the Brevo API key exists.
 #
-# Never commit this value to GitHub.
-MAILJET_SECRET_KEY = config(
-    "MAILJET_SECRET_KEY",
-    default="",
-).strip()
-
-
-# ============================================================
-# 21.3 MAILJET CONFIGURATION STATUS
-# ============================================================
-
-# True only when both Mailjet credentials exist.
-#
-# This boolean can safely be used internally because it does
-# not expose either credential.
-MAILJET_CONFIGURED = bool(
-    MAILJET_API_KEY
-    and
-    MAILJET_SECRET_KEY
+# This boolean can safely be used internally because it does not
+# expose the API key itself.
+BREVO_CONFIGURED = bool(
+    BREVO_API_KEY
 )
 
 
 # ============================================================
-# 21.4 DJANGO-ANYMAIL CONFIGURATION
+# 21.3 DJANGO-ANYMAIL CONFIGURATION
 # ============================================================
 
 # Django-Anymail provides the connection between Django's
-# standard email framework and Mailjet's HTTPS API.
+# standard email framework and Brevo's HTTPS API.
 #
 # Django password-reset views therefore continue using
 # Django's normal email system.
 ANYMAIL = {
 
-    "MAILJET_API_KEY":
-        MAILJET_API_KEY,
-
-    "MAILJET_SECRET_KEY":
-        MAILJET_SECRET_KEY,
+    "BREVO_API_KEY":
+        BREVO_API_KEY,
 
 }
 
 
 # ============================================================
-# 21.5 EMAIL BACKEND
+# 21.4 EMAIL BACKEND
 # ============================================================
 
 # ------------------------------------------------------------
-# MAILJET CONFIGURED
+# BREVO CONFIGURED
 # ------------------------------------------------------------
 #
-# When both Mailjet credentials exist:
+# When the Brevo API key exists:
 #
 # Django
 #     ↓
 # Anymail
 #     ↓
-# Mailjet API
+# Brevo API over HTTPS
 #     ↓
 # Real email inbox
 #
 #
 # ------------------------------------------------------------
-# MAILJET NOT CONFIGURED
+# BREVO NOT CONFIGURED
 # ------------------------------------------------------------
 #
 # During local development, if the credentials are absent:
@@ -1336,10 +1182,10 @@ ANYMAIL = {
 # This means the complete Django password-reset workflow can
 # be tested locally before sending real emails.
 
-if MAILJET_CONFIGURED:
+if BREVO_CONFIGURED:
 
     EMAIL_BACKEND = (
-        "anymail.backends.mailjet."
+        "anymail.backends.brevo."
         "EmailBackend"
     )
 
@@ -1352,12 +1198,13 @@ else:
 
 
 # ============================================================
-# 21.6 DEFAULT SENDER EMAIL
+# 21.5 DEFAULT SENDER EMAIL
 # ============================================================
 
 # IMPORTANT:
 #
-# This email address must be verified inside Mailjet.
+# This email address must be registered and verified as a sender
+# inside the same Brevo account that owns BREVO_API_KEY.
 #
 # Example Render environment variable:
 #
@@ -1367,7 +1214,7 @@ else:
 # Do not leave no-reply@example.com as the production value.
 DEFAULT_FROM_EMAIL = config(
     "DEFAULT_FROM_EMAIL",
-    default="MarketPulse <no-reply@example.com>",
+    default="MarketPulse <testforpass7@gmail.com>",
 ).strip()
 
 
@@ -1376,7 +1223,7 @@ SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 
 # ============================================================
-# 21.7 PASSWORD RESET TOKEN LIFETIME
+# 21.6 PASSWORD RESET TOKEN LIFETIME
 # ============================================================
 
 # Django password-reset links will remain valid for:
@@ -1390,7 +1237,7 @@ PASSWORD_RESET_TIMEOUT = config(
 
 
 # ============================================================
-# 21.8 EMAIL CONNECTION TIMEOUT
+# 21.7 EMAIL CONNECTION TIMEOUT
 # ============================================================
 
 # Prevent an external email request from hanging indefinitely.
@@ -1402,7 +1249,7 @@ EMAIL_TIMEOUT = config(
 
 
 # ============================================================
-# 21.9 PASSWORD RESET SECURITY
+# 21.8 PASSWORD RESET SECURITY
 # ============================================================
 
 # Django password-reset emails contain a temporary URL such as:
@@ -1416,7 +1263,7 @@ EMAIL_TIMEOUT = config(
 # - the user's existing password
 # - the user's new password
 # - Django SECRET_KEY
-# - Mailjet credentials
+# - Brevo credentials
 # - Alpaca credentials
 #
 #
@@ -1425,6 +1272,7 @@ EMAIL_TIMEOUT = config(
 #
 #
 # The password itself is stored by Django as a secure hash.
+
 
 
 # ============================================================

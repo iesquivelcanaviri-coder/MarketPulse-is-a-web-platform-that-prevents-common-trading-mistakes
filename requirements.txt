@@ -13,7 +13,7 @@ click-repl==0.3.0
 curl_cffi==0.16.2
 dj-database-url==2.3.0
 Django==5.2.17
-django-anymail==15.2
+django-anymail[brevo]==15.2
 django-bootstrap5==26.3
 django-cors-headers==4.9.0
 djangorestframework==3.18.0
