@@ -1,44 +1,48 @@
 <!doctype html>
 
 {# ======================================================== #}
-{# MARKETPULSE BASE TEMPLATE                                #}
+{# MARKETPULSE — SHARED BASE TEMPLATE                       #}
+{# ======================================================== #}
+{#                                                          #}
+{# FRAMEWORK CONNECTION:                                    #}
+{#                                                          #}
+{# Django URL                                               #}
+{#      ↓                                                   #}
+{# Django View                                              #}
+{#      ↓                                                   #}
+{# Page Template extends base.html                          #}
+{#      ↓                                                   #}
+{# base.html supplies navigation, messages and styling      #}
+{#                                                          #}
+{# Example:                                                 #}
+{#                                                          #}
+{# data_management/urls.py                                  #}
+{#      ↓                                                   #}
+{# data_management/views.py                                 #}
+{#      ↓                                                   #}
+{# data_management/templates/data_management/import.html    #}
+{#      ↓                                                   #}
+{# templates/base.html                                      #}
+{#                                                          #}
+{# Child templates insert their content inside:             #}
+{#                                                          #}
+{# {% block content %}                                      #}
+{#                                                          #}
+{# Bootstrap supplies the responsive layout and components. #}
+{# styles.css supplies the MarketPulse dark visual theme.   #}
 {# ======================================================== #}
 
-{# Framework mapping:                                      #}
-{# This is the main shared layout for every Django page.   #}
-{#                                                        #}
-{# It connects:                                            #}
-{# - Django template inheritance                           #}
-{# - django-bootstrap5                                     #}
-{# - Django static files                                   #}
-{# - Authentication navigation                             #}
-{# - Django messages                                       #}
-{# - MarketPulse application URLs                          #}
-{# - Shared CSS and JavaScript                             #}
-{#                                                        #}
-{# User-facing navigation is intentionally kept simple:    #}
-{#                                                        #}
-{# Home                                                   #}
-{# Dashboard                                              #}
-{# Data                                                   #}
-{# Strategies                                             #}
-{# Risk                                                   #}
-{#                                                        #}
-{# The old standalone Analysis tab has been removed.       #}
-{#                                                        #}
-{# Analytical features now belong to their logical areas: #}
-{#                                                        #}
-{# Market Regime     -> Data / Market Condition            #}
-{# Overfitting       -> Strategies / Robustness            #}
-{# Stress Testing    -> Risk / Stress Test                 #}
-{#                                                        #}
-{# analysis_tools remains an INTERNAL analytics engine.    #}
 
-<html lang="en">
+{# Load Django Bootstrap and static-file template tags. #}
+{% load django_bootstrap5 static %}
+
+
+{# data-bs-theme="dark" activates Bootstrap's dark theme. #}
+<html lang="en" data-bs-theme="dark">
 
 
 {# ======================================================== #}
-{# 1. HEAD                                                  #}
+{# 1. DOCUMENT HEAD                                         #}
 {# ======================================================== #}
 
 <head>
@@ -50,48 +54,34 @@
         content="width=device-width, initial-scale=1"
     >
 
-    <title>
 
+    {# Each child template can provide its own page title. #}
+    <title>
         {% block title %}
             MarketPulse
         {% endblock %}
-
     </title>
 
 
-    {# ---------------------------------------------------- #}
-    {# Django Bootstrap 5 and Static Files                 #}
-    {# ---------------------------------------------------- #}
-
-    {% load django_bootstrap5 static %}
-
+    {# Load Bootstrap 5 CSS through django-bootstrap5. #}
     {% bootstrap_css %}
 
 
-    {# ---------------------------------------------------- #}
-    {# Font Awesome                                        #}
-    {# ---------------------------------------------------- #}
-
+    {# Font Awesome provides the navigation icons. #}
     <link
         rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
     >
 
 
-    {# ---------------------------------------------------- #}
-    {# MarketPulse Custom CSS                              #}
-    {# ---------------------------------------------------- #}
-
+    {# Load the shared MarketPulse stylesheet. #}
     <link
         rel="stylesheet"
         href="{% static 'css/styles.css' %}"
     >
 
 
-    {# ---------------------------------------------------- #}
-    {# Optional Page-Specific CSS                          #}
-    {# ---------------------------------------------------- #}
-
+    {# Individual pages may add extra CSS when required. #}
     {% block extra_css %}
     {% endblock %}
 
@@ -99,384 +89,492 @@
 
 
 {# ======================================================== #}
-{# 2. BODY                                                  #}
+{# 2. PAGE BODY                                             #}
 {# ======================================================== #}
 
-<body>
-
-
-{# ======================================================== #}
-{# 3. NAVIGATION BAR                                        #}
-{# ======================================================== #}
-
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-
-    <div class="container-fluid">
-
-
-        {# ------------------------------------------------ #}
-        {# MarketPulse Brand                               #}
-        {# ------------------------------------------------ #}
-
-        <a
-            class="navbar-brand fw-bold"
-            href="{% url 'home' %}"
-        >
-
-            <i class="fa-solid fa-chart-line me-2"></i>
-
-            MarketPulse
-
-        </a>
-
-
-        {# ------------------------------------------------ #}
-        {# Mobile Navigation Toggle                       #}
-        {# ------------------------------------------------ #}
-
-        <button
-            class="navbar-toggler"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#mainNav"
-            aria-controls="mainNav"
-            aria-expanded="false"
-            aria-label="Toggle navigation"
-        >
-
-            <span class="navbar-toggler-icon"></span>
-
-        </button>
-
-
-        {# ------------------------------------------------ #}
-        {# Navigation Content                             #}
-        {# ------------------------------------------------ #}
-
-        <div
-            class="collapse navbar-collapse"
-            id="mainNav"
-        >
-
-
-            {# ============================================ #}
-            {# LEFT NAVIGATION                             #}
-            {# ============================================ #}
-
-            <ul class="navbar-nav me-auto">
-
-
-                {# ================================================= #}
-                {# HOME                                              #}
-                {# ================================================= #}
-
-                <li class="nav-item">
-
-                    <a
-                        class="nav-link"
-                        href="{% url 'home' %}"
-                    >
-                        Home
-                    </a>
-
-                </li>
-
-
-                {% if user.is_authenticated %}
-
-
-                    {# ============================================= #}
-                    {# DASHBOARD                                     #}
-                    {# ============================================= #}
-
-                    <li class="nav-item">
-
-                        <a
-                            class="nav-link"
-                            href="{% url 'dashboard' %}"
-                        >
-                            Dashboard
-                        </a>
-
-                    </li>
-
-
-                    {# ============================================= #}
-                    {# DATA                                          #}
-                    {# ============================================= #}
-
-                    {# Data contains:                                #}
-                    {# - Historical market data                      #}
-                    {# - Import / refresh                            #}
-                    {# - Dataset inspection                          #}
-                    {# - Market Condition / Regime Analysis          #}
-
-                    <li class="nav-item">
-
-                        <a
-                            class="nav-link"
-                            href="{% url 'data_management:import' %}"
-                        >
-                            Data
-                        </a>
-
-                    </li>
-
-
-                    {# ============================================= #}
-                    {# STRATEGIES                                    #}
-                    {# ============================================= #}
-
-                    {# Strategies contains:                          #}
-                    {# - Strategy & Model Library                    #}
-                    {# - User-created strategies                     #}
-                    {# - Strategy comparison                         #}
-                    {# - Backtesting                                 #}
-                    {# - Strategy Robustness / Overfitting Analysis  #}
-
-                    <li class="nav-item">
-
-                        <a
-                            class="nav-link"
-                            href="{% url 'strategy_builder:list' %}"
-                        >
-                            Strategies
-                        </a>
-
-                    </li>
-
-
-                    {# ============================================= #}
-                    {# RISK                                          #}
-                    {# ============================================= #}
-
-                    {# Risk contains:                                #}
-                    {# - Trade Risk Planner                          #}
-                    {# - Position sizing                             #}
-                    {# - Stop-loss analysis                          #}
-                    {# - Reward-to-risk                              #}
-                    {# - Stress Testing                              #}
-
-                    <li class="nav-item">
-
-                        <a
-                            class="nav-link"
-                            href="{% url 'risk_management:calculator' %}"
-                        >
-                            Risk
-                        </a>
-
-                    </li>
-
-
-                    {# ============================================= #}
-                    {# ANALYSIS TAB REMOVED                           #}
-                    {# ============================================= #}
-
-                    {# The old Analysis dropdown previously linked to: #}
-                    {#                                                  #}
-                    {# analysis_tools:overfitting                        #}
-                    {# analysis_tools:regime                             #}
-                    {# analysis_tools:stress                             #}
-                    {#                                                  #}
-                    {# Those public routes are intentionally no longer   #}
-                    {# referenced here.                                  #}
-                    {#                                                  #}
-                    {# Their functionality has been redistributed:       #}
-                    {#                                                  #}
-                    {# Overfitting -> Strategies                         #}
-                    {# Market Regime -> Data                             #}
-                    {# Stress Testing -> Risk                            #}
-
-
-                {% endif %}
-
-            </ul>
-
-
-            {# ============================================ #}
-            {# RIGHT AUTHENTICATION NAVIGATION             #}
-            {# ============================================ #}
-
-            <ul class="navbar-nav">
-
-
-                {% if user.is_authenticated %}
-
-
-                    {# ============================================= #}
-                    {# PROFILE                                       #}
-                    {# ============================================= #}
-
-                    <li class="nav-item">
-
-                        <a
-                            class="nav-link"
-                            href="{% url 'accounts:profile' %}"
-                        >
-                            {{ user.username }}
-                        </a>
-
-                    </li>
-
-
-                    {# ============================================= #}
-                    {# LOGOUT                                        #}
-                    {# ============================================= #}
-
-                    <li class="nav-item">
-
-                        <form
-                            method="post"
-                            action="{% url 'accounts:logout' %}"
-                        >
-
-                            {% csrf_token %}
-
-                            <button
-                                class="btn btn-link nav-link"
-                                type="submit"
-                            >
-                                Logout
-                            </button>
-
-                        </form>
-
-                    </li>
-
-
-                {% else %}
-
-
-                    {# ============================================= #}
-                    {# LOGIN                                         #}
-                    {# ============================================= #}
-
-                    <li class="nav-item">
-
-                        <a
-                            class="nav-link"
-                            href="{% url 'accounts:login' %}"
-                        >
-                            Login
-                        </a>
-
-                    </li>
-
-
-                    {# ============================================= #}
-                    {# REGISTER                                      #}
-                    {# ============================================= #}
-
-                    <li class="nav-item">
-
-                        <a
-                            class="nav-link"
-                            href="{% url 'accounts:register' %}"
-                        >
-                            Register
-                        </a>
-
-                    </li>
-
-
-                {% endif %}
-
-            </ul>
-
-
-        </div>
-
-    </div>
-
-</nav>
-
-
-{# ======================================================== #}
-{# 4. MAIN PAGE CONTENT                                      #}
-{# ======================================================== #}
-
-<main class="container py-4">
-
-
-    {# ---------------------------------------------------- #}
-    {# Django Messages                                     #}
-    {# ---------------------------------------------------- #}
-
-    {% if messages %}
-
-        {% for message in messages %}
-
-            <div
-                class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show"
-                role="alert"
+<body class="marketpulse-body">
+
+
+    {# Accessibility link for keyboard and screen-reader users. #}
+    <a
+        class="skip-link"
+        href="#main-content"
+    >
+        Skip to main content
+    </a>
+
+
+    {# ==================================================== #}
+    {# 3. SHARED BOOTSTRAP NAVIGATION                       #}
+    {# ==================================================== #}
+
+    {#                                                      #}
+    {# navbar-expand-lg:                                    #}
+    {#   The menu is expanded on large screens and collapses #}
+    {#   into the mobile menu button on smaller screens.    #}
+    {#                                                      #}
+    {# navbar-dark:                                         #}
+    {#   Makes text and icons suitable for a dark/blue bar. #}
+    {#                                                      #}
+    {# bg-primary:                                          #}
+    {#   Creates the blue navigation bar in the design.     #}
+    {#                                                      #}
+    {# sticky-top:                                          #}
+    {#   Keeps navigation visible while scrolling.          #}
+
+    <nav
+        class="navbar navbar-expand-lg navbar-dark bg-primary
+               sticky-top shadow-sm"
+    >
+
+        <div class="container-fluid px-3 px-lg-4">
+
+
+            {# ------------------------------------------------ #}
+            {# MARKETPULSE BRAND                                #}
+            {# ------------------------------------------------ #}
+
+            <a
+                class="navbar-brand fw-bold d-flex
+                       align-items-center gap-2"
+                href="{% url 'home' %}"
             >
 
-                {{ message }}
+                <i
+                    class="fa-solid fa-chart-line"
+                    aria-hidden="true"
+                ></i>
+
+                <span>
+                    MarketPulse
+                </span>
+
+            </a>
 
 
-                <button
-                    type="button"
-                    class="btn-close"
-                    data-bs-dismiss="alert"
-                    aria-label="Close"
-                >
-                </button>
+            {# ------------------------------------------------ #}
+            {# MOBILE NAVIGATION BUTTON                          #}
+            {# ------------------------------------------------ #}
+
+            <button
+                class="navbar-toggler"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#mainNav"
+                aria-controls="mainNav"
+                aria-expanded="false"
+                aria-label="Open navigation"
+            >
+
+                <span class="navbar-toggler-icon"></span>
+
+            </button>
+
+
+            {# ------------------------------------------------ #}
+            {# COLLAPSIBLE NAVIGATION CONTENT                    #}
+            {# ------------------------------------------------ #}
+
+            <div
+                class="collapse navbar-collapse"
+                id="mainNav"
+            >
+
+
+                {# ============================================ #}
+                {# LEFT NAVIGATION                              #}
+                {# ============================================ #}
+
+                <ul class="navbar-nav me-auto ms-lg-3">
+
+
+                    {# ---------------------------------------- #}
+                    {# HOME                                     #}
+                    {# ---------------------------------------- #}
+
+                    <li class="nav-item">
+
+                        <a
+                            class="nav-link
+                            {% if request.resolver_match.url_name == 'home' %}
+                                active fw-semibold
+                            {% endif %}"
+                            href="{% url 'home' %}"
+                        >
+
+                            <i
+                                class="fa-solid fa-house me-1"
+                                aria-hidden="true"
+                            ></i>
+
+                            Home
+
+                        </a>
+
+                    </li>
+
+
+                    {# Application pages require authentication. #}
+                    {% if user.is_authenticated %}
+
+
+                        {# ------------------------------------ #}
+                        {# DASHBOARD                            #}
+                        {# ------------------------------------ #}
+
+                        <li class="nav-item">
+
+                            <a
+                                class="nav-link
+                                {% if request.resolver_match.url_name == 'dashboard' %}
+                                    active fw-semibold
+                                {% endif %}"
+                                href="{% url 'dashboard' %}"
+                            >
+
+                                <i
+                                    class="fa-solid fa-gauge-high me-1"
+                                    aria-hidden="true"
+                                ></i>
+
+                                Dashboard
+
+                            </a>
+
+                        </li>
+
+
+                        {# ------------------------------------ #}
+                        {# DATA                                 #}
+                        {# ------------------------------------ #}
+
+                        {#                                      #}
+                        {# request.resolver_match.namespace     #}
+                        {# identifies which Django application  #}
+                        {# owns the current URL.                 #}
+                        {#                                      #}
+                        {# Therefore, every data_management URL #}
+                        {# automatically highlights Data.       #}
+
+                        <li class="nav-item">
+
+                            <a
+                                class="nav-link
+                                {% if request.resolver_match.namespace == 'data_management' %}
+                                    active fw-semibold
+                                {% endif %}"
+                                href="{% url 'data_management:import' %}"
+                            >
+
+                                <i
+                                    class="fa-solid fa-database me-1"
+                                    aria-hidden="true"
+                                ></i>
+
+                                Data
+
+                            </a>
+
+                        </li>
+
+
+                        {# ------------------------------------ #}
+                        {# STRATEGIES                           #}
+                        {# ------------------------------------ #}
+
+                        <li class="nav-item">
+
+                            <a
+                                class="nav-link
+                                {% if request.resolver_match.namespace == 'strategy_builder' %}
+                                    active fw-semibold
+                                {% endif %}"
+                                href="{% url 'strategy_builder:list' %}"
+                            >
+
+                                <i
+                                    class="fa-solid fa-flask me-1"
+                                    aria-hidden="true"
+                                ></i>
+
+                                Strategies
+
+                            </a>
+
+                        </li>
+
+
+                        {# ------------------------------------ #}
+                        {# RISK                                 #}
+                        {# ------------------------------------ #}
+
+                        <li class="nav-item">
+
+                            <a
+                                class="nav-link
+                                {% if request.resolver_match.namespace == 'risk_management' %}
+                                    active fw-semibold
+                                {% endif %}"
+                                href="{% url 'risk_management:calculator' %}"
+                            >
+
+                                <i
+                                    class="fa-solid fa-shield-halved me-1"
+                                    aria-hidden="true"
+                                ></i>
+
+                                Risk
+
+                            </a>
+
+                        </li>
+
+
+                    {% endif %}
+
+                </ul>
+
+
+                {# ============================================ #}
+                {# RIGHT AUTHENTICATION NAVIGATION              #}
+                {# ============================================ #}
+
+                <ul class="navbar-nav align-items-lg-center">
+
+
+                    {% if user.is_authenticated %}
+
+
+                        {# ------------------------------------ #}
+                        {# USER PROFILE                         #}
+                        {# ------------------------------------ #}
+
+                        <li class="nav-item">
+
+                            <a
+                                class="nav-link"
+                                href="{% url 'accounts:profile' %}"
+                            >
+
+                                <i
+                                    class="fa-solid fa-circle-user me-1"
+                                    aria-hidden="true"
+                                ></i>
+
+                                {{ user.username }}
+
+                            </a>
+
+                        </li>
+
+
+                        {# ------------------------------------ #}
+                        {# LOGOUT                               #}
+                        {# ------------------------------------ #}
+
+                        {# Logout uses POST for improved security. #}
+
+                        <li class="nav-item">
+
+                            <form
+                                method="post"
+                                action="{% url 'accounts:logout' %}"
+                            >
+
+                                {% csrf_token %}
+
+                                <button
+                                    class="nav-link border-0
+                                           bg-transparent"
+                                    type="submit"
+                                >
+
+                                    <i
+                                        class="fa-solid
+                                               fa-arrow-right-from-bracket
+                                               me-1"
+                                        aria-hidden="true"
+                                    ></i>
+
+                                    Logout
+
+                                </button>
+
+                            </form>
+
+                        </li>
+
+
+                    {% else %}
+
+
+                        {# ------------------------------------ #}
+                        {# LOGIN                                #}
+                        {# ------------------------------------ #}
+
+                        <li class="nav-item">
+
+                            <a
+                                class="nav-link"
+                                href="{% url 'accounts:login' %}"
+                            >
+                                Login
+                            </a>
+
+                        </li>
+
+
+                        {# ------------------------------------ #}
+                        {# REGISTER                             #}
+                        {# ------------------------------------ #}
+
+                        <li class="nav-item ms-lg-2">
+
+                            <a
+                                class="btn btn-light btn-sm px-3"
+                                href="{% url 'accounts:register' %}"
+                            >
+                                Register
+                            </a>
+
+                        </li>
+
+
+                    {% endif %}
+
+                </ul>
 
             </div>
 
-        {% endfor %}
+        </div>
 
-    {% endif %}
+    </nav>
 
 
     {# ==================================================== #}
-    {# SINGLE CONTENT BLOCK                                 #}
+    {# 4. MAIN PAGE CONTENT                                 #}
     {# ==================================================== #}
 
-    {% block content %}
+    <main
+        id="main-content"
+        class="marketpulse-main container-fluid
+               px-3 px-lg-4 py-4"
+    >
+
+
+        {# ------------------------------------------------ #}
+        {# DJANGO MESSAGES                                  #}
+        {# ------------------------------------------------ #}
+
+        {#                                                  #}
+        {# Messages are created in Django views using:      #}
+        {#                                                  #}
+        {# messages.success(request, "Import completed.")   #}
+        {#                                                  #}
+        {# They are then displayed here automatically.      #}
+
+        {% if messages %}
+
+            <div
+                class="mb-4"
+                aria-live="polite"
+            >
+
+                {% for message in messages %}
+
+                    <div
+                        class="alert
+                               alert-{{ message.tags|default:'info' }}
+                               alert-dismissible fade show"
+                        role="alert"
+                    >
+
+                        {{ message }}
+
+                        <button
+                            type="button"
+                            class="btn-close"
+                            data-bs-dismiss="alert"
+                            aria-label="Close"
+                        ></button>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% endif %}
+
+
+        {# ------------------------------------------------ #}
+        {# CHILD TEMPLATE CONTENT                           #}
+        {# ------------------------------------------------ #}
+
+        {# Every page extending base.html is inserted here. #}
+
+        {% block content %}
+        {% endblock %}
+
+
+    </main>
+
+
+    {# ==================================================== #}
+    {# 5. SHARED FOOTER                                     #}
+    {# ==================================================== #}
+
+    <footer class="marketpulse-footer mt-auto py-3">
+
+        <div
+            class="container-fluid px-3 px-lg-4
+                   d-flex flex-column flex-sm-row
+                   justify-content-between gap-2 small"
+        >
+
+            <span>
+                &copy; {% now "Y" %} MarketPulse
+            </span>
+
+            <span>
+
+                <i
+                    class="fa-solid fa-graduation-cap me-1"
+                    aria-hidden="true"
+                ></i>
+
+                Educational decision support —
+                not investment advice
+
+            </span>
+
+        </div>
+
+    </footer>
+
+
+    {# ==================================================== #}
+    {# 6. BOOTSTRAP JAVASCRIPT                              #}
+    {# ==================================================== #}
+
+    {# Required for the mobile menu and dismissible alerts. #}
+
+    {% bootstrap_javascript %}
+
+
+    {# ==================================================== #}
+    {# 7. SHARED MARKETPULSE JAVASCRIPT                     #}
+    {# ==================================================== #}
+
+    <script src="{% static 'js/app.js' %}"></script>
+
+
+    {# ==================================================== #}
+    {# 8. PAGE-SPECIFIC JAVASCRIPT                          #}
+    {# ==================================================== #}
+
+    {% block extra_js %}
     {% endblock %}
-
-
-</main>
-
-
-{# ======================================================== #}
-{# 5. FOOTER                                                 #}
-{# ======================================================== #}
-
-<footer class="border-top py-4 mt-5">
-
-    <div class="container small text-muted">
-
-        MarketPulse educational project —
-        simulated analysis, not investment advice.
-
-    </div>
-
-</footer>
-
-
-{# ======================================================== #}
-{# 6. BOOTSTRAP JAVASCRIPT                                   #}
-{# ======================================================== #}
-
-{% bootstrap_javascript %}
-
-
-{# ======================================================== #}
-{# 7. MARKETPULSE JAVASCRIPT                                 #}
-{# ======================================================== #}
-
-<script src="{% static 'js/app.js' %}"></script>
-
-
-{# ======================================================== #}
-{# 8. OPTIONAL PAGE-SPECIFIC JAVASCRIPT                      #}
-{# ======================================================== #}
-
-{% block extra_js %}
-{% endblock %}
 
 
 </body>
