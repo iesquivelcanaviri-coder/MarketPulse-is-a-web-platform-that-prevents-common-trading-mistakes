@@ -61,7 +61,7 @@ MarketPulse | Trading Decision Support
      1. MARKETPULSE HERO
 ========================================================= -->
 
-<section class="hero p-5 rounded-4 mb-4">
+<section class="hero p-4 p-md-5 rounded-4 mb-4">
 
     <div class="row align-items-center g-4">
 
@@ -72,7 +72,16 @@ MarketPulse | Trading Decision Support
 
         <div class="col-lg-7">
 
-            <span class="badge bg-light text-primary mb-3">
+            <span
+                class="
+                    badge
+                    bg-primary-subtle
+                    text-primary-emphasis
+                    border
+                    border-primary-subtle
+                    mb-3
+                "
+            >
 
                 Django + React + MATLAB
 
@@ -81,12 +90,9 @@ MarketPulse | Trading Decision Support
 
             <!-- ------------------------------------------------
                  MAIN MESSAGE
-
-                 Keep this short because the detailed explanation
-                 appears only once later in the About section.
             ------------------------------------------------- -->
 
-            <h1 class="display-4 fw-bold">
+            <h1 class="display-4 fw-bold mb-3">
 
                 Research markets.<br>
                 Test strategies.<br>
@@ -95,7 +101,7 @@ MarketPulse | Trading Decision Support
             </h1>
 
 
-            <p class="lead mb-4">
+            <p class="lead text-secondary mb-4">
 
                 A trading decision-support platform for market
                 research, strategy testing and risk management.
@@ -110,8 +116,11 @@ MarketPulse | Trading Decision Support
             {% if user.is_authenticated %}
 
                 <a
-                    class="btn btn-light btn-lg"
-                    href="{% url 'dashboard' %}">
+                    class="btn btn-primary btn-lg"
+                    href="{% url 'dashboard' %}"
+                >
+
+                    <i class="fa-solid fa-gauge-high me-2"></i>
 
                     Open Dashboard
 
@@ -120,8 +129,11 @@ MarketPulse | Trading Decision Support
             {% else %}
 
                 <a
-                    class="btn btn-light btn-lg"
-                    href="{% url 'accounts:register' %}">
+                    class="btn btn-primary btn-lg"
+                    href="{% url 'accounts:register' %}"
+                >
+
+                    <i class="fa-solid fa-user-plus me-2"></i>
 
                     Get Started
 
@@ -138,19 +150,16 @@ MarketPulse | Trading Decision Support
 
         <div class="col-lg-5">
 
-            <div class="glass-card">
+            <div class="glass-card h-100">
 
                 <h5 class="mb-3">
+
+                    <i class="fa-solid fa-layer-group me-2"></i>
 
                     Technology Stack
 
                 </h5>
 
-
-                <!-- -----------------------------------------
-                     Technology is shown only here so that it
-                     is not repeated again in the About area.
-                ------------------------------------------ -->
 
                 <div class="small">
 
@@ -160,7 +169,9 @@ MarketPulse | Trading Decision Support
                             Backend:
                         </strong>
 
-                        Django 5.2 + PostgreSQL + DRF
+                        <span class="text-secondary">
+                            Django 5.2 + PostgreSQL + DRF
+                        </span>
 
                     </p>
 
@@ -171,7 +182,9 @@ MarketPulse | Trading Decision Support
                             Frontend:
                         </strong>
 
-                        React + Bootstrap 5 + Chart.js
+                        <span class="text-secondary">
+                            React + Bootstrap 5 + Chart.js
+                        </span>
 
                     </p>
 
@@ -182,7 +195,9 @@ MarketPulse | Trading Decision Support
                             Market Data:
                         </strong>
 
-                        Alpaca + pandas + NumPy
+                        <span class="text-secondary">
+                            Alpaca + pandas + NumPy
+                        </span>
 
                     </p>
 
@@ -193,7 +208,9 @@ MarketPulse | Trading Decision Support
                             Analytics:
                         </strong>
 
-                        MATLAB Integration
+                        <span class="text-secondary">
+                            MATLAB Integration
+                        </span>
 
                     </p>
 
@@ -204,7 +221,9 @@ MarketPulse | Trading Decision Support
                             Email & Security:
                         </strong>
 
-                        Mailjet + Django Authentication
+                        <span class="text-secondary">
+                            Django Authentication + Email Service
+                        </span>
 
                     </p>
 
@@ -221,14 +240,6 @@ MarketPulse | Trading Decision Support
 
 <!-- ========================================================
      2. QUICK ACCESS
-
-     These replace the previous large descriptive feature
-     cards.
-
-     Their purpose is navigation only.
-
-     Detailed explanations are available inside each feature
-     itself, so the homepage does not need to repeat them.
 ========================================================= -->
 
 <div class="row g-3 mb-4">
@@ -242,11 +253,35 @@ MarketPulse | Trading Decision Support
 
         <a
             href="{% url 'dashboard' %}"
-            class="text-decoration-none text-reset">
+            class="text-decoration-none text-reset"
+        >
 
             <div class="card shadow-sm h-100">
 
-                <div class="card-body text-center">
+                <div class="card-body text-center py-4">
+
+                    <div class="mb-3">
+
+                        <span
+                            class="
+                                d-inline-flex
+                                align-items-center
+                                justify-content-center
+                                rounded-3
+                                bg-primary-subtle
+                                text-primary-emphasis
+                                border
+                                border-primary-subtle
+                                p-3
+                            "
+                        >
+
+                            <i class="fa-solid fa-gauge-high"></i>
+
+                        </span>
+
+                    </div>
+
 
                     <h5 class="mb-1">
 
@@ -255,7 +290,7 @@ MarketPulse | Trading Decision Support
                     </h5>
 
 
-                    <small class="text-muted">
+                    <small class="text-secondary">
 
                         Overview & Alerts
 
@@ -277,12 +312,36 @@ MarketPulse | Trading Decision Support
     <div class="col-6 col-lg-3">
 
         <a
-            href="/data/"
-            class="text-decoration-none text-reset">
+            href="{% url 'data_management:import' %}"
+            class="text-decoration-none text-reset"
+        >
 
             <div class="card shadow-sm h-100">
 
-                <div class="card-body text-center">
+                <div class="card-body text-center py-4">
+
+                    <div class="mb-3">
+
+                        <span
+                            class="
+                                d-inline-flex
+                                align-items-center
+                                justify-content-center
+                                rounded-3
+                                bg-primary-subtle
+                                text-primary-emphasis
+                                border
+                                border-primary-subtle
+                                p-3
+                            "
+                        >
+
+                            <i class="fa-solid fa-database"></i>
+
+                        </span>
+
+                    </div>
+
 
                     <h5 class="mb-1">
 
@@ -291,7 +350,7 @@ MarketPulse | Trading Decision Support
                     </h5>
 
 
-                    <small class="text-muted">
+                    <small class="text-secondary">
 
                         Research & Market Conditions
 
@@ -313,12 +372,36 @@ MarketPulse | Trading Decision Support
     <div class="col-6 col-lg-3">
 
         <a
-            href="/strategy/"
-            class="text-decoration-none text-reset">
+            href="{% url 'strategy_builder:list' %}"
+            class="text-decoration-none text-reset"
+        >
 
             <div class="card shadow-sm h-100">
 
-                <div class="card-body text-center">
+                <div class="card-body text-center py-4">
+
+                    <div class="mb-3">
+
+                        <span
+                            class="
+                                d-inline-flex
+                                align-items-center
+                                justify-content-center
+                                rounded-3
+                                bg-primary-subtle
+                                text-primary-emphasis
+                                border
+                                border-primary-subtle
+                                p-3
+                            "
+                        >
+
+                            <i class="fa-solid fa-chart-line"></i>
+
+                        </span>
+
+                    </div>
+
 
                     <h5 class="mb-1">
 
@@ -327,7 +410,7 @@ MarketPulse | Trading Decision Support
                     </h5>
 
 
-                    <small class="text-muted">
+                    <small class="text-secondary">
 
                         Build & Backtest
 
@@ -349,12 +432,36 @@ MarketPulse | Trading Decision Support
     <div class="col-6 col-lg-3">
 
         <a
-            href="/risk/"
-            class="text-decoration-none text-reset">
+            href="{% url 'risk_management:calculator' %}"
+            class="text-decoration-none text-reset"
+        >
 
             <div class="card shadow-sm h-100">
 
-                <div class="card-body text-center">
+                <div class="card-body text-center py-4">
+
+                    <div class="mb-3">
+
+                        <span
+                            class="
+                                d-inline-flex
+                                align-items-center
+                                justify-content-center
+                                rounded-3
+                                bg-primary-subtle
+                                text-primary-emphasis
+                                border
+                                border-primary-subtle
+                                p-3
+                            "
+                        >
+
+                            <i class="fa-solid fa-shield-halved"></i>
+
+                        </span>
+
+                    </div>
+
 
                     <h5 class="mb-1">
 
@@ -363,7 +470,7 @@ MarketPulse | Trading Decision Support
                     </h5>
 
 
-                    <small class="text-muted">
+                    <small class="text-secondary">
 
                         Plan & Measure Risk
 
@@ -382,15 +489,6 @@ MarketPulse | Trading Decision Support
 
 <!-- ========================================================
      3. COMMUNITY & PRIVATE MESSAGING
-
-     These remain prominent because they contain live,
-     database-driven user content rather than static
-     explanations about the application.
-
-     AUTHENTICATION RULE:
-
-     Community Pulse and Inbox are rendered only when the
-     visitor is logged in.
 ========================================================= -->
 
 {% if user.is_authenticated %}
@@ -411,7 +509,17 @@ MarketPulse | Trading Decision Support
                  COMMUNITY HEADER
             ================================================== -->
 
-            <div class="card-header bg-white d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+            <div
+                class="
+                    card-header
+                    d-flex
+                    flex-column
+                    flex-md-row
+                    justify-content-between
+                    align-items-md-center
+                    gap-2
+                "
+            >
 
                 <div>
 
@@ -422,7 +530,7 @@ MarketPulse | Trading Decision Support
                     </h5>
 
 
-                    <small class="text-muted">
+                    <small class="text-secondary">
 
                         Latest market observations and discussions
                         shared by MarketPulse users.
@@ -432,31 +540,16 @@ MarketPulse | Trading Decision Support
                 </div>
 
 
-                <!-- =============================================
-                     COMMUNITY ACTION
-                ============================================== -->
+                <a
+                    href="{% url 'community:feed' %}"
+                    class="btn btn-sm btn-outline-primary"
+                >
 
-                {% if user.is_authenticated %}
+                    <i class="fa-solid fa-users me-1"></i>
 
-                    <a
-                        href="{% url 'community:feed' %}"
-                        class="btn btn-sm btn-outline-primary">
+                    View Community
 
-                        View Community
-
-                    </a>
-
-                {% else %}
-
-                    <a
-                        href="{% url 'accounts:login' %}"
-                        class="btn btn-sm btn-outline-primary">
-
-                        Log In to Participate
-
-                    </a>
-
-                {% endif %}
+                </a>
 
             </div>
 
@@ -482,7 +575,15 @@ MarketPulse | Trading Decision Support
                              AUTHOR / TYPE / TIME
                         -------------------------------------- -->
 
-                        <div class="d-flex flex-column flex-sm-row justify-content-between gap-2">
+                        <div
+                            class="
+                                d-flex
+                                flex-column
+                                flex-sm-row
+                                justify-content-between
+                                gap-2
+                            "
+                        >
 
                             <div>
 
@@ -493,7 +594,15 @@ MarketPulse | Trading Decision Support
                                 </strong>
 
 
-                                <span class="badge bg-secondary ms-2">
+                                <span
+                                    class="
+                                        badge
+                                        bg-secondary-subtle
+                                        text-secondary-emphasis
+                                        border
+                                        ms-2
+                                    "
+                                >
 
                                     {{ post.get_post_type_display }}
 
@@ -502,7 +611,7 @@ MarketPulse | Trading Decision Support
                             </div>
 
 
-                            <small class="text-muted">
+                            <small class="text-secondary">
 
                                 {{ post.created_at|timesince }} ago
 
@@ -551,6 +660,17 @@ MarketPulse | Trading Decision Support
 
                     <div class="text-center py-4">
 
+                        <i
+                            class="
+                                fa-regular
+                                fa-comments
+                                fs-2
+                                text-secondary
+                                mb-3
+                            "
+                        ></i>
+
+
                         <h6>
 
                             No Community Posts Yet
@@ -558,7 +678,7 @@ MarketPulse | Trading Decision Support
                         </h6>
 
 
-                        <p class="text-muted mb-3">
+                        <p class="text-secondary mb-3">
 
                             Community posts will appear here
                             when MarketPulse users begin sharing
@@ -567,17 +687,14 @@ MarketPulse | Trading Decision Support
                         </p>
 
 
-                        {% if user.is_authenticated %}
+                        <a
+                            href="{% url 'community:feed' %}"
+                            class="btn btn-primary"
+                        >
 
-                            <a
-                                href="{% url 'community:feed' %}"
-                                class="btn btn-primary">
+                            Create the First Post
 
-                                Create the First Post
-
-                            </a>
-
-                        {% endif %}
+                        </a>
 
                     </div>
 
@@ -588,13 +705,14 @@ MarketPulse | Trading Decision Support
                      COMMUNITY ACTIONS
                 ============================================= -->
 
-                {% if recent_posts and user.is_authenticated %}
+                {% if recent_posts %}
 
                     <div class="d-flex flex-wrap gap-2 mt-3">
 
                         <a
                             href="{% url 'community:feed' %}"
-                            class="btn btn-outline-primary">
+                            class="btn btn-outline-primary"
+                        >
 
                             View All Posts
 
@@ -603,7 +721,8 @@ MarketPulse | Trading Decision Support
 
                         <a
                             href="{% url 'community:feed' %}"
-                            class="btn btn-primary">
+                            class="btn btn-primary"
+                        >
 
                             Share an Update
 
@@ -633,7 +752,14 @@ MarketPulse | Trading Decision Support
                  INBOX HEADER
             ================================================== -->
 
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <div
+                class="
+                    card-header
+                    d-flex
+                    justify-content-between
+                    align-items-center
+                "
+            >
 
                 <h5 class="mb-0">
 
@@ -642,25 +768,28 @@ MarketPulse | Trading Decision Support
                 </h5>
 
 
-                {% if user.is_authenticated %}
+                {% if unread_messages %}
 
-                    {% if unread_messages %}
+                    <span class="badge bg-primary">
 
-                        <span class="badge bg-primary">
+                        {{ unread_messages }} unread
 
-                            {{ unread_messages }} unread
+                    </span>
 
-                        </span>
+                {% else %}
 
-                    {% else %}
+                    <span
+                        class="
+                            badge
+                            bg-secondary-subtle
+                            text-secondary-emphasis
+                            border
+                        "
+                    >
 
-                        <span class="badge bg-secondary">
+                        0 unread
 
-                            0 unread
-
-                        </span>
-
-                    {% endif %}
+                    </span>
 
                 {% endif %}
 
@@ -674,150 +803,130 @@ MarketPulse | Trading Decision Support
             <div class="card-body">
 
 
-                {% if user.is_authenticated %}
+                <!-- -----------------------------------------
+                     RECENT PRIVATE MESSAGES
+                ------------------------------------------ -->
+
+                {% for message in recent_messages %}
+
+                    <a
+                        href="{% url 'community:message_detail' message.pk %}"
+                        class="text-decoration-none text-reset"
+                    >
+
+                        <div class="border-bottom pb-3 mb-3">
 
 
-                    <!-- -----------------------------------------
-                         RECENT PRIVATE MESSAGES
-                    ------------------------------------------ -->
+                            <div
+                                class="
+                                    d-flex
+                                    justify-content-between
+                                    gap-2
+                                "
+                            >
 
-                    {% for message in recent_messages %}
+                                <strong>
 
-                        <a
-                            href="{% url 'community:message_detail' message.pk %}"
-                            class="text-decoration-none text-reset">
+                                    {{ message.sender.username }}
 
-                            <div class="border-bottom pb-3 mb-3">
-
-
-                                <div class="d-flex justify-content-between gap-2">
-
-                                    <strong>
-
-                                        {{ message.sender.username }}
-
-                                    </strong>
+                                </strong>
 
 
-                                    {% if not message.is_read %}
+                                {% if not message.is_read %}
 
-                                        <span class="badge bg-primary">
+                                    <span class="badge bg-primary">
 
-                                            New
+                                        New
 
-                                        </span>
+                                    </span>
 
-                                    {% endif %}
-
-                                </div>
-
-
-                                <div class="mt-1">
-
-                                    {{ message.subject|truncatechars:55 }}
-
-                                </div>
-
-
-                                <small class="text-muted">
-
-                                    {{ message.created_at|timesince }} ago
-
-                                </small>
+                                {% endif %}
 
                             </div>
 
-                        </a>
+
+                            <div class="mt-1">
+
+                                {{ message.subject|truncatechars:55 }}
+
+                            </div>
 
 
-                    <!-- =========================================
-                         EMPTY INBOX
-                    ========================================== -->
+                            <small class="text-secondary">
 
-                    {% empty %}
+                                {{ message.created_at|timesince }} ago
 
-                        <div class="text-center py-3">
-
-                            <h6>
-
-                                Your Inbox is Empty
-
-                            </h6>
-
-
-                            <p class="text-muted">
-
-                                Messages from other MarketPulse
-                                users will appear here.
-
-                            </p>
+                            </small>
 
                         </div>
 
-                    {% endfor %}
+                    </a>
 
 
-                    <!-- =========================================
-                         INBOX ACTIONS
-                    ========================================== -->
+                <!-- =========================================
+                     EMPTY INBOX
+                ========================================== -->
 
-                    <div class="d-grid gap-2 mt-3">
+                {% empty %}
 
-                        <a
-                            href="{% url 'community:inbox' %}"
-                            class="btn btn-outline-primary">
+                    <div class="text-center py-3">
 
-                            Open Inbox
+                        <i
+                            class="
+                                fa-regular
+                                fa-envelope
+                                fs-3
+                                text-secondary
+                                mb-3
+                            "
+                        ></i>
 
-                        </a>
-
-
-                        <a
-                            href="{% url 'community:compose_message' %}"
-                            class="btn btn-primary">
-
-                            New Message
-
-                        </a>
-
-                    </div>
-
-
-                {% else %}
-
-
-                    <!-- =========================================
-                         VISITOR
-                    ========================================== -->
-
-                    <div class="text-center py-4">
 
                         <h6>
 
-                            Private Messaging
+                            Your Inbox is Empty
 
                         </h6>
 
 
-                        <p class="text-muted">
+                        <p class="text-secondary">
 
-                            Log in to exchange private messages
-                            with other MarketPulse users.
+                            Messages from other MarketPulse
+                            users will appear here.
 
                         </p>
 
-
-                        <a
-                            href="{% url 'accounts:login' %}"
-                            class="btn btn-primary">
-
-                            Log In
-
-                        </a>
-
                     </div>
 
-                {% endif %}
+                {% endfor %}
+
+
+                <!-- =========================================
+                     INBOX ACTIONS
+                ========================================== -->
+
+                <div class="d-grid gap-2 mt-3">
+
+                    <a
+                        href="{% url 'community:inbox' %}"
+                        class="btn btn-outline-primary"
+                    >
+
+                        Open Inbox
+
+                    </a>
+
+
+                    <a
+                        href="{% url 'community:compose_message' %}"
+                        class="btn btn-primary"
+                    >
+
+                        New Message
+
+                    </a>
+
+                </div>
 
             </div>
 
@@ -832,17 +941,6 @@ MarketPulse | Trading Decision Support
 
 <!-- ========================================================
      4. ABOUT MARKETPULSE
-
-     The previous detailed feature guide has been removed.
-
-     Dashboard, Data, Strategies and Risk are already
-     represented by the Quick Access section.
-
-     Community and Inbox are already represented by the
-     live sections above.
-
-     Therefore this section explains only the overall
-     purpose and educational scope of MarketPulse.
 ========================================================= -->
 
 <div class="card shadow-sm mt-4 mb-4">
@@ -866,7 +964,7 @@ MarketPulse | Trading Decision Support
                 </h4>
 
 
-                <p class="text-muted mb-0">
+                <p class="text-secondary mb-0">
 
                     MarketPulse is an educational trading
                     decision-support platform that combines
@@ -889,9 +987,16 @@ MarketPulse | Trading Decision Support
 
             <div class="col-lg-4">
 
-                <div class="border rounded p-3">
+                <div
+                    class="
+                        border
+                        rounded-3
+                        p-3
+                        bg-body-tertiary
+                    "
+                >
 
-                    <small class="text-muted d-block mb-2">
+                    <small class="text-secondary d-block mb-2">
 
                         Main Purpose
 
@@ -919,25 +1024,47 @@ MarketPulse | Trading Decision Support
         <hr class="my-4">
 
 
-        <p class="small text-muted mb-0">
+        <div
+            class="
+                d-flex
+                align-items-start
+                gap-2
+                small
+                text-secondary
+            "
+        >
 
-            <strong>
-                Educational Notice:
-            </strong>
+            <i
+                class="
+                    fa-solid
+                    fa-circle-info
+                    text-warning
+                    mt-1
+                "
+            ></i>
 
-            MarketPulse is designed for educational and
-            decision-support purposes.
 
-            Market information, backtesting results, strategy
-            analysis, risk calculations and user-generated
-            content do not constitute personalised financial,
-            investment or trading advice.
+            <p class="mb-0">
 
-            Users remain responsible for conducting their own
-            research and evaluating risk before making financial
-            decisions.
+                <strong class="text-body">
+                    Educational Notice:
+                </strong>
 
-        </p>
+                MarketPulse is designed for educational and
+                decision-support purposes.
+
+                Market information, backtesting results, strategy
+                analysis, risk calculations and user-generated
+                content do not constitute personalised financial,
+                investment or trading advice.
+
+                Users remain responsible for conducting their own
+                research and evaluating risk before making financial
+                decisions.
+
+            </p>
+
+        </div>
 
     </div>
 

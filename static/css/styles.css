@@ -1,5 +1,2270 @@
-/* ==========================================================
-GLOBAL MARKETPULSE STYLES
-Framework mapping: loaded by base.html after Bootstrap.
-========================================================== */
-body{background:#f6f8fb}.hero{background:linear-gradient(135deg,#0d6efd,#123c7c);color:#fff}.glass-card{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);padding:1.5rem;border-radius:1rem}.metric-card{background:#fff;border:1px solid #e5e8ef;border-radius:.9rem;padding:1rem;box-shadow:0 .25rem .8rem rgba(0,0,0,.04)}.metric-card small{display:block;color:#6c757d;text-transform:uppercase;font-size:.72rem}.metric-card strong{display:block;font-size:1.6rem}.card{border:0}
+/* ============================================================
+   MARKETPULSE - GLOBAL DARK THEME
+   ============================================================
+
+   FRONT-END ARCHITECTURE
+
+   Bootstrap 5
+       ↓
+   templates/base.html
+       ↓
+   static/css/styles.css
+       ↓
+   ONE shared MarketPulse visual system
+
+   PURPOSE
+
+   Bootstrap remains responsible for:
+   - responsive layout
+   - grid
+   - cards
+   - buttons
+   - forms
+   - tables
+   - alerts
+   - modals
+   - accordions
+   - navigation
+   - utility classes
+
+   This stylesheet supplies:
+   - MarketPulse dark colours
+   - shared page background
+   - shared navigation appearance
+   - shared panel/card colours
+   - shared form colours
+   - shared tables
+   - shared alerts and badges
+   - compatibility overrides for older page-specific light CSS
+
+   IMPORTANT
+
+   All main user-facing pages should use the same application
+   background:
+
+       --mp-bg: #0c1420
+
+   ============================================================ */
+
+
+/* ============================================================
+   1. MARKETPULSE DESIGN TOKENS
+   ============================================================ */
+
+:root,
+[data-bs-theme="dark"] {
+
+    /* --------------------------------------------------------
+       APPLICATION BACKGROUNDS
+       -------------------------------------------------------- */
+
+    --mp-bg: #0c1420;
+
+    --mp-nav: #111c2b;
+
+    --mp-panel: #152235;
+
+    --mp-panel-soft: #18283a;
+
+    --mp-panel-dark: #101a28;
+
+
+    /* --------------------------------------------------------
+       BORDERS
+       -------------------------------------------------------- */
+
+    --mp-border: #314258;
+
+    --mp-border-soft: #26374b;
+
+
+    /* --------------------------------------------------------
+       TYPOGRAPHY
+       -------------------------------------------------------- */
+
+    --mp-text: #f1f5f9;
+
+    --mp-text-soft: #d8e1eb;
+
+    --mp-muted: #93a4b8;
+
+
+    /* --------------------------------------------------------
+       BRAND / STATUS COLOURS
+       -------------------------------------------------------- */
+
+    --mp-primary: #4f86b6;
+
+    --mp-primary-hover: #6095c2;
+
+    --mp-primary-soft: rgba(79, 134, 182, 0.15);
+
+    --mp-success: #32c98b;
+
+    --mp-success-soft: rgba(50, 201, 139, 0.14);
+
+    --mp-warning: #d3a854;
+
+    --mp-warning-soft: rgba(211, 168, 84, 0.14);
+
+    --mp-danger: #dc6b75;
+
+    --mp-danger-soft: rgba(220, 107, 117, 0.14);
+
+    --mp-info: #67a8d8;
+
+    --mp-info-soft: rgba(103, 168, 216, 0.14);
+
+
+    /* --------------------------------------------------------
+       BOOTSTRAP VARIABLES
+
+       These allow Bootstrap components to naturally inherit
+       the MarketPulse design.
+       -------------------------------------------------------- */
+
+    --bs-body-bg: var(--mp-bg);
+
+    --bs-body-color: var(--mp-text);
+
+    --bs-emphasis-color: var(--mp-text);
+
+    --bs-secondary-color: var(--mp-muted);
+
+    --bs-tertiary-color: var(--mp-muted);
+
+    --bs-secondary-bg: var(--mp-panel-soft);
+
+    --bs-tertiary-bg: var(--mp-panel-dark);
+
+    --bs-border-color: var(--mp-border);
+
+    --bs-border-color-translucent:
+        rgba(147, 164, 184, 0.18);
+
+    --bs-primary: var(--mp-primary);
+
+    --bs-primary-rgb: 79, 134, 182;
+
+    --bs-success: var(--mp-success);
+
+    --bs-success-rgb: 50, 201, 139;
+
+    --bs-warning: var(--mp-warning);
+
+    --bs-warning-rgb: 211, 168, 84;
+
+    --bs-danger: var(--mp-danger);
+
+    --bs-danger-rgb: 220, 107, 117;
+
+    --bs-info: var(--mp-info);
+
+    --bs-info-rgb: 103, 168, 216;
+
+    --bs-link-color: #7ba8ce;
+
+    --bs-link-hover-color: #9abbd7;
+}
+
+
+/* ============================================================
+   2. DOCUMENT / APPLICATION BACKGROUND
+   ============================================================ */
+
+/*
+   This is the most important section for visual consistency.
+
+   Home
+   Dashboard
+   Data
+   Strategies
+   Risk
+   Accounts
+   Community
+
+   all receive exactly the same outer page background.
+*/
+
+html {
+
+    min-height: 100%;
+
+    background-color: var(--mp-bg) !important;
+
+    color-scheme: dark;
+}
+
+
+body,
+body.marketpulse-body {
+
+    min-height: 100vh;
+
+    margin: 0;
+
+    color: var(--mp-text) !important;
+
+    background-color: var(--mp-bg) !important;
+}
+
+
+/*
+   Main application content must NEVER introduce a second
+   page-level background.
+*/
+
+main,
+.marketpulse-main,
+main.marketpulse-main,
+main.container,
+main.container-fluid {
+
+    color: var(--mp-text);
+
+    background-color: var(--mp-bg) !important;
+}
+
+
+/* ============================================================
+   3. PAGE WORKSPACES
+   ============================================================ */
+
+/*
+   Several older MarketPulse templates define their own root
+   workspace and sometimes assign a white/light background.
+
+   These selectors force the user-facing workspaces back onto
+   the shared application background.
+
+   !important is intentional here because page-specific CSS is
+   loaded after this global stylesheet.
+*/
+
+.data-workspace,
+.strategy-workspace,
+.risk-workspace,
+.condition-workspace,
+.market-condition-workspace,
+.dashboard-workspace,
+.analysis-workspace,
+.login-page,
+.register-page {
+
+    color: var(--mp-text) !important;
+
+    background-color: var(--mp-bg) !important;
+}
+
+
+/* ============================================================
+   4. SHARED WIDE WORKSPACE
+   ============================================================ */
+
+.mp-workspace {
+
+    width: min(
+        1480px,
+        calc(100vw - 64px)
+    );
+
+    max-width: none;
+
+    margin-inline: auto;
+}
+
+
+@media (max-width: 767.98px) {
+
+    .mp-workspace {
+
+        width: calc(100vw - 20px);
+    }
+}
+
+
+/* ============================================================
+   5. TYPOGRAPHY
+   ============================================================ */
+
+body {
+
+    font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+    font-size: 0.92rem;
+
+    line-height: 1.5;
+}
+
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+
+    color: var(--mp-text);
+}
+
+
+p,
+li,
+dd,
+dt {
+
+    border-color: var(--mp-border-soft);
+}
+
+
+.text-muted,
+.text-secondary,
+.form-text {
+
+    color: var(--mp-muted) !important;
+}
+
+
+.text-dark {
+
+    color: var(--mp-text) !important;
+}
+
+
+small,
+.small {
+
+    color: inherit;
+}
+
+
+a {
+
+    color: var(--bs-link-color);
+}
+
+
+a:hover {
+
+    color: var(--bs-link-hover-color);
+}
+
+
+/* ============================================================
+   6. ACCESSIBILITY
+   ============================================================ */
+
+.skip-link {
+
+    position: fixed;
+
+    top: 0.75rem;
+    left: 0.75rem;
+
+    z-index: 1100;
+
+    padding: 0.65rem 0.85rem;
+
+    color: #ffffff;
+
+    background: var(--mp-primary);
+
+    border-radius: 0.4rem;
+
+    transform: translateY(-160%);
+
+    transition: transform 0.15s ease;
+}
+
+
+.skip-link:focus {
+
+    transform: translateY(0);
+}
+
+
+/* ============================================================
+   7. NAVIGATION
+   ============================================================ */
+
+.navbar,
+.marketpulse-navbar,
+.navbar.bg-primary,
+nav.navbar.bg-primary {
+
+    color: var(--mp-text);
+
+    background-color: var(--mp-nav) !important;
+
+    border-bottom:
+        1px solid
+        var(--mp-border-soft);
+
+    box-shadow:
+        0 4px 16px
+        rgba(0, 0, 0, 0.18) !important;
+}
+
+
+.navbar .navbar-brand {
+
+    color: var(--mp-text) !important;
+
+    letter-spacing: -0.015em;
+}
+
+
+.navbar .navbar-brand:hover,
+.navbar .navbar-brand:focus {
+
+    color: #ffffff !important;
+}
+
+
+.navbar .navbar-brand i {
+
+    color: #79a9d1;
+}
+
+
+.navbar .nav-link {
+
+    color: #b7c4d2 !important;
+
+    border-radius: 0.4rem;
+
+    transition:
+        color 0.15s ease,
+        background-color 0.15s ease;
+}
+
+
+.navbar .nav-link:hover,
+.navbar .nav-link:focus {
+
+    color: #ffffff !important;
+
+    background-color:
+        rgba(255, 255, 255, 0.06);
+}
+
+
+.navbar .nav-link.active {
+
+    color: #ffffff !important;
+
+    background-color: var(--mp-primary-soft);
+}
+
+
+.navbar .navbar-toggler {
+
+    border-color: var(--mp-border);
+}
+
+
+.navbar .navbar-toggler:focus {
+
+    box-shadow:
+        0 0 0 0.15rem
+        rgba(79, 134, 182, 0.25);
+}
+
+
+/* ============================================================
+   8. FOOTER
+   ============================================================ */
+
+.marketpulse-footer {
+
+    color: var(--mp-muted);
+
+    background: var(--mp-nav);
+
+    border-top:
+        1px solid
+        var(--mp-border-soft);
+}
+
+
+/* ============================================================
+   9. CARDS
+   ============================================================ */
+
+.card {
+
+    color: var(--mp-text) !important;
+
+    background-color: var(--mp-panel) !important;
+
+    border-color: var(--mp-border) !important;
+
+    box-shadow:
+        0 5px 18px
+        rgba(0, 0, 0, 0.12);
+}
+
+
+.card-header,
+.card-footer {
+
+    color: var(--mp-text) !important;
+
+    background-color: var(--mp-panel-soft) !important;
+
+    border-color: var(--mp-border) !important;
+}
+
+
+/*
+   Older templates use Bootstrap's explicit light utilities.
+
+   They must not create white areas inside the dark application.
+*/
+
+.card-header.bg-white,
+.card-header.bg-light,
+.card-footer.bg-white,
+.card-footer.bg-light {
+
+    color: var(--mp-text) !important;
+
+    background-color: var(--mp-panel-soft) !important;
+}
+
+
+.bg-white {
+
+    background-color: var(--mp-panel) !important;
+}
+
+
+.bg-light {
+
+    background-color: var(--mp-panel-soft) !important;
+}
+
+
+/* ============================================================
+   10. BUTTONS
+   ============================================================ */
+
+.btn {
+
+    border-radius: 0.45rem;
+
+    font-weight: 600;
+
+    transition:
+        color 0.15s ease,
+        background-color 0.15s ease,
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+
+/* ------------------------------------------------------------
+   PRIMARY
+   ------------------------------------------------------------ */
+
+.btn-primary {
+
+    --bs-btn-color: #ffffff;
+
+    --bs-btn-bg: #3f739e;
+
+    --bs-btn-border-color: #4c83af;
+
+    --bs-btn-hover-color: #ffffff;
+
+    --bs-btn-hover-bg: var(--mp-primary-hover);
+
+    --bs-btn-hover-border-color: #6a9fc9;
+
+    --bs-btn-active-color: #ffffff;
+
+    --bs-btn-active-bg: #3c6f99;
+
+    --bs-btn-active-border-color: #4c83af;
+
+    --bs-btn-disabled-color: #d9e3ed;
+
+    --bs-btn-disabled-bg: #3d5f7b;
+
+    --bs-btn-disabled-border-color: #496983;
+}
+
+
+/* ------------------------------------------------------------
+   OUTLINE PRIMARY
+   ------------------------------------------------------------ */
+
+.btn-outline-primary {
+
+    --bs-btn-color: #7ba8ce;
+
+    --bs-btn-border-color: #527da3;
+
+    --bs-btn-hover-color: #ffffff;
+
+    --bs-btn-hover-bg: #3f739e;
+
+    --bs-btn-hover-border-color: #6095c2;
+
+    --bs-btn-active-color: #ffffff;
+
+    --bs-btn-active-bg: #3f739e;
+
+    --bs-btn-active-border-color: #6095c2;
+}
+
+
+/* ------------------------------------------------------------
+   SECONDARY
+   ------------------------------------------------------------ */
+
+.btn-secondary {
+
+    --bs-btn-bg: #34475d;
+
+    --bs-btn-border-color: #425872;
+
+    --bs-btn-hover-bg: #40556d;
+
+    --bs-btn-hover-border-color: #526a84;
+}
+
+
+.btn-outline-secondary {
+
+    --bs-btn-color: #a7b5c5;
+
+    --bs-btn-border-color: #4b6078;
+
+    --bs-btn-hover-color: #ffffff;
+
+    --bs-btn-hover-bg: #35495f;
+
+    --bs-btn-hover-border-color: #526a84;
+}
+
+
+/* ------------------------------------------------------------
+   DARK / LIGHT LEGACY BUTTONS
+   ------------------------------------------------------------ */
+
+.btn-outline-dark {
+
+    color: #a9b8c7 !important;
+
+    border-color: var(--mp-border) !important;
+}
+
+
+.btn-outline-dark:hover {
+
+    color: #ffffff !important;
+
+    background: #314258 !important;
+
+    border-color: #42566e !important;
+}
+
+
+.btn-light {
+
+    color: var(--mp-text) !important;
+
+    background-color: var(--mp-panel-soft) !important;
+
+    border-color: var(--mp-border) !important;
+}
+
+
+.btn-light:hover {
+
+    color: #ffffff !important;
+
+    background-color: #22344a !important;
+
+    border-color: #42566e !important;
+}
+
+
+/* ------------------------------------------------------------
+   SUCCESS / WARNING / DANGER
+   ------------------------------------------------------------ */
+
+.btn-success {
+
+    --bs-btn-bg: #268b66;
+
+    --bs-btn-border-color: #32a879;
+
+    --bs-btn-hover-bg: #2e9d73;
+
+    --bs-btn-hover-border-color: #3bb989;
+}
+
+
+.btn-danger {
+
+    --bs-btn-bg: #a94f59;
+
+    --bs-btn-border-color: #c45e68;
+
+    --bs-btn-hover-bg: #ba5964;
+
+    --bs-btn-hover-border-color: #d26a74;
+}
+
+
+/* ============================================================
+   11. FORMS
+   ============================================================ */
+
+.form-label {
+
+    color: var(--mp-text-soft);
+
+    font-weight: 600;
+}
+
+
+.form-control,
+.form-select {
+
+    color: var(--mp-text) !important;
+
+    background-color: #142131 !important;
+
+    border-color: #3a4d64 !important;
+}
+
+
+.form-control:hover,
+.form-select:hover {
+
+    border-color: #4b6078 !important;
+}
+
+
+.form-control:focus,
+.form-select:focus {
+
+    color: var(--mp-text) !important;
+
+    background-color: #142131 !important;
+
+    border-color: var(--mp-primary) !important;
+
+    box-shadow:
+        0 0 0 0.15rem
+        rgba(79, 134, 182, 0.18) !important;
+}
+
+
+.form-control::placeholder {
+
+    color: #788a9e;
+
+    opacity: 1;
+}
+
+
+.form-control:disabled,
+.form-select:disabled,
+.form-control[readonly] {
+
+    color: #8393a6 !important;
+
+    background-color: var(--mp-panel-dark) !important;
+
+    border-color: var(--mp-border-soft) !important;
+}
+
+
+.form-select {
+
+    --bs-form-select-bg-img:
+        url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2393a4b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+}
+
+
+.form-check-input {
+
+    background-color: #142131;
+
+    border-color: #4a6078;
+}
+
+
+.form-check-input:checked {
+
+    background-color: var(--mp-primary);
+
+    border-color: var(--mp-primary);
+}
+
+
+.form-check-input:focus {
+
+    border-color: var(--mp-primary);
+
+    box-shadow:
+        0 0 0 0.15rem
+        rgba(79, 134, 182, 0.18);
+}
+
+
+.input-group-text {
+
+    color: var(--mp-muted) !important;
+
+    background-color: var(--mp-panel-dark) !important;
+
+    border-color: #3a4d64 !important;
+}
+
+
+/* ------------------------------------------------------------
+   BROWSER AUTOFILL
+   ------------------------------------------------------------ */
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+
+    -webkit-text-fill-color:
+        var(--mp-text) !important;
+
+    -webkit-box-shadow:
+        0 0 0 1000px
+        #142131 inset !important;
+
+    transition:
+        background-color
+        5000s ease-in-out 0s;
+}
+
+
+/* ============================================================
+   12. TABLES
+   ============================================================ */
+
+.table {
+
+    --bs-table-color:
+        var(--mp-text);
+
+    --bs-table-bg:
+        transparent;
+
+    --bs-table-border-color:
+        var(--mp-border-soft);
+
+    --bs-table-striped-color:
+        var(--mp-text);
+
+    --bs-table-striped-bg:
+        rgba(255, 255, 255, 0.025);
+
+    --bs-table-active-color:
+        var(--mp-text);
+
+    --bs-table-active-bg:
+        rgba(79, 134, 182, 0.10);
+
+    --bs-table-hover-color:
+        var(--mp-text);
+
+    --bs-table-hover-bg:
+        rgba(79, 134, 182, 0.075);
+
+    color: var(--mp-text);
+}
+
+
+.table > :not(caption) > * > * {
+
+    color: inherit;
+
+    background-color: inherit;
+
+    border-bottom-color:
+        var(--mp-border-soft);
+}
+
+
+.table thead th {
+
+    color: #cbd6e2;
+
+    background-color:
+        var(--mp-panel-dark);
+
+    border-color:
+        var(--mp-border);
+}
+
+
+.table-light {
+
+    --bs-table-color:
+        var(--mp-text);
+
+    --bs-table-bg:
+        var(--mp-panel-dark);
+
+    --bs-table-border-color:
+        var(--mp-border);
+
+    color: var(--mp-text) !important;
+}
+
+
+.table-responsive {
+
+    border-radius: 0.5rem;
+}
+
+
+/* ============================================================
+   13. LIST GROUPS
+   ============================================================ */
+
+.list-group {
+
+    --bs-list-group-color:
+        var(--mp-text);
+
+    --bs-list-group-bg:
+        var(--mp-panel);
+
+    --bs-list-group-border-color:
+        var(--mp-border-soft);
+
+    --bs-list-group-action-color:
+        var(--mp-text);
+
+    --bs-list-group-action-hover-color:
+        #ffffff;
+
+    --bs-list-group-action-hover-bg:
+        var(--mp-panel-soft);
+
+    --bs-list-group-active-color:
+        #ffffff;
+
+    --bs-list-group-active-bg:
+        #3f739e;
+
+    --bs-list-group-active-border-color:
+        var(--mp-primary);
+}
+
+
+.list-group-item {
+
+    color: var(--mp-text);
+
+    background-color: var(--mp-panel);
+
+    border-color: var(--mp-border-soft);
+}
+
+
+/* ============================================================
+   14. ALERTS
+   ============================================================ */
+
+.alert {
+
+    border-width: 1px;
+
+    border-style: solid;
+}
+
+
+/* ------------------------------------------------------------
+   INFORMATION
+   ------------------------------------------------------------ */
+
+.alert-info {
+
+    color: #c3e1f5 !important;
+
+    background-color:
+        var(--mp-info-soft) !important;
+
+    border-color:
+        rgba(103, 168, 216, 0.38) !important;
+}
+
+
+/* ------------------------------------------------------------
+   SUCCESS
+   ------------------------------------------------------------ */
+
+.alert-success {
+
+    color: #b9ead5 !important;
+
+    background-color:
+        var(--mp-success-soft) !important;
+
+    border-color:
+        rgba(50, 201, 139, 0.36) !important;
+}
+
+
+/* ------------------------------------------------------------
+   WARNING
+   ------------------------------------------------------------ */
+
+.alert-warning {
+
+    color: #ead7aa !important;
+
+    background-color:
+        var(--mp-warning-soft) !important;
+
+    border-color:
+        rgba(211, 168, 84, 0.38) !important;
+}
+
+
+/* ------------------------------------------------------------
+   DANGER
+   ------------------------------------------------------------ */
+
+.alert-danger {
+
+    color: #f1c3c8 !important;
+
+    background-color:
+        var(--mp-danger-soft) !important;
+
+    border-color:
+        rgba(220, 107, 117, 0.38) !important;
+}
+
+
+/* ------------------------------------------------------------
+   LEGACY LIGHT ALERT
+   ------------------------------------------------------------ */
+
+.alert-light {
+
+    color: var(--mp-text-soft) !important;
+
+    background-color: var(--mp-panel-soft) !important;
+
+    border-color: var(--mp-border) !important;
+}
+
+
+/* ============================================================
+   15. BADGES
+   ============================================================ */
+
+.badge {
+
+    font-weight: 600;
+}
+
+
+.badge.bg-light,
+.bg-light.badge {
+
+    color: var(--mp-text) !important;
+
+    background-color: #273a50 !important;
+
+    border-color: #40546b !important;
+}
+
+
+.badge.bg-secondary {
+
+    background-color: #43566d !important;
+}
+
+
+.badge.bg-primary {
+
+    background-color: #3f739e !important;
+}
+
+
+.badge.bg-success {
+
+    background-color: #23835f !important;
+}
+
+
+.badge.bg-warning {
+
+    color: #172033 !important;
+
+    background-color: var(--mp-warning) !important;
+}
+
+
+.badge.bg-danger {
+
+    background-color: #ad515b !important;
+}
+
+
+/* ============================================================
+   16. MODALS
+   ============================================================ */
+
+.modal-content {
+
+    color: var(--mp-text);
+
+    background-color: var(--mp-panel) !important;
+
+    border-color: var(--mp-border) !important;
+
+    box-shadow:
+        0 18px 55px
+        rgba(0, 0, 0, 0.38);
+}
+
+
+.modal-header,
+.modal-footer {
+
+    border-color: var(--mp-border-soft);
+}
+
+
+.modal-title {
+
+    color: var(--mp-text);
+}
+
+
+.btn-close {
+
+    filter:
+        invert(1)
+        grayscale(100%)
+        brightness(180%);
+}
+
+
+/* ============================================================
+   17. DROPDOWNS
+   ============================================================ */
+
+.dropdown-menu {
+
+    --bs-dropdown-color:
+        var(--mp-text);
+
+    --bs-dropdown-bg:
+        var(--mp-panel);
+
+    --bs-dropdown-border-color:
+        var(--mp-border);
+
+    --bs-dropdown-link-color:
+        var(--mp-text);
+
+    --bs-dropdown-link-hover-color:
+        #ffffff;
+
+    --bs-dropdown-link-hover-bg:
+        var(--mp-panel-soft);
+
+    --bs-dropdown-link-active-color:
+        #ffffff;
+
+    --bs-dropdown-link-active-bg:
+        #3f739e;
+
+    box-shadow:
+        0 10px 30px
+        rgba(0, 0, 0, 0.25);
+}
+
+
+/* ============================================================
+   18. ACCORDIONS
+   ============================================================ */
+
+.accordion {
+
+    --bs-accordion-color:
+        var(--mp-text);
+
+    --bs-accordion-bg:
+        var(--mp-panel);
+
+    --bs-accordion-border-color:
+        var(--mp-border);
+
+    --bs-accordion-btn-color:
+        var(--mp-text);
+
+    --bs-accordion-btn-bg:
+        var(--mp-panel-soft);
+
+    --bs-accordion-active-color:
+        #ffffff;
+
+    --bs-accordion-active-bg:
+        #1c3046;
+}
+
+
+.accordion-item {
+
+    color: var(--mp-text);
+
+    background-color: var(--mp-panel);
+
+    border-color: var(--mp-border);
+}
+
+
+.accordion-button {
+
+    color: var(--mp-text);
+
+    background-color: var(--mp-panel-soft);
+}
+
+
+.accordion-button:not(.collapsed) {
+
+    color: #ffffff;
+
+    background-color: #1c3046;
+
+    box-shadow:
+        inset 0 -1px 0
+        var(--mp-border);
+}
+
+
+.accordion-button:focus {
+
+    border-color: var(--mp-primary);
+
+    box-shadow:
+        0 0 0 0.15rem
+        rgba(79, 134, 182, 0.16);
+}
+
+
+/* ============================================================
+   19. NATIVE DETAILS / SUMMARY
+   ============================================================ */
+
+details {
+
+    color: var(--mp-text);
+}
+
+
+details > summary {
+
+    color: var(--mp-text-soft);
+}
+
+
+details > summary:hover {
+
+    color: #ffffff;
+}
+
+
+/* ============================================================
+   20. BORDERS / HORIZONTAL RULES
+   ============================================================ */
+
+.border,
+.border-top,
+.border-end,
+.border-bottom,
+.border-start {
+
+    border-color: var(--mp-border) !important;
+}
+
+
+hr {
+
+    color: var(--mp-border);
+
+    opacity: 1;
+}
+
+
+/* ============================================================
+   21. HERO / HOME SHARED COMPONENTS
+   ============================================================ */
+
+.hero {
+
+    color: var(--mp-text) !important;
+
+    background:
+        linear-gradient(
+            135deg,
+            #172b43 0%,
+            #101a28 100%
+        ) !important;
+
+    border:
+        1px solid
+        var(--mp-border);
+
+    box-shadow:
+        0 8px 28px
+        rgba(0, 0, 0, 0.16);
+}
+
+
+.hero .text-muted {
+
+    color: #aab8c8 !important;
+}
+
+
+.glass-card {
+
+    color: var(--mp-text);
+
+    background:
+        rgba(255, 255, 255, 0.035) !important;
+
+    border:
+        1px solid
+        var(--mp-border) !important;
+
+    box-shadow:
+        0 6px 20px
+        rgba(0, 0, 0, 0.12);
+}
+
+
+/* ============================================================
+   22. METRIC / SUMMARY CARDS
+   ============================================================ */
+
+.metric-card {
+
+    color: var(--mp-text) !important;
+
+    background:
+        var(--mp-panel) !important;
+
+    border:
+        1px solid
+        var(--mp-border) !important;
+}
+
+
+.metric-card .metric-label,
+.metric-card small {
+
+    color: var(--mp-muted);
+}
+
+
+/* ============================================================
+   23. DATA WORKSPACE COMPATIBILITY
+   ============================================================ */
+
+/*
+   The Data page is the visual reference.
+
+   These rules do not replace its specialised layout. They only
+   make sure its shared surfaces remain tied to the same global
+   theme variables.
+*/
+
+.data-workspace {
+
+    --data-background:
+        var(--mp-bg);
+
+    --data-nav:
+        var(--mp-nav);
+
+    --data-panel:
+        var(--mp-panel);
+
+    --data-panel-soft:
+        var(--mp-panel-soft);
+
+    --data-panel-dark:
+        var(--mp-panel-dark);
+
+    --data-border:
+        var(--mp-border);
+
+    --data-border-soft:
+        var(--mp-border-soft);
+
+    --data-text:
+        var(--mp-text);
+
+    --data-muted:
+        var(--mp-muted);
+
+    --data-blue:
+        var(--mp-primary);
+
+    --data-blue-hover:
+        var(--mp-primary-hover);
+
+    --data-blue-soft:
+        var(--mp-primary-soft);
+
+    --data-green:
+        var(--mp-success);
+
+    --data-yellow:
+        var(--mp-warning);
+
+    --data-danger:
+        var(--mp-danger);
+}
+
+
+/* ============================================================
+   24. STRATEGIES - DARK THEME COMPATIBILITY
+   ============================================================ */
+
+/*
+   strategy_builder/list.html currently contains its own
+   page-specific light palette.
+
+   The following global aliases force that existing structure
+   to use the same MarketPulse colour system.
+*/
+
+.strategy-workspace {
+
+    --strategy-blue:
+        var(--mp-primary) !important;
+
+    --strategy-blue-dark:
+        #3b6f9b !important;
+
+    --strategy-blue-soft:
+        var(--mp-primary-soft) !important;
+
+    --strategy-text:
+        var(--mp-text) !important;
+
+    --strategy-muted:
+        var(--mp-muted) !important;
+
+    --strategy-border:
+        var(--mp-border) !important;
+
+    --strategy-surface:
+        var(--mp-panel) !important;
+
+    --strategy-soft:
+        var(--mp-panel-dark) !important;
+
+    --strategy-success:
+        var(--mp-success) !important;
+
+    --strategy-success-soft:
+        var(--mp-success-soft) !important;
+}
+
+
+/*
+   Older light Strategy surfaces.
+*/
+
+.strategy-workspace .strategy-panel,
+.strategy-workspace .strategy-workflow,
+.strategy-workspace .strategy-summary,
+.strategy-workspace .strategy-library,
+.strategy-workspace .strategy-model-row,
+.strategy-workspace .strategy-category-item,
+.strategy-workspace .strategy-comparison,
+.strategy-workspace .my-strategy-item,
+.strategy-workspace .my-strategy-details,
+.strategy-workspace .my-strategy-detail-body {
+
+    color: var(--mp-text) !important;
+
+    background:
+        var(--mp-panel) !important;
+
+    border-color:
+        var(--mp-border) !important;
+}
+
+
+.strategy-workspace .strategy-model-row:hover,
+.strategy-workspace .strategy-category-item:hover {
+
+    background:
+        var(--mp-panel-soft) !important;
+}
+
+
+.strategy-workspace .my-strategy-metric,
+.strategy-workspace .strategy-model-meta,
+.strategy-workspace .strategy-detail-block {
+
+    background:
+        var(--mp-panel-dark) !important;
+
+    border-color:
+        var(--mp-border-soft) !important;
+}
+
+
+/* ============================================================
+   25. RISK - DARK THEME COMPATIBILITY
+   ============================================================ */
+
+.risk-workspace {
+
+    --risk-blue:
+        var(--mp-primary) !important;
+
+    --risk-blue-dark:
+        #3b6f9b !important;
+
+    --risk-blue-soft:
+        var(--mp-primary-soft) !important;
+
+    --risk-text:
+        var(--mp-text) !important;
+
+    --risk-muted:
+        var(--mp-muted) !important;
+
+    --risk-border:
+        var(--mp-border) !important;
+
+    --risk-soft:
+        var(--mp-panel-dark) !important;
+
+    --risk-success:
+        var(--mp-success) !important;
+
+    --risk-success-soft:
+        var(--mp-success-soft) !important;
+
+    --risk-danger:
+        var(--mp-danger) !important;
+
+    --risk-danger-soft:
+        var(--mp-danger-soft) !important;
+
+    --risk-warning:
+        var(--mp-warning) !important;
+
+    --risk-warning-soft:
+        var(--mp-warning-soft) !important;
+}
+
+
+/*
+   Main Risk panels.
+*/
+
+.risk-workspace .risk-panel,
+.risk-workspace .risk-workflow-panel,
+.risk-workspace .risk-source-strip,
+.risk-workspace .risk-snapshot-panel {
+
+    color:
+        var(--mp-text) !important;
+
+    background:
+        var(--mp-panel) !important;
+
+    border-color:
+        var(--mp-border) !important;
+
+    box-shadow:
+        0 6px 20px
+        rgba(0, 0, 0, 0.14) !important;
+}
+
+
+/*
+   Risk secondary information blocks.
+*/
+
+.risk-workspace .risk-mini-stat,
+.risk-workspace .risk-plan-snapshot-item,
+.risk-workspace .risk-scenario,
+.risk-workspace .risk-help > summary,
+.risk-workspace .market-detail-stat {
+
+    color:
+        var(--mp-text) !important;
+
+    background:
+        var(--mp-panel-dark) !important;
+
+    border-color:
+        var(--mp-border-soft) !important;
+}
+
+
+.risk-workspace .risk-current-price,
+.risk-workspace .risk-budget-preview {
+
+    color:
+        var(--mp-text) !important;
+
+    background:
+        var(--mp-primary-soft) !important;
+
+    border-color:
+        rgba(79, 134, 182, 0.34) !important;
+}
+
+
+.risk-workspace .risk-plan-hero {
+
+    color:
+        var(--mp-text) !important;
+
+    background:
+        linear-gradient(
+            145deg,
+            #16263a,
+            #101b29
+        ) !important;
+
+    border-color:
+        var(--mp-border) !important;
+}
+
+
+.risk-workspace .risk-plan-primary,
+.risk-workspace .risk-plan-grid > div {
+
+    border-color:
+        var(--mp-border-soft) !important;
+}
+
+
+.risk-workspace .risk-symbol-badge {
+
+    color:
+        var(--mp-text) !important;
+
+    background:
+        #26394e !important;
+}
+
+
+.risk-workspace .risk-stress-action {
+
+    color:
+        var(--mp-danger) !important;
+
+    background:
+        var(--mp-panel-dark) !important;
+}
+
+
+.risk-workspace .risk-educational-notice {
+
+    color:
+        #d7c69c !important;
+
+    background:
+        var(--mp-warning-soft) !important;
+
+    border-color:
+        rgba(211, 168, 84, 0.33) !important;
+}
+
+
+/* ============================================================
+   26. MARKET CONDITION - DARK THEME COMPATIBILITY
+   ============================================================ */
+
+.condition-workspace,
+.market-condition-workspace {
+
+    --mc-blue:
+        var(--mp-primary) !important;
+
+    --mc-blue-dark:
+        #3b6f9b !important;
+
+    --mc-blue-soft:
+        var(--mp-primary-soft) !important;
+
+    --mc-text:
+        var(--mp-text) !important;
+
+    --mc-muted:
+        var(--mp-muted) !important;
+
+    --mc-border:
+        var(--mp-border) !important;
+
+    --mc-soft:
+        var(--mp-panel-dark) !important;
+}
+
+
+.condition-workspace .condition-panel,
+.condition-workspace .condition-workflow,
+.market-condition-workspace .condition-panel,
+.market-condition-workspace .condition-workflow {
+
+    color:
+        var(--mp-text) !important;
+
+    background:
+        var(--mp-panel) !important;
+
+    border-color:
+        var(--mp-border) !important;
+
+    box-shadow:
+        0 6px 20px
+        rgba(0, 0, 0, 0.14) !important;
+}
+
+
+/* ============================================================
+   27. LOGIN - DARK THEME COMPATIBILITY
+   ============================================================ */
+
+.login-card {
+
+    color:
+        var(--mp-text) !important;
+
+    background:
+        var(--mp-panel) !important;
+
+    border-color:
+        var(--mp-border) !important;
+
+    box-shadow:
+        0 12px 35px
+        rgba(0, 0, 0, 0.24) !important;
+}
+
+
+.login-title {
+
+    color:
+        var(--mp-text) !important;
+}
+
+
+.login-subtitle,
+.login-register-text {
+
+    color:
+        var(--mp-muted) !important;
+}
+
+
+.login-icon {
+
+    color:
+        #7ba8ce !important;
+
+    background:
+        var(--mp-primary-soft) !important;
+}
+
+
+.login-form label {
+
+    color:
+        var(--mp-text-soft) !important;
+}
+
+
+.login-form input {
+
+    color:
+        var(--mp-text) !important;
+
+    background:
+        #142131 !important;
+
+    border-color:
+        #3a4d64 !important;
+}
+
+
+.login-form input:focus {
+
+    border-color:
+        var(--mp-primary) !important;
+
+    box-shadow:
+        0 0 0 0.15rem
+        rgba(79, 134, 182, 0.18) !important;
+}
+
+
+.login-forgot-link,
+.login-register-link {
+
+    color:
+        #7ba8ce !important;
+}
+
+
+.login-forgot-link:hover,
+.login-register-link:hover {
+
+    color:
+        #9abbd7 !important;
+}
+
+
+.login-register {
+
+    border-color:
+        var(--mp-border-soft) !important;
+}
+
+
+.login-security-note {
+
+    color:
+        var(--mp-muted) !important;
+
+    background:
+        var(--mp-panel-dark) !important;
+
+    border-color:
+        var(--mp-border-soft) !important;
+}
+
+
+.login-error {
+
+    color:
+        #f1c3c8 !important;
+
+    background:
+        var(--mp-danger-soft) !important;
+
+    border-color:
+        rgba(220, 107, 117, 0.38) !important;
+}
+
+
+/* ============================================================
+   28. REGISTRATION - DARK THEME COMPATIBILITY
+   ============================================================ */
+
+.register-card {
+
+    color:
+        var(--mp-text) !important;
+
+    background:
+        var(--mp-panel) !important;
+
+    border-color:
+        var(--mp-border) !important;
+
+    box-shadow:
+        0 12px 35px
+        rgba(0, 0, 0, 0.24) !important;
+}
+
+
+.register-card-header {
+
+    border-color:
+        var(--mp-border-soft) !important;
+}
+
+
+.register-brand {
+
+    color:
+        #7ba8ce !important;
+}
+
+
+.register-title {
+
+    color:
+        var(--mp-text) !important;
+}
+
+
+.register-subtitle,
+.register-help,
+.register-login,
+.register-security {
+
+    color:
+        var(--mp-muted) !important;
+}
+
+
+.register-section-title,
+.register-field label,
+.password-information strong {
+
+    color:
+        var(--mp-text-soft) !important;
+}
+
+
+.register-field input {
+
+    color:
+        var(--mp-text) !important;
+
+    background:
+        #142131 !important;
+
+    border-color:
+        #3a4d64 !important;
+}
+
+
+.register-field input:focus {
+
+    border-color:
+        var(--mp-primary) !important;
+
+    box-shadow:
+        0 0 0 0.15rem
+        rgba(79, 134, 182, 0.18) !important;
+}
+
+
+.password-information {
+
+    color:
+        var(--mp-text) !important;
+
+    background:
+        var(--mp-panel-dark) !important;
+
+    border-color:
+        var(--mp-border-soft) !important;
+}
+
+
+.password-information ul {
+
+    color:
+        var(--mp-muted) !important;
+}
+
+
+.register-login a {
+
+    color:
+        #7ba8ce !important;
+}
+
+
+.register-security {
+
+    border-color:
+        var(--mp-border-soft) !important;
+}
+
+
+.register-error-summary {
+
+    color:
+        #f1c3c8 !important;
+
+    background:
+        var(--mp-danger-soft) !important;
+
+    border-color:
+        rgba(220, 107, 117, 0.38) !important;
+}
+
+
+.register-error {
+
+    color:
+        #ef9ba4 !important;
+}
+
+
+/* ============================================================
+   29. PROFILE COMPATIBILITY
+   ============================================================ */
+
+.marketpulse-main .card-header.bg-white {
+
+    color:
+        var(--mp-text) !important;
+
+    background:
+        var(--mp-panel-soft) !important;
+}
+
+
+/* ============================================================
+   30. GENERIC LEGACY LIGHT SURFACES
+   ============================================================ */
+
+/*
+   These selectors protect against older templates containing
+   explicit Bootstrap light classes.
+*/
+
+.marketpulse-main .bg-white {
+
+    background-color:
+        var(--mp-panel) !important;
+}
+
+
+.marketpulse-main .bg-light {
+
+    background-color:
+        var(--mp-panel-soft) !important;
+}
+
+
+.marketpulse-main .text-dark {
+
+    color:
+        var(--mp-text) !important;
+}
+
+
+/* ============================================================
+   31. CODE / PRE / TECHNICAL VALUES
+   ============================================================ */
+
+code {
+
+    color: #9ec7e7;
+
+    background:
+        rgba(79, 134, 182, 0.09);
+
+    padding:
+        0.12rem
+        0.28rem;
+
+    border-radius:
+        0.25rem;
+}
+
+
+pre {
+
+    color:
+        #d9e3ed;
+
+    background:
+        var(--mp-panel-dark);
+
+    border:
+        1px solid
+        var(--mp-border-soft);
+
+    border-radius:
+        0.5rem;
+}
+
+
+/* ============================================================
+   32. SCROLLBARS
+   ============================================================ */
+
+* {
+
+    scrollbar-width: thin;
+
+    scrollbar-color:
+        #435871
+        var(--mp-panel-dark);
+}
+
+
+*::-webkit-scrollbar {
+
+    width: 10px;
+    height: 10px;
+}
+
+
+*::-webkit-scrollbar-track {
+
+    background:
+        var(--mp-panel-dark);
+}
+
+
+*::-webkit-scrollbar-thumb {
+
+    background:
+        #435871;
+
+    border:
+        2px solid
+        var(--mp-panel-dark);
+
+    border-radius:
+        999px;
+}
+
+
+*::-webkit-scrollbar-thumb:hover {
+
+    background:
+        #536a84;
+}
+
+
+/* ============================================================
+   33. SELECTION
+   ============================================================ */
+
+::selection {
+
+    color:
+        #ffffff;
+
+    background:
+        rgba(79, 134, 182, 0.7);
+}
+
+
+/* ============================================================
+   34. RESPONSIVE ADJUSTMENTS
+   ============================================================ */
+
+@media (max-width: 991.98px) {
+
+    .marketpulse-main {
+
+        padding-left:
+            1rem !important;
+
+        padding-right:
+            1rem !important;
+    }
+
+
+    .navbar-collapse {
+
+        padding-top:
+            0.75rem;
+
+        padding-bottom:
+            0.5rem;
+    }
+
+
+    .navbar .nav-link {
+
+        padding-left:
+            0.65rem;
+
+        padding-right:
+            0.65rem;
+    }
+}
+
+
+@media (max-width: 575.98px) {
+
+    body {
+
+        font-size:
+            0.9rem;
+    }
+
+
+    .marketpulse-main {
+
+        padding-left:
+            0.625rem !important;
+
+        padding-right:
+            0.625rem !important;
+
+        padding-top:
+            1rem !important;
+    }
+
+
+    .card-body {
+
+        padding:
+            1rem;
+    }
+}
+
+
+/* ============================================================
+   35. PRINT
+   ============================================================ */
+
+@media print {
+
+    body,
+    body.marketpulse-body,
+    .marketpulse-main {
+
+        color:
+            #111111 !important;
+
+        background:
+            #ffffff !important;
+    }
+
+
+    .marketpulse-navbar,
+    .marketpulse-footer {
+
+        display:
+            none !important;
+    }
+
+
+    .card {
+
+        color:
+            #111111 !important;
+
+        background:
+            #ffffff !important;
+
+        border-color:
+            #cccccc !important;
+
+        box-shadow:
+            none !important;
+    }
+}

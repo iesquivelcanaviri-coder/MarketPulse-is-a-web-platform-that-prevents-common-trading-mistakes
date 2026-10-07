@@ -103,150 +103,573 @@ Risk | MarketPulse
 /* MARKETPULSE - RISK WORKSPACE                             */
 /* ======================================================== */
 
+/*
+The shared MarketPulse colour system lives in:
 
-/* -------------------------------------------------------- */
-/* 1. PAGE FOUNDATION                                       */
-/* -------------------------------------------------------- */
+    static/css/styles.css
+
+This template only contains layout and Risk-specific
+component styling.
+
+Bootstrap continues to provide the grid, spacing,
+forms, buttons, badges, alerts and responsive utilities.
+*/
+
+
+/* ======================================================== */
+/* 1. RISK WORKSPACE                                        */
+/* ======================================================== */
 
 .risk-workspace {
 
-    --risk-blue: #0d6efd;
-    --risk-blue-dark: #0a58ca;
-    --risk-blue-soft: #edf5ff;
+    --risk-bg:
+        var(
+            --mp-bg,
+            #0c1420
+        );
 
-    --risk-text: #172033;
-    --risk-muted: #667085;
+    --risk-panel:
+        var(
+            --mp-panel,
+            #152235
+        );
 
-    --risk-border: #e3e9f1;
-    --risk-soft: #f8fafc;
+    --risk-panel-soft:
+        var(
+            --mp-panel-soft,
+            #18283a
+        );
 
-    --risk-success: #168654;
-    --risk-success-soft: #e8f8ef;
+    --risk-panel-dark:
+        var(
+            --mp-panel-dark,
+            #101a28
+        );
 
-    --risk-danger: #dc3545;
-    --risk-danger-soft: #fdecee;
+    --risk-blue:
+        var(
+            --mp-primary,
+            #4f86b6
+        );
 
-    --risk-warning: #9a6700;
-    --risk-warning-soft: #fff7df;
+    --risk-blue-dark:
+        var(
+            --mp-primary-hover,
+            #6095c2
+        );
 
-    color: var(--risk-text);
+    --risk-blue-soft:
+        var(
+            --mp-primary-soft,
+            rgba(
+                79,
+                134,
+                182,
+                .15
+            )
+        );
+
+    --risk-text:
+        var(
+            --mp-text,
+            #f1f5f9
+        );
+
+    --risk-muted:
+        var(
+            --mp-muted,
+            #93a4b8
+        );
+
+    --risk-border:
+        var(
+            --mp-border,
+            #314258
+        );
+
+    --risk-border-soft:
+        var(
+            --mp-border-soft,
+            #26374b
+        );
+
+    --risk-success:
+        var(
+            --mp-success,
+            #32c98b
+        );
+
+    --risk-success-soft:
+        rgba(
+            50,
+            201,
+            139,
+            .11
+        );
+
+    --risk-danger:
+        var(
+            --mp-danger,
+            #dc6b75
+        );
+
+    --risk-danger-soft:
+        rgba(
+            220,
+            107,
+            117,
+            .11
+        );
+
+    --risk-warning:
+        var(
+            --mp-warning,
+            #d3a854
+        );
+
+    --risk-warning-soft:
+        rgba(
+            211,
+            168,
+            84,
+            .11
+        );
+
+
+    width:
+        min(
+            1500px,
+            calc(
+                100vw
+                -
+                48px
+            )
+        );
+
+    max-width:
+        none;
+
+    margin-left:
+        50%;
+
+    transform:
+        translateX(
+            -50%
+        );
+
+    color:
+        var(
+            --risk-text
+        );
 }
 
 
 .risk-workspace a {
-    text-decoration: none;
+
+    text-decoration:
+        none;
 }
 
 
-/* -------------------------------------------------------- */
+/* ======================================================== */
 /* 2. PAGE HEADER                                           */
-/* -------------------------------------------------------- */
+/* ======================================================== */
 
 .risk-page-header {
 
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
+    display:
+        flex;
 
-    gap: 1.5rem;
+    align-items:
+        flex-start;
 
-    margin-bottom: 1.4rem;
+    justify-content:
+        space-between;
+
+    gap:
+        1rem;
+
+    margin-bottom:
+        1rem;
 }
 
 
 .risk-page-title {
 
-    margin: 0 0 .35rem;
+    margin:
+        0 0 .2rem;
 
-    font-size: clamp(
-        2rem,
-        4vw,
-        2.65rem
-    );
+    color:
+        var(
+            --risk-text
+        );
 
-    line-height: 1.05;
+    font-size:
+        1.65rem;
 
-    font-weight: 760;
-    letter-spacing: -.035em;
+    line-height:
+        1.15;
+
+    font-weight:
+        700;
+
+    letter-spacing:
+        -.02em;
 }
 
 
 .risk-page-subtitle {
 
-    max-width: 850px;
+    max-width:
+        850px;
 
-    margin: 0;
+    margin:
+        0;
 
-    color: var(--risk-muted);
+    color:
+        var(
+            --risk-muted
+        );
 
-    font-size: .92rem;
-    line-height: 1.55;
+    font-size:
+        .72rem;
+
+    line-height:
+        1.45;
 }
 
 
-/* -------------------------------------------------------- */
-/* 3. COMMON                                                */
-/* -------------------------------------------------------- */
+/* ======================================================== */
+/* 3. COMMON COMPONENTS                                     */
+/* ======================================================== */
 
 .risk-eyebrow {
 
-    margin-bottom: .2rem;
+    margin-bottom:
+        .2rem;
 
-    color: var(--risk-blue);
+    color:
+        var(
+            --risk-blue
+        );
 
-    font-size: .64rem;
-    font-weight: 750;
+    font-size:
+        .55rem;
 
-    letter-spacing: .05em;
-    text-transform: uppercase;
+    font-weight:
+        800;
+
+    letter-spacing:
+        .06em;
+
+    text-transform:
+        uppercase;
 }
 
 
 .risk-eyebrow-danger {
-    color: var(--risk-danger);
+
+    color:
+        var(
+            --risk-danger
+        );
 }
 
 
 .risk-panel {
 
-    margin-bottom: 1.25rem;
+    margin-bottom:
+        1rem;
 
-    padding: 1.2rem;
+    padding:
+        .95rem;
 
-    background: #ffffff;
+    color:
+        var(
+            --risk-text
+        );
 
-    border: 1px solid var(--risk-border);
-    border-radius: 15px;
+    background:
+        var(
+            --risk-panel
+        );
 
-    box-shadow:
-        0 7px 22px
-        rgba(16, 24, 40, .04);
+    border:
+        1px solid
+        var(
+            --risk-border
+        );
+
+    border-radius:
+        8px;
 }
 
 
 .risk-workspace .btn {
 
-    border-radius: 8px;
+    border-radius:
+        6px;
 
-    font-weight: 600;
+    font-weight:
+        600;
 }
 
 
 .risk-workspace .btn-primary {
 
+    background:
+        #3f739e;
+
+    border-color:
+        #4c83af;
+
     box-shadow:
-        0 5px 14px
-        rgba(13, 110, 253, .14);
+        0 2px 5px
+        rgba(
+            0,
+            0,
+            0,
+            .12
+        );
 }
 
 
-/* -------------------------------------------------------- */
-/* 4. FIVE-STEP WORKFLOW                                    */
-/* -------------------------------------------------------- */
+.risk-workspace .btn-primary:hover {
+
+    background:
+        var(
+            --risk-blue-dark
+        );
+
+    border-color:
+        #6a9fc9;
+}
+
+
+.risk-workspace .btn-outline-primary {
+
+    color:
+        #8ab4d7;
+
+    border-color:
+        #4f7191;
+}
+
+
+.risk-workspace .btn-outline-primary:hover {
+
+    color:
+        #ffffff;
+
+    background:
+        var(
+            --risk-blue
+        );
+
+    border-color:
+        var(
+            --risk-blue
+        );
+}
+
+
+.risk-workspace .btn-outline-secondary {
+
+    color:
+        #b8c5d2;
+
+    border-color:
+        #50647a;
+}
+
+
+.risk-workspace .btn-outline-secondary:hover {
+
+    color:
+        #ffffff;
+
+    background:
+        #314258;
+
+    border-color:
+        #60758d;
+}
+
+
+.risk-workspace .btn-outline-dark {
+
+    color:
+        #c3d0dc;
+
+    border-color:
+        #50647a;
+}
+
+
+.risk-workspace .btn-outline-dark:hover {
+
+    color:
+        #ffffff;
+
+    background:
+        #314258;
+
+    border-color:
+        #60758d;
+}
+
+
+.risk-workspace .btn-outline-danger {
+
+    color:
+        #ef9aa2;
+
+    border-color:
+        rgba(
+            220,
+            107,
+            117,
+            .65
+        );
+}
+
+
+.risk-workspace .btn-outline-danger:hover {
+
+    color:
+        #ffffff;
+
+    background:
+        var(
+            --risk-danger
+        );
+
+    border-color:
+        var(
+            --risk-danger
+        );
+}
+
+
+/* ======================================================== */
+/* 4. BOOTSTRAP DARK COMPATIBILITY                          */
+/* ======================================================== */
+
+.risk-workspace .text-muted {
+
+    color:
+        var(
+            --risk-muted
+        )
+        !important;
+}
+
+
+.risk-workspace .bg-light {
+
+    color:
+        var(
+            --risk-text
+        )
+        !important;
+
+    background:
+        var(
+            --risk-panel-dark
+        )
+        !important;
+}
+
+
+.risk-workspace .text-dark {
+
+    color:
+        var(
+            --risk-text
+        )
+        !important;
+}
+
+
+.risk-workspace .border {
+
+    border-color:
+        var(
+            --risk-border
+        )
+        !important;
+}
+
+
+.risk-workspace .form-control,
+.risk-workspace .form-select,
+.risk-workspace .input-group-text {
+
+    color:
+        var(
+            --risk-text
+        );
+
+    background-color:
+        #142131;
+
+    border-color:
+        #3a4d64;
+}
+
+
+.risk-workspace .form-control:focus,
+.risk-workspace .form-select:focus {
+
+    color:
+        var(
+            --risk-text
+        );
+
+    background-color:
+        #142131;
+
+    border-color:
+        var(
+            --risk-blue
+        );
+
+    box-shadow:
+        0 0 0 2px
+        rgba(
+            79,
+            134,
+            182,
+            .14
+        );
+}
+
+
+.risk-workspace .input-group-text {
+
+    color:
+        #c4d0dc;
+}
+
+
+.risk-workspace select option {
+
+    color:
+        #111111;
+
+    background:
+        #ffffff;
+}
+
+
+/* ======================================================== */
+/* 5. FIVE-STEP WORKFLOW                                    */
+/* ======================================================== */
 
 .risk-workflow-panel {
 
-    display: grid;
+    display:
+        grid;
 
     grid-template-columns:
         minmax(0, 1fr)
@@ -259,1051 +682,1817 @@ Risk | MarketPulse
         auto
         minmax(0, 1fr);
 
-    align-items: center;
+    align-items:
+        center;
 
-    gap: .55rem;
+    gap:
+        .55rem;
 
-    margin-bottom: 1.15rem;
+    margin-bottom:
+        1rem;
 
-    padding: 1rem 1.1rem;
+    padding:
+        .8rem .9rem;
 
-    background: #ffffff;
+    background:
+        var(
+            --risk-panel
+        );
 
-    border: 1px solid var(--risk-border);
-    border-radius: 14px;
+    border:
+        1px solid
+        var(
+            --risk-border
+        );
 
-    box-shadow:
-        0 6px 20px
-        rgba(16, 24, 40, .035);
+    border-radius:
+        8px;
 }
 
 
 .risk-flow-step {
 
-    display: flex;
-    align-items: center;
+    display:
+        flex;
 
-    gap: .55rem;
+    align-items:
+        center;
 
-    min-width: 0;
+    gap:
+        .5rem;
+
+    min-width:
+        0;
 }
 
 
 .risk-flow-number {
 
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display:
+        inline-flex;
 
-    flex: 0 0 auto;
+    align-items:
+        center;
 
-    width: 27px;
-    height: 27px;
+    justify-content:
+        center;
 
-    color: #ffffff;
-    background: var(--risk-blue);
+    flex:
+        0 0 auto;
 
-    border-radius: 50%;
+    width:
+        24px;
 
-    font-size: .65rem;
-    font-weight: 750;
+    height:
+        24px;
+
+    color:
+        #ffffff;
+
+    background:
+        var(
+            --risk-blue
+        );
+
+    border-radius:
+        50%;
+
+    font-size:
+        .58rem;
+
+    font-weight:
+        800;
 }
 
 
 .risk-flow-number-danger {
-    background: var(--risk-danger);
+
+    background:
+        var(
+            --risk-danger
+        );
 }
 
 
 .risk-flow-icon {
 
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display:
+        inline-flex;
 
-    flex: 0 0 auto;
+    align-items:
+        center;
 
-    width: 35px;
-    height: 35px;
+    justify-content:
+        center;
 
-    color: var(--risk-blue);
-    background: var(--risk-blue-soft);
+    flex:
+        0 0 auto;
 
-    border-radius: 9px;
+    width:
+        32px;
+
+    height:
+        32px;
+
+    color:
+        #8db4d4;
+
+    background:
+        var(
+            --risk-blue-soft
+        );
+
+    border:
+        1px solid
+        rgba(
+            79,
+            134,
+            182,
+            .20
+        );
+
+    border-radius:
+        7px;
 }
 
 
 .risk-flow-icon-danger {
 
-    color: var(--risk-danger);
-    background: var(--risk-danger-soft);
+    color:
+        #ef9aa2;
+
+    background:
+        var(
+            --risk-danger-soft
+        );
+
+    border-color:
+        rgba(
+            220,
+            107,
+            117,
+            .22
+        );
 }
 
 
 .risk-flow-step strong {
 
-    display: block;
+    display:
+        block;
 
-    margin-bottom: .08rem;
+    margin-bottom:
+        .08rem;
 
-    font-size: .72rem;
+    color:
+        var(
+            --risk-text
+        );
+
+    font-size:
+        .67rem;
 }
 
 
 .risk-flow-step small {
 
-    display: block;
+    display:
+        block;
 
-    color: var(--risk-muted);
+    color:
+        var(
+            --risk-muted
+        );
 
-    font-size: .58rem;
-    line-height: 1.3;
+    font-size:
+        .54rem;
+
+    line-height:
+        1.3;
 }
 
 
 .risk-flow-arrow {
 
-    color: #aab5c5;
+    color:
+        #60758d;
 
-    font-size: .62rem;
+    font-size:
+        .58rem;
 }
 
 
-/* -------------------------------------------------------- */
-/* 5. DATA SOURCE STRIP                                     */
-/* -------------------------------------------------------- */
+/* ======================================================== */
+/* 6. DATA SOURCE STRIP                                     */
+/* ======================================================== */
 
 .risk-source-strip {
 
-    margin-bottom: 1.25rem;
+    margin-bottom:
+        1rem;
 
-    padding: .9rem 1rem;
+    padding:
+        .8rem .9rem;
 
-    background: #ffffff;
+    background:
+        var(
+            --risk-panel
+        );
 
-    border: 1px solid var(--risk-border);
-    border-radius: 12px;
+    border:
+        1px solid
+        var(
+            --risk-border
+        );
+
+    border-radius:
+        8px;
 }
 
 
 .risk-source-main {
 
-    display: flex;
-    align-items: center;
+    display:
+        flex;
 
-    gap: .7rem;
+    align-items:
+        center;
+
+    gap:
+        .7rem;
 }
 
 
 .risk-source-main > i {
 
-    color: var(--risk-blue);
+    color:
+        var(
+            --risk-blue
+        );
 }
 
 
 .risk-source-main strong {
 
-    display: block;
+    display:
+        block;
 
-    margin-bottom: .1rem;
+    margin-bottom:
+        .1rem;
 
-    font-size: .75rem;
+    color:
+        var(
+            --risk-text
+        );
+
+    font-size:
+        .7rem;
 }
 
 
 .risk-source-main span {
 
-    color: var(--risk-muted);
+    color:
+        var(
+            --risk-muted
+        );
 
-    font-size: .65rem;
+    font-size:
+        .6rem;
 }
 
 
 .risk-source-details {
 
-    margin-top: .65rem;
+    margin-top:
+        .65rem;
 }
 
 
 .risk-source-details > summary {
 
-    cursor: pointer;
+    cursor:
+        pointer;
 
-    width: fit-content;
+    width:
+        fit-content;
 
-    color: var(--risk-blue);
+    color:
+        #87b1d3;
 
-    list-style: none;
+    list-style:
+        none;
 
-    font-size: .65rem;
-    font-weight: 650;
+    font-size:
+        .6rem;
+
+    font-weight:
+        650;
 }
 
 
 .risk-source-details > summary::-webkit-details-marker {
-    display: none;
+
+    display:
+        none;
 }
 
 
 .risk-source-grid {
 
-    display: grid;
+    display:
+        grid;
 
     grid-template-columns:
         repeat(
             3,
-            minmax(0, 1fr)
+            minmax(
+                0,
+                1fr
+            )
         );
 
-    gap: .75rem;
+    gap:
+        .6rem;
 
-    margin-top: .7rem;
+    margin-top:
+        .7rem;
 }
 
 
 .risk-source-grid > div {
 
-    padding: .7rem;
+    padding:
+        .65rem;
 
-    background: var(--risk-soft);
+    background:
+        var(
+            --risk-panel-dark
+        );
 
-    border: 1px solid var(--risk-border);
-    border-radius: 8px;
+    border:
+        1px solid
+        var(
+            --risk-border-soft
+        );
+
+    border-radius:
+        6px;
 }
 
 
 .risk-source-grid strong {
 
-    font-size: .68rem;
+    color:
+        var(
+            --risk-text
+        );
+
+    font-size:
+        .63rem;
 }
 
 
 .risk-source-grid p {
 
-    margin: .25rem 0 0;
+    margin:
+        .25rem 0 0;
 
-    color: var(--risk-muted);
+    color:
+        var(
+            --risk-muted
+        );
 
-    font-size: .63rem;
-    line-height: 1.4;
+    font-size:
+        .58rem;
+
+    line-height:
+        1.4;
 }
 
 
-/* -------------------------------------------------------- */
-/* 6. PLANNER                                               */
-/* -------------------------------------------------------- */
+/* ======================================================== */
+/* 7. PLANNER                                               */
+/* ======================================================== */
 
 .risk-planner-heading {
 
-    margin-bottom: 1rem;
+    margin-bottom:
+        .8rem;
 }
 
 
 .risk-planner-heading h2 {
 
-    margin: 0 0 .2rem;
+    margin:
+        0 0 .15rem;
 
-    font-size: 1.25rem;
-    font-weight: 750;
+    color:
+        var(
+            --risk-text
+        );
+
+    font-size:
+        .95rem;
+
+    font-weight:
+        750;
 }
 
 
 .risk-planner-heading p {
 
-    max-width: 760px;
+    max-width:
+        760px;
 
-    margin: 0;
+    margin:
+        0;
 
-    color: var(--risk-muted);
+    color:
+        var(
+            --risk-muted
+        );
 
-    font-size: .76rem;
+    font-size:
+        .65rem;
+
+    line-height:
+        1.45;
 }
 
 
-/* -------------------------------------------------------- */
-/* 7. PROGRESSIVE RISK STEPS                                */
-/* -------------------------------------------------------- */
+/* ======================================================== */
+/* 8. PROGRESSIVE RISK STEPS                                */
+/* ======================================================== */
 
 .risk-step {
 
-    overflow: hidden;
+    overflow:
+        hidden;
 
-    margin-bottom: .75rem;
+    margin-bottom:
+        .65rem;
 
-    background: #ffffff;
+    background:
+        var(
+            --risk-panel-dark
+        );
 
-    border: 1px solid var(--risk-border);
-    border-radius: 11px;
+    border:
+        1px solid
+        var(
+            --risk-border
+        );
+
+    border-radius:
+        7px;
 }
 
 
 .risk-step-summary {
 
-    display: flex;
-    align-items: center;
+    display:
+        flex;
 
-    gap: .7rem;
+    align-items:
+        center;
 
-    cursor: pointer;
+    gap:
+        .65rem;
 
-    padding: .8rem .9rem;
+    cursor:
+        pointer;
 
-    background: #fbfcfe;
+    padding:
+        .7rem .8rem;
 
-    list-style: none;
+    color:
+        var(
+            --risk-text
+        );
+
+    background:
+        var(
+            --risk-panel-dark
+        );
+
+    list-style:
+        none;
 }
 
 
 .risk-step-summary::-webkit-details-marker {
-    display: none;
+
+    display:
+        none;
 }
 
 
 .risk-step[open] > .risk-step-summary {
 
-    background: #f5f9ff;
+    background:
+        var(
+            --risk-panel-soft
+        );
 
-    border-bottom: 1px solid var(--risk-border);
+    border-bottom:
+        1px solid
+        var(
+            --risk-border
+        );
 }
 
 
 .risk-step-number {
 
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display:
+        inline-flex;
 
-    flex: 0 0 auto;
+    align-items:
+        center;
 
-    width: 29px;
-    height: 29px;
+    justify-content:
+        center;
 
-    color: #ffffff;
-    background: var(--risk-blue);
+    flex:
+        0 0 auto;
 
-    border-radius: 8px;
+    width:
+        27px;
 
-    font-size: .66rem;
-    font-weight: 750;
+    height:
+        27px;
+
+    color:
+        #ffffff;
+
+    background:
+        var(
+            --risk-blue
+        );
+
+    border-radius:
+        6px;
+
+    font-size:
+        .62rem;
+
+    font-weight:
+        750;
 }
 
 
 .risk-step-summary-copy {
 
-    flex: 1;
+    flex:
+        1;
 
-    min-width: 0;
+    min-width:
+        0;
 }
 
 
 .risk-step-summary-copy strong {
 
-    display: block;
+    display:
+        block;
 
-    margin-bottom: .1rem;
+    margin-bottom:
+        .1rem;
 
-    font-size: .8rem;
+    color:
+        var(
+            --risk-text
+        );
+
+    font-size:
+        .72rem;
 }
 
 
 .risk-step-summary-copy small {
 
-    display: block;
+    display:
+        block;
 
-    color: var(--risk-muted);
+    color:
+        var(
+            --risk-muted
+        );
 
-    font-size: .63rem;
+    font-size:
+        .58rem;
 }
 
 
 .risk-step-status {
 
-    display: inline-flex;
-    align-items: center;
+    display:
+        inline-flex;
 
-    gap: .3rem;
+    align-items:
+        center;
 
-    padding: .25rem .5rem;
+    gap:
+        .3rem;
 
-    color: var(--risk-success);
-    background: var(--risk-success-soft);
+    padding:
+        .22rem .45rem;
 
-    border-radius: 999px;
+    color:
+        #a8f3d0;
 
-    font-size: .6rem;
-    font-weight: 700;
+    background:
+        var(
+            --risk-success-soft
+        );
+
+    border:
+        1px solid
+        rgba(
+            50,
+            201,
+            139,
+            .18
+        );
+
+    border-radius:
+        999px;
+
+    font-size:
+        .55rem;
+
+    font-weight:
+        700;
 }
 
 
 .risk-step-content {
 
-    padding: 1rem;
+    padding:
+        .85rem;
 }
 
 
 .risk-step-content .form-label {
 
-    margin-bottom: .35rem;
+    margin-bottom:
+        .3rem;
 
-    font-size: .73rem;
-    font-weight: 700;
+    color:
+        #d7e0eb;
+
+    font-size:
+        .65rem;
+
+    font-weight:
+        700;
 }
 
 
 .risk-step-content .form-text {
 
-    color: var(--risk-muted);
+    color:
+        var(
+            --risk-muted
+        );
 
-    font-size: .63rem;
-    line-height: 1.4;
+    font-size:
+        .57rem;
+
+    line-height:
+        1.4;
 }
 
 
 .risk-step-content input,
 .risk-step-content select {
 
-    min-height: 43px;
+    min-height:
+        38px;
 
-    border-color: #d7dfeb;
-    border-radius: 8px;
+    border-radius:
+        6px;
 }
 
 
-/* -------------------------------------------------------- */
-/* 8. ALPACA SEARCH RESULTS                                 */
-/* -------------------------------------------------------- */
+/* ======================================================== */
+/* 9. ALPACA SEARCH RESULTS                                 */
+/* ======================================================== */
 
 #alpacaSearchResults {
 
-    z-index: 1050;
+    z-index:
+        1050;
 
-    max-height: 340px;
+    max-height:
+        340px;
 
-    overflow-y: auto;
+    overflow-y:
+        auto;
+
+    border:
+        1px solid
+        var(
+            --risk-border
+        );
 }
 
 
-/* -------------------------------------------------------- */
-/* 9. MARKET CARD                                           */
-/* -------------------------------------------------------- */
+.risk-workspace .list-group-item {
+
+    color:
+        var(
+            --risk-text
+        );
+
+    background:
+        var(
+            --risk-panel-dark
+        );
+
+    border-color:
+        var(
+            --risk-border-soft
+        );
+}
+
+
+.risk-workspace .list-group-item-action:hover,
+.risk-workspace .list-group-item-action:focus {
+
+    color:
+        #ffffff;
+
+    background:
+        var(
+            --risk-panel-soft
+        );
+}
+
+
+/* ======================================================== */
+/* 10. MARKET CARD                                          */
+/* ======================================================== */
 
 .market-summary-panel {
 
-    margin-top: .8rem;
+    margin-top:
+        .75rem;
 
-    padding: .9rem;
+    padding:
+        .8rem;
 
-    background: #fbfcfe;
+    background:
+        var(
+            --risk-panel-soft
+        );
 
-    border: 1px solid var(--risk-border);
-    border-radius: 10px;
+    border:
+        1px solid
+        var(
+            --risk-border
+        );
+
+    border-radius:
+        7px;
 }
 
 
 .market-summary-header {
 
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
+    display:
+        flex;
 
-    gap: .75rem;
+    align-items:
+        flex-start;
+
+    justify-content:
+        space-between;
+
+    gap:
+        .75rem;
 }
 
 
 .market-summary-header h4 {
 
-    margin: 0 0 .15rem;
+    margin:
+        0 0 .15rem;
 
-    font-size: .88rem;
-    font-weight: 720;
+    color:
+        var(
+            --risk-text
+        );
+
+    font-size:
+        .8rem;
+
+    font-weight:
+        720;
 }
 
 
 .market-summary-identity {
 
-    color: var(--risk-muted);
+    color:
+        var(
+            --risk-muted
+        );
 
-    font-size: .65rem;
+    font-size:
+        .6rem;
 }
 
 
 .market-primary-grid {
 
-    display: grid;
+    display:
+        grid;
 
     grid-template-columns:
         repeat(
             3,
-            minmax(0, 1fr)
+            minmax(
+                0,
+                1fr
+            )
         );
 
-    gap: .55rem;
+    gap:
+        .5rem;
 
-    margin-top: .8rem;
+    margin-top:
+        .7rem;
 }
 
 
 .market-primary-stat {
 
-    padding: .65rem;
+    padding:
+        .6rem;
 
-    background: #ffffff;
+    background:
+        var(
+            --risk-panel-dark
+        );
 
-    border: 1px solid var(--risk-border);
-    border-radius: 8px;
+    border:
+        1px solid
+        var(
+            --risk-border-soft
+        );
+
+    border-radius:
+        6px;
 }
 
 
 .market-primary-stat span {
 
-    display: block;
+    display:
+        block;
 
-    margin-bottom: .15rem;
+    margin-bottom:
+        .15rem;
 
-    color: var(--risk-muted);
+    color:
+        var(
+            --risk-muted
+        );
 
-    font-size: .59rem;
+    font-size:
+        .54rem;
 }
 
 
 .market-primary-stat strong {
 
-    font-size: .78rem;
+    color:
+        var(
+            --risk-text
+        );
+
+    font-size:
+        .72rem;
 }
 
 
 .market-detail-dropdown {
 
-    margin-top: .75rem;
+    margin-top:
+        .65rem;
 }
 
 
 .market-detail-dropdown summary {
 
-    cursor: pointer;
+    cursor:
+        pointer;
 
-    padding: .5rem .6rem;
+    padding:
+        .45rem .55rem;
 
-    color: #475467;
-    background: #ffffff;
+    color:
+        #cbd6e0;
 
-    border: 1px solid var(--risk-border);
-    border-radius: 7px;
+    background:
+        var(
+            --risk-panel-dark
+        );
 
-    list-style: none;
+    border:
+        1px solid
+        var(
+            --risk-border
+        );
 
-    font-size: .64rem;
-    font-weight: 650;
+    border-radius:
+        6px;
+
+    list-style:
+        none;
+
+    font-size:
+        .59rem;
+
+    font-weight:
+        650;
 }
 
 
 .market-detail-dropdown summary::-webkit-details-marker {
-    display: none;
+
+    display:
+        none;
 }
 
 
 .market-detail-grid {
 
-    display: grid;
+    display:
+        grid;
 
     grid-template-columns:
         repeat(
             4,
-            minmax(0, 1fr)
+            minmax(
+                0,
+                1fr
+            )
         );
 
-    gap: .45rem;
+    gap:
+        .4rem;
 
-    margin-top: .55rem;
+    margin-top:
+        .5rem;
 }
 
 
 .market-detail-stat {
 
-    padding: .55rem;
+    padding:
+        .5rem;
 
-    background: #ffffff;
+    background:
+        var(
+            --risk-panel-dark
+        );
 
-    border: 1px solid var(--risk-border);
-    border-radius: 7px;
+    border:
+        1px solid
+        var(
+            --risk-border-soft
+        );
+
+    border-radius:
+        6px;
 }
 
 
 .market-detail-stat span {
 
-    display: block;
+    display:
+        block;
 
-    margin-bottom: .15rem;
+    margin-bottom:
+        .15rem;
 
-    color: var(--risk-muted);
+    color:
+        var(
+            --risk-muted
+        );
 
-    font-size: .55rem;
+    font-size:
+        .5rem;
 }
 
 
 .market-detail-stat strong {
 
-    font-size: .67rem;
+    color:
+        var(
+            --risk-text
+        );
+
+    font-size:
+        .62rem;
 }
 
 
 .market-capabilities {
 
-    margin-top: .6rem;
+    margin-top:
+        .55rem;
 }
 
 
 .market-capabilities .badge {
 
-    font-size: .55rem;
+    font-size:
+        .52rem;
 }
 
 
 .market-actions {
 
-    display: flex;
-    flex-wrap: wrap;
+    display:
+        flex;
 
-    gap: .45rem;
+    flex-wrap:
+        wrap;
 
-    margin-top: .75rem;
+    gap:
+        .4rem;
+
+    margin-top:
+        .65rem;
 }
 
 
 .market-provenance {
 
-    margin-top: .65rem;
+    margin-top:
+        .6rem;
 
-    color: var(--risk-muted);
+    color:
+        var(
+            --risk-muted
+        );
 
-    font-size: .58rem;
+    font-size:
+        .54rem;
 }
 
 
-/* -------------------------------------------------------- */
-/* 10. RISK BUDGET                                          */
-/* -------------------------------------------------------- */
+/* ======================================================== */
+/* 11. RISK BUDGET                                          */
+/* ======================================================== */
 
 .risk-budget-preview {
 
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    display:
+        flex;
 
-    gap: 1rem;
+    align-items:
+        center;
 
-    margin-top: .8rem;
-    padding: .75rem .85rem;
+    justify-content:
+        space-between;
 
-    background: var(--risk-blue-soft);
+    gap:
+        1rem;
 
-    border: 1px solid #d8e7fa;
-    border-radius: 9px;
+    margin-top:
+        .7rem;
+
+    padding:
+        .65rem .75rem;
+
+    background:
+        var(
+            --risk-blue-soft
+        );
+
+    border:
+        1px solid
+        rgba(
+            79,
+            134,
+            182,
+            .25
+        );
+
+    border-radius:
+        7px;
 }
 
 
 .risk-budget-preview span {
 
-    color: var(--risk-muted);
+    color:
+        var(
+            --risk-muted
+        );
 
-    font-size: .65rem;
+    font-size:
+        .6rem;
 }
 
 
 .risk-budget-preview strong {
 
-    font-size: 1.1rem;
+    color:
+        var(
+            --risk-text
+        );
+
+    font-size:
+        .95rem;
 }
 
 
-/* -------------------------------------------------------- */
-/* 11. LIVE RISK RESULT                                     */
-/* -------------------------------------------------------- */
+/* ======================================================== */
+/* 12. LIVE RISK RESULT                                     */
+/* ======================================================== */
 
 .risk-plan-hero {
 
-    overflow: hidden;
+    overflow:
+        hidden;
 
     background:
         linear-gradient(
             145deg,
-            #f8fbff,
-            #edf5ff
+            #142438,
+            #101a28
         );
 
-    border: 1px solid #d6e6fb;
-    border-radius: 11px;
+    border:
+        1px solid
+        var(
+            --risk-border
+        );
+
+    border-radius:
+        7px;
 }
 
 
 .risk-plan-primary {
 
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    display:
+        flex;
 
-    gap: 1rem;
+    align-items:
+        center;
 
-    padding: .8rem .9rem;
+    justify-content:
+        space-between;
 
-    border-bottom: 1px solid #dce8f7;
+    gap:
+        1rem;
+
+    padding:
+        .7rem .8rem;
+
+    border-bottom:
+        1px solid
+        var(
+            --risk-border-soft
+        );
 }
 
 
 .risk-plan-primary span {
 
-    color: var(--risk-muted);
+    color:
+        var(
+            --risk-muted
+        );
 
-    font-size: .65rem;
+    font-size:
+        .6rem;
 }
 
 
 .risk-plan-primary strong {
 
-    font-size: 1.2rem;
+    color:
+        var(
+            --risk-text
+        );
+
+    font-size:
+        1rem;
 }
 
 
 .risk-plan-grid {
 
-    display: grid;
+    display:
+        grid;
 
     grid-template-columns:
         repeat(
             4,
-            minmax(0, 1fr)
+            minmax(
+                0,
+                1fr
+            )
         );
 }
 
 
 .risk-plan-grid > div {
 
-    padding: .75rem;
+    padding:
+        .65rem;
 
-    border-right: 1px solid #dce8f7;
+    border-right:
+        1px solid
+        var(
+            --risk-border-soft
+        );
 }
 
 
 .risk-plan-grid > div:last-child {
-    border-right: 0;
+
+    border-right:
+        0;
 }
 
 
 .risk-plan-grid span {
 
-    display: block;
+    display:
+        block;
 
-    margin-bottom: .18rem;
+    margin-bottom:
+        .18rem;
 
-    color: var(--risk-muted);
+    color:
+        var(
+            --risk-muted
+        );
 
-    font-size: .56rem;
+    font-size:
+        .52rem;
 }
 
 
 .risk-plan-grid strong {
 
-    font-size: .72rem;
+    color:
+        var(
+            --risk-text
+        );
+
+    font-size:
+        .67rem;
 }
 
 
-/* -------------------------------------------------------- */
-/* 12. STICKY RISK SNAPSHOT                                 */
-/* -------------------------------------------------------- */
+/* ======================================================== */
+/* 13. STICKY RISK SNAPSHOT                                 */
+/* ======================================================== */
 
 .risk-snapshot-panel {
 
-    position: sticky;
+    position:
+        sticky;
 
-    top: 85px;
+    top:
+        85px;
 
-    padding: 1.05rem;
+    padding:
+        .9rem;
 
-    background: #ffffff;
+    color:
+        var(
+            --risk-text
+        );
 
-    border: 1px solid var(--risk-border);
-    border-radius: 15px;
+    background:
+        var(
+            --risk-panel
+        );
 
-    box-shadow:
-        0 7px 22px
-        rgba(16, 24, 40, .04);
+    border:
+        1px solid
+        var(
+            --risk-border
+        );
+
+    border-radius:
+        8px;
 }
 
 
 .risk-snapshot-header {
 
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
+    display:
+        flex;
 
-    gap: .75rem;
+    align-items:
+        flex-start;
 
-    margin-bottom: .85rem;
+    justify-content:
+        space-between;
+
+    gap:
+        .75rem;
+
+    margin-bottom:
+        .75rem;
 }
 
 
 .risk-snapshot-header h2 {
 
-    margin: 0;
+    margin:
+        0;
 
-    font-size: 1.1rem;
-    font-weight: 750;
+    color:
+        var(
+            --risk-text
+        );
+
+    font-size:
+        .9rem;
+
+    font-weight:
+        750;
 }
 
 
 .risk-symbol-badge {
 
-    padding: .3rem .55rem;
+    padding:
+        .25rem .5rem;
 
-    color: #344054;
-    background: #f1f4f8;
+    color:
+        #dbe6f0;
 
-    border-radius: 7px;
+    background:
+        var(
+            --risk-panel-dark
+        );
 
-    font-size: .65rem;
-    font-weight: 700;
+    border:
+        1px solid
+        var(
+            --risk-border-soft
+        );
+
+    border-radius:
+        6px;
+
+    font-size:
+        .6rem;
+
+    font-weight:
+        700;
 }
 
 
 .risk-snapshot-section {
 
-    padding: .75rem 0;
+    padding:
+        .7rem 0;
 
-    border-top: 1px solid var(--risk-border);
+    border-top:
+        1px solid
+        var(
+            --risk-border
+        );
 }
 
 
 .risk-snapshot-section:first-of-type {
 
-    border-top: 0;
-    padding-top: 0;
+    border-top:
+        0;
+
+    padding-top:
+        0;
 }
 
 
 .risk-snapshot-section h3 {
 
-    margin-bottom: .55rem;
+    margin-bottom:
+        .5rem;
 
-    font-size: .72rem;
-    font-weight: 700;
+    color:
+        var(
+            --risk-text
+        );
+
+    font-size:
+        .67rem;
+
+    font-weight:
+        700;
 }
 
 
 .risk-current-price {
 
-    padding: .7rem;
+    padding:
+        .65rem;
 
-    background: var(--risk-blue-soft);
+    background:
+        var(
+            --risk-blue-soft
+        );
 
-    border-radius: 9px;
+    border:
+        1px solid
+        rgba(
+            79,
+            134,
+            182,
+            .18
+        );
+
+    border-radius:
+        7px;
 }
 
 
 .risk-current-price span {
 
-    display: block;
+    display:
+        block;
 
-    color: var(--risk-muted);
+    color:
+        var(
+            --risk-muted
+        );
 
-    font-size: .58rem;
+    font-size:
+        .54rem;
 }
 
 
 .risk-current-price strong {
 
-    display: block;
+    display:
+        block;
 
-    margin-top: .12rem;
+    margin-top:
+        .12rem;
 
-    font-size: 1.05rem;
+    color:
+        var(
+            --risk-text
+        );
+
+    font-size:
+        .95rem;
 }
 
 
 .risk-current-change {
 
-    margin-top: .2rem;
+    margin-top:
+        .2rem;
 
-    color: var(--risk-muted);
+    color:
+        var(
+            --risk-muted
+        );
 
-    font-size: .6rem;
+    font-size:
+        .56rem;
 }
 
 
 .risk-mini-grid {
 
-    display: grid;
+    display:
+        grid;
 
     grid-template-columns:
         repeat(
             2,
-            minmax(0, 1fr)
+            minmax(
+                0,
+                1fr
+            )
         );
 
-    gap: .45rem;
+    gap:
+        .4rem;
 }
 
 
 .risk-mini-stat {
 
-    padding: .55rem;
+    padding:
+        .5rem;
 
-    background: #fbfcfe;
+    background:
+        var(
+            --risk-panel-dark
+        );
 
-    border: 1px solid var(--risk-border);
-    border-radius: 8px;
+    border:
+        1px solid
+        var(
+            --risk-border-soft
+        );
+
+    border-radius:
+        6px;
 }
 
 
 .risk-mini-stat span {
 
-    display: block;
+    display:
+        block;
 
-    margin-bottom: .15rem;
+    margin-bottom:
+        .15rem;
 
-    color: var(--risk-muted);
+    color:
+        var(
+            --risk-muted
+        );
 
-    font-size: .54rem;
-    line-height: 1.3;
+    font-size:
+        .5rem;
+
+    line-height:
+        1.3;
 }
 
 
 .risk-mini-stat strong {
 
-    font-size: .68rem;
+    color:
+        var(
+            --risk-text
+        );
+
+    font-size:
+        .63rem;
 }
 
 
 .risk-plan-snapshot {
 
-    display: grid;
+    display:
+        grid;
 
     grid-template-columns:
         repeat(
             2,
-            minmax(0, 1fr)
+            minmax(
+                0,
+                1fr
+            )
         );
 
-    gap: .45rem;
+    gap:
+        .4rem;
 }
 
 
 .risk-plan-snapshot-item {
 
-    padding: .55rem;
+    padding:
+        .5rem;
 
-    background: #f8fafc;
+    background:
+        var(
+            --risk-panel-dark
+        );
 
-    border-radius: 7px;
+    border:
+        1px solid
+        var(
+            --risk-border-soft
+        );
+
+    border-radius:
+        6px;
 }
 
 
 .risk-plan-snapshot-item span {
 
-    display: block;
+    display:
+        block;
 
-    color: var(--risk-muted);
+    color:
+        var(
+            --risk-muted
+        );
 
-    font-size: .53rem;
+    font-size:
+        .5rem;
 }
 
 
 .risk-plan-snapshot-item strong {
 
-    display: block;
+    display:
+        block;
 
-    margin-top: .12rem;
+    margin-top:
+        .12rem;
 
-    font-size: .69rem;
+    color:
+        var(
+            --risk-text
+        );
+
+    font-size:
+        .64rem;
 }
 
 
-/* -------------------------------------------------------- */
-/* 13. HELP ACCORDION                                       */
-/* -------------------------------------------------------- */
+/* ======================================================== */
+/* 14. HELP ACCORDION                                       */
+/* ======================================================== */
 
 .risk-help {
 
-    margin-top: .65rem;
+    margin-top:
+        .6rem;
 }
 
 
 .risk-help > summary {
 
-    cursor: pointer;
+    cursor:
+        pointer;
 
-    padding: .55rem .65rem;
+    padding:
+        .5rem .6rem;
 
-    color: #475467;
-    background: #f8fafc;
+    color:
+        #c8d4df;
 
-    border: 1px solid var(--risk-border);
-    border-radius: 8px;
+    background:
+        var(
+            --risk-panel-dark
+        );
 
-    list-style: none;
+    border:
+        1px solid
+        var(
+            --risk-border
+        );
 
-    font-size: .63rem;
-    font-weight: 650;
+    border-radius:
+        6px;
+
+    list-style:
+        none;
+
+    font-size:
+        .59rem;
+
+    font-weight:
+        650;
 }
 
 
 .risk-help > summary::-webkit-details-marker {
-    display: none;
+
+    display:
+        none;
 }
 
 
 .risk-help-body {
 
-    margin-top: .55rem;
+    margin-top:
+        .5rem;
+}
+
+
+.risk-help-body .accordion-item {
+
+    background:
+        var(
+            --risk-panel-dark
+        );
+
+    border-color:
+        var(
+            --risk-border-soft
+        );
 }
 
 
 .risk-help-body .accordion-button {
 
-    padding: .65rem;
+    padding:
+        .6rem;
 
-    font-size: .65rem;
+    color:
+        var(
+            --risk-text
+        );
+
+    background:
+        var(
+            --risk-panel-dark
+        );
+
+    font-size:
+        .6rem;
+}
+
+
+.risk-help-body .accordion-button:not(.collapsed) {
+
+    color:
+        #ffffff;
+
+    background:
+        var(
+            --risk-panel-soft
+        );
 }
 
 
 .risk-help-body .accordion-body {
 
-    font-size: .62rem;
-    line-height: 1.5;
+    color:
+        var(
+            --risk-muted
+        );
+
+    background:
+        var(
+            --risk-panel-dark
+        );
+
+    font-size:
+        .58rem;
+
+    line-height:
+        1.5;
 }
 
 
-/* -------------------------------------------------------- */
-/* 14. CALCULATION EXPLANATION                              */
-/* -------------------------------------------------------- */
+/* ======================================================== */
+/* 15. CALCULATION EXPLANATION                              */
+/* ======================================================== */
 
 .risk-explanation-summary {
 
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    display:
+        flex;
 
-    gap: 1rem;
+    align-items:
+        center;
 
-    cursor: pointer;
+    justify-content:
+        space-between;
 
-    list-style: none;
+    gap:
+        1rem;
+
+    cursor:
+        pointer;
+
+    list-style:
+        none;
 }
 
 
 .risk-explanation-summary::-webkit-details-marker {
-    display: none;
+
+    display:
+        none;
 }
 
 
 .risk-explanation-summary strong {
 
-    font-size: .82rem;
+    color:
+        var(
+            --risk-text
+        );
+
+    font-size:
+        .74rem;
 }
 
 
 .risk-calculation-flow {
 
-    display: grid;
+    display:
+        grid;
 
     grid-template-columns:
         minmax(0, 1fr)
@@ -1312,374 +2501,688 @@ Risk | MarketPulse
         auto
         minmax(0, 1fr);
 
-    align-items: center;
+    align-items:
+        center;
 
-    gap: .7rem;
+    gap:
+        .6rem;
 
-    margin-top: 1rem;
+    margin-top:
+        .85rem;
 }
 
 
 .risk-formula-card {
 
-    min-height: 135px;
+    min-height:
+        125px;
 
-    padding: .8rem;
+    padding:
+        .7rem;
 
-    background: var(--risk-soft);
+    background:
+        var(
+            --risk-panel-dark
+        );
 
-    border: 1px solid var(--risk-border);
-    border-radius: 9px;
+    border:
+        1px solid
+        var(
+            --risk-border-soft
+        );
+
+    border-radius:
+        6px;
 }
 
 
 .risk-formula-number {
 
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display:
+        inline-flex;
 
-    width: 24px;
-    height: 24px;
+    align-items:
+        center;
 
-    margin-bottom: .5rem;
+    justify-content:
+        center;
 
-    color: #ffffff;
-    background: var(--risk-blue);
+    width:
+        23px;
 
-    border-radius: 6px;
+    height:
+        23px;
 
-    font-size: .58rem;
-    font-weight: 700;
+    margin-bottom:
+        .45rem;
+
+    color:
+        #ffffff;
+
+    background:
+        var(
+            --risk-blue
+        );
+
+    border-radius:
+        5px;
+
+    font-size:
+        .55rem;
+
+    font-weight:
+        700;
 }
 
 
 .risk-formula-card strong {
 
-    display: block;
+    display:
+        block;
 
-    margin-bottom: .35rem;
+    margin-bottom:
+        .3rem;
 
-    font-size: .7rem;
+    color:
+        var(
+            --risk-text
+        );
+
+    font-size:
+        .65rem;
 }
 
 
 .risk-formula-card p {
 
-    margin-bottom: .4rem;
+    margin-bottom:
+        .35rem;
 
-    color: var(--risk-muted);
+    color:
+        var(
+            --risk-muted
+        );
 
-    font-size: .62rem;
+    font-size:
+        .57rem;
 }
 
 
 .risk-formula-card code {
 
-    font-size: .62rem;
+    color:
+        #9ec2df;
+
+    font-size:
+        .57rem;
 }
 
 
-/* -------------------------------------------------------- */
-/* 15. SERVER RESULT                                        */
-/* -------------------------------------------------------- */
+/* ======================================================== */
+/* 16. SERVER RESULT                                        */
+/* ======================================================== */
 
 .server-risk-result {
 
-    border-top: 3px solid var(--risk-blue);
+    border-top:
+        3px solid
+        var(
+            --risk-blue
+        );
 }
 
 
 .server-result-grid {
 
-    display: grid;
+    display:
+        grid;
 
     grid-template-columns:
         repeat(
             4,
-            minmax(0, 1fr)
+            minmax(
+                0,
+                1fr
+            )
         );
 
-    gap: .65rem;
+    gap:
+        .55rem;
 }
 
 
 .server-result-stat {
 
-    padding: .75rem;
+    padding:
+        .65rem;
 
-    background: #fbfcfe;
+    background:
+        var(
+            --risk-panel-dark
+        );
 
-    border: 1px solid var(--risk-border);
-    border-radius: 9px;
+    border:
+        1px solid
+        var(
+            --risk-border-soft
+        );
+
+    border-radius:
+        6px;
 }
 
 
 .server-result-stat span {
 
-    display: block;
+    display:
+        block;
 
-    margin-bottom: .15rem;
+    margin-bottom:
+        .15rem;
 
-    color: var(--risk-muted);
+    color:
+        var(
+            --risk-muted
+        );
 
-    font-size: .58rem;
+    font-size:
+        .54rem;
 }
 
 
 .server-result-stat strong {
 
-    font-size: .9rem;
+    color:
+        var(
+            --risk-text
+        );
+
+    font-size:
+        .8rem;
 }
 
 
-/* -------------------------------------------------------- */
-/* 16. STRESS TEST                                          */
-/* -------------------------------------------------------- */
+/* ======================================================== */
+/* 17. STRESS TEST                                          */
+/* ======================================================== */
 
 .risk-stress-panel {
 
-    overflow: hidden;
+    overflow:
+        hidden;
 }
 
 
 .risk-stress-summary {
 
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    display:
+        flex;
 
-    gap: 1rem;
+    align-items:
+        center;
 
-    cursor: pointer;
+    justify-content:
+        space-between;
 
-    list-style: none;
+    gap:
+        1rem;
+
+    cursor:
+        pointer;
+
+    list-style:
+        none;
 }
 
 
 .risk-stress-summary::-webkit-details-marker {
-    display: none;
+
+    display:
+        none;
 }
 
 
 .risk-stress-summary h2 {
 
-    margin: .15rem 0 .2rem;
+    margin:
+        .15rem 0 .2rem;
 
-    font-size: 1.1rem;
-    font-weight: 750;
+    color:
+        var(
+            --risk-text
+        );
+
+    font-size:
+        .95rem;
+
+    font-weight:
+        750;
 }
 
 
 .risk-stress-summary p {
 
-    max-width: 760px;
+    max-width:
+        760px;
 
-    margin: 0;
+    margin:
+        0;
 
-    color: var(--risk-muted);
+    color:
+        var(
+            --risk-muted
+        );
 
-    font-size: .7rem;
+    font-size:
+        .64rem;
 }
 
 
 .risk-stress-action {
 
-    flex: 0 0 auto;
+    flex:
+        0 0 auto;
 
-    padding: .4rem .65rem;
+    padding:
+        .4rem .65rem;
 
-    color: var(--risk-danger);
-    background: #ffffff;
+    color:
+        #ef9aa2;
 
-    border: 1px solid var(--risk-danger);
-    border-radius: 8px;
+    background:
+        transparent;
 
-    font-size: .65rem;
-    font-weight: 650;
+    border:
+        1px solid
+        rgba(
+            220,
+            107,
+            117,
+            .7
+        );
+
+    border-radius:
+        6px;
+
+    font-size:
+        .6rem;
+
+    font-weight:
+        650;
 }
 
 
 .risk-stress-content {
 
-    margin-top: 1rem;
-    padding-top: 1rem;
+    margin-top:
+        .85rem;
 
-    border-top: 1px solid var(--risk-border);
+    padding-top:
+        .85rem;
+
+    border-top:
+        1px solid
+        var(
+            --risk-border
+        );
 }
 
 
 .risk-scenario-list {
 
-    display: grid;
+    display:
+        grid;
 
     grid-template-columns:
         repeat(
             2,
-            minmax(0, 1fr)
+            minmax(
+                0,
+                1fr
+            )
         );
 
-    gap: .55rem;
+    gap:
+        .5rem;
 }
 
 
 .risk-scenario {
 
-    display: flex;
-    align-items: flex-start;
+    display:
+        flex;
 
-    gap: .65rem;
+    align-items:
+        flex-start;
 
-    padding: .7rem;
+    gap:
+        .6rem;
 
-    background: #fbfcfe;
+    padding:
+        .65rem;
 
-    border: 1px solid var(--risk-border);
-    border-radius: 9px;
+    background:
+        var(
+            --risk-panel-dark
+        );
+
+    border:
+        1px solid
+        var(
+            --risk-border-soft
+        );
+
+    border-radius:
+        6px;
 }
 
 
 .risk-scenario-icon {
 
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display:
+        inline-flex;
 
-    flex: 0 0 auto;
+    align-items:
+        center;
 
-    width: 34px;
-    height: 34px;
+    justify-content:
+        center;
 
-    color: var(--risk-danger);
-    background: var(--risk-danger-soft);
+    flex:
+        0 0 auto;
 
-    border-radius: 8px;
+    width:
+        32px;
+
+    height:
+        32px;
+
+    color:
+        #ef9aa2;
+
+    background:
+        var(
+            --risk-danger-soft
+        );
+
+    border:
+        1px solid
+        rgba(
+            220,
+            107,
+            117,
+            .18
+        );
+
+    border-radius:
+        6px;
 }
 
 
 .risk-scenario strong {
 
-    display: block;
+    display:
+        block;
 
-    margin-bottom: .2rem;
+    margin-bottom:
+        .2rem;
 
-    font-size: .68rem;
+    color:
+        var(
+            --risk-text
+        );
+
+    font-size:
+        .63rem;
 }
 
 
 .risk-scenario p {
 
-    margin: 0;
+    margin:
+        0;
 
-    color: var(--risk-muted);
+    color:
+        var(
+            --risk-muted
+        );
 
-    font-size: .61rem;
-    line-height: 1.4;
+    font-size:
+        .57rem;
+
+    line-height:
+        1.4;
 }
 
 
 .risk-stop-explanation {
 
-    margin: .8rem 0;
+    margin:
+        .75rem 0;
 }
 
 
 .risk-stop-explanation summary {
 
-    cursor: pointer;
+    cursor:
+        pointer;
 
-    color: #475467;
+    color:
+        #c8d4df;
 
-    font-size: .66rem;
-    font-weight: 650;
+    font-size:
+        .61rem;
+
+    font-weight:
+        650;
 }
 
 
 .risk-stop-explanation p {
 
-    margin: .5rem 0 0;
+    margin:
+        .5rem 0 0;
 
-    color: var(--risk-muted);
+    color:
+        var(
+            --risk-muted
+        );
 
-    font-size: .63rem;
-    line-height: 1.5;
+    font-size:
+        .58rem;
+
+    line-height:
+        1.5;
 }
 
 
-/* -------------------------------------------------------- */
-/* 17. EDUCATIONAL NOTICE                                   */
-/* -------------------------------------------------------- */
+/* ======================================================== */
+/* 18. EDUCATIONAL NOTICE                                   */
+/* ======================================================== */
 
 .risk-educational-notice {
 
-    display: flex;
-    align-items: flex-start;
+    display:
+        flex;
 
-    gap: .6rem;
+    align-items:
+        flex-start;
 
-    margin-top: 1rem;
+    gap:
+        .6rem;
 
-    padding: .7rem .8rem;
+    margin-top:
+        .8rem;
 
-    color: #5b6472;
-    background: var(--risk-warning-soft);
+    padding:
+        .65rem .75rem;
 
-    border: 1px solid #f2e1a9;
-    border-radius: 9px;
+    color:
+        #d8c99c;
 
-    font-size: .62rem;
-    line-height: 1.45;
+    background:
+        var(
+            --risk-warning-soft
+        );
+
+    border:
+        1px solid
+        rgba(
+            211,
+            168,
+            84,
+            .25
+        );
+
+    border-radius:
+        6px;
+
+    font-size:
+        .57rem;
+
+    line-height:
+        1.45;
 }
 
 
 .risk-educational-notice i {
 
-    margin-top: .1rem;
+    margin-top:
+        .1rem;
 
-    color: var(--risk-warning);
+    color:
+        var(
+            --risk-warning
+        );
 }
 
 
-/* -------------------------------------------------------- */
-/* 18. RESPONSIVE                                           */
-/* -------------------------------------------------------- */
+/* ======================================================== */
+/* 19. ALERTS                                               */
+/* ======================================================== */
 
-@media (max-width: 1199.98px) {
+.risk-workspace .alert-warning {
+
+    color:
+        #e9d79f;
+
+    background:
+        rgba(
+            211,
+            168,
+            84,
+            .10
+        );
+
+    border-color:
+        rgba(
+            211,
+            168,
+            84,
+            .25
+        );
+}
+
+
+.risk-workspace .alert-danger {
+
+    color:
+        #ffd7db;
+
+    background:
+        rgba(
+            220,
+            107,
+            117,
+            .10
+        );
+
+    border-color:
+        rgba(
+            220,
+            107,
+            117,
+            .25
+        );
+}
+
+
+/* ======================================================== */
+/* 20. RESPONSIVE                                           */
+/* ======================================================== */
+
+@media (
+    min-width:
+    1400px
+) {
+
+    .risk-workspace {
+
+        width:
+            min(
+                1480px,
+                calc(
+                    100vw
+                    -
+                    64px
+                )
+            );
+    }
+
+}
+
+
+@media (
+    max-width:
+    1199.98px
+) {
 
     .risk-workflow-panel {
 
         grid-template-columns:
             repeat(
                 3,
-                minmax(0, 1fr)
+                minmax(
+                    0,
+                    1fr
+                )
             );
     }
 
 
     .risk-flow-arrow {
-        display: none;
+
+        display:
+            none;
     }
 
 
     .risk-snapshot-panel {
 
-        position: static;
+        position:
+            static;
     }
 
 }
 
 
-@media (max-width: 991.98px) {
+@media (
+    max-width:
+    991.98px
+) {
 
     .risk-source-grid,
     .risk-calculation-flow {
 
-        grid-template-columns: 1fr;
+        grid-template-columns:
+            1fr;
     }
 
 
     .risk-calculation-flow > i {
-        display: none;
+
+        display:
+            none;
     }
 
 
@@ -1688,19 +3191,45 @@ Risk | MarketPulse
         grid-template-columns:
             repeat(
                 2,
-                minmax(0, 1fr)
+                minmax(
+                    0,
+                    1fr
+                )
             );
     }
 
 }
 
 
-@media (max-width: 767.98px) {
+@media (
+    max-width:
+    767.98px
+) {
+
+    .risk-workspace {
+
+        width:
+            calc(
+                100vw
+                -
+                20px
+            );
+
+        margin-left:
+            50%;
+
+        transform:
+            translateX(
+                -50%
+            );
+    }
+
 
     .risk-page-header,
     .risk-stress-summary {
 
-        flex-direction: column;
+        flex-direction:
+            column;
     }
 
 
@@ -1712,20 +3241,28 @@ Risk | MarketPulse
     .risk-scenario-list,
     .server-result-grid {
 
-        grid-template-columns: 1fr;
+        grid-template-columns:
+            1fr;
     }
 
 
     .risk-plan-grid > div {
 
-        border-right: 0;
-        border-bottom: 1px solid #dce8f7;
+        border-right:
+            0;
+
+        border-bottom:
+            1px solid
+            var(
+                --risk-border-soft
+            );
     }
 
 
     .risk-plan-grid > div:last-child {
 
-        border-bottom: 0;
+        border-bottom:
+            0;
     }
 
 }
@@ -1781,8 +3318,6 @@ Risk | MarketPulse
 <section class="risk-workflow-panel">
 
 
-    <!-- STEP 1 -->
-
     <div class="risk-flow-step">
 
         <span class="risk-flow-number">
@@ -1812,8 +3347,6 @@ Risk | MarketPulse
 
     <i class="fa-solid fa-chevron-right risk-flow-arrow"></i>
 
-
-    <!-- STEP 2 -->
 
     <div class="risk-flow-step">
 
@@ -1845,8 +3378,6 @@ Risk | MarketPulse
     <i class="fa-solid fa-chevron-right risk-flow-arrow"></i>
 
 
-    <!-- STEP 3 -->
-
     <div class="risk-flow-step">
 
         <span class="risk-flow-number">
@@ -1877,8 +3408,6 @@ Risk | MarketPulse
     <i class="fa-solid fa-chevron-right risk-flow-arrow"></i>
 
 
-    <!-- STEP 4 -->
-
     <div class="risk-flow-step">
 
         <span class="risk-flow-number">
@@ -1908,8 +3437,6 @@ Risk | MarketPulse
 
     <i class="fa-solid fa-chevron-right risk-flow-arrow"></i>
 
-
-    <!-- STEP 5 -->
 
     <div class="risk-flow-step">
 
@@ -2055,10 +3582,6 @@ Risk | MarketPulse
 <div class="row g-4 align-items-start">
 
 
-    <!-- ================================================== -->
-    <!-- LEFT: TRADE RISK PLANNER                          -->
-    <!-- ================================================== -->
-
     <div class="col-xl-8">
 
 
@@ -2093,7 +3616,7 @@ Risk | MarketPulse
 
 
                 <!-- ====================================== -->
-                <!-- STEP 1 - CHOOSE MARKET                 -->
+                <!-- STEP 1                                 -->
                 <!-- ====================================== -->
 
                 <details
@@ -2143,10 +3666,6 @@ Risk | MarketPulse
 
                     <div class="risk-step-content">
 
-
-                        <!-- ============================== -->
-                        <!-- ASSET SEARCH                   -->
-                        <!-- ============================== -->
 
                         <div class="mb-3">
 
@@ -2204,8 +3723,6 @@ Risk | MarketPulse
                         </div>
 
 
-                        <!-- USD WORKFLOW -->
-
                         <input
                             type="hidden"
                             name="currency"
@@ -2213,17 +3730,11 @@ Risk | MarketPulse
                         >
 
 
-                        <!-- ============================== -->
-                        <!-- ALPACA MARKET SUMMARY          -->
-                        <!-- ============================== -->
-
                         <div
                             id="alpacaMarketPanel"
                             class="market-summary-panel d-none"
                         >
 
-
-                            <!-- HEADER -->
 
                             <div class="market-summary-header">
 
@@ -2281,10 +3792,6 @@ Risk | MarketPulse
                             </div>
 
 
-                            <!-- ========================== -->
-                            <!-- PRIMARY INFORMATION        -->
-                            <!-- ========================== -->
-
                             <div class="market-primary-grid">
 
 
@@ -2329,10 +3836,6 @@ Risk | MarketPulse
 
                             </div>
 
-
-                            <!-- ========================== -->
-                            <!-- SECONDARY DETAILS          -->
-                            <!-- ========================== -->
 
                             <details class="market-detail-dropdown">
 
@@ -2463,8 +3966,6 @@ Risk | MarketPulse
                                 </div>
 
 
-                                <!-- Asset capabilities -->
-
                                 <div class="market-capabilities">
 
 
@@ -2526,8 +4027,6 @@ Risk | MarketPulse
                                 </div>
 
 
-                                <!-- Provenance -->
-
                                 <div class="market-provenance">
 
                                     Provider:
@@ -2553,10 +4052,6 @@ Risk | MarketPulse
 
                             </details>
 
-
-                            <!-- ========================== -->
-                            <!-- MARKET ACTIONS             -->
-                            <!-- ========================== -->
 
                             <div class="market-actions">
 
@@ -2609,7 +4104,7 @@ Risk | MarketPulse
 
 
                 <!-- ====================================== -->
-                <!-- STEP 2 - RISK BUDGET                   -->
+                <!-- STEP 2                                 -->
                 <!-- ====================================== -->
 
                 <details class="risk-step">
@@ -2645,8 +4140,6 @@ Risk | MarketPulse
                     <div class="risk-step-content">
 
 
-                        <!-- Trading capital -->
-
                         <div class="mb-3">
 
 
@@ -2676,8 +4169,6 @@ Risk | MarketPulse
 
                         </div>
 
-
-                        <!-- Risk percentage -->
 
                         <div class="mb-2">
 
@@ -2717,8 +4208,6 @@ Risk | MarketPulse
 
                         </div>
 
-
-                        <!-- Risk presets -->
 
                         <div class="d-flex gap-2 flex-wrap mt-2">
 
@@ -2773,8 +4262,6 @@ Risk | MarketPulse
                         </div>
 
 
-                        <!-- Maximum loss -->
-
                         <div class="risk-budget-preview">
 
 
@@ -2800,7 +4287,7 @@ Risk | MarketPulse
 
 
                 <!-- ====================================== -->
-                <!-- STEP 3 - DEFINE TRADE                  -->
+                <!-- STEP 3                                 -->
                 <!-- ====================================== -->
 
                 <details class="risk-step">
@@ -2836,8 +4323,6 @@ Risk | MarketPulse
                     <div class="risk-step-content">
 
 
-                        <!-- Direction -->
-
                         <div class="mb-3">
 
 
@@ -2865,8 +4350,6 @@ Risk | MarketPulse
 
                         </div>
 
-
-                        <!-- Entry -->
 
                         <div class="mb-3">
 
@@ -2924,8 +4407,6 @@ Risk | MarketPulse
                         </div>
 
 
-                        <!-- Stop method -->
-
                         <div class="mb-3">
 
 
@@ -2954,8 +4435,6 @@ Risk | MarketPulse
 
                         </div>
 
-
-                        <!-- Percentage -->
 
                         <div
                             id="percentageStopSection"
@@ -2999,8 +4478,6 @@ Risk | MarketPulse
                         </div>
 
 
-                        <!-- ATR -->
-
                         <div
                             id="atrStopSection"
                             class="mb-3 d-none"
@@ -3035,8 +4512,6 @@ Risk | MarketPulse
                         </div>
 
 
-                        <!-- Fixed -->
-
                         <div
                             id="fixedStopSection"
                             class="mb-3 d-none"
@@ -3058,8 +4533,6 @@ Risk | MarketPulse
 
                         </div>
 
-
-                        <!-- Target -->
 
                         <div class="mb-0">
 
@@ -3100,7 +4573,7 @@ Risk | MarketPulse
 
 
                 <!-- ====================================== -->
-                <!-- STEP 4 - REVIEW PLAN                   -->
+                <!-- STEP 4                                 -->
                 <!-- ====================================== -->
 
                 <details
@@ -3145,8 +4618,6 @@ Risk | MarketPulse
                         <div class="risk-plan-hero">
 
 
-                            <!-- Maximum loss -->
-
                             <div class="risk-plan-primary">
 
 
@@ -3162,8 +4633,6 @@ Risk | MarketPulse
 
                             </div>
 
-
-                            <!-- Live calculations -->
 
                             <div class="risk-plan-grid">
 
@@ -3235,8 +4704,6 @@ Risk | MarketPulse
                         </div>
 
 
-                        <!-- Errors -->
-
                         {% if form.errors %}
 
                             <div class="alert alert-danger mt-3 mb-0">
@@ -3251,8 +4718,6 @@ Risk | MarketPulse
 
                         {% endif %}
 
-
-                        <!-- Calculate -->
 
                         <button
                             type="submit"
@@ -3281,19 +4746,11 @@ Risk | MarketPulse
     </div>
 
 
-    <!-- ================================================== -->
-    <!-- RIGHT: STICKY RISK SNAPSHOT                        -->
-    <!-- ================================================== -->
-
     <div class="col-xl-4">
 
 
         <aside class="risk-snapshot-panel">
 
-
-            <!-- ========================================== -->
-            <!-- HEADER                                     -->
-            <!-- ========================================== -->
 
             <div class="risk-snapshot-header">
 
@@ -3321,10 +4778,6 @@ Risk | MarketPulse
 
             </div>
 
-
-            <!-- ========================================== -->
-            <!-- CURRENT MARKET                             -->
-            <!-- ========================================== -->
 
             <div class="risk-snapshot-section">
 
@@ -3360,10 +4813,6 @@ Risk | MarketPulse
 
             </div>
 
-
-            <!-- ========================================== -->
-            <!-- HISTORICAL CONTEXT                         -->
-            <!-- ========================================== -->
 
             <div class="risk-snapshot-section">
 
@@ -3519,10 +4968,6 @@ Risk | MarketPulse
             </div>
 
 
-            <!-- ========================================== -->
-            <!-- CURRENT PLAN                               -->
-            <!-- ========================================== -->
-
             <div class="risk-snapshot-section">
 
 
@@ -3592,10 +5037,6 @@ Risk | MarketPulse
             </div>
 
 
-            <!-- ========================================== -->
-            <!-- TERMINOLOGY HELP                           -->
-            <!-- ========================================== -->
-
             <details class="risk-help">
 
 
@@ -3616,8 +5057,6 @@ Risk | MarketPulse
                         id="riskHelpAccordion"
                     >
 
-
-                        <!-- Capital -->
 
                         <div class="accordion-item">
 
@@ -3665,8 +5104,6 @@ Risk | MarketPulse
                         </div>
 
 
-                        <!-- Risk -->
-
                         <div class="accordion-item">
 
                             <h3 class="accordion-header">
@@ -3713,8 +5150,6 @@ Risk | MarketPulse
                         </div>
 
 
-                        <!-- Entry -->
-
                         <div class="accordion-item">
 
                             <h3 class="accordion-header">
@@ -3757,8 +5192,6 @@ Risk | MarketPulse
 
                         </div>
 
-
-                        <!-- Stop -->
 
                         <div class="accordion-item">
 
@@ -3807,8 +5240,6 @@ Risk | MarketPulse
                         </div>
 
 
-                        <!-- ATR -->
-
                         <div class="accordion-item">
 
                             <h3 class="accordion-header">
@@ -3855,8 +5286,6 @@ Risk | MarketPulse
 
                         </div>
 
-
-                        <!-- Target -->
 
                         <div class="accordion-item">
 
@@ -3955,8 +5384,6 @@ Risk | MarketPulse
         <div class="risk-calculation-flow">
 
 
-            <!-- Formula 1 -->
-
             <div class="risk-formula-card">
 
 
@@ -3987,8 +5414,6 @@ Risk | MarketPulse
 
             <i class="fa-solid fa-arrow-right text-muted"></i>
 
-
-            <!-- Formula 2 -->
 
             <div class="risk-formula-card">
 
@@ -4021,8 +5446,6 @@ Risk | MarketPulse
 
             <i class="fa-solid fa-arrow-right text-muted"></i>
 
-
-            <!-- Formula 3 -->
 
             <div class="risk-formula-card">
 
@@ -4149,8 +5572,6 @@ Risk | MarketPulse
 
     </div>
 
-
-    <!-- MAIN METRICS -->
 
     <div class="server-result-grid">
 
@@ -4279,8 +5700,6 @@ Risk | MarketPulse
     </div>
 
 
-    <!-- REWARD -->
-
     <div class="row g-3 mt-1">
 
 
@@ -4341,8 +5760,6 @@ Risk | MarketPulse
 
     </div>
 
-
-    <!-- INTERPRETATION -->
 
     <details class="risk-help mt-3">
 
@@ -4455,8 +5872,6 @@ Risk | MarketPulse
     </details>
 
 
-    <!-- NEXT ACTIONS -->
-
     <div class="d-flex gap-2 flex-wrap mt-3">
 
 
@@ -4499,8 +5914,6 @@ Risk | MarketPulse
 {% endif %}
 
 
-
-
 <!-- ====================================================== -->
 <!-- 9. HISTORICAL MARKET DATA JSON                         -->
 <!-- ====================================================== -->
@@ -4518,10 +5931,6 @@ document.addEventListener(
     "DOMContentLoaded",
     function () {
 
-
-        // ====================================================
-        // 10.1 HISTORICAL MARKET DATA
-        // ====================================================
 
         const dataElement =
             document.getElementById(
@@ -4559,10 +5968,6 @@ document.addEventListener(
             parsedMarketData;
 
 
-        // ====================================================
-        // 10.2 API ROUTES
-        // ====================================================
-
         const ALPACA_SEARCH_URL =
             "/api/alpaca/assets/search/";
 
@@ -4570,10 +5975,6 @@ document.addEventListener(
         const ALPACA_SNAPSHOT_PREFIX =
             "/api/alpaca/stocks/";
 
-
-        // ====================================================
-        // 10.3 FORM ELEMENTS
-        // ====================================================
 
         const symbolField =
             document.getElementById(
@@ -4635,10 +6036,6 @@ document.addEventListener(
             );
 
 
-        // ====================================================
-        // 10.4 ALPACA ELEMENTS
-        // ====================================================
-
         const searchResults =
             document.getElementById(
                 "alpacaSearchResults"
@@ -4669,10 +6066,6 @@ document.addEventListener(
             );
 
 
-        // ====================================================
-        // 10.5 STOP METHOD SECTIONS
-        // ====================================================
-
         const percentageSection =
             document.getElementById(
                 "percentageStopSection"
@@ -4691,10 +6084,6 @@ document.addEventListener(
             );
 
 
-        // ====================================================
-        // 10.6 STATE
-        // ====================================================
-
         let latestAlpacaPrice =
             null;
 
@@ -4706,10 +6095,6 @@ document.addEventListener(
         let currentSnapshotSymbol =
             null;
 
-
-        // ====================================================
-        // 10.7 FORMATTERS
-        // ====================================================
 
         function money(value) {
 
@@ -4799,10 +6184,6 @@ document.addEventListener(
         }
 
 
-        // ====================================================
-        // 10.8 CURRENT HISTORICAL CONTEXT
-        // ====================================================
-
         function currentMarketContext() {
 
             if (!symbolField) {
@@ -4828,10 +6209,6 @@ document.addEventListener(
 
         }
 
-
-        // ====================================================
-        // 10.9 UPDATE SYMBOL DISPLAY
-        // ====================================================
 
         function updateSnapshotSymbol() {
 
@@ -4879,10 +6256,6 @@ document.addEventListener(
 
         }
 
-
-        // ====================================================
-        // 10.10 UPDATE HISTORICAL CONTEXT
-        // ====================================================
 
         function updateMarketContext() {
 
@@ -5063,10 +6436,6 @@ document.addEventListener(
             }
 
 
-            // ------------------------------------------------
-            // Update Data-tab link with selected symbol.
-            // ------------------------------------------------
-
             const importLink =
                 document.getElementById(
                     "importHistoricalDataLink"
@@ -5100,10 +6469,6 @@ document.addEventListener(
 
         }
 
-
-        // ====================================================
-        // 10.11 CREATE ALPACA SEARCH RESULT
-        // ====================================================
 
         function createSearchResult(
             asset
@@ -5301,10 +6666,6 @@ document.addEventListener(
 
         }
 
-
-        // ====================================================
-        // 10.12 SEARCH ALPACA
-        // ====================================================
 
         async function searchAlpacaAssets(
             query
@@ -5504,10 +6865,6 @@ document.addEventListener(
         }
 
 
-        // ====================================================
-        // 10.13 LOAD ALPACA SNAPSHOT
-        // ====================================================
-
         async function loadAlpacaSnapshot(
             symbol
         ) {
@@ -5616,10 +6973,6 @@ document.addEventListener(
                     symbol;
 
 
-                // ------------------------------------------------
-                // Asset identification
-                // ------------------------------------------------
-
                 setText(
                     "alpacaAssetName",
                     asset.name
@@ -5653,10 +7006,6 @@ document.addEventListener(
                     symbol
                 );
 
-
-                // ------------------------------------------------
-                // Current prices
-                // ------------------------------------------------
 
                 setText(
                     "alpacaLatestPrice",
@@ -5705,10 +7054,6 @@ document.addEventListener(
                     )
                 );
 
-
-                // ------------------------------------------------
-                // Daily change
-                // ------------------------------------------------
 
                 let dailyChangeText =
                     "—";
@@ -5776,10 +7121,6 @@ document.addEventListener(
                 );
 
 
-                // ------------------------------------------------
-                // Daily bar
-                // ------------------------------------------------
-
                 setText(
                     "alpacaDayOpen",
                     money(
@@ -5820,10 +7161,6 @@ document.addEventListener(
                 );
 
 
-                // ------------------------------------------------
-                // Combined day range
-                // ------------------------------------------------
-
                 if (
                     daily.low !== null
                     &&
@@ -5858,10 +7195,6 @@ document.addEventListener(
 
                 }
 
-
-                // ------------------------------------------------
-                // Asset capabilities
-                // ------------------------------------------------
 
                 setText(
                     "alpacaTradable",
@@ -5902,10 +7235,6 @@ document.addEventListener(
                         "Not Marginable"
                 );
 
-
-                // ------------------------------------------------
-                // Provider information
-                // ------------------------------------------------
 
                 setText(
                     "alpacaFeed",
@@ -6008,10 +7337,6 @@ document.addEventListener(
         }
 
 
-        // ====================================================
-        // 10.14 STOP METHOD UI
-        // ====================================================
-
         function updateStopMethod() {
 
             const method =
@@ -6057,10 +7382,6 @@ document.addEventListener(
         }
 
 
-        // ====================================================
-        // 10.15 LIVE RISK PREVIEW
-        // ====================================================
-
         function updateLivePreview() {
 
             const capital =
@@ -6084,10 +7405,6 @@ document.addEventListener(
             const context =
                 currentMarketContext();
 
-
-            // ------------------------------------------------
-            // Entry priority
-            // ------------------------------------------------
 
             if (
                 entry === null
@@ -6114,10 +7431,6 @@ document.addEventListener(
 
             }
 
-
-            // ------------------------------------------------
-            // Maximum planned risk
-            // ------------------------------------------------
 
             const maximumRisk =
                 (
@@ -6162,10 +7475,6 @@ document.addEventListener(
                 maximumRiskText
             );
 
-
-            // ------------------------------------------------
-            // No entry
-            // ------------------------------------------------
 
             if (
                 entry === null
@@ -6235,10 +7544,6 @@ document.addEventListener(
                 null;
 
 
-            // ------------------------------------------------
-            // Percentage stop
-            // ------------------------------------------------
-
             if (method === "percentage") {
 
                 const percentage =
@@ -6272,10 +7577,6 @@ document.addEventListener(
 
             }
 
-
-            // ------------------------------------------------
-            // Average True Range stop
-            // ------------------------------------------------
 
             else if (
                 method === "atr"
@@ -6325,10 +7626,6 @@ document.addEventListener(
             }
 
 
-            // ------------------------------------------------
-            // Fixed stop
-            // ------------------------------------------------
-
             else if (
                 method === "fixed"
             ) {
@@ -6340,10 +7637,6 @@ document.addEventListener(
 
             }
 
-
-            // ------------------------------------------------
-            // Stop unavailable
-            // ------------------------------------------------
 
             if (
                 stop === null
@@ -6395,10 +7688,6 @@ document.addEventListener(
             }
 
 
-            // ------------------------------------------------
-            // Risk per unit
-            // ------------------------------------------------
-
             const riskPerUnit =
                 Math.abs(
                     entry
@@ -6432,10 +7721,6 @@ document.addEventListener(
                 )
             );
 
-
-            // ------------------------------------------------
-            // Position size
-            // ------------------------------------------------
 
             let quantity =
                 null;
@@ -6495,10 +7780,6 @@ document.addEventListener(
                 quantityText
             );
 
-
-            // ------------------------------------------------
-            // Reward-to-risk
-            // ------------------------------------------------
 
             const target =
                 numberValue(
@@ -6582,10 +7863,6 @@ document.addEventListener(
         }
 
 
-        // ====================================================
-        // 10.16 SYMBOL SEARCH EVENT
-        // ====================================================
-
         if (symbolField) {
 
             symbolField.addEventListener(
@@ -6655,10 +7932,6 @@ document.addEventListener(
         }
 
 
-        // ====================================================
-        // 10.17 USE ALPACA PRICE
-        // ====================================================
-
         if (useAlpacaPriceButton) {
 
             useAlpacaPriceButton.addEventListener(
@@ -6693,10 +7966,6 @@ document.addEventListener(
         }
 
 
-        // ====================================================
-        // 10.18 REFRESH ALPACA SNAPSHOT
-        // ====================================================
-
         if (refreshAlpacaButton) {
 
             refreshAlpacaButton.addEventListener(
@@ -6720,10 +7989,6 @@ document.addEventListener(
 
         }
 
-
-        // ====================================================
-        // 10.19 USE STORED HISTORICAL CLOSE
-        // ====================================================
 
         const latestStoredButton =
             document.getElementById(
@@ -6761,10 +8026,6 @@ document.addEventListener(
         }
 
 
-        // ====================================================
-        // 10.20 RISK PRESETS
-        // ====================================================
-
         document
             .querySelectorAll(
                 ".risk-preset"
@@ -6792,10 +8053,6 @@ document.addEventListener(
                 }
             );
 
-
-        // ====================================================
-        // 10.21 GENERAL FIELD EVENTS
-        // ====================================================
 
         [
 
@@ -6834,10 +8091,6 @@ document.addEventListener(
         );
 
 
-        // ====================================================
-        // 10.22 STOP METHOD
-        // ====================================================
-
         if (stopMethodField) {
 
             stopMethodField.addEventListener(
@@ -6847,10 +8100,6 @@ document.addEventListener(
 
         }
 
-
-        // ====================================================
-        // 10.23 CLOSE SEARCH RESULTS
-        // ====================================================
 
         document.addEventListener(
             "click",
@@ -6878,10 +8127,6 @@ document.addEventListener(
             }
         );
 
-
-        // ====================================================
-        // 10.24 INITIAL PAGE STATE
-        // ====================================================
 
         updateMarketContext();
 

@@ -39,41 +39,13 @@ analysis_tools/analyzers.py
     ↓
 identify_market_regime()
     ↓
-Analyse:
-    - Recent price direction
-    - Moving-average trend
-    - Historical volatility
-    - Condition strength
-    ↓
 MarketRegime result
     ↓
 PostgreSQL
     ↓
-Reload Market Condition page
-    ↓
 latest_regime
     ↓
 Display classification and interpretation
-
-
-THIS PAGE ANSWERS:
-
-1. Which historical dataset am I analysing?
-2. How much historical data is available?
-3. What does MarketPulse examine?
-4. What historical condition was detected?
-5. How confident is the classification?
-6. How volatile was the analysed period?
-7. How was the result produced?
-8. What do the possible classifications mean?
-
-
-POSSIBLE CONDITIONS:
-
-- Uptrend
-- Downtrend
-- Sideways
-- High Volatility
 
 
 IMPORTANT:
@@ -102,137 +74,247 @@ Market Condition | MarketPulse
 
 <style>
 
-/* ======================================================== */
-/* MARKETPULSE - MARKET CONDITION WORKSPACE                 */
-/* ======================================================== */
+/* =========================================================
+   MARKET CONDITION
+   ---------------------------------------------------------
+   Bootstrap handles:
+   - grid
+   - spacing
+   - buttons
+   - forms
+   - responsive columns
+
+   This CSS only supplies the MarketPulse workspace identity
+   and the specialist Market Condition components.
+   ========================================================= */
 
 
-/* -------------------------------------------------------- */
-/* 1. PAGE FOUNDATION                                       */
-/* -------------------------------------------------------- */
+/* =========================================================
+   1. WORKSPACE / THEME
+   ========================================================= */
 
 .market-condition-page {
 
-    --mc-blue: #0d6efd;
-    --mc-blue-dark: #0a58ca;
-    --mc-blue-soft: #edf5ff;
+    --mc-bg:
+        var(--mp-bg, #0c1420);
 
-    --mc-text: #172033;
-    --mc-muted: #667085;
+    --mc-nav:
+        var(--mp-nav, #111c2b);
 
-    --mc-border: #e3e9f1;
+    --mc-panel:
+        var(--mp-panel, #152235);
 
-    --mc-success: #168654;
-    --mc-success-soft: #e8f8ef;
+    --mc-panel-soft:
+        var(--mp-panel-soft, #18283a);
 
-    --mc-danger: #dc3545;
-    --mc-danger-soft: #fdecee;
+    --mc-panel-dark:
+        var(--mp-panel-dark, #101a28);
 
-    --mc-purple: #7b2cbf;
-    --mc-purple-soft: #f3eafa;
+    --mc-border:
+        var(--mp-border, #314258);
 
-    --mc-warning: #9a6700;
-    --mc-warning-soft: #fff7df;
+    --mc-border-soft:
+        var(--mp-border-soft, #26374b);
 
-    color: var(--mc-text);
+    --mc-text:
+        var(--mp-text, #f1f5f9);
+
+    --mc-muted:
+        var(--mp-muted, #93a4b8);
+
+    --mc-primary:
+        var(--mp-primary, #4f86b6);
+
+    --mc-primary-hover:
+        var(--mp-primary-hover, #6095c2);
+
+    --mc-primary-soft:
+        var(
+            --mp-primary-soft,
+            rgba(79, 134, 182, .15)
+        );
+
+    --mc-success:
+        var(--mp-success, #32c98b);
+
+    --mc-success-soft:
+        rgba(50, 201, 139, .11);
+
+    --mc-danger:
+        var(--mp-danger, #dc6b75);
+
+    --mc-danger-soft:
+        rgba(220, 107, 117, .11);
+
+    --mc-warning:
+        var(--mp-warning, #d3a854);
+
+    --mc-warning-soft:
+        rgba(211, 168, 84, .11);
+
+    --mc-purple:
+        #b184d7;
+
+    --mc-purple-soft:
+        rgba(177, 132, 215, .12);
+
+
+    width:
+        min(
+            1500px,
+            calc(100vw - 48px)
+        );
+
+    max-width:
+        none;
+
+    margin-left:
+        50%;
+
+    transform:
+        translateX(-50%);
+
+    color:
+        var(--mc-text);
 }
 
 
-/* -------------------------------------------------------- */
-/* 2. PAGE HEADER                                           */
-/* -------------------------------------------------------- */
+.market-condition-page a {
+    text-decoration: none;
+}
+
+
+/* =========================================================
+   2. PAGE HEADER
+   ========================================================= */
 
 .market-condition-header {
 
     display: flex;
+
     align-items: flex-start;
+
     justify-content: space-between;
 
     gap: 1rem;
 
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 
 .market-condition-title {
 
-    margin: .45rem 0 .3rem;
+    margin:
+        .4rem
+        0
+        .2rem;
 
-    font-size: clamp(
-        2rem,
-        4vw,
-        2.6rem
-    );
+    color:
+        var(--mc-text);
 
-    font-weight: 750;
+    font-size:
+        1.65rem;
 
-    letter-spacing: -.035em;
+    font-weight:
+        700;
+
+    letter-spacing:
+        -.02em;
 }
 
 
 .market-condition-subtitle {
 
-    max-width: 780px;
+    max-width:
+        760px;
 
-    margin: 0;
+    margin:
+        0;
 
-    color: var(--mc-muted);
+    color:
+        var(--mc-muted);
 
-    font-size: .92rem;
+    font-size:
+        .72rem;
 
-    line-height: 1.55;
+    line-height:
+        1.5;
 }
 
 
 .market-back-link {
 
-    display: inline-flex;
-    align-items: center;
+    display:
+        inline-flex;
 
-    gap: .4rem;
+    align-items:
+        center;
 
-    color: var(--mc-muted);
+    gap:
+        .35rem;
 
-    font-size: .82rem;
-    font-weight: 600;
+    color:
+        var(--mc-muted);
 
-    text-decoration: none;
+    font-size:
+        .64rem;
+
+    font-weight:
+        600;
 }
 
 
 .market-back-link:hover {
 
-    color: var(--mc-blue);
+    color:
+        var(--mc-primary-hover);
 }
 
 
 .market-symbol-badge {
 
-    display: inline-flex;
-    align-items: center;
+    display:
+        inline-flex;
 
-    gap: .35rem;
+    align-items:
+        center;
 
-    padding: .4rem .7rem;
+    gap:
+        .35rem;
 
-    color: #344054;
-    background: #ffffff;
+    padding:
+        .42rem
+        .65rem;
 
-    border: 1px solid var(--mc-border);
-    border-radius: 8px;
+    color:
+        var(--mc-text);
 
-    font-size: .75rem;
-    font-weight: 700;
+    background:
+        var(--mc-panel);
+
+    border:
+        1px solid
+        var(--mc-border);
+
+    border-radius:
+        7px;
+
+    font-size:
+        .64rem;
+
+    font-weight:
+        700;
 }
 
 
-/* -------------------------------------------------------- */
-/* 3. THREE-STEP USER WORKFLOW                              */
-/* -------------------------------------------------------- */
+/* =========================================================
+   3. THREE-STEP WORKFLOW
+   ========================================================= */
 
 .condition-workflow {
 
-    display: grid;
+    display:
+        grid;
 
     grid-template-columns:
         minmax(0, 1fr)
@@ -241,228 +323,370 @@ Market Condition | MarketPulse
         auto
         minmax(0, 1fr);
 
-    align-items: center;
+    align-items:
+        center;
 
-    gap: .85rem;
+    gap:
+        .75rem;
 
-    margin-bottom: 1.5rem;
+    overflow:
+        hidden;
 
-    padding: 1rem 1.2rem;
+    margin-bottom:
+        1rem;
 
-    background: #ffffff;
+    padding:
+        .8rem
+        .9rem;
 
-    border: 1px solid var(--mc-border);
-    border-radius: 14px;
+    background:
+        var(--mc-panel);
 
-    box-shadow:
-        0 7px 20px
-        rgba(16, 24, 40, .04);
+    border:
+        1px solid
+        var(--mc-border);
+
+    border-radius:
+        8px;
 }
 
 
 .condition-workflow-step {
 
-    display: flex;
-    align-items: center;
+    display:
+        flex;
 
-    gap: .7rem;
+    align-items:
+        center;
+
+    gap:
+        .6rem;
+
+    min-width:
+        0;
 }
 
 
 .condition-step-number {
 
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display:
+        inline-flex;
 
-    flex: 0 0 auto;
+    align-items:
+        center;
 
-    width: 30px;
-    height: 30px;
+    justify-content:
+        center;
 
-    color: #ffffff;
-    background: var(--mc-blue);
+    flex:
+        0 0 auto;
 
-    border-radius: 50%;
+    width:
+        24px;
 
-    font-size: .78rem;
-    font-weight: 750;
+    height:
+        24px;
+
+    color:
+        #ffffff;
+
+    background:
+        var(--mc-primary);
+
+    border-radius:
+        50%;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(79, 134, 182, .08);
+
+    font-size:
+        .6rem;
+
+    font-weight:
+        800;
 }
 
 
 .condition-workflow-icon {
 
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display:
+        inline-flex;
 
-    flex: 0 0 auto;
+    align-items:
+        center;
 
-    width: 38px;
-    height: 38px;
+    justify-content:
+        center;
 
-    color: var(--mc-blue);
-    background: var(--mc-blue-soft);
+    flex:
+        0 0 auto;
 
-    border-radius: 10px;
+    width:
+        32px;
+
+    height:
+        32px;
+
+    color:
+        var(--mc-primary);
+
+    background:
+        var(--mc-primary-soft);
+
+    border:
+        1px solid
+        rgba(79, 134, 182, .18);
+
+    border-radius:
+        7px;
+
+    font-size:
+        .7rem;
 }
 
 
 .condition-workflow-copy strong {
 
-    display: block;
+    display:
+        block;
 
-    margin-bottom: .1rem;
+    margin-bottom:
+        .08rem;
 
-    font-size: .82rem;
+    color:
+        var(--mc-text);
+
+    font-size:
+        .67rem;
 }
 
 
 .condition-workflow-copy span {
 
-    display: block;
+    display:
+        block;
 
-    color: var(--mc-muted);
+    color:
+        var(--mc-muted);
 
-    font-size: .68rem;
+    font-size:
+        .55rem;
 
-    line-height: 1.35;
+    line-height:
+        1.35;
 }
 
 
 .condition-workflow-arrow {
 
-    color: #aab5c5;
+    color:
+        #60738a;
 
-    font-size: .72rem;
+    font-size:
+        .62rem;
 }
 
 
-/* -------------------------------------------------------- */
-/* 4. COMMON PANEL                                          */
-/* -------------------------------------------------------- */
+/* =========================================================
+   4. COMMON PANEL
+   ========================================================= */
 
 .condition-panel {
 
-    height: 100%;
+    height:
+        100%;
 
-    padding: 1.35rem;
+    padding:
+        .95rem;
 
-    background: #ffffff;
+    background:
+        var(--mc-panel);
 
-    border: 1px solid var(--mc-border);
-    border-radius: 16px;
+    border:
+        1px solid
+        var(--mc-border);
 
-    box-shadow:
-        0 8px 24px
-        rgba(16, 24, 40, .045);
+    border-radius:
+        8px;
 }
 
 
 .condition-panel-header {
 
-    display: flex;
-    align-items: flex-start;
+    display:
+        flex;
 
-    gap: .85rem;
+    align-items:
+        flex-start;
 
-    margin-bottom: 1.15rem;
+    gap:
+        .7rem;
+
+    margin-bottom:
+        .9rem;
 }
 
 
 .condition-panel-icon {
 
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display:
+        inline-flex;
 
-    flex: 0 0 auto;
+    align-items:
+        center;
 
-    width: 46px;
-    height: 46px;
+    justify-content:
+        center;
 
-    color: var(--mc-blue);
-    background: var(--mc-blue-soft);
+    flex:
+        0 0 auto;
 
-    border-radius: 12px;
+    width:
+        38px;
+
+    height:
+        38px;
+
+    color:
+        var(--mc-primary);
+
+    background:
+        var(--mc-primary-soft);
+
+    border:
+        1px solid
+        rgba(79, 134, 182, .18);
+
+    border-radius:
+        8px;
 }
 
 
-.condition-eyebrow {
+.condition-eyebrow,
+.mc-eyebrow {
 
-    margin-bottom: .2rem;
+    margin-bottom:
+        .16rem;
 
-    color: var(--mc-blue);
+    color:
+        var(--mc-primary-hover);
 
-    font-size: .68rem;
-    font-weight: 750;
+    font-size:
+        .52rem;
 
-    letter-spacing: .05em;
+    font-weight:
+        800;
 
-    text-transform: uppercase;
+    letter-spacing:
+        .06em;
+
+    text-transform:
+        uppercase;
 }
 
 
 .condition-panel-header h2 {
 
-    margin: 0 0 .2rem;
+    margin:
+        0
+        0
+        .15rem;
 
-    font-size: 1.2rem;
-    font-weight: 700;
+    color:
+        var(--mc-text);
+
+    font-size:
+        .9rem;
+
+    font-weight:
+        700;
 }
 
 
 .condition-panel-header p {
 
-    margin: 0;
+    margin:
+        0;
 
-    color: var(--mc-muted);
+    color:
+        var(--mc-muted);
 
-    font-size: .8rem;
+    font-size:
+        .62rem;
 
-    line-height: 1.45;
+    line-height:
+        1.45;
 }
 
 
-/* -------------------------------------------------------- */
-/* 5. ASSET SELECTOR                                        */
-/* -------------------------------------------------------- */
+/* =========================================================
+   5. FORM
+   ========================================================= */
 
 .condition-form .form-label {
 
-    margin-bottom: .4rem;
+    margin-bottom:
+        .3rem;
 
-    font-size: .8rem;
-    font-weight: 700;
+    color:
+        #d7e0eb;
+
+    font-size:
+        .6rem;
+
+    font-weight:
+        700;
 }
 
 
 .condition-form .form-select {
 
-    min-height: 46px;
+    min-height:
+        36px;
 
-    border-color: #d6dfeb;
-    border-radius: 10px;
+    color:
+        var(--mc-text);
+
+    background-color:
+        #142131;
+
+    border-color:
+        #3a4d64;
+
+    border-radius:
+        6px;
+
+    font-size:
+        .62rem;
 }
 
 
 .condition-form .form-select:focus {
 
-    border-color: var(--mc-blue);
+    color:
+        var(--mc-text);
+
+    background-color:
+        #142131;
+
+    border-color:
+        var(--mc-primary);
 
     box-shadow:
-        0 0 0 .2rem
-        rgba(13, 110, 253, .10);
+        0 0 0 2px
+        rgba(79, 134, 182, .14);
 }
 
 
-/* -------------------------------------------------------- */
-/* 6. DATASET SUMMARY                                       */
-/* -------------------------------------------------------- */
+/* =========================================================
+   6. DATASET SUMMARY
+   ========================================================= */
 
 .condition-dataset-summary {
 
-    display: grid;
+    display:
+        grid;
 
     grid-template-columns:
         repeat(
@@ -470,75 +694,111 @@ Market Condition | MarketPulse
             minmax(0, 1fr)
         );
 
-    gap: .65rem;
+    gap:
+        .45rem;
 
-    margin-top: .9rem;
+    margin-top:
+        .7rem;
 }
 
 
 .condition-dataset-stat {
 
-    padding: .7rem;
+    padding:
+        .55rem;
 
-    background: #fbfcfe;
+    background:
+        var(--mc-panel-dark);
 
-    border: 1px solid var(--mc-border);
-    border-radius: 9px;
+    border:
+        1px solid
+        var(--mc-border-soft);
+
+    border-radius:
+        6px;
 }
 
 
 .condition-dataset-label {
 
-    display: block;
+    display:
+        block;
 
-    margin-bottom: .15rem;
+    margin-bottom:
+        .12rem;
 
-    color: var(--mc-muted);
+    color:
+        var(--mc-muted);
 
-    font-size: .61rem;
+    font-size:
+        .47rem;
 
-    text-transform: uppercase;
+    text-transform:
+        uppercase;
 }
 
 
 .condition-dataset-value {
 
-    display: block;
+    display:
+        block;
 
-    font-size: .78rem;
-    font-weight: 700;
+    color:
+        var(--mc-text);
+
+    font-size:
+        .62rem;
+
+    font-weight:
+        700;
 }
 
 
-/* -------------------------------------------------------- */
-/* 7. WHAT MARKETPULSE ANALYSES                             */
-/* -------------------------------------------------------- */
+/* =========================================================
+   7. ANALYSIS CHECKS
+   ========================================================= */
 
 .analysis-checks {
 
-    margin: 1rem 0;
+    margin:
+        .75rem
+        0;
 
-    padding: 1rem;
+    padding:
+        .7rem;
 
-    background: #f8faff;
+    background:
+        var(--mc-panel-soft);
 
-    border: 1px solid #e2eaf7;
-    border-radius: 12px;
+    border:
+        1px solid
+        var(--mc-border-soft);
+
+    border-radius:
+        7px;
 }
 
 
 .analysis-checks-title {
 
-    margin-bottom: .65rem;
+    margin-bottom:
+        .5rem;
 
-    font-size: .78rem;
-    font-weight: 700;
+    color:
+        var(--mc-text);
+
+    font-size:
+        .6rem;
+
+    font-weight:
+        700;
 }
 
 
 .analysis-check-list {
 
-    display: grid;
+    display:
+        grid;
 
     grid-template-columns:
         repeat(
@@ -546,100 +806,139 @@ Market Condition | MarketPulse
             minmax(0, 1fr)
         );
 
-    gap: .55rem;
+    gap:
+        .4rem;
 
-    margin: 0;
-    padding: 0;
+    margin:
+        0;
 
-    list-style: none;
+    padding:
+        0;
+
+    list-style:
+        none;
 }
 
 
 .analysis-check-list li {
 
-    display: flex;
-    align-items: center;
+    display:
+        flex;
 
-    gap: .4rem;
+    align-items:
+        center;
 
-    color: var(--mc-muted);
+    gap:
+        .35rem;
 
-    font-size: .75rem;
+    color:
+        var(--mc-muted);
+
+    font-size:
+        .56rem;
 }
 
 
 .analysis-check-list i {
 
-    color: var(--mc-success);
+    color:
+        var(--mc-success);
 
-    font-size: .7rem;
+    font-size:
+        .55rem;
 }
 
 
-/* -------------------------------------------------------- */
-/* 8. MINIMUM DATA NOTICE                                   */
-/* -------------------------------------------------------- */
+/* =========================================================
+   8. DATA READINESS
+   ========================================================= */
 
 .data-readiness {
 
-    display: flex;
-    align-items: flex-start;
+    display:
+        flex;
 
-    gap: .55rem;
+    align-items:
+        flex-start;
 
-    margin-bottom: 1rem;
+    gap:
+        .5rem;
 
-    padding: .7rem .8rem;
+    padding:
+        .6rem
+        .65rem;
 
-    border-radius: 9px;
+    border-radius:
+        6px;
 
-    font-size: .72rem;
+    font-size:
+        .57rem;
+
+    line-height:
+        1.45;
 }
 
 
 .data-readiness.is-ready {
 
-    color: #12643f;
-    background: var(--mc-success-soft);
+    color:
+        #a8f3d0;
 
-    border: 1px solid #cce9d8;
+    background:
+        var(--mc-success-soft);
+
+    border:
+        1px solid
+        rgba(50, 201, 139, .24);
 }
 
 
 .data-readiness.is-limited {
 
-    color: #755100;
-    background: var(--mc-warning-soft);
+    color:
+        #ffe3a4;
 
-    border: 1px solid #f1dfaa;
+    background:
+        var(--mc-warning-soft);
+
+    border:
+        1px solid
+        rgba(211, 168, 84, .28);
 }
 
 
 .data-readiness i {
 
-    margin-top: .1rem;
+    margin-top:
+        .08rem;
 }
 
 
-/* -------------------------------------------------------- */
-/* 9. RESULT HERO                                           */
-/* -------------------------------------------------------- */
+/* =========================================================
+   9. PRIMARY RESULT
+   ========================================================= */
 
 .condition-result-hero {
 
-    margin-bottom: 1rem;
+    margin-bottom:
+        .75rem;
 
-    padding: 1.15rem;
+    padding:
+        .85rem;
 
     background:
         linear-gradient(
             145deg,
-            #f8fbff,
-            #edf5ff
+            rgba(79, 134, 182, .16),
+            rgba(79, 134, 182, .05)
         );
 
-    border: 1px solid #d8e7fa;
-    border-radius: 14px;
+    border:
+        1px solid
+        rgba(79, 134, 182, .30);
+
+    border-radius:
+        8px;
 }
 
 
@@ -648,11 +947,12 @@ Market Condition | MarketPulse
     background:
         linear-gradient(
             145deg,
-            #f7fcf9,
-            #e8f8ef
+            rgba(50, 201, 139, .15),
+            rgba(50, 201, 139, .05)
         );
 
-    border-color: #cce9d8;
+    border-color:
+        rgba(50, 201, 139, .28);
 }
 
 
@@ -661,11 +961,12 @@ Market Condition | MarketPulse
     background:
         linear-gradient(
             145deg,
-            #fffafa,
-            #fdecee
+            rgba(220, 107, 117, .15),
+            rgba(220, 107, 117, .05)
         );
 
-    border-color: #f5cdd2;
+    border-color:
+        rgba(220, 107, 117, .28);
 }
 
 
@@ -674,11 +975,12 @@ Market Condition | MarketPulse
     background:
         linear-gradient(
             145deg,
-            #fafbfc,
-            #eef2f6
+            rgba(147, 164, 184, .12),
+            rgba(147, 164, 184, .04)
         );
 
-    border-color: #d9e0e8;
+    border-color:
+        rgba(147, 164, 184, .22);
 }
 
 
@@ -687,63 +989,89 @@ Market Condition | MarketPulse
     background:
         linear-gradient(
             145deg,
-            #fcf9ff,
-            #f3eafa
+            rgba(177, 132, 215, .15),
+            rgba(177, 132, 215, .05)
         );
 
-    border-color: #e2cdf1;
+    border-color:
+        rgba(177, 132, 215, .26);
 }
 
 
 .condition-result-label {
 
-    display: block;
+    display:
+        block;
 
-    margin-bottom: .25rem;
+    margin-bottom:
+        .18rem;
 
-    color: var(--mc-muted);
+    color:
+        var(--mc-muted);
 
-    font-size: .68rem;
-    font-weight: 700;
+    font-size:
+        .5rem;
 
-    text-transform: uppercase;
+    font-weight:
+        700;
+
+    text-transform:
+        uppercase;
 }
 
 
 .condition-result-name {
 
-    display: block;
+    display:
+        block;
 
-    margin-bottom: .25rem;
+    margin-bottom:
+        .18rem;
 
-    font-size: 1.65rem;
-    font-weight: 750;
+    color:
+        var(--mc-text);
 
-    letter-spacing: -.02em;
+    font-size:
+        1.15rem;
+
+    font-weight:
+        800;
+
+    letter-spacing:
+        -.02em;
 }
 
 
 .condition-result-symbol {
 
-    display: inline-flex;
-    align-items: center;
+    display:
+        inline-flex;
 
-    gap: .3rem;
+    align-items:
+        center;
 
-    color: var(--mc-blue);
+    gap:
+        .3rem;
 
-    font-size: .75rem;
-    font-weight: 700;
+    color:
+        var(--mc-primary-hover);
+
+    font-size:
+        .57rem;
+
+    font-weight:
+        700;
 }
 
 
-/* -------------------------------------------------------- */
-/* 10. RESULT STATISTICS                                    */
-/* -------------------------------------------------------- */
+/* =========================================================
+   10. RESULT STATISTICS
+   ========================================================= */
 
 .condition-stat-grid {
 
-    display: grid;
+    display:
+        grid;
 
     grid-template-columns:
         repeat(
@@ -751,285 +1079,395 @@ Market Condition | MarketPulse
             minmax(0, 1fr)
         );
 
-    gap: .8rem;
+    gap:
+        .55rem;
 
-    margin-bottom: 1rem;
+    margin-bottom:
+        .75rem;
 }
 
 
 .condition-stat {
 
-    padding: .9rem;
+    padding:
+        .65rem;
 
-    background: #fbfcfe;
+    background:
+        var(--mc-panel-dark);
 
-    border: 1px solid var(--mc-border);
-    border-radius: 11px;
+    border:
+        1px solid
+        var(--mc-border-soft);
+
+    border-radius:
+        7px;
 }
 
 
 .condition-stat-label {
 
-    display: block;
+    display:
+        block;
 
-    margin-bottom: .2rem;
+    margin-bottom:
+        .16rem;
 
-    color: var(--mc-muted);
+    color:
+        var(--mc-muted);
 
-    font-size: .68rem;
+    font-size:
+        .52rem;
 }
 
 
 .condition-stat-value {
 
-    display: block;
+    display:
+        block;
 
-    margin-bottom: .2rem;
+    margin-bottom:
+        .15rem;
 
-    font-size: 1rem;
-    font-weight: 750;
+    color:
+        var(--mc-text);
+
+    font-size:
+        .8rem;
+
+    font-weight:
+        800;
 }
 
 
 .condition-stat-help {
 
-    display: block;
+    display:
+        block;
 
-    color: var(--mc-muted);
+    color:
+        var(--mc-muted);
 
-    font-size: .65rem;
+    font-size:
+        .51rem;
 
-    line-height: 1.35;
+    line-height:
+        1.4;
 }
 
 
-/* -------------------------------------------------------- */
-/* 11. RESULT EXPLANATION                                   */
-/* -------------------------------------------------------- */
+/* =========================================================
+   11. RESULT EXPLANATION
+   ========================================================= */
 
 .condition-explanation {
 
-    padding: .9rem 1rem;
+    padding:
+        .7rem;
 
-    color: #344054;
-    background: #f6f8fb;
+    color:
+        #becbd8;
 
-    border-radius: 11px;
+    background:
+        var(--mc-panel-soft);
 
-    font-size: .76rem;
-    line-height: 1.5;
+    border:
+        1px solid
+        var(--mc-border-soft);
+
+    border-radius:
+        7px;
+
+    font-size:
+        .58rem;
+
+    line-height:
+        1.5;
 }
 
 
 .condition-explanation strong {
 
-    display: block;
+    display:
+        block;
 
-    margin-bottom: .3rem;
+    margin-bottom:
+        .25rem;
 
-    color: var(--mc-text);
+    color:
+        var(--mc-text);
 }
 
 
-/* -------------------------------------------------------- */
-/* 12. METHOD EXPLANATION                                   */
-/* -------------------------------------------------------- */
+/* =========================================================
+   12. METHOD BOX
+   ========================================================= */
 
 .condition-method-box {
 
-    margin-top: .8rem;
+    margin-top:
+        .6rem;
 
-    padding: .8rem;
+    padding:
+        .7rem;
 
-    color: var(--mc-muted);
-    background: #ffffff;
+    color:
+        var(--mc-muted);
 
-    border: 1px solid var(--mc-border);
-    border-radius: 10px;
+    background:
+        var(--mc-panel-dark);
 
-    font-size: .7rem;
+    border:
+        1px solid
+        var(--mc-border-soft);
 
-    line-height: 1.5;
+    border-radius:
+        7px;
+
+    font-size:
+        .55rem;
+
+    line-height:
+        1.5;
 }
 
 
 .condition-method-box strong {
 
-    color: var(--mc-text);
+    color:
+        var(--mc-text);
 }
 
 
-/* -------------------------------------------------------- */
-/* 13. EMPTY RESULT                                         */
-/* -------------------------------------------------------- */
+/* =========================================================
+   13. EMPTY RESULT
+   ========================================================= */
 
 .condition-empty-result {
 
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    display:
+        flex;
 
-    min-height: 300px;
+    flex-direction:
+        column;
 
-    padding: 1rem;
+    align-items:
+        center;
 
-    text-align: center;
+    justify-content:
+        center;
+
+    min-height:
+        280px;
+
+    padding:
+        1rem;
+
+    text-align:
+        center;
 }
 
 
 .condition-empty-icon {
 
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display:
+        inline-flex;
 
-    width: 58px;
-    height: 58px;
+    align-items:
+        center;
 
-    margin-bottom: .9rem;
+    justify-content:
+        center;
 
-    color: var(--mc-blue);
-    background: var(--mc-blue-soft);
+    width:
+        50px;
 
-    border-radius: 15px;
+    height:
+        50px;
 
-    font-size: 1.2rem;
+    margin-bottom:
+        .75rem;
+
+    color:
+        var(--mc-primary);
+
+    background:
+        var(--mc-primary-soft);
+
+    border:
+        1px solid
+        rgba(79, 134, 182, .18);
+
+    border-radius:
+        11px;
+
+    font-size:
+        1rem;
 }
 
 
 .condition-empty-result h3 {
 
-    margin-bottom: .35rem;
+    margin-bottom:
+        .25rem;
 
-    font-size: 1rem;
-    font-weight: 700;
+    color:
+        var(--mc-text);
+
+    font-size:
+        .8rem;
+
+    font-weight:
+        700;
 }
 
 
 .condition-empty-result p {
 
-    max-width: 360px;
+    max-width:
+        360px;
 
-    margin: 0;
+    margin:
+        0;
 
-    color: var(--mc-muted);
+    color:
+        var(--mc-muted);
 
-    font-size: .8rem;
+    font-size:
+        .6rem;
 
-    line-height: 1.5;
+    line-height:
+        1.5;
 }
 
 
-/* -------------------------------------------------------- */
-/* 14. IMPORTANT NOTICE                                     */
-/* -------------------------------------------------------- */
+/* =========================================================
+   14. EDUCATIONAL NOTICE
+   ========================================================= */
 
 .condition-notice {
 
-    display: flex;
-    align-items: flex-start;
+    display:
+        flex;
 
-    gap: .65rem;
+    align-items:
+        flex-start;
 
-    margin-top: 1rem;
+    gap:
+        .5rem;
 
-    padding: .8rem;
+    margin-top:
+        .7rem;
 
-    color: #4f5562;
-    background: var(--mc-warning-soft);
+    padding:
+        .65rem;
 
-    border: 1px solid #f2e1a9;
-    border-radius: 10px;
+    color:
+        #dbc890;
 
-    font-size: .72rem;
+    background:
+        var(--mc-warning-soft);
 
-    line-height: 1.5;
+    border:
+        1px solid
+        rgba(211, 168, 84, .25);
+
+    border-radius:
+        7px;
+
+    font-size:
+        .55rem;
+
+    line-height:
+        1.5;
 }
 
 
 .condition-notice i {
 
-    margin-top: .1rem;
+    margin-top:
+        .1rem;
 
-    color: var(--mc-warning);
+    color:
+        var(--mc-warning);
 }
 
 
-/* -------------------------------------------------------- */
-/* 15. HOW MARKET CONDITION WORKS                           */
-/* -------------------------------------------------------- */
+/* =========================================================
+   15. EXPLANATION PANELS
+   ========================================================= */
 
 .mc-explanation-panel {
 
-    margin-top: 1.5rem;
+    margin-top:
+        1rem;
 
-    padding: 1.35rem;
+    padding:
+        .9rem;
 
-    background: #ffffff;
+    background:
+        var(--mc-panel);
 
-    border: 1px solid var(--mc-border);
-    border-radius: 16px;
+    border:
+        1px solid
+        var(--mc-border);
 
-    box-shadow:
-        0 8px 24px
-        rgba(16, 24, 40, .04);
+    border-radius:
+        8px;
 }
 
 
 .mc-section-heading {
 
-    margin-bottom: 1rem;
+    margin-bottom:
+        .75rem;
 }
 
 
 .mc-section-heading h2 {
 
-    margin: 0 0 .25rem;
+    margin:
+        0
+        0
+        .2rem;
 
-    color: var(--mc-text);
+    color:
+        var(--mc-text);
 
-    font-size: 1.15rem;
-    font-weight: 750;
+    font-size:
+        .9rem;
+
+    font-weight:
+        700;
 }
 
 
 .mc-section-heading p {
 
-    max-width: 790px;
+    max-width:
+        790px;
 
-    margin: 0;
+    margin:
+        0;
 
-    color: var(--mc-muted);
+    color:
+        var(--mc-muted);
 
-    font-size: .78rem;
+    font-size:
+        .58rem;
 
-    line-height: 1.5;
+    line-height:
+        1.5;
 }
 
 
-.mc-eyebrow {
-
-    margin-bottom: .2rem;
-
-    color: var(--mc-blue);
-
-    font-size: .65rem;
-    font-weight: 750;
-
-    letter-spacing: .05em;
-
-    text-transform: uppercase;
-}
-
-
-/* -------------------------------------------------------- */
-/* 16. INTERNAL ANALYSIS WORKFLOW                           */
-/* -------------------------------------------------------- */
+/* =========================================================
+   16. INTERNAL ANALYSIS FLOW
+   ========================================================= */
 
 .mc-analysis-flow {
 
-    display: grid;
+    display:
+        grid;
 
     grid-template-columns:
         minmax(0, 1fr)
@@ -1040,182 +1478,273 @@ Market Condition | MarketPulse
         auto
         minmax(0, 1fr);
 
-    align-items: stretch;
+    align-items:
+        stretch;
 
-    gap: .65rem;
+    gap:
+        .5rem;
 }
 
 
 .mc-analysis-step {
 
-    position: relative;
+    position:
+        relative;
 
-    display: grid;
+    display:
+        grid;
 
     grid-template-columns:
         auto
         minmax(0, 1fr);
 
-    align-items: flex-start;
+    align-items:
+        flex-start;
 
-    gap: .65rem;
+    gap:
+        .5rem;
 
-    padding: .85rem;
+    padding:
+        .65rem;
 
-    background: #f9fbfd;
+    background:
+        var(--mc-panel-dark);
 
-    border: 1px solid var(--mc-border);
-    border-radius: 11px;
+    border:
+        1px solid
+        var(--mc-border-soft);
+
+    border-radius:
+        7px;
 }
 
 
 .mc-analysis-number {
 
-    position: absolute;
+    position:
+        absolute;
 
-    top: .5rem;
-    right: .55rem;
+    top:
+        .4rem;
 
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    right:
+        .45rem;
 
-    width: 22px;
-    height: 22px;
+    display:
+        inline-flex;
 
-    color: #ffffff;
-    background: var(--mc-blue);
+    align-items:
+        center;
 
-    border-radius: 50%;
+    justify-content:
+        center;
 
-    font-size: .6rem;
-    font-weight: 700;
+    width:
+        19px;
+
+    height:
+        19px;
+
+    color:
+        #ffffff;
+
+    background:
+        var(--mc-primary);
+
+    border-radius:
+        50%;
+
+    font-size:
+        .5rem;
+
+    font-weight:
+        700;
 }
 
 
 .mc-analysis-icon {
 
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display:
+        inline-flex;
 
-    flex: 0 0 auto;
+    align-items:
+        center;
 
-    width: 36px;
-    height: 36px;
+    justify-content:
+        center;
 
-    color: var(--mc-blue);
-    background: var(--mc-blue-soft);
+    flex:
+        0 0 auto;
 
-    border-radius: 9px;
+    width:
+        31px;
+
+    height:
+        31px;
+
+    color:
+        var(--mc-primary);
+
+    background:
+        var(--mc-primary-soft);
+
+    border-radius:
+        7px;
+
+    font-size:
+        .65rem;
 }
 
 
 .mc-analysis-step strong {
 
-    display: block;
+    display:
+        block;
 
-    margin-bottom: .25rem;
+    margin-bottom:
+        .2rem;
 
-    padding-right: 1rem;
+    padding-right:
+        1rem;
 
-    color: var(--mc-text);
+    color:
+        var(--mc-text);
 
-    font-size: .72rem;
+    font-size:
+        .57rem;
 }
 
 
 .mc-analysis-step p {
 
-    margin: 0;
+    margin:
+        0;
 
-    color: var(--mc-muted);
+    color:
+        var(--mc-muted);
 
-    font-size: .65rem;
+    font-size:
+        .51rem;
 
-    line-height: 1.45;
+    line-height:
+        1.45;
 }
 
 
 .mc-analysis-arrow {
 
-    align-self: center;
+    align-self:
+        center;
 
-    color: #a4b0c2;
+    color:
+        #60738a;
 
-    font-size: .72rem;
+    font-size:
+        .6rem;
 }
 
 
-/* -------------------------------------------------------- */
-/* 17. BACKEND / FRAMEWORK NOTE                             */
-/* -------------------------------------------------------- */
+/* =========================================================
+   17. BACKEND NOTE
+   ========================================================= */
 
 .mc-backend-note {
 
-    display: flex;
-    align-items: flex-start;
+    display:
+        flex;
 
-    gap: .7rem;
+    align-items:
+        flex-start;
 
-    margin-top: .9rem;
+    gap:
+        .6rem;
 
-    padding: .85rem;
+    margin-top:
+        .7rem;
 
-    color: #475467;
-    background: #f5f8fc;
+    padding:
+        .7rem;
 
-    border: 1px solid #e0e7f0;
-    border-radius: 10px;
+    color:
+        var(--mc-muted);
 
-    font-size: .69rem;
+    background:
+        var(--mc-panel-soft);
+
+    border:
+        1px solid
+        var(--mc-border-soft);
+
+    border-radius:
+        7px;
+
+    font-size:
+        .53rem;
 }
 
 
 .mc-backend-note > i {
 
-    margin-top: .15rem;
+    margin-top:
+        .1rem;
 
-    color: var(--mc-blue);
+    color:
+        var(--mc-primary);
 }
 
 
 .mc-backend-note strong {
 
-    display: block;
+    display:
+        block;
 
-    margin-bottom: .15rem;
+    margin-bottom:
+        .12rem;
 
-    color: var(--mc-text);
+    color:
+        var(--mc-text);
 }
 
 
 .mc-backend-note p {
 
-    margin: 0;
+    margin:
+        0;
 
-    line-height: 1.5;
+    line-height:
+        1.5;
 }
 
 
 .mc-backend-note code {
 
-    color: var(--mc-blue-dark);
-    background: #eaf2ff;
+    color:
+        #b9d5ed;
 
-    padding: .1rem .25rem;
+    background:
+        rgba(79, 134, 182, .12);
 
-    border-radius: 4px;
+    padding:
+        .08rem
+        .22rem;
+
+    border:
+        1px solid
+        rgba(79, 134, 182, .14);
+
+    border-radius:
+        4px;
 }
 
 
-/* -------------------------------------------------------- */
-/* 18. POSSIBLE CONDITION CARDS                             */
-/* -------------------------------------------------------- */
+/* =========================================================
+   18. CONDITION CARDS
+   ========================================================= */
 
 .mc-condition-grid {
 
-    display: grid;
+    display:
+        grid;
 
     grid-template-columns:
         repeat(
@@ -1223,189 +1752,316 @@ Market Condition | MarketPulse
             minmax(0, 1fr)
         );
 
-    gap: .75rem;
+    gap:
+        .55rem;
 }
 
 
 .mc-condition-card {
 
-    display: flex;
-    align-items: flex-start;
+    display:
+        flex;
 
-    gap: .65rem;
+    align-items:
+        flex-start;
 
-    min-height: 115px;
+    gap:
+        .55rem;
 
-    padding: .85rem;
+    min-height:
+        100px;
 
-    background: #ffffff;
+    padding:
+        .65rem;
 
-    border: 1px solid var(--mc-border);
-    border-radius: 10px;
+    background:
+        var(--mc-panel-dark);
+
+    border:
+        1px solid
+        var(--mc-border-soft);
+
+    border-radius:
+        7px;
 
     transition:
         border-color .15s ease,
-        box-shadow .15s ease,
+        background-color .15s ease,
         transform .15s ease;
 }
 
 
 .mc-condition-card:hover {
 
-    transform: translateY(-1px);
+    transform:
+        translateY(-1px);
 
-    box-shadow:
-        0 6px 16px
-        rgba(16, 24, 40, .05);
+    background:
+        var(--mc-panel-soft);
+
+    border-color:
+        var(--mc-border);
 }
 
 
 .mc-condition-card.mc-condition-active {
 
-    border: 2px solid var(--mc-blue);
+    border-color:
+        var(--mc-primary);
 
     box-shadow:
-        0 0 0 3px
-        rgba(13, 110, 253, .06);
+        0 0 0 2px
+        rgba(79, 134, 182, .10);
 }
 
 
 .mc-condition-icon {
 
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display:
+        inline-flex;
 
-    flex: 0 0 auto;
+    align-items:
+        center;
 
-    width: 34px;
-    height: 34px;
+    justify-content:
+        center;
 
-    border-radius: 9px;
+    flex:
+        0 0 auto;
+
+    width:
+        31px;
+
+    height:
+        31px;
+
+    border-radius:
+        7px;
+
+    font-size:
+        .65rem;
 }
 
 
 .mc-condition-card strong {
 
-    display: block;
+    display:
+        block;
 
-    margin-bottom: .2rem;
+    margin-bottom:
+        .16rem;
 
-    color: var(--mc-text);
+    color:
+        var(--mc-text);
 
-    font-size: .73rem;
+    font-size:
+        .58rem;
 }
 
 
 .mc-condition-card p {
 
-    margin: 0;
+    margin:
+        0;
 
-    color: var(--mc-muted);
+    color:
+        var(--mc-muted);
 
-    font-size: .65rem;
+    font-size:
+        .5rem;
 
-    line-height: 1.45;
+    line-height:
+        1.45;
 }
 
 
 .mc-condition-current {
 
-    display: inline-block;
+    display:
+        inline-block;
 
-    margin-top: .45rem;
+    margin-top:
+        .35rem;
 
-    padding: .2rem .4rem;
+    padding:
+        .16rem
+        .3rem;
 
-    color: var(--mc-blue);
-    background: var(--mc-blue-soft);
+    color:
+        #c8e2f6;
 
-    border-radius: 5px;
+    background:
+        var(--mc-primary-soft);
 
-    font-size: .57rem;
-    font-weight: 700;
+    border:
+        1px solid
+        rgba(79, 134, 182, .18);
 
-    text-transform: uppercase;
+    border-radius:
+        4px;
+
+    font-size:
+        .46rem;
+
+    font-weight:
+        700;
+
+    text-transform:
+        uppercase;
 }
 
 
 .mc-condition-up .mc-condition-icon {
 
-    color: var(--mc-success);
-    background: var(--mc-success-soft);
+    color:
+        var(--mc-success);
+
+    background:
+        var(--mc-success-soft);
 }
 
 
 .mc-condition-down .mc-condition-icon {
 
-    color: var(--mc-danger);
-    background: var(--mc-danger-soft);
+    color:
+        var(--mc-danger);
+
+    background:
+        var(--mc-danger-soft);
 }
 
 
 .mc-condition-sideways .mc-condition-icon {
 
-    color: #58677d;
-    background: #eef2f6;
+    color:
+        #b7c4d2;
+
+    background:
+        rgba(147, 164, 184, .11);
 }
 
 
 .mc-condition-volatility .mc-condition-icon {
 
-    color: var(--mc-purple);
-    background: var(--mc-purple-soft);
+    color:
+        var(--mc-purple);
+
+    background:
+        var(--mc-purple-soft);
 }
 
 
-/* -------------------------------------------------------- */
-/* 19. INTERPRETATION NOTE                                  */
-/* -------------------------------------------------------- */
+/* =========================================================
+   19. INTERPRETATION NOTE
+   ========================================================= */
 
 .mc-interpretation-note {
 
-    display: flex;
-    align-items: flex-start;
+    display:
+        flex;
 
-    gap: .5rem;
+    align-items:
+        flex-start;
 
-    margin-top: .9rem;
+    gap:
+        .45rem;
 
-    padding: .7rem .8rem;
+    margin-top:
+        .7rem;
 
-    color: #6b7280;
-    background: #f8fafc;
+    padding:
+        .6rem;
 
-    border-radius: 9px;
+    color:
+        var(--mc-muted);
 
-    font-size: .67rem;
+    background:
+        var(--mc-panel-dark);
 
-    line-height: 1.45;
+    border:
+        1px solid
+        var(--mc-border-soft);
+
+    border-radius:
+        7px;
+
+    font-size:
+        .52rem;
+
+    line-height:
+        1.45;
 }
 
 
-/* -------------------------------------------------------- */
-/* 20. BUTTONS                                              */
-/* -------------------------------------------------------- */
+/* =========================================================
+   20. BOOTSTRAP BUTTON ADJUSTMENTS
+   ========================================================= */
 
 .market-condition-page .btn {
 
-    border-radius: 9px;
+    border-radius:
+        6px;
 
-    font-weight: 600;
+    font-size:
+        .62rem;
+
+    font-weight:
+        700;
 }
 
 
 .market-condition-page .btn-primary {
 
-    box-shadow:
-        0 5px 14px
-        rgba(13, 110, 253, .15);
+    background:
+        #3f739e;
+
+    border-color:
+        #4c83af;
 }
 
 
-/* -------------------------------------------------------- */
-/* 21. RESPONSIVE                                           */
-/* -------------------------------------------------------- */
+.market-condition-page .btn-primary:hover {
+
+    background:
+        var(--mc-primary-hover);
+
+    border-color:
+        #6a9fc9;
+}
+
+
+.market-condition-page .btn-primary:disabled {
+
+    background:
+        #33485d;
+
+    border-color:
+        #40566d;
+
+    color:
+        #8293a5;
+
+    opacity:
+        1;
+}
+
+
+/* =========================================================
+   21. RESPONSIVE
+   ========================================================= */
+
+@media (min-width: 1400px) {
+
+    .market-condition-page {
+
+        width:
+            min(
+                1480px,
+                calc(100vw - 64px)
+            );
+    }
+}
+
 
 @media (max-width: 1199.98px) {
 
@@ -1420,10 +2076,8 @@ Market Condition | MarketPulse
 
 
     .mc-analysis-arrow {
-
         display: none;
     }
-
 }
 
 
@@ -1437,49 +2091,52 @@ Market Condition | MarketPulse
                 minmax(0, 1fr)
             );
     }
-
 }
 
 
 @media (max-width: 767.98px) {
 
-    .market-condition-header {
+    .market-condition-page {
 
+        width:
+            calc(100vw - 20px);
+
+        margin-left:
+            50%;
+
+        transform:
+            translateX(-50%);
+    }
+
+
+    .market-condition-header {
         flex-direction: column;
     }
 
 
     .condition-workflow {
-
         grid-template-columns: 1fr;
     }
 
 
     .condition-workflow-arrow {
-
         display: none;
     }
 
 
     .analysis-check-list {
-
         grid-template-columns: 1fr;
     }
 
 
     .condition-stat-grid,
-    .condition-dataset-summary {
-
-        grid-template-columns: 1fr;
-    }
-
-
+    .condition-dataset-summary,
     .mc-analysis-flow,
     .mc-condition-grid {
 
-        grid-template-columns: 1fr;
+        grid-template-columns:
+            1fr;
     }
-
 }
 
 </style>
@@ -1493,1264 +2150,41 @@ Market Condition | MarketPulse
 <div class="market-condition-page">
 
 
-<!-- ====================================================== -->
-<!-- 1. PAGE HEADER                                         -->
-<!-- ====================================================== -->
-
-<div class="market-condition-header">
-
-
-    <div>
-
-
-        <a
-            href="{% url 'data_management:import' %}{% if selected_symbol %}?symbol={{ selected_symbol }}{% endif %}"
-            class="market-back-link"
-        >
-
-            <i class="fa-solid fa-arrow-left"></i>
-
-            Back to Data
-
-        </a>
-
-
-        <h1 class="market-condition-title">
-
-            Market Condition
-
-        </h1>
-
-
-        <p class="market-condition-subtitle">
-
-            Analyse stored historical data to understand
-            whether an asset has recently been trending,
-            falling, moving sideways or experiencing
-            unusually high volatility.
-
-        </p>
-
-
-    </div>
-
-
-    {% if selected_symbol %}
-
-        <span class="market-symbol-badge">
-
-            <i class="fa-solid fa-chart-line"></i>
-
-            {{ selected_symbol }}
-
-        </span>
-
-    {% endif %}
-
-
-</div>
-
-
-<!-- ====================================================== -->
-<!-- 2. THREE-STEP USER WORKFLOW                            -->
-<!-- ====================================================== -->
-
-<div class="condition-workflow">
-
-
-    <!-- STEP 1 -->
-
-    <div class="condition-workflow-step">
-
-
-        <span class="condition-step-number">
-            1
-        </span>
-
-
-        <span class="condition-workflow-icon">
-
-            <i class="fa-solid fa-database"></i>
-
-        </span>
-
-
-        <div class="condition-workflow-copy">
-
-            <strong>
-                Choose Stored Data
-            </strong>
-
-            <span>
-
-                Select a historical dataset already
-                imported into MarketPulse.
-
-            </span>
-
-        </div>
-
-
-    </div>
-
-
-    <i
-        class="
-            fa-solid
-            fa-chevron-right
-            condition-workflow-arrow
-        "
-    >
-    </i>
-
-
-    <!-- STEP 2 -->
-
-    <div class="condition-workflow-step">
-
-
-        <span class="condition-step-number">
-            2
-        </span>
-
-
-        <span class="condition-workflow-icon">
-
-            <i class="fa-solid fa-gears"></i>
-
-        </span>
-
-
-        <div class="condition-workflow-copy">
-
-            <strong>
-                Run the Analysis
-            </strong>
-
-            <span>
-
-                MarketPulse evaluates recent price behaviour,
-                trend and historical volatility.
-
-            </span>
-
-        </div>
-
-
-    </div>
-
-
-    <i
-        class="
-            fa-solid
-            fa-chevron-right
-            condition-workflow-arrow
-        "
-    >
-    </i>
-
-
-    <!-- STEP 3 -->
-
-    <div class="condition-workflow-step">
-
-
-        <span class="condition-step-number">
-            3
-        </span>
-
-
-        <span class="condition-workflow-icon">
-
-            <i class="fa-solid fa-chart-column"></i>
-
-        </span>
-
-
-        <div class="condition-workflow-copy">
-
-            <strong>
-                Understand the Result
-            </strong>
-
-            <span>
-
-                Review the classification, confidence,
-                volatility and interpretation.
-
-            </span>
-
-        </div>
-
-
-    </div>
-
-
-</div>
-
-
-<!-- ====================================================== -->
-<!-- 3. ANALYSIS WORKSPACE                                  -->
-<!-- ====================================================== -->
-
-<div class="row g-4">
-
-
     <!-- ================================================== -->
-    <!-- LEFT: CHOOSE DATASET                               -->
+    <!-- 1. PAGE HEADER                                     -->
     <!-- ================================================== -->
 
-    <div class="col-lg-5">
-
-
-        <section class="condition-panel">
-
-
-            <div class="condition-panel-header">
-
-
-                <span class="condition-panel-icon">
-
-                    <i
-                        class="
-                            fa-solid
-                            fa-magnifying-glass-chart
-                        "
-                    >
-                    </i>
-
-                </span>
-
-
-                <div>
-
-
-                    <div class="condition-eyebrow">
-
-                        Step 1
-
-                    </div>
-
-
-                    <h2>
-
-                        Choose an Asset
-
-                    </h2>
-
-
-                    <p>
-
-                        Select one of the historical datasets
-                        already stored in MarketPulse.
-
-                    </p>
-
-
-                </div>
-
-
-            </div>
-
-
-            {% if symbols %}
-
-
-                <form
-                    method="post"
-                    class="condition-form"
-                >
-
-                    {% csrf_token %}
-
-
-                    <!-- ================================== -->
-                    <!-- ASSET SELECTION                    -->
-                    <!-- ================================== -->
-
-                    <label
-                        class="form-label"
-                        for="symbol"
-                    >
-
-                        Imported Dataset
-
-                    </label>
-
-
-                    <select
-                        class="form-select"
-                        id="symbol"
-                        name="symbol"
-                        required
-                    >
-
-
-                        {% for symbol in symbols %}
-
-                            <option
-                                value="{{ symbol }}"
-
-                                {% if symbol == selected_symbol %}
-                                    selected
-                                {% endif %}
-                            >
-
-                                {{ symbol }}
-
-                            </option>
-
-                        {% endfor %}
-
-
-                    </select>
-
-
-                    <!-- ================================== -->
-                    <!-- DATASET SUMMARY                    -->
-                    <!-- ================================== -->
-
-                    {% if selected_symbol %}
-
-                        <div class="condition-dataset-summary">
-
-
-                            <div class="condition-dataset-stat">
-
-                                <span class="condition-dataset-label">
-
-                                    Observations
-
-                                </span>
-
-                                <span class="condition-dataset-value">
-
-                                    {{ observation_count }}
-
-                                </span>
-
-                            </div>
-
-
-                            <div class="condition-dataset-stat">
-
-                                <span class="condition-dataset-label">
-
-                                    Earliest
-
-                                </span>
-
-                                <span class="condition-dataset-value">
-
-                                    {% if earliest_record %}
-
-                                        {{ earliest_record.date|date:"d/m/Y" }}
-
-                                    {% else %}
-
-                                        —
-
-                                    {% endif %}
-
-                                </span>
-
-                            </div>
-
-
-                            <div class="condition-dataset-stat">
-
-                                <span class="condition-dataset-label">
-
-                                    Latest
-
-                                </span>
-
-                                <span class="condition-dataset-value">
-
-                                    {% if latest_record %}
-
-                                        {{ latest_record.date|date:"d/m/Y" }}
-
-                                    {% else %}
-
-                                        —
-
-                                    {% endif %}
-
-                                </span>
-
-                            </div>
-
-
-                        </div>
-
-                    {% endif %}
-
-
-                    <!-- ================================== -->
-                    <!-- DATA READINESS                     -->
-                    <!-- ================================== -->
-
-                    {% if observation_count >= 20 %}
-
-                        <div
-                            class="
-                                data-readiness
-                                is-ready
-                                mt-3
-                            "
-                        >
-
-                            <i class="fa-solid fa-circle-check"></i>
-
-
-                            <div>
-
-                                <strong>
-                                    Dataset ready for analysis.
-                                </strong>
-
-                                {{ observation_count }}
-                                stored observations are available.
-
-                            </div>
-
-                        </div>
-
-
-                    {% else %}
-
-                        <div
-                            class="
-                                data-readiness
-                                is-limited
-                                mt-3
-                            "
-                        >
-
-                            <i
-                                class="
-                                    fa-solid
-                                    fa-triangle-exclamation
-                                "
-                            >
-                            </i>
-
-
-                            <div>
-
-                                <strong>
-                                    More historical data required.
-                                </strong>
-
-                                MarketPulse requires at least
-                                20 observations before running
-                                Market Condition analysis.
-
-                            </div>
-
-                        </div>
-
-                    {% endif %}
-
-
-                    <!-- ================================== -->
-                    <!-- WHAT MARKETPULSE ANALYSES          -->
-                    <!-- ================================== -->
-
-                    <div class="analysis-checks">
-
-
-                        <div class="analysis-checks-title">
-
-                            What does MarketPulse analyse?
-
-                        </div>
-
-
-                        <ul class="analysis-check-list">
-
-
-                            <li>
-
-                                <i class="fa-solid fa-check"></i>
-
-                                Recent price direction
-
-                            </li>
-
-
-                            <li>
-
-                                <i class="fa-solid fa-check"></i>
-
-                                Historical volatility
-
-                            </li>
-
-
-                            <li>
-
-                                <i class="fa-solid fa-check"></i>
-
-                                Moving-average trend
-
-                            </li>
-
-
-                            <li>
-
-                                <i class="fa-solid fa-check"></i>
-
-                                Condition strength
-
-                            </li>
-
-
-                        </ul>
-
-
-                    </div>
-
-
-                    <!-- ================================== -->
-                    <!-- ANALYSE BUTTON                     -->
-                    <!-- ================================== -->
-
-                    <button
-                        type="submit"
-                        class="btn btn-primary w-100"
-
-                        {% if observation_count < 20 %}
-                            disabled
-                        {% endif %}
-                    >
-
-                        <i
-                            class="
-                                fa-solid
-                                fa-chart-line
-                                me-2
-                            "
-                        >
-                        </i>
-
-                        Run Market Condition Analysis
-
-                    </button>
-
-
-                    <div
-                        class="
-                            text-muted
-                            small
-                            text-center
-                            mt-2
-                        "
-                    >
-
-                        The analysis uses stored historical
-                        market data only.
-
-                    </div>
-
-
-                </form>
-
-
-            {% else %}
-
-
-                <!-- ====================================== -->
-                <!-- NO DATASET AVAILABLE                   -->
-                <!-- ====================================== -->
-
-                <div class="alert alert-warning">
-
-                    <i
-                        class="
-                            fa-solid
-                            fa-triangle-exclamation
-                            me-2
-                        "
-                    >
-                    </i>
-
-                    No historical datasets are available yet.
-
-                </div>
-
-
-                <a
-                    href="{% url 'data_management:import' %}"
-                    class="btn btn-primary"
-                >
-
-                    <i class="fa-solid fa-download me-2"></i>
-
-                    Import Market Data
-
-                </a>
-
-
-            {% endif %}
-
-
-        </section>
-
-
-    </div>
-
-
-    <!-- ================================================== -->
-    <!-- RIGHT: ANALYSIS RESULT                             -->
-    <!-- ================================================== -->
-
-    <div class="col-lg-7">
-
-
-        <section class="condition-panel">
-
-
-            <div class="condition-panel-header">
-
-
-                <span class="condition-panel-icon">
-
-                    <i class="fa-solid fa-chart-area"></i>
-
-                </span>
-
-
-                <div>
-
-
-                    <div class="condition-eyebrow">
-
-                        Steps 2 and 3
-
-                    </div>
-
-
-                    <h2>
-
-                        Analyse and Understand
-
-                    </h2>
-
-
-                    <p>
-
-                        MarketPulse converts the statistical
-                        analysis into a clear description of
-                        the recent historical market environment.
-
-                    </p>
-
-
-                </div>
-
-
-            </div>
-
-
-            {% if latest_regime %}
-
-
-                <!-- ====================================== -->
-                <!-- PRIMARY RESULT                         -->
-                <!-- ====================================== -->
-
-                <div
-                    class="
-                        condition-result-hero
-
-                        {% if latest_regime.regime == 'uptrend' %}
-                            result-uptrend
-
-                        {% elif latest_regime.regime == 'downtrend' %}
-                            result-downtrend
-
-                        {% elif latest_regime.regime == 'sideways' %}
-                            result-sideways
-
-                        {% elif latest_regime.regime == 'high_volatility' %}
-                            result-high-volatility
-                        {% endif %}
-                    "
-                >
-
-
-                    <span class="condition-result-label">
-
-                        Detected Market Condition
-
-                    </span>
-
-
-                    <span class="condition-result-name">
-
-                        {{ latest_regime.get_regime_display }}
-
-                    </span>
-
-
-                    <span class="condition-result-symbol">
-
-                        <i class="fa-solid fa-chart-line"></i>
-
-                        {{ selected_symbol }}
-
-                    </span>
-
-
-                </div>
-
-
-                <!-- ====================================== -->
-                <!-- STATISTICAL SUMMARY                    -->
-                <!-- ====================================== -->
-
-                <div class="condition-stat-grid">
-
-
-                    <!-- CONFIDENCE -->
-
-                    <div class="condition-stat">
-
-                        <span class="condition-stat-label">
-
-                            Classification Confidence
-
-                        </span>
-
-
-                        <span class="condition-stat-value">
-
-                            {{ latest_regime.confidence|floatformat:2 }}
-
-                        </span>
-
-
-                        <span class="condition-stat-help">
-
-                            Higher values indicate stronger
-                            support for the detected classification.
-
-                        </span>
-
-                    </div>
-
-
-                    <!-- VOLATILITY -->
-
-                    <div class="condition-stat">
-
-                        <span class="condition-stat-label">
-
-                            Historical Volatility
-
-                        </span>
-
-
-                        <span class="condition-stat-value">
-
-                            {{ latest_regime.volatility|floatformat:2 }}
-
-                        </span>
-
-
-                        <span class="condition-stat-help">
-
-                            Describes the degree of historical
-                            price variation used by the analysis.
-
-                        </span>
-
-                    </div>
-
-
-                </div>
-
-
-                <!-- ====================================== -->
-                <!-- INTERPRETATION                         -->
-                <!-- ====================================== -->
-
-                <div class="condition-explanation">
-
-
-                    <strong>
-
-                        What does this mean?
-
-                    </strong>
-
-
-                    {% if latest_regime.regime == "uptrend" %}
-
-                        During the analysed historical period,
-                        prices generally moved upward.
-
-                        MarketPulse therefore classified the
-                        recent historical environment as an
-                        Uptrend.
-
-
-                    {% elif latest_regime.regime == "downtrend" %}
-
-                        During the analysed historical period,
-                        prices generally moved downward.
-
-                        MarketPulse therefore classified the
-                        recent historical environment as a
-                        Downtrend.
-
-
-                    {% elif latest_regime.regime == "sideways" %}
-
-                        During the analysed historical period,
-                        prices showed limited sustained
-                        directional movement.
-
-                        MarketPulse therefore classified the
-                        environment as Sideways.
-
-
-                    {% elif latest_regime.regime == "high_volatility" %}
-
-                        Historical price movements were larger
-                        or more variable than the normal range
-                        identified by the analysis.
-
-                        MarketPulse therefore classified the
-                        recent environment as High Volatility.
-
-
-                    {% else %}
-
-                        MarketPulse classified the recent
-                        historical market environment using
-                        stored price behaviour, trend and
-                        volatility information.
-
-                    {% endif %}
-
-
-                </div>
-
-
-                <!-- ====================================== -->
-                <!-- METHOD EXPLANATION                     -->
-                <!-- ====================================== -->
-
-                <div class="condition-method-box">
-
-                    <strong>
-                        How was this produced?
-                    </strong>
-
-                    MarketPulse reads historical
-
-                    <strong>
-                        Open, High, Low, Close and Volume
-                    </strong>
-
-                    observations stored in PostgreSQL.
-
-                    The internal Market Regime Analysis engine
-                    examines recent price direction, moving-average
-                    behaviour and historical volatility before
-                    storing the resulting classification.
-
-                </div>
-
-
-                <!-- ====================================== -->
-                <!-- EDUCATIONAL NOTICE                     -->
-                <!-- ====================================== -->
-
-                <div class="condition-notice">
-
-
-                    <i class="fa-solid fa-circle-info"></i>
-
-
-                    <div>
-
-                        <strong>
-                            Historical analysis only.
-                        </strong>
-
-                        This classification describes the
-                        historical behaviour of the selected
-                        dataset.
-
-                        It does not predict future prices,
-                        recommend a trade or provide
-                        investment advice.
-
-                    </div>
-
-
-                </div>
-
-
-            {% else %}
-
-
-                <!-- ====================================== -->
-                <!-- NO RESULT YET                          -->
-                <!-- ====================================== -->
-
-                <div class="condition-empty-result">
-
-
-                    <span class="condition-empty-icon">
-
-                        <i class="fa-solid fa-chart-area"></i>
-
-                    </span>
-
-
-                    <h3>
-
-                        Ready to Analyse
-
-                    </h3>
-
-
-                    <p>
-
-                        Choose an imported dataset and select
-
-                        <strong>
-                            Run Market Condition Analysis
-                        </strong>.
-
-                        The detected condition, confidence,
-                        volatility and interpretation will
-                        appear here without leaving this page.
-
-                    </p>
-
-
-                </div>
-
-
-            {% endif %}
-
-
-        </section>
-
-
-    </div>
-
-
-</div>
-
-
-<!-- ====================================================== -->
-<!-- 4. HOW MARKET CONDITION WORKS                          -->
-<!-- ====================================================== -->
-
-<section class="mc-explanation-panel">
-
-
-    <div class="mc-section-heading">
-
-
-        <div class="mc-eyebrow">
-
-            How the Analysis Works
-
-        </div>
-
-
-        <h2>
-
-            How Market Condition Works
-
-        </h2>
-
-
-        <p>
-
-            MarketPulse takes the historical market observations
-            already stored for the selected asset, measures recent
-            behaviour and converts the statistical result into a
-            simpler historical market classification.
-
-        </p>
-
-
-    </div>
-
-
-    <!-- ================================================== -->
-    <!-- INTERNAL WORKFLOW                                  -->
-    <!-- ================================================== -->
-
-    <div class="mc-analysis-flow">
-
-
-        <!-- STEP 1 -->
-
-        <div class="mc-analysis-step">
-
-
-            <span class="mc-analysis-number">
-                1
-            </span>
-
-
-            <span class="mc-analysis-icon">
-
-                <i class="fa-solid fa-database"></i>
-
-            </span>
-
-
-            <div>
-
-                <strong>
-
-                    Read Stored Market Data
-
-                </strong>
-
-
-                <p>
-
-                    MarketPulse retrieves the selected asset's
-                    historical Open, High, Low, Close and Volume
-                    observations from PostgreSQL.
-
-                </p>
-
-            </div>
-
-
-        </div>
-
-
-        <i
-            class="
-                fa-solid
-                fa-arrow-right
-                mc-analysis-arrow
-            "
-        >
-        </i>
-
-
-        <!-- STEP 2 -->
-
-        <div class="mc-analysis-step">
-
-
-            <span class="mc-analysis-number">
-                2
-            </span>
-
-
-            <span class="mc-analysis-icon">
-
-                <i class="fa-solid fa-arrow-trend-up"></i>
-
-            </span>
-
-
-            <div>
-
-                <strong>
-
-                    Examine Price Direction
-
-                </strong>
-
-
-                <p>
-
-                    Recent price behaviour and moving-average
-                    information are examined to determine whether
-                    prices have generally been rising, falling
-                    or showing limited direction.
-
-                </p>
-
-            </div>
-
-
-        </div>
-
-
-        <i
-            class="
-                fa-solid
-                fa-arrow-right
-                mc-analysis-arrow
-            "
-        >
-        </i>
-
-
-        <!-- STEP 3 -->
-
-        <div class="mc-analysis-step">
-
-
-            <span class="mc-analysis-number">
-                3
-            </span>
-
-
-            <span class="mc-analysis-icon">
-
-                <i class="fa-solid fa-wave-square"></i>
-
-            </span>
-
-
-            <div>
-
-                <strong>
-
-                    Measure Historical Volatility
-
-                </strong>
-
-
-                <p>
-
-                    The analysis measures how much historical
-                    prices varied during the analysed period
-                    and considers the strength of the condition.
-
-                </p>
-
-            </div>
-
-
-        </div>
-
-
-        <i
-            class="
-                fa-solid
-                fa-arrow-right
-                mc-analysis-arrow
-            "
-        >
-        </i>
-
-
-        <!-- STEP 4 -->
-
-        <div class="mc-analysis-step">
-
-
-            <span class="mc-analysis-number">
-                4
-            </span>
-
-
-            <span class="mc-analysis-icon">
-
-                <i class="fa-solid fa-tags"></i>
-
-            </span>
-
-
-            <div>
-
-                <strong>
-
-                    Classify the Market Condition
-
-                </strong>
-
-
-                <p>
-
-                    The internal Market Regime Analysis combines
-                    the measurements and stores an easy-to-read
-                    historical classification for the user.
-
-                </p>
-
-            </div>
-
-
-        </div>
-
-
-    </div>
-
-
-    <!-- ================================================== -->
-    <!-- BACKEND / FRAMEWORK EXPLANATION                    -->
-    <!-- ================================================== -->
-
-    <div class="mc-backend-note">
-
-
-        <i class="fa-solid fa-code"></i>
+    <div class="market-condition-header">
 
 
         <div>
 
 
-            <strong>
+            <a
+                href="{% url 'data_management:import' %}{% if selected_symbol %}?symbol={{ selected_symbol }}{% endif %}"
+                class="market-back-link"
+            >
 
-                What happens in the backend?
+                <i class="fa-solid fa-arrow-left"></i>
 
-            </strong>
+                Back to Data
+
+            </a>
 
 
-            <p>
+            <h1 class="market-condition-title">
 
-                The Django
+                Market Condition
 
-                <code>
-                    market_condition()
-                </code>
+            </h1>
 
-                view receives the selected symbol and checks the
-                stored
 
-                <code>
-                    MarketData
-                </code>
+            <p class="market-condition-subtitle">
 
-                records.
-
-                When sufficient data is available, it calls
-
-                <code>
-                    identify_market_regime()
-                </code>
-
-                in
-
-                <code>
-                    analysis_tools/analyzers.py
-                </code>.
-
-                The calculated result is stored as a
-
-                <code>
-                    MarketRegime
-                </code>
-
-                record in PostgreSQL.
-
-                Django then reloads this page and supplies the most
-                recent result through
-
-                <code>
-                    latest_regime
-                </code>.
+                Analyse stored historical data to understand
+                whether an asset has recently been trending,
+                falling, moving sideways or experiencing
+                unusually high volatility.
 
             </p>
 
@@ -2758,280 +2192,708 @@ Market Condition | MarketPulse
         </div>
 
 
-    </div>
+        {% if selected_symbol %}
 
+            <span class="market-symbol-badge">
 
-</section>
+                <i class="fa-solid fa-chart-line"></i>
 
+                {{ selected_symbol }}
 
-<!-- ====================================================== -->
-<!-- 5. UNDERSTANDING THE FOUR POSSIBLE RESULTS             -->
-<!-- ====================================================== -->
+            </span>
 
-<section class="mc-explanation-panel">
-
-
-    <div class="mc-section-heading">
-
-
-        <div class="mc-eyebrow">
-
-            Understand the Classification
-
-        </div>
-
-
-        <h2>
-
-            What Do the Market Conditions Mean?
-
-        </h2>
-
-
-        <p>
-
-            MarketPulse presents the technical Market Regime Analysis
-            as four simple historical classifications so that the
-            result is easier to understand.
-
-        </p>
+        {% endif %}
 
 
     </div>
 
 
-    <div class="mc-condition-grid">
+    <!-- ================================================== -->
+    <!-- 2. THREE-STEP USER WORKFLOW                        -->
+    <!-- ================================================== -->
+
+    <div class="condition-workflow">
 
 
-        <!-- ================================================== -->
-        <!-- UPTREND                                           -->
-        <!-- ================================================== -->
+        <div class="condition-workflow-step">
 
-        <div
-            class="
-                mc-condition-card
-                mc-condition-up
-
-                {% if latest_regime and latest_regime.regime == 'uptrend' %}
-                    mc-condition-active
-                {% endif %}
-            "
-        >
-
-
-            <span class="mc-condition-icon">
-
-                <i class="fa-solid fa-arrow-trend-up"></i>
-
+            <span class="condition-step-number">
+                1
             </span>
 
+            <span class="condition-workflow-icon">
+                <i class="fa-solid fa-database"></i>
+            </span>
 
-            <div>
-
+            <div class="condition-workflow-copy">
 
                 <strong>
-
-                    Uptrend
-
+                    Choose Stored Data
                 </strong>
 
+                <span>
+                    Select a historical dataset already
+                    imported into MarketPulse.
+                </span>
 
-                <p>
+            </div>
 
-                    Prices have generally been moving upward
-                    during the analysed historical period.
-
-                </p>
+        </div>
 
 
-                {% if latest_regime and latest_regime.regime == "uptrend" %}
+        <i
+            class="
+                fa-solid
+                fa-chevron-right
+                condition-workflow-arrow
+            "
+        ></i>
 
-                    <span class="mc-condition-current">
 
-                        Current Result
+        <div class="condition-workflow-step">
+
+            <span class="condition-step-number">
+                2
+            </span>
+
+            <span class="condition-workflow-icon">
+                <i class="fa-solid fa-gears"></i>
+            </span>
+
+            <div class="condition-workflow-copy">
+
+                <strong>
+                    Run the Analysis
+                </strong>
+
+                <span>
+                    MarketPulse evaluates recent price behaviour,
+                    trend and historical volatility.
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <i
+            class="
+                fa-solid
+                fa-chevron-right
+                condition-workflow-arrow
+            "
+        ></i>
+
+
+        <div class="condition-workflow-step">
+
+            <span class="condition-step-number">
+                3
+            </span>
+
+            <span class="condition-workflow-icon">
+                <i class="fa-solid fa-chart-column"></i>
+            </span>
+
+            <div class="condition-workflow-copy">
+
+                <strong>
+                    Understand the Result
+                </strong>
+
+                <span>
+                    Review the classification, confidence,
+                    volatility and interpretation.
+                </span>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- 3. ANALYSIS WORKSPACE                              -->
+    <!-- ================================================== -->
+
+    <div class="row g-3">
+
+
+        <!-- ============================================== -->
+        <!-- LEFT: CHOOSE DATASET                           -->
+        <!-- ============================================== -->
+
+        <div class="col-lg-5">
+
+
+            <section class="condition-panel">
+
+
+                <div class="condition-panel-header">
+
+
+                    <span class="condition-panel-icon">
+
+                        <i class="fa-solid fa-magnifying-glass-chart"></i>
 
                     </span>
 
+
+                    <div>
+
+                        <div class="condition-eyebrow">
+                            Step 1
+                        </div>
+
+                        <h2>
+                            Choose an Asset
+                        </h2>
+
+                        <p>
+                            Select one of the historical datasets
+                            already stored in MarketPulse.
+                        </p>
+
+                    </div>
+
+
+                </div>
+
+
+                {% if symbols %}
+
+
+                    <form
+                        method="post"
+                        class="condition-form"
+                    >
+
+                        {% csrf_token %}
+
+
+                        <label
+                            class="form-label"
+                            for="symbol"
+                        >
+                            Imported Dataset
+                        </label>
+
+
+                        <select
+                            class="form-select"
+                            id="symbol"
+                            name="symbol"
+                            required
+                        >
+
+                            {% for symbol in symbols %}
+
+                                <option
+                                    value="{{ symbol }}"
+                                    {% if symbol == selected_symbol %}
+                                        selected
+                                    {% endif %}
+                                >
+                                    {{ symbol }}
+                                </option>
+
+                            {% endfor %}
+
+                        </select>
+
+
+                        {% if selected_symbol %}
+
+                            <div class="condition-dataset-summary">
+
+
+                                <div class="condition-dataset-stat">
+
+                                    <span class="condition-dataset-label">
+                                        Observations
+                                    </span>
+
+                                    <span class="condition-dataset-value">
+                                        {{ observation_count }}
+                                    </span>
+
+                                </div>
+
+
+                                <div class="condition-dataset-stat">
+
+                                    <span class="condition-dataset-label">
+                                        Earliest
+                                    </span>
+
+                                    <span class="condition-dataset-value">
+
+                                        {% if earliest_record %}
+
+                                            {{ earliest_record.date|date:"d/m/Y" }}
+
+                                        {% else %}
+
+                                            —
+
+                                        {% endif %}
+
+                                    </span>
+
+                                </div>
+
+
+                                <div class="condition-dataset-stat">
+
+                                    <span class="condition-dataset-label">
+                                        Latest
+                                    </span>
+
+                                    <span class="condition-dataset-value">
+
+                                        {% if latest_record %}
+
+                                            {{ latest_record.date|date:"d/m/Y" }}
+
+                                        {% else %}
+
+                                            —
+
+                                        {% endif %}
+
+                                    </span>
+
+                                </div>
+
+
+                            </div>
+
+                        {% endif %}
+
+
+                        {% if observation_count >= 20 %}
+
+                            <div class="data-readiness is-ready mt-3">
+
+                                <i class="fa-solid fa-circle-check"></i>
+
+                                <div>
+
+                                    <strong>
+                                        Dataset ready for analysis.
+                                    </strong>
+
+                                    {{ observation_count }}
+                                    stored observations are available.
+
+                                </div>
+
+                            </div>
+
+
+                        {% else %}
+
+                            <div class="data-readiness is-limited mt-3">
+
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+
+                                <div>
+
+                                    <strong>
+                                        More historical data required.
+                                    </strong>
+
+                                    MarketPulse requires at least
+                                    20 observations before running
+                                    Market Condition analysis.
+
+                                </div>
+
+                            </div>
+
+                        {% endif %}
+
+
+                        <div class="analysis-checks">
+
+                            <div class="analysis-checks-title">
+                                What does MarketPulse analyse?
+                            </div>
+
+
+                            <ul class="analysis-check-list">
+
+                                <li>
+                                    <i class="fa-solid fa-check"></i>
+                                    Recent price direction
+                                </li>
+
+                                <li>
+                                    <i class="fa-solid fa-check"></i>
+                                    Historical volatility
+                                </li>
+
+                                <li>
+                                    <i class="fa-solid fa-check"></i>
+                                    Moving-average trend
+                                </li>
+
+                                <li>
+                                    <i class="fa-solid fa-check"></i>
+                                    Condition strength
+                                </li>
+
+                            </ul>
+
+                        </div>
+
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary w-100"
+                            {% if observation_count < 20 %}
+                                disabled
+                            {% endif %}
+                        >
+
+                            <i class="fa-solid fa-chart-line me-2"></i>
+
+                            Run Market Condition Analysis
+
+                        </button>
+
+
+                        <div class="text-muted small text-center mt-2">
+
+                            The analysis uses stored historical
+                            market data only.
+
+                        </div>
+
+
+                    </form>
+
+
+                {% else %}
+
+
+                    <div class="alert alert-warning">
+
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i>
+
+                        No historical datasets are available yet.
+
+                    </div>
+
+
+                    <a
+                        href="{% url 'data_management:import' %}"
+                        class="btn btn-primary"
+                    >
+
+                        <i class="fa-solid fa-download me-2"></i>
+
+                        Import Market Data
+
+                    </a>
+
+
                 {% endif %}
 
 
-            </div>
+            </section>
 
 
         </div>
 
 
-        <!-- ================================================== -->
-        <!-- DOWNTREND                                         -->
-        <!-- ================================================== -->
+        <!-- ============================================== -->
+        <!-- RIGHT: ANALYSIS RESULT                         -->
+        <!-- ============================================== -->
 
-        <div
-            class="
-                mc-condition-card
-                mc-condition-down
-
-                {% if latest_regime and latest_regime.regime == 'downtrend' %}
-                    mc-condition-active
-                {% endif %}
-            "
-        >
+        <div class="col-lg-7">
 
 
-            <span class="mc-condition-icon">
-
-                <i class="fa-solid fa-arrow-trend-down"></i>
-
-            </span>
+            <section class="condition-panel">
 
 
-            <div>
+                <div class="condition-panel-header">
 
 
-                <strong>
+                    <span class="condition-panel-icon">
 
-                    Downtrend
-
-                </strong>
-
-
-                <p>
-
-                    Prices have generally been moving downward
-                    during the analysed historical period.
-
-                </p>
-
-
-                {% if latest_regime and latest_regime.regime == "downtrend" %}
-
-                    <span class="mc-condition-current">
-
-                        Current Result
+                        <i class="fa-solid fa-chart-area"></i>
 
                     </span>
 
+
+                    <div>
+
+                        <div class="condition-eyebrow">
+                            Steps 2 and 3
+                        </div>
+
+                        <h2>
+                            Analyse and Understand
+                        </h2>
+
+                        <p>
+                            MarketPulse converts the statistical
+                            analysis into a clear description of
+                            the recent historical market environment.
+                        </p>
+
+                    </div>
+
+
+                </div>
+
+
+                {% if latest_regime %}
+
+
+                    <div
+                        class="
+                            condition-result-hero
+
+                            {% if latest_regime.regime == 'uptrend' %}
+                                result-uptrend
+
+                            {% elif latest_regime.regime == 'downtrend' %}
+                                result-downtrend
+
+                            {% elif latest_regime.regime == 'sideways' %}
+                                result-sideways
+
+                            {% elif latest_regime.regime == 'high_volatility' %}
+                                result-high-volatility
+
+                            {% endif %}
+                        "
+                    >
+
+
+                        <span class="condition-result-label">
+                            Detected Market Condition
+                        </span>
+
+
+                        <span class="condition-result-name">
+
+                            {{ latest_regime.get_regime_display }}
+
+                        </span>
+
+
+                        <span class="condition-result-symbol">
+
+                            <i class="fa-solid fa-chart-line"></i>
+
+                            {{ selected_symbol }}
+
+                        </span>
+
+
+                    </div>
+
+
+                    <div class="condition-stat-grid">
+
+
+                        <div class="condition-stat">
+
+                            <span class="condition-stat-label">
+                                Classification Confidence
+                            </span>
+
+                            <span class="condition-stat-value">
+
+                                {{ latest_regime.confidence|floatformat:2 }}
+
+                            </span>
+
+                            <span class="condition-stat-help">
+
+                                Higher values indicate stronger
+                                support for the detected classification.
+
+                            </span>
+
+                        </div>
+
+
+                        <div class="condition-stat">
+
+                            <span class="condition-stat-label">
+                                Historical Volatility
+                            </span>
+
+                            <span class="condition-stat-value">
+
+                                {{ latest_regime.volatility|floatformat:2 }}
+
+                            </span>
+
+                            <span class="condition-stat-help">
+
+                                Describes the degree of historical
+                                price variation used by the analysis.
+
+                            </span>
+
+                        </div>
+
+
+                    </div>
+
+
+                    <div class="condition-explanation">
+
+
+                        <strong>
+                            What does this mean?
+                        </strong>
+
+
+                        {% if latest_regime.regime == "uptrend" %}
+
+                            During the analysed historical period,
+                            prices generally moved upward.
+
+                            MarketPulse therefore classified the
+                            recent historical environment as an
+                            Uptrend.
+
+
+                        {% elif latest_regime.regime == "downtrend" %}
+
+                            During the analysed historical period,
+                            prices generally moved downward.
+
+                            MarketPulse therefore classified the
+                            recent historical environment as a
+                            Downtrend.
+
+
+                        {% elif latest_regime.regime == "sideways" %}
+
+                            During the analysed historical period,
+                            prices showed limited sustained
+                            directional movement.
+
+                            MarketPulse therefore classified the
+                            environment as Sideways.
+
+
+                        {% elif latest_regime.regime == "high_volatility" %}
+
+                            Historical price movements were larger
+                            or more variable than the normal range
+                            identified by the analysis.
+
+                            MarketPulse therefore classified the
+                            recent environment as High Volatility.
+
+
+                        {% else %}
+
+                            MarketPulse classified the recent
+                            historical market environment using
+                            stored price behaviour, trend and
+                            volatility information.
+
+                        {% endif %}
+
+
+                    </div>
+
+
+                    <div class="condition-method-box">
+
+                        <strong>
+                            How was this produced?
+                        </strong>
+
+                        MarketPulse reads historical
+
+                        <strong>
+                            Open, High, Low, Close and Volume
+                        </strong>
+
+                        observations stored in PostgreSQL.
+
+                        The internal Market Regime Analysis engine
+                        examines recent price direction,
+                        moving-average behaviour and historical
+                        volatility before storing the resulting
+                        classification.
+
+                    </div>
+
+
+                    <div class="condition-notice">
+
+                        <i class="fa-solid fa-circle-info"></i>
+
+                        <div>
+
+                            <strong>
+                                Historical analysis only.
+                            </strong>
+
+                            This classification describes the
+                            historical behaviour of the selected
+                            dataset.
+
+                            It does not predict future prices,
+                            recommend a trade or provide
+                            investment advice.
+
+                        </div>
+
+                    </div>
+
+
+                {% else %}
+
+
+                    <div class="condition-empty-result">
+
+                        <span class="condition-empty-icon">
+
+                            <i class="fa-solid fa-chart-area"></i>
+
+                        </span>
+
+
+                        <h3>
+                            Ready to Analyse
+                        </h3>
+
+
+                        <p>
+
+                            Choose an imported dataset and select
+
+                            <strong>
+                                Run Market Condition Analysis
+                            </strong>.
+
+                            The detected condition, confidence,
+                            volatility and interpretation will
+                            appear here without leaving this page.
+
+                        </p>
+
+                    </div>
+
+
                 {% endif %}
 
 
-            </div>
-
-
-        </div>
-
-
-        <!-- ================================================== -->
-        <!-- SIDEWAYS                                          -->
-        <!-- ================================================== -->
-
-        <div
-            class="
-                mc-condition-card
-                mc-condition-sideways
-
-                {% if latest_regime and latest_regime.regime == 'sideways' %}
-                    mc-condition-active
-                {% endif %}
-            "
-        >
-
-
-            <span class="mc-condition-icon">
-
-                <i class="fa-solid fa-arrows-left-right"></i>
-
-            </span>
-
-
-            <div>
-
-
-                <strong>
-
-                    Sideways
-
-                </strong>
-
-
-                <p>
-
-                    Prices have shown limited sustained
-                    directional movement during the analysed
-                    period.
-
-                </p>
-
-
-                {% if latest_regime and latest_regime.regime == "sideways" %}
-
-                    <span class="mc-condition-current">
-
-                        Current Result
-
-                    </span>
-
-                {% endif %}
-
-
-            </div>
-
-
-        </div>
-
-
-        <!-- ================================================== -->
-        <!-- HIGH VOLATILITY                                   -->
-        <!-- ================================================== -->
-
-        <div
-            class="
-                mc-condition-card
-                mc-condition-volatility
-
-                {% if latest_regime and latest_regime.regime == 'high_volatility' %}
-                    mc-condition-active
-                {% endif %}
-            "
-        >
-
-
-            <span class="mc-condition-icon">
-
-                <i class="fa-solid fa-wave-square"></i>
-
-            </span>
-
-
-            <div>
-
-
-                <strong>
-
-                    High Volatility
-
-                </strong>
-
-
-                <p>
-
-                    Historical price movements have been larger
-                    or more variable than the normal range
-                    identified by the analysis.
-
-                </p>
-
-
-                {% if latest_regime and latest_regime.regime == "high_volatility" %}
-
-                    <span class="mc-condition-current">
-
-                        Current Result
-
-                    </span>
-
-                {% endif %}
-
-
-            </div>
+            </section>
 
 
         </div>
@@ -3041,30 +2903,471 @@ Market Condition | MarketPulse
 
 
     <!-- ================================================== -->
-    <!-- INTERPRETATION NOTE                                -->
+    <!-- 4. HOW MARKET CONDITION WORKS                      -->
     <!-- ================================================== -->
 
-    <div class="mc-interpretation-note">
+    <section class="mc-explanation-panel">
 
 
-        <i class="fa-solid fa-circle-info"></i>
+        <div class="mc-section-heading">
 
 
-        <div>
+            <div class="mc-eyebrow">
+                How the Analysis Works
+            </div>
 
-            These labels describe the behaviour found in the
-            selected historical dataset.
 
-            A detected condition does not mean that the same
-            condition will continue in the future.
+            <h2>
+                How Market Condition Works
+            </h2>
+
+
+            <p>
+
+                MarketPulse takes the historical market observations
+                already stored for the selected asset, measures recent
+                behaviour and converts the statistical result into a
+                simpler historical market classification.
+
+            </p>
+
 
         </div>
 
 
-    </div>
+        <div class="mc-analysis-flow">
 
 
-</section>
+            <div class="mc-analysis-step">
+
+                <span class="mc-analysis-number">
+                    1
+                </span>
+
+                <span class="mc-analysis-icon">
+                    <i class="fa-solid fa-database"></i>
+                </span>
+
+                <div>
+
+                    <strong>
+                        Read Stored Market Data
+                    </strong>
+
+                    <p>
+
+                        MarketPulse retrieves the selected asset's
+                        historical Open, High, Low, Close and Volume
+                        observations from PostgreSQL.
+
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <i class="fa-solid fa-arrow-right mc-analysis-arrow"></i>
+
+
+            <div class="mc-analysis-step">
+
+                <span class="mc-analysis-number">
+                    2
+                </span>
+
+                <span class="mc-analysis-icon">
+                    <i class="fa-solid fa-arrow-trend-up"></i>
+                </span>
+
+                <div>
+
+                    <strong>
+                        Examine Price Direction
+                    </strong>
+
+                    <p>
+
+                        Recent price behaviour and moving-average
+                        information are examined to determine whether
+                        prices have generally been rising, falling
+                        or showing limited direction.
+
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <i class="fa-solid fa-arrow-right mc-analysis-arrow"></i>
+
+
+            <div class="mc-analysis-step">
+
+                <span class="mc-analysis-number">
+                    3
+                </span>
+
+                <span class="mc-analysis-icon">
+                    <i class="fa-solid fa-wave-square"></i>
+                </span>
+
+                <div>
+
+                    <strong>
+                        Measure Historical Volatility
+                    </strong>
+
+                    <p>
+
+                        The analysis measures how much historical
+                        prices varied during the analysed period
+                        and considers the strength of the condition.
+
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <i class="fa-solid fa-arrow-right mc-analysis-arrow"></i>
+
+
+            <div class="mc-analysis-step">
+
+                <span class="mc-analysis-number">
+                    4
+                </span>
+
+                <span class="mc-analysis-icon">
+                    <i class="fa-solid fa-tags"></i>
+                </span>
+
+                <div>
+
+                    <strong>
+                        Classify the Market Condition
+                    </strong>
+
+                    <p>
+
+                        The internal Market Regime Analysis combines
+                        the measurements and stores an easy-to-read
+                        historical classification for the user.
+
+                    </p>
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+        <div class="mc-backend-note">
+
+            <i class="fa-solid fa-code"></i>
+
+
+            <div>
+
+                <strong>
+                    What happens in the backend?
+                </strong>
+
+
+                <p>
+
+                    The Django
+
+                    <code>
+                        market_condition()
+                    </code>
+
+                    view receives the selected symbol and checks the
+                    stored
+
+                    <code>
+                        MarketData
+                    </code>
+
+                    records.
+
+                    When sufficient data is available, it calls
+
+                    <code>
+                        identify_market_regime()
+                    </code>
+
+                    in
+
+                    <code>
+                        analysis_tools/analyzers.py
+                    </code>.
+
+                    The calculated result is stored as a
+
+                    <code>
+                        MarketRegime
+                    </code>
+
+                    record in PostgreSQL.
+
+                    Django then reloads this page and supplies the
+                    most recent result through
+
+                    <code>
+                        latest_regime
+                    </code>.
+
+                </p>
+
+            </div>
+
+
+        </div>
+
+
+    </section>
+
+
+    <!-- ================================================== -->
+    <!-- 5. UNDERSTANDING THE CONDITIONS                    -->
+    <!-- ================================================== -->
+
+    <section class="mc-explanation-panel">
+
+
+        <div class="mc-section-heading">
+
+
+            <div class="mc-eyebrow">
+                Understand the Classification
+            </div>
+
+
+            <h2>
+                What Do the Market Conditions Mean?
+            </h2>
+
+
+            <p>
+
+                MarketPulse presents the technical Market Regime
+                Analysis as four simple historical classifications
+                so that the result is easier to understand.
+
+            </p>
+
+
+        </div>
+
+
+        <div class="mc-condition-grid">
+
+
+            <div
+                class="
+                    mc-condition-card
+                    mc-condition-up
+
+                    {% if latest_regime and latest_regime.regime == 'uptrend' %}
+                        mc-condition-active
+                    {% endif %}
+                "
+            >
+
+                <span class="mc-condition-icon">
+                    <i class="fa-solid fa-arrow-trend-up"></i>
+                </span>
+
+
+                <div>
+
+                    <strong>
+                        Uptrend
+                    </strong>
+
+                    <p>
+
+                        Prices have generally been moving upward
+                        during the analysed historical period.
+
+                    </p>
+
+
+                    {% if latest_regime and latest_regime.regime == "uptrend" %}
+
+                        <span class="mc-condition-current">
+                            Current Result
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+
+            </div>
+
+
+            <div
+                class="
+                    mc-condition-card
+                    mc-condition-down
+
+                    {% if latest_regime and latest_regime.regime == 'downtrend' %}
+                        mc-condition-active
+                    {% endif %}
+                "
+            >
+
+                <span class="mc-condition-icon">
+                    <i class="fa-solid fa-arrow-trend-down"></i>
+                </span>
+
+
+                <div>
+
+                    <strong>
+                        Downtrend
+                    </strong>
+
+                    <p>
+
+                        Prices have generally been moving downward
+                        during the analysed historical period.
+
+                    </p>
+
+
+                    {% if latest_regime and latest_regime.regime == "downtrend" %}
+
+                        <span class="mc-condition-current">
+                            Current Result
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+
+            </div>
+
+
+            <div
+                class="
+                    mc-condition-card
+                    mc-condition-sideways
+
+                    {% if latest_regime and latest_regime.regime == 'sideways' %}
+                        mc-condition-active
+                    {% endif %}
+                "
+            >
+
+                <span class="mc-condition-icon">
+                    <i class="fa-solid fa-arrows-left-right"></i>
+                </span>
+
+
+                <div>
+
+                    <strong>
+                        Sideways
+                    </strong>
+
+                    <p>
+
+                        Prices have shown limited sustained
+                        directional movement during the analysed
+                        period.
+
+                    </p>
+
+
+                    {% if latest_regime and latest_regime.regime == "sideways" %}
+
+                        <span class="mc-condition-current">
+                            Current Result
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+
+            </div>
+
+
+            <div
+                class="
+                    mc-condition-card
+                    mc-condition-volatility
+
+                    {% if latest_regime and latest_regime.regime == 'high_volatility' %}
+                        mc-condition-active
+                    {% endif %}
+                "
+            >
+
+                <span class="mc-condition-icon">
+                    <i class="fa-solid fa-wave-square"></i>
+                </span>
+
+
+                <div>
+
+                    <strong>
+                        High Volatility
+                    </strong>
+
+                    <p>
+
+                        Historical price movements have been larger
+                        or more variable than the normal range
+                        identified by the analysis.
+
+                    </p>
+
+
+                    {% if latest_regime and latest_regime.regime == "high_volatility" %}
+
+                        <span class="mc-condition-current">
+                            Current Result
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+
+        <div class="mc-interpretation-note">
+
+            <i class="fa-solid fa-circle-info"></i>
+
+            <div>
+
+                These labels describe the behaviour found in the
+                selected historical dataset.
+
+                A detected condition does not mean that the same
+                condition will continue in the future.
+
+            </div>
+
+        </div>
+
+
+    </section>
 
 
 </div>

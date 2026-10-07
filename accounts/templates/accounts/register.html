@@ -1,21 +1,35 @@
 {% extends "base.html" %}
-{% load django_bootstrap5 %}
-
 
 {% comment %}
 ============================================================
 MARKETPULSE - USER REGISTRATION
 ============================================================
 
-FRONT-END WORKFLOW:
+PURPOSE:
+
+Allows a new MarketPulse user to create an account.
+
+Bootstrap provides:
+- Responsive layout
+- Card structure
+- Form spacing
+- Buttons
+- Alerts
+- Typography utilities
+
+static/css/styles.css provides:
+- MarketPulse dark theme
+- Shared colours
+- Card styling
+- Form styling
+- Button styling
+- Borders and muted text
+
+BACKEND FLOW:
 
 User
     ↓
-Open Register Page
-    ↓
-Enter Account Details
-    ↓
-Submit Form
+Register Page
     ↓
 accounts.views.register
     ↓
@@ -23,36 +37,11 @@ UserRegistrationForm
     ↓
 Validation
     ↓
-Username Available?
-    ├── No
-    │     ↓
-    │   Display Username Error
-    │
-    └── Yes
-          ↓
-        Create User
-          ↓
-        Create UserProfile
-          ↓
-        PostgreSQL
-          ↓
-        Redirect to Login
-
-
-PURPOSE:
-
-This page allows a new MarketPulse user to create
-an account safely.
-
-The template deliberately displays:
-
-- Field validation errors
-- Duplicate username errors
-- Password validation errors
-- Non-field errors
-
-The actual validation and database operations happen
-inside accounts/views.py and accounts/forms.py.
+accounts.User + UserProfile
+    ↓
+PostgreSQL
+    ↓
+Redirect to Login
 
 ============================================================
 {% endcomment %}
@@ -63,886 +52,629 @@ Create Account | MarketPulse
 {% endblock %}
 
 
-{% block extra_css %}
-
-<style>
-
-/* ======================================================== */
-/* MARKETPULSE - REGISTRATION PAGE                          */
-/* ======================================================== */
-
-
-/* -------------------------------------------------------- */
-/* 1. PAGE LAYOUT                                           */
-/* -------------------------------------------------------- */
-
-.register-page {
-
-    min-height: calc(100vh - 140px);
-
-    display: flex;
-    align-items: center;
-
-    padding: 2rem 0;
-}
-
-
-.register-wrapper {
-
-    width: 100%;
-    max-width: 760px;
-
-    margin: 0 auto;
-}
-
-
-/* -------------------------------------------------------- */
-/* 2. REGISTRATION CARD                                     */
-/* -------------------------------------------------------- */
-
-.register-card {
-
-    overflow: hidden;
-
-    background: #ffffff;
-
-    border: 1px solid #e5eaf1;
-    border-radius: 16px;
-
-    box-shadow:
-        0 12px 35px
-        rgba(16, 24, 40, 0.07);
-}
-
-
-.register-card-header {
-
-    padding: 1.7rem 1.8rem 1.2rem;
-
-    border-bottom: 1px solid #eef1f5;
-}
-
-
-.register-brand {
-
-    display: inline-flex;
-    align-items: center;
-
-    gap: .45rem;
-
-    margin-bottom: .6rem;
-
-    color: #0d6efd;
-
-    font-size: .75rem;
-    font-weight: 700;
-
-    letter-spacing: .04em;
-    text-transform: uppercase;
-}
-
-
-.register-title {
-
-    margin-bottom: .35rem;
-
-    font-size: 1.75rem;
-    font-weight: 750;
-
-    color: #1d2939;
-}
-
-
-.register-subtitle {
-
-    max-width: 590px;
-
-    margin: 0;
-
-    color: #667085;
-
-    font-size: .9rem;
-    line-height: 1.5;
-}
-
-
-/* -------------------------------------------------------- */
-/* 3. FORM BODY                                             */
-/* -------------------------------------------------------- */
-
-.register-card-body {
-
-    padding: 1.8rem;
-}
-
-
-.register-section-title {
-
-    margin-bottom: 1rem;
-
-    font-size: .8rem;
-    font-weight: 700;
-
-    color: #344054;
-}
-
-
-.register-form-row {
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(
-            2,
-            minmax(0, 1fr)
-        );
-
-    gap: 1rem;
-}
-
-
-/* -------------------------------------------------------- */
-/* 4. FORM FIELDS                                           */
-/* -------------------------------------------------------- */
-
-.register-field {
-
-    margin-bottom: 1rem;
-}
-
-
-.register-field label {
-
-    margin-bottom: .4rem;
-
-    color: #344054;
-
-    font-size: .78rem;
-    font-weight: 650;
-}
-
-
-.register-field input {
-
-    min-height: 44px;
-
-    border-color: #d6dde8;
-    border-radius: 9px;
-}
-
-
-.register-field input:focus {
-
-    border-color: #0d6efd;
-
-    box-shadow:
-        0 0 0 .2rem
-        rgba(13, 110, 253, .10);
-}
-
-
-.register-help {
-
-    margin-top: .35rem;
-
-    color: #667085;
-
-    font-size: .68rem;
-    line-height: 1.45;
-}
-
-
-/* -------------------------------------------------------- */
-/* 5. ERRORS                                                */
-/* -------------------------------------------------------- */
-
-.register-error {
-
-    display: flex;
-    align-items: flex-start;
-
-    gap: .4rem;
-
-    margin-top: .4rem;
-
-    color: #b42318;
-
-    font-size: .72rem;
-    line-height: 1.4;
-}
-
-
-.register-error i {
-
-    margin-top: .15rem;
-}
-
-
-.register-error-summary {
-
-    margin-bottom: 1.25rem;
-
-    padding: .85rem 1rem;
-
-    color: #842029;
-    background: #f8d7da;
-
-    border: 1px solid #f5c2c7;
-    border-radius: 9px;
-
-    font-size: .78rem;
-}
-
-
-/* -------------------------------------------------------- */
-/* 6. PASSWORD INFORMATION                                  */
-/* -------------------------------------------------------- */
-
-.password-information {
-
-    margin: .5rem 0 1.3rem;
-
-    padding: .85rem 1rem;
-
-    background: #f8fafc;
-
-    border: 1px solid #e4e9f0;
-    border-radius: 9px;
-}
-
-
-.password-information strong {
-
-    display: block;
-
-    margin-bottom: .35rem;
-
-    color: #344054;
-
-    font-size: .72rem;
-}
-
-
-.password-information ul {
-
-    margin: 0;
-
-    padding-left: 1.1rem;
-
-    color: #667085;
-
-    font-size: .67rem;
-    line-height: 1.6;
-}
-
-
-/* -------------------------------------------------------- */
-/* 7. ACTIONS                                               */
-/* -------------------------------------------------------- */
-
-.register-actions {
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    gap: 1rem;
-
-    margin-top: 1.3rem;
-}
-
-
-.register-button {
-
-    min-width: 150px;
-
-    padding: .65rem 1rem;
-
-    border-radius: 9px;
-
-    font-weight: 650;
-}
-
-
-.register-login {
-
-    color: #667085;
-
-    font-size: .76rem;
-}
-
-
-.register-login a {
-
-    color: #0d6efd;
-
-    font-weight: 650;
-    text-decoration: none;
-}
-
-
-.register-login a:hover {
-    text-decoration: underline;
-}
-
-
-/* -------------------------------------------------------- */
-/* 8. SECURITY NOTE                                         */
-/* -------------------------------------------------------- */
-
-.register-security {
-
-    display: flex;
-    align-items: flex-start;
-
-    gap: .55rem;
-
-    margin-top: 1.2rem;
-
-    padding-top: 1rem;
-
-    color: #667085;
-
-    border-top: 1px solid #edf0f4;
-
-    font-size: .66rem;
-    line-height: 1.45;
-}
-
-
-.register-security i {
-
-    margin-top: .1rem;
-
-    color: #168654;
-}
-
-
-/* -------------------------------------------------------- */
-/* 9. RESPONSIVE                                            */
-/* -------------------------------------------------------- */
-
-@media (max-width: 767.98px) {
-
-    .register-form-row {
-
-        grid-template-columns: 1fr;
-        gap: 0;
-    }
-
-
-    .register-actions {
-
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-
-    .register-button {
-
-        width: 100%;
-    }
-
-
-    .register-login {
-
-        text-align: center;
-    }
-
-}
-
-</style>
-
-{% endblock %}
-
-
 {% block content %}
 
+<div class="container py-4 py-lg-5">
 
-<div class="register-page">
+    <div class="row justify-content-center">
 
-
-    <div class="register-wrapper">
-
-
-        <div class="register-card">
-
+        <div class="col-12 col-md-10 col-lg-8 col-xl-7">
 
             <!-- ================================================= -->
-            <!-- 1. PAGE HEADER                                    -->
+            <!-- REGISTRATION CARD                                 -->
             <!-- ================================================= -->
 
-            <div class="register-card-header">
+            <div class="card shadow-sm">
+
+                <!-- ================================================= -->
+                <!-- HEADER                                            -->
+                <!-- ================================================= -->
+
+                <div class="card-header p-4">
+
+                    <div
+                        class="
+                            d-flex
+                            align-items-center
+                            gap-2
+                            text-primary
+                            small
+                            fw-semibold
+                            text-uppercase
+                            mb-2
+                        "
+                    >
+                        <i class="fa-solid fa-chart-line"></i>
+
+                        <span>
+                            MarketPulse
+                        </span>
+                    </div>
 
 
-                <div class="register-brand">
+                    <h1 class="h3 mb-2">
+                        Create Your Account
+                    </h1>
 
-                    <i class="fa-solid fa-chart-line"></i>
 
-                    MarketPulse
+                    <p class="text-secondary small mb-0">
+
+                        Create a MarketPulse account to access the
+                        dashboard, analyse market data, build and test
+                        strategies, and use the risk-management tools.
+
+                    </p>
 
                 </div>
 
 
-                <h1 class="register-title">
+                <!-- ================================================= -->
+                <!-- BODY                                              -->
+                <!-- ================================================= -->
 
-                    Create Your Account
+                <div class="card-body p-4">
 
-                </h1>
+                    <form
+                        method="post"
+                        novalidate
+                    >
 
-
-                <p class="register-subtitle">
-
-                    Create a MarketPulse account to access the
-                    dashboard, analyse market data, build and test
-                    strategies, and use the risk-management tools.
-
-                </p>
+                        {% csrf_token %}
 
 
-            </div>
+                        <!-- ========================================= -->
+                        <!-- NON-FIELD ERRORS                          -->
+                        <!-- ========================================= -->
 
-
-            <!-- ================================================= -->
-            <!-- 2. REGISTRATION FORM                              -->
-            <!-- ================================================= -->
-
-            <div class="register-card-body">
-
-
-                <form
-                    method="post"
-                    novalidate
-                >
-
-                    {% csrf_token %}
-
-
-                    <!-- ========================================= -->
-                    <!-- NON-FIELD ERRORS                          -->
-                    <!-- ========================================= -->
-
-                    {% if form.non_field_errors %}
-
-
-                        <div
-                            class="register-error-summary"
-                            role="alert"
-                        >
-
-
-                            <strong>
-                                We could not create your account.
-                            </strong>
-
-
-                            {% for error in form.non_field_errors %}
-
-                                <div class="mt-1">
-                                    {{ error }}
-                                </div>
-
-                            {% endfor %}
-
-
-                        </div>
-
-
-                    {% endif %}
-
-
-                    <!-- ========================================= -->
-                    <!-- ACCOUNT INFORMATION                       -->
-                    <!-- ========================================= -->
-
-                    <div class="register-section-title">
-
-                        Account Information
-
-                    </div>
-
-
-                    <!-- ========================================= -->
-                    <!-- USERNAME                                  -->
-                    <!-- ========================================= -->
-
-                    <div class="register-field">
-
-
-                        <label
-                            for="{{ form.username.id_for_label }}"
-                            class="form-label"
-                        >
-
-                            Username
-
-                        </label>
-
-
-                        {{ form.username }}
-
-
-                        <div class="register-help">
-
-                            Choose a unique username for your
-                            MarketPulse account.
-
-                        </div>
-
-
-                        {% for error in form.username.errors %}
-
+                        {% if form.non_field_errors %}
 
                             <div
-                                class="register-error"
+                                class="alert alert-danger"
                                 role="alert"
                             >
 
-                                <i class="fa-solid fa-circle-exclamation"></i>
+                                <div class="fw-semibold mb-1">
 
-                                <span>
-                                    {{ error }}
-                                </span>
+                                    <i
+                                        class="
+                                            fa-solid
+                                            fa-circle-exclamation
+                                            me-1
+                                        "
+                                    ></i>
 
-                            </div>
-
-
-                        {% endfor %}
-
-
-                    </div>
-
-
-                    <!-- ========================================= -->
-                    <!-- FIRST + LAST NAME                         -->
-                    <!-- ========================================= -->
-
-                    <div class="register-form-row">
-
-
-                        <!-- First name -->
-
-                        <div class="register-field">
-
-
-                            <label
-                                for="{{ form.first_name.id_for_label }}"
-                                class="form-label"
-                            >
-
-                                First Name
-
-                            </label>
-
-
-                            {{ form.first_name }}
-
-
-                            {% for error in form.first_name.errors %}
-
-
-                                <div class="register-error">
-
-                                    <i class="fa-solid fa-circle-exclamation"></i>
-
-                                    <span>
-                                        {{ error }}
-                                    </span>
+                                    We could not create your account.
 
                                 </div>
 
 
-                            {% endfor %}
+                                {% for error in form.non_field_errors %}
 
-
-                        </div>
-
-
-                        <!-- Last name -->
-
-                        <div class="register-field">
-
-
-                            <label
-                                for="{{ form.last_name.id_for_label }}"
-                                class="form-label"
-                            >
-
-                                Last Name
-
-                            </label>
-
-
-                            {{ form.last_name }}
-
-
-                            {% for error in form.last_name.errors %}
-
-
-                                <div class="register-error">
-
-                                    <i class="fa-solid fa-circle-exclamation"></i>
-
-                                    <span>
+                                    <div class="small">
                                         {{ error }}
-                                    </span>
+                                    </div>
+
+                                {% endfor %}
+
+                            </div>
+
+                        {% endif %}
+
+
+                        <!-- ========================================= -->
+                        <!-- ACCOUNT INFORMATION                       -->
+                        <!-- ========================================= -->
+
+                        <div class="mb-4">
+
+                            <h2 class="h6 mb-1">
+                                Account Information
+                            </h2>
+
+                            <p class="small text-secondary mb-3">
+                                Enter the details you will use for your
+                                MarketPulse account.
+                            </p>
+
+
+                            <div class="row g-3">
+
+                                <!-- ================================= -->
+                                <!-- USERNAME                          -->
+                                <!-- ================================= -->
+
+                                <div class="col-12">
+
+                                    <label
+                                        for="{{ form.username.id_for_label }}"
+                                        class="form-label fw-semibold"
+                                    >
+                                        Username
+                                    </label>
+
+
+                                    {{ form.username }}
+
+
+                                    <div class="form-text">
+                                        Choose a unique username for your
+                                        MarketPulse account.
+                                    </div>
+
+
+                                    {% for error in form.username.errors %}
+
+                                        <div
+                                            class="
+                                                text-danger
+                                                small
+                                                mt-1
+                                                d-flex
+                                                align-items-start
+                                                gap-1
+                                            "
+                                            role="alert"
+                                        >
+
+                                            <i
+                                                class="
+                                                    fa-solid
+                                                    fa-circle-exclamation
+                                                    mt-1
+                                                "
+                                            ></i>
+
+                                            <span>
+                                                {{ error }}
+                                            </span>
+
+                                        </div>
+
+                                    {% endfor %}
 
                                 </div>
 
 
-                            {% endfor %}
+                                <!-- ================================= -->
+                                <!-- FIRST NAME                        -->
+                                <!-- ================================= -->
 
+                                <div class="col-12 col-md-6">
+
+                                    <label
+                                        for="{{ form.first_name.id_for_label }}"
+                                        class="form-label fw-semibold"
+                                    >
+                                        First Name
+                                    </label>
+
+
+                                    {{ form.first_name }}
+
+
+                                    {% for error in form.first_name.errors %}
+
+                                        <div
+                                            class="
+                                                text-danger
+                                                small
+                                                mt-1
+                                                d-flex
+                                                align-items-start
+                                                gap-1
+                                            "
+                                            role="alert"
+                                        >
+
+                                            <i
+                                                class="
+                                                    fa-solid
+                                                    fa-circle-exclamation
+                                                    mt-1
+                                                "
+                                            ></i>
+
+                                            <span>
+                                                {{ error }}
+                                            </span>
+
+                                        </div>
+
+                                    {% endfor %}
+
+                                </div>
+
+
+                                <!-- ================================= -->
+                                <!-- LAST NAME                         -->
+                                <!-- ================================= -->
+
+                                <div class="col-12 col-md-6">
+
+                                    <label
+                                        for="{{ form.last_name.id_for_label }}"
+                                        class="form-label fw-semibold"
+                                    >
+                                        Last Name
+                                    </label>
+
+
+                                    {{ form.last_name }}
+
+
+                                    {% for error in form.last_name.errors %}
+
+                                        <div
+                                            class="
+                                                text-danger
+                                                small
+                                                mt-1
+                                                d-flex
+                                                align-items-start
+                                                gap-1
+                                            "
+                                            role="alert"
+                                        >
+
+                                            <i
+                                                class="
+                                                    fa-solid
+                                                    fa-circle-exclamation
+                                                    mt-1
+                                                "
+                                            ></i>
+
+                                            <span>
+                                                {{ error }}
+                                            </span>
+
+                                        </div>
+
+                                    {% endfor %}
+
+                                </div>
+
+
+                                <!-- ================================= -->
+                                <!-- EMAIL                             -->
+                                <!-- ================================= -->
+
+                                <div class="col-12">
+
+                                    <label
+                                        for="{{ form.email.id_for_label }}"
+                                        class="form-label fw-semibold"
+                                    >
+                                        Email Address
+                                    </label>
+
+
+                                    {{ form.email }}
+
+
+                                    <div class="form-text">
+
+                                        Enter a valid email address associated
+                                        with your account.
+
+                                    </div>
+
+
+                                    {% for error in form.email.errors %}
+
+                                        <div
+                                            class="
+                                                text-danger
+                                                small
+                                                mt-1
+                                                d-flex
+                                                align-items-start
+                                                gap-1
+                                            "
+                                            role="alert"
+                                        >
+
+                                            <i
+                                                class="
+                                                    fa-solid
+                                                    fa-circle-exclamation
+                                                    mt-1
+                                                "
+                                            ></i>
+
+                                            <span>
+                                                {{ error }}
+                                            </span>
+
+                                        </div>
+
+                                    {% endfor %}
+
+                                </div>
+
+                            </div>
 
                         </div>
 
 
-                    </div>
+                        <hr class="my-4">
 
 
-                    <!-- ========================================= -->
-                    <!-- EMAIL                                     -->
-                    <!-- ========================================= -->
+                        <!-- ========================================= -->
+                        <!-- ACCOUNT SECURITY                          -->
+                        <!-- ========================================= -->
 
-                    <div class="register-field">
+                        <div class="mb-4">
 
+                            <h2 class="h6 mb-1">
+                                Account Security
+                            </h2>
 
-                        <label
-                            for="{{ form.email.id_for_label }}"
-                            class="form-label"
-                        >
-
-                            Email Address
-
-                        </label>
+                            <p class="small text-secondary mb-3">
+                                Create a secure password for your account.
+                            </p>
 
 
-                        {{ form.email }}
+                            <div class="row g-3">
+
+                                <!-- ================================= -->
+                                <!-- PASSWORD 1                        -->
+                                <!-- ================================= -->
+
+                                <div class="col-12">
+
+                                    <label
+                                        for="{{ form.password1.id_for_label }}"
+                                        class="form-label fw-semibold"
+                                    >
+                                        Password
+                                    </label>
 
 
-                        <div class="register-help">
+                                    {{ form.password1 }}
 
-                            Enter a valid email address associated
-                            with your account.
+
+                                    {% for error in form.password1.errors %}
+
+                                        <div
+                                            class="
+                                                text-danger
+                                                small
+                                                mt-1
+                                                d-flex
+                                                align-items-start
+                                                gap-1
+                                            "
+                                            role="alert"
+                                        >
+
+                                            <i
+                                                class="
+                                                    fa-solid
+                                                    fa-circle-exclamation
+                                                    mt-1
+                                                "
+                                            ></i>
+
+                                            <span>
+                                                {{ error }}
+                                            </span>
+
+                                        </div>
+
+                                    {% endfor %}
+
+                                </div>
+
+
+                                <!-- ================================= -->
+                                <!-- PASSWORD 2                        -->
+                                <!-- ================================= -->
+
+                                <div class="col-12">
+
+                                    <label
+                                        for="{{ form.password2.id_for_label }}"
+                                        class="form-label fw-semibold"
+                                    >
+                                        Confirm Password
+                                    </label>
+
+
+                                    {{ form.password2 }}
+
+
+                                    {% for error in form.password2.errors %}
+
+                                        <div
+                                            class="
+                                                text-danger
+                                                small
+                                                mt-1
+                                                d-flex
+                                                align-items-start
+                                                gap-1
+                                            "
+                                            role="alert"
+                                        >
+
+                                            <i
+                                                class="
+                                                    fa-solid
+                                                    fa-circle-exclamation
+                                                    mt-1
+                                                "
+                                            ></i>
+
+                                            <span>
+                                                {{ error }}
+                                            </span>
+
+                                        </div>
+
+                                    {% endfor %}
+
+                                </div>
+
+                            </div>
 
                         </div>
 
 
-                        {% for error in form.email.errors %}
-
-
-                            <div class="register-error">
-
-                                <i class="fa-solid fa-circle-exclamation"></i>
-
-                                <span>
-                                    {{ error }}
-                                </span>
-
-                            </div>
-
-
-                        {% endfor %}
-
-
-                    </div>
-
-
-                    <!-- ========================================= -->
-                    <!-- PASSWORD                                  -->
-                    <!-- ========================================= -->
-
-                    <div class="register-section-title mt-4">
-
-                        Account Security
-
-                    </div>
-
-
-                    <!-- Password 1 -->
-
-                    <div class="register-field">
-
-
-                        <label
-                            for="{{ form.password1.id_for_label }}"
-                            class="form-label"
-                        >
-
-                            Password
-
-                        </label>
-
-
-                        {{ form.password1 }}
-
-
-                        {% for error in form.password1.errors %}
-
-
-                            <div class="register-error">
-
-                                <i class="fa-solid fa-circle-exclamation"></i>
-
-                                <span>
-                                    {{ error }}
-                                </span>
-
-                            </div>
-
-
-                        {% endfor %}
-
-
-                    </div>
-
-
-                    <!-- Password 2 -->
-
-                    <div class="register-field">
-
-
-                        <label
-                            for="{{ form.password2.id_for_label }}"
-                            class="form-label"
-                        >
-
-                            Confirm Password
-
-                        </label>
-
-
-                        {{ form.password2 }}
-
-
-                        {% for error in form.password2.errors %}
-
-
-                            <div class="register-error">
-
-                                <i class="fa-solid fa-circle-exclamation"></i>
-
-                                <span>
-                                    {{ error }}
-                                </span>
-
-                            </div>
-
-
-                        {% endfor %}
-
-
-                    </div>
-
-
-                    <!-- ========================================= -->
-                    <!-- PASSWORD GUIDANCE                         -->
-                    <!-- ========================================= -->
-
-                    <div class="password-information">
-
-
-                        <strong>
-
-                            Password requirements
-
-                        </strong>
-
-
-                        <ul>
-
-                            <li>
-                                Use a password that is difficult
-                                for somebody else to guess.
-                            </li>
-
-                            <li>
-                                Avoid using only numbers or very
-                                common passwords.
-                            </li>
-
-                            <li>
-                                Both password fields must match.
-                            </li>
-
-                        </ul>
-
-
-                    </div>
-
-
-                    <!-- ========================================= -->
-                    <!-- SUBMIT                                    -->
-                    <!-- ========================================= -->
-
-                    <div class="register-actions">
-
-
-                        <button
-                            type="submit"
+                        <!-- ========================================= -->
+                        <!-- PASSWORD GUIDANCE                         -->
+                        <!-- ========================================= -->
+
+                        <div
                             class="
-                                btn
-                                btn-primary
-                                register-button
+                                border
+                                rounded-3
+                                p-3
+                                mb-4
                             "
                         >
 
-                            <i class="fa-solid fa-user-plus me-2"></i>
+                            <div
+                                class="
+                                    d-flex
+                                    align-items-center
+                                    gap-2
+                                    fw-semibold
+                                    small
+                                    mb-2
+                                "
+                            >
 
-                            Create Account
+                                <i class="fa-solid fa-shield-halved text-success"></i>
 
-                        </button>
+                                Password requirements
+
+                            </div>
 
 
-                        <div class="register-login">
+                            <ul
+                                class="
+                                    small
+                                    text-secondary
+                                    mb-0
+                                    ps-3
+                                "
+                            >
 
-                            Already have an account?
+                                <li class="mb-1">
+                                    Use a password that is difficult for
+                                    somebody else to guess.
+                                </li>
 
-                            <a href="{% url 'accounts:login' %}">
-                                Log in
-                            </a>
+                                <li class="mb-1">
+                                    Avoid using only numbers or very common
+                                    passwords.
+                                </li>
+
+                                <li>
+                                    Both password fields must match.
+                                </li>
+
+                            </ul>
 
                         </div>
 
 
-                    </div>
+                        <!-- ========================================= -->
+                        <!-- ACTIONS                                   -->
+                        <!-- ========================================= -->
+
+                        <div
+                            class="
+                                d-flex
+                                flex-column
+                                flex-sm-row
+                                align-items-sm-center
+                                justify-content-between
+                                gap-3
+                            "
+                        >
+
+                            <button
+                                type="submit"
+                                class="btn btn-primary px-4"
+                            >
+
+                                <i class="fa-solid fa-user-plus me-2"></i>
+
+                                Create Account
+
+                            </button>
 
 
-                    <!-- ========================================= -->
-                    <!-- SECURITY INFORMATION                      -->
-                    <!-- ========================================= -->
+                            <div class="small text-secondary">
 
-                    <div class="register-security">
+                                Already have an account?
 
+                                <a
+                                    href="{% url 'accounts:login' %}"
+                                    class="
+                                        link-primary
+                                        fw-semibold
+                                        text-decoration-none
+                                    "
+                                >
+                                    Log in
+                                </a>
 
-                        <i class="fa-solid fa-shield-halved"></i>
-
-
-                        <div>
-
-                            MarketPulse uses Django's authentication
-                            system to validate registration details
-                            and securely hash passwords before they
-                            are stored in the database.
+                            </div>
 
                         </div>
 
 
-                    </div>
+                        <!-- ========================================= -->
+                        <!-- SECURITY INFORMATION                      -->
+                        <!-- ========================================= -->
+
+                        <div
+                            class="
+                                border-top
+                                mt-4
+                                pt-3
+                                d-flex
+                                align-items-start
+                                gap-2
+                                small
+                                text-secondary
+                            "
+                        >
+
+                            <i
+                                class="
+                                    fa-solid
+                                    fa-shield-halved
+                                    text-success
+                                    mt-1
+                                "
+                            ></i>
 
 
-                </form>
+                            <div>
 
+                                MarketPulse uses Django's authentication
+                                system to validate registration details
+                                and securely hash passwords before they
+                                are stored in the database.
+
+                            </div>
+
+                        </div>
+
+                    </form>
+
+                </div>
 
             </div>
 
-
         </div>
-
 
     </div>
 
-
 </div>
-
 
 {% endblock %}

@@ -94,7 +94,14 @@ PostgreSQL / Neon
                 Alpaca
             </span>
 
-            <span class="badge bg-light text-dark border">
+            <span
+                class="
+                    badge
+                    bg-secondary-subtle
+                    text-secondary-emphasis
+                    border
+                "
+            >
                 IEX
             </span>
 
@@ -221,7 +228,14 @@ PostgreSQL / Neon
 
                         </div>
 
-                        <span class="badge bg-light text-dark border">
+                        <span
+                            class="
+                                badge
+                                bg-secondary-subtle
+                                text-secondary-emphasis
+                                border
+                            "
+                        >
                             Alpaca
                         </span>
 
@@ -643,8 +657,8 @@ PostgreSQL / Neon
                                 id="selectedAssetExchange"
                                 class="
                                     badge
-                                    bg-light
-                                    text-dark
+                                    bg-secondary-subtle
+                                    text-secondary-emphasis
                                     border
                                 "
                             >
@@ -960,7 +974,13 @@ PostgreSQL / Neon
 
                 <div
                     id="unsupportedChartMessage"
-                    class="alert alert-light border d-none mt-3"
+                    class="
+                        alert
+                        alert-secondary
+                        border
+                        d-none
+                        mt-3
+                    "
                 >
                 </div>
 
@@ -1071,7 +1091,7 @@ PostgreSQL / Neon
                     "
                 >
 
-                    <thead class="table-light">
+                    <thead>
 
                         <tr>
 
@@ -1157,8 +1177,8 @@ PostgreSQL / Neon
                                     <span
                                         class="
                                             badge
-                                            bg-light
-                                            text-dark
+                                            bg-secondary-subtle
+                                            text-secondary-emphasis
                                             border
                                         "
                                     >
@@ -1334,7 +1354,7 @@ PostgreSQL / Neon
 
         {% else %}
 
-            <div class="alert alert-light border mb-0">
+            <div class="alert alert-secondary border mb-0">
 
                 <strong>
                     No alert rules yet.
@@ -1980,7 +2000,7 @@ PostgreSQL / Neon
 <!-- 8. EDUCATIONAL NOTICE                                  -->
 <!-- ====================================================== -->
 
-<div class="alert alert-light border">
+<div class="alert alert-secondary border">
 
     <strong>
         Educational project:
@@ -2041,7 +2061,50 @@ document.addEventListener(
 
 
         // ====================================================
-        // 10.2 GENERAL HELPERS
+        // 10.2 MARKETPULSE CHART COLOUR SYSTEM
+        // ====================================================
+        //
+        // TradingView Lightweight Charts draws its own chart
+        // surface, so normal CSS cannot control these colours.
+        //
+        // These values match the shared MarketPulse / Data-tab
+        // dark theme.
+        // ====================================================
+
+        const chartTheme = {
+
+            background:
+                "#152235",
+
+            text:
+                "#93a4b8",
+
+            grid:
+                "#26374b",
+
+            border:
+                "#314258",
+
+            primary:
+                "#5b91bd",
+
+            success:
+                "#32c98b",
+
+            danger:
+                "#dc6b75",
+
+            successVolume:
+                "rgba(50, 201, 139, 0.35)",
+
+            dangerVolume:
+                "rgba(220, 107, 117, 0.35)"
+
+        };
+
+
+        // ====================================================
+        // 10.3 GENERAL HELPERS
         // ====================================================
 
         function setText(
@@ -2261,7 +2324,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 10.3 MARKET CLOCK
+        // 10.4 MARKET CLOCK
         // ====================================================
 
         async function loadMarketClock() {
@@ -2392,7 +2455,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 10.4 UPDATE SELECTED ASSET VISUAL STATE
+        // 10.5 UPDATE SELECTED ASSET VISUAL STATE
         // ====================================================
 
         function highlightSelectedAsset() {
@@ -2446,7 +2509,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 10.5 LOAD SELECTED ASSET
+        // 10.6 LOAD SELECTED ASSET
         // ====================================================
 
         async function loadSelectedAsset() {
@@ -2630,7 +2693,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 10.6 UPDATE ASSET HEADER
+        // 10.7 UPDATE ASSET HEADER
         // ====================================================
 
         function updateSelectedAssetHeader(
@@ -2786,7 +2849,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 10.7 HEIKIN-ASHI CALCULATION
+        // 10.8 HEIKIN-ASHI CALCULATION
         // ====================================================
 
         function buildHeikinAshi(
@@ -2962,7 +3025,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 10.8 DESTROY OLD CHART
+        // 10.9 DESTROY OLD CHART
         // ====================================================
 
         function destroyProfessionalChart() {
@@ -2998,7 +3061,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 10.9 RENDER PROFESSIONAL CHART
+        // 10.10 RENDER PROFESSIONAL CHART
         // ====================================================
 
         function renderProfessionalChart() {
@@ -3208,7 +3271,7 @@ document.addEventListener(
 
 
             // =================================================
-            // CREATE CHART
+            // CREATE DARK MARKETPULSE CHART
             // =================================================
 
             chartInstance =
@@ -3226,11 +3289,11 @@ document.addEventListener(
                                     "solid",
 
                                 color:
-                                    "#ffffff"
+                                    chartTheme.background
                             },
 
                             textColor:
-                                "#5f6368"
+                                chartTheme.text
 
                         },
 
@@ -3239,12 +3302,12 @@ document.addEventListener(
 
                             vertLines: {
                                 color:
-                                    "#eef1f5"
+                                    chartTheme.grid
                             },
 
                             horzLines: {
                                 color:
-                                    "#eef1f5"
+                                    chartTheme.grid
                             }
 
                         },
@@ -3253,7 +3316,7 @@ document.addEventListener(
                         rightPriceScale: {
 
                             borderColor:
-                                "#dfe3e8"
+                                chartTheme.border
 
                         },
 
@@ -3261,7 +3324,7 @@ document.addEventListener(
                         timeScale: {
 
                             borderColor:
-                                "#dfe3e8",
+                                chartTheme.border,
 
                             timeVisible:
                                 selectedPeriod === "1D"
@@ -3371,16 +3434,16 @@ document.addEventListener(
                         LightweightCharts.CandlestickSeries,
                         {
                             upColor:
-                                "#198754",
+                                chartTheme.success,
 
                             downColor:
-                                "#dc3545",
+                                chartTheme.danger,
 
                             wickUpColor:
-                                "#198754",
+                                chartTheme.success,
 
                             wickDownColor:
-                                "#dc3545",
+                                chartTheme.danger,
 
                             borderVisible:
                                 false
@@ -3459,9 +3522,9 @@ document.addEventListener(
                                             bar.open
                                         )
                                         ?
-                                        "rgba(25,135,84,0.35)"
+                                        chartTheme.successVolume
                                         :
-                                        "rgba(220,53,69,0.35)"
+                                        chartTheme.dangerVolume
                                     )
 
                             };
@@ -3497,6 +3560,9 @@ document.addEventListener(
                     chartInstance.addSeries(
                         LightweightCharts.LineSeries,
                         {
+
+                            color:
+                                chartTheme.primary,
 
                             lineWidth:
                                 2
@@ -3556,16 +3622,16 @@ document.addEventListener(
                         {
 
                             upColor:
-                                "#198754",
+                                chartTheme.success,
 
                             downColor:
-                                "#dc3545",
+                                chartTheme.danger,
 
                             wickUpColor:
-                                "#198754",
+                                chartTheme.success,
 
                             wickDownColor:
-                                "#dc3545",
+                                chartTheme.danger,
 
                             borderVisible:
                                 false
@@ -3647,9 +3713,9 @@ document.addEventListener(
                                             bar.open
                                         )
                                         ?
-                                        "#198754"
+                                        chartTheme.success
                                         :
-                                        "#dc3545"
+                                        chartTheme.danger
                                     )
 
                             };
@@ -3699,7 +3765,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 10.10 SEARCH ALPACA ASSETS
+        // 10.11 SEARCH ALPACA ASSETS
         // ====================================================
 
         async function searchAssets(
@@ -3942,9 +4008,9 @@ document.addEventListener(
                             (
                                 "badge "
                                 +
-                                "bg-light "
+                                "bg-secondary-subtle "
                                 +
-                                "text-dark "
+                                "text-secondary-emphasis "
                                 +
                                 "border"
                             );
@@ -4048,7 +4114,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 10.11 SEARCH EVENT
+        // 10.12 SEARCH EVENT
         // ====================================================
 
         const searchInput =
@@ -4095,7 +4161,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 10.12 QUICK ASSET BUTTONS
+        // 10.13 QUICK ASSET BUTTONS
         // ====================================================
 
         document
@@ -4125,7 +4191,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 10.13 ALERT SYMBOL BUTTONS
+        // 10.14 ALERT SYMBOL BUTTONS
         // ====================================================
 
         document
@@ -4166,7 +4232,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 10.14 PERIOD BUTTONS
+        // 10.15 PERIOD BUTTONS
         // ====================================================
 
         document
@@ -4228,7 +4294,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 10.15 CHART TYPE SELECTOR
+        // 10.16 CHART TYPE SELECTOR
         // ====================================================
 
         const chartTypeSelect =
@@ -4258,7 +4324,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 10.16 REFRESH WORKSPACE
+        // 10.17 REFRESH WORKSPACE
         // ====================================================
 
         const refreshButton =
@@ -4286,7 +4352,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 10.17 INITIAL LOAD
+        // 10.18 INITIAL LOAD
         // ====================================================
 
         loadMarketClock();
@@ -4295,7 +4361,7 @@ document.addEventListener(
 
 
         // ====================================================
-        // 10.18 AUTOMATIC MARKET CLOCK REFRESH
+        // 10.19 AUTOMATIC MARKET CLOCK REFRESH
         // ====================================================
 
         window.setInterval(

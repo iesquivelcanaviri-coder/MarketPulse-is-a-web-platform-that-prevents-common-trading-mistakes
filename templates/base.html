@@ -4,41 +4,53 @@
 {# MARKETPULSE — SHARED BASE TEMPLATE                       #}
 {# ======================================================== #}
 {#                                                          #}
-{# FRAMEWORK CONNECTION:                                    #}
+{# SHARED FRONT-END ARCHITECTURE:                           #}
 {#                                                          #}
 {# Django URL                                               #}
 {#      ↓                                                   #}
 {# Django View                                              #}
 {#      ↓                                                   #}
-{# Page Template extends base.html                          #}
+{# Page Template                                            #}
 {#      ↓                                                   #}
-{# base.html supplies navigation, messages and styling      #}
-{#                                                          #}
-{# Example:                                                 #}
-{#                                                          #}
-{# data_management/urls.py                                  #}
+{# base.html                                                #}
 {#      ↓                                                   #}
-{# data_management/views.py                                 #}
-{#      ↓                                                   #}
-{# data_management/templates/data_management/import.html    #}
-{#      ↓                                                   #}
-{# templates/base.html                                      #}
+{# Bootstrap 5 + static/css/styles.css                      #}
 {#                                                          #}
-{# Child templates insert their content inside:             #}
+{# Bootstrap provides:                                      #}
+{# - Responsive grid                                        #}
+{# - Navigation                                             #}
+{# - Cards                                                  #}
+{# - Buttons                                                #}
+{# - Forms                                                  #}
+{# - Tables                                                 #}
+{# - Alerts                                                 #}
+{# - Modals                                                 #}
+{# - Utility classes                                        #}
 {#                                                          #}
-{# {% block content %}                                      #}
+{# styles.css provides:                                     #}
+{# - MarketPulse dark theme                                 #}
+{# - Shared colours                                         #}
+{# - Shared panel styling                                   #}
+{# - Shared navigation colours                              #}
+{# - Shared typography                                      #}
 {#                                                          #}
-{# Bootstrap supplies the responsive layout and components. #}
-{# styles.css supplies the MarketPulse dark visual theme.   #}
+{# IMPORTANT:                                               #}
+{#                                                          #}
+{# Some older MarketPulse templates still contain legacy    #}
+{# page-specific light CSS. The final theme guard in this   #}
+{# base template ensures that the application page canvas   #}
+{# remains dark while those legacy styles are progressively #}
+{# removed.                                                 #}
 {# ======================================================== #}
 
 
-{# Load Django Bootstrap and static-file template tags. #}
 {% load django_bootstrap5 static %}
 
 
-{# data-bs-theme="dark" activates Bootstrap's dark theme. #}
-<html lang="en" data-bs-theme="dark">
+<html
+    lang="en"
+    data-bs-theme="dark"
+>
 
 
 {# ======================================================== #}
@@ -54,8 +66,16 @@
         content="width=device-width, initial-scale=1"
     >
 
+    <meta
+        name="color-scheme"
+        content="dark"
+    >
 
-    {# Each child template can provide its own page title. #}
+
+    {# ---------------------------------------------------- #}
+    {# PAGE TITLE                                           #}
+    {# ---------------------------------------------------- #}
+
     <title>
         {% block title %}
             MarketPulse
@@ -63,27 +83,784 @@
     </title>
 
 
-    {# Load Bootstrap 5 CSS through django-bootstrap5. #}
+    {# ---------------------------------------------------- #}
+    {# BOOTSTRAP 5 CSS                                      #}
+    {# ---------------------------------------------------- #}
+
     {% bootstrap_css %}
 
 
-    {# Font Awesome provides the navigation icons. #}
+    {# ---------------------------------------------------- #}
+    {# FONT AWESOME                                         #}
+    {# ---------------------------------------------------- #}
+
     <link
         rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
     >
 
 
-    {# Load the shared MarketPulse stylesheet. #}
+    {# ---------------------------------------------------- #}
+    {# GLOBAL MARKETPULSE THEME                             #}
+    {# ---------------------------------------------------- #}
+
     <link
         rel="stylesheet"
         href="{% static 'css/styles.css' %}"
     >
 
 
-    {# Individual pages may add extra CSS when required. #}
+    {# ---------------------------------------------------- #}
+    {# OPTIONAL PAGE-SPECIFIC CSS                           #}
+    {# ---------------------------------------------------- #}
+    {#                                                      #}
+    {# Existing specialised pages can still provide their   #}
+    {# own component CSS here.                              #}
+
     {% block extra_css %}
     {% endblock %}
+
+
+    {# ---------------------------------------------------- #}
+    {# FINAL MARKETPULSE THEME GUARD                        #}
+    {# ---------------------------------------------------- #}
+    {#                                                      #}
+    {# IMPORTANT:                                           #}
+    {#                                                      #}
+    {# This small shared layer is intentionally placed      #}
+    {# AFTER page-specific CSS.                             #}
+    {#                                                      #}
+    {# Several older templates still contain their own      #}
+    {# light-theme rules. This guard prevents those pages   #}
+    {# from turning the complete application background     #}
+    {# white.                                               #}
+    {#                                                      #}
+    {# Component-specific legacy CSS should still be        #}
+    {# removed from those templates over time.              #}
+
+    <style>
+
+        /* ==================================================== */
+        /* MARKETPULSE SHARED COLOUR TOKENS                      */
+        /* ==================================================== */
+
+        :root,
+        [data-bs-theme="dark"] {
+
+            --mp-bg: #0c1420;
+
+            --mp-nav: #111c2b;
+
+            --mp-panel: #152235;
+
+            --mp-panel-soft: #18283a;
+
+            --mp-panel-dark: #101a28;
+
+            --mp-border: #314258;
+
+            --mp-border-soft: #26374b;
+
+            --mp-text: #f1f5f9;
+
+            --mp-muted: #93a4b8;
+
+            --mp-primary: #4f86b6;
+
+            --mp-primary-hover: #6095c2;
+
+            --mp-success: #32c98b;
+
+            --mp-warning: #d3a854;
+
+            --mp-danger: #dc6b75;
+
+
+            /* ----------------------------------------------- */
+            /* Bootstrap colour mapping                        */
+            /* ----------------------------------------------- */
+
+            --bs-body-bg: var(--mp-bg);
+
+            --bs-body-color: var(--mp-text);
+
+            --bs-emphasis-color: var(--mp-text);
+
+            --bs-secondary-color: var(--mp-muted);
+
+            --bs-tertiary-color: var(--mp-muted);
+
+            --bs-border-color: var(--mp-border);
+
+            --bs-border-color-translucent:
+                rgba(49, 66, 88, .65);
+
+            --bs-primary: var(--mp-primary);
+
+            --bs-primary-rgb: 79, 134, 182;
+
+            --bs-success: var(--mp-success);
+
+            --bs-warning: var(--mp-warning);
+
+            --bs-danger: var(--mp-danger);
+        }
+
+
+        /* ==================================================== */
+        /* APPLICATION PAGE CANVAS                              */
+        /* ==================================================== */
+
+        html {
+
+            min-height: 100%;
+
+            background-color: var(--mp-bg) !important;
+        }
+
+
+        body,
+        body.marketpulse-body {
+
+            min-height: 100vh;
+
+            margin: 0;
+
+            color: var(--mp-text) !important;
+
+            background:
+                var(--mp-bg)
+                !important;
+        }
+
+
+        /* ---------------------------------------------------- */
+        /* Main Django application area                         */
+        /* ---------------------------------------------------- */
+
+        #main-content,
+        .marketpulse-main {
+
+            color: var(--mp-text) !important;
+
+            background:
+                var(--mp-bg)
+                !important;
+        }
+
+
+        /* ---------------------------------------------------- */
+        /* Prevent Bootstrap containers from creating a light    */
+        /* page canvas.                                          */
+        /* ---------------------------------------------------- */
+
+        .marketpulse-main > .container,
+        .marketpulse-main > .container-fluid {
+
+            background-color:
+                transparent
+                !important;
+        }
+
+
+        /* ==================================================== */
+        /* NAVIGATION                                            */
+        /* ==================================================== */
+
+        .marketpulse-navbar,
+        .marketpulse-navbar.bg-primary {
+
+            background:
+                var(--mp-nav)
+                !important;
+
+            border-bottom:
+                1px solid
+                var(--mp-border-soft);
+        }
+
+
+        .marketpulse-navbar .navbar-brand {
+
+            color:
+                var(--mp-text)
+                !important;
+        }
+
+
+        .marketpulse-navbar .nav-link {
+
+            color:
+                var(--mp-muted)
+                !important;
+        }
+
+
+        .marketpulse-navbar .nav-link:hover,
+        .marketpulse-navbar .nav-link:focus {
+
+            color:
+                var(--mp-text)
+                !important;
+        }
+
+
+        .marketpulse-navbar .nav-link.active {
+
+            color:
+                #ffffff
+                !important;
+        }
+
+
+        /* ==================================================== */
+        /* BOOTSTRAP CARDS                                       */
+        /* ==================================================== */
+
+        .card {
+
+            color:
+                var(--mp-text);
+
+            background-color:
+                var(--mp-panel);
+
+            border-color:
+                var(--mp-border);
+        }
+
+
+        .card-header,
+        .card-footer {
+
+            color:
+                var(--mp-text);
+
+            background-color:
+                var(--mp-panel-soft);
+
+            border-color:
+                var(--mp-border);
+        }
+
+
+        /* ---------------------------------------------------- */
+        /* Remove old explicit light Bootstrap backgrounds      */
+        /* ---------------------------------------------------- */
+
+        .card-header.bg-white,
+        .card-footer.bg-white {
+
+            background-color:
+                var(--mp-panel-soft)
+                !important;
+        }
+
+
+        .bg-white {
+
+            background-color:
+                var(--mp-panel)
+                !important;
+        }
+
+
+        .bg-light {
+
+            color:
+                var(--mp-text)
+                !important;
+
+            background-color:
+                var(--mp-panel-soft)
+                !important;
+        }
+
+
+        /* ==================================================== */
+        /* TYPOGRAPHY                                            */
+        /* ==================================================== */
+
+        body,
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        label,
+        legend,
+        strong {
+
+            color:
+                var(--mp-text);
+        }
+
+
+        .text-muted,
+        .text-secondary {
+
+            color:
+                var(--mp-muted)
+                !important;
+        }
+
+
+        .text-dark {
+
+            color:
+                var(--mp-text)
+                !important;
+        }
+
+
+        /* ==================================================== */
+        /* FORMS                                                 */
+        /* ==================================================== */
+
+        .form-control,
+        .form-select {
+
+            color:
+                var(--mp-text);
+
+            background-color:
+                var(--mp-panel-dark);
+
+            border-color:
+                var(--mp-border);
+        }
+
+
+        .form-control:focus,
+        .form-select:focus {
+
+            color:
+                var(--mp-text);
+
+            background-color:
+                var(--mp-panel-dark);
+
+            border-color:
+                var(--mp-primary);
+
+            box-shadow:
+                0 0 0 .2rem
+                rgba(79, 134, 182, .16);
+        }
+
+
+        .form-control::placeholder {
+
+            color:
+                var(--mp-muted);
+
+            opacity:
+                .75;
+        }
+
+
+        .form-control:disabled,
+        .form-select:disabled {
+
+            color:
+                var(--mp-muted);
+
+            background-color:
+                #111d2b;
+
+            border-color:
+                var(--mp-border-soft);
+        }
+
+
+        .form-text {
+
+            color:
+                var(--mp-muted);
+        }
+
+
+        .input-group-text {
+
+            color:
+                var(--mp-text);
+
+            background-color:
+                var(--mp-panel-soft);
+
+            border-color:
+                var(--mp-border);
+        }
+
+
+        /* ==================================================== */
+        /* TABLES                                                */
+        /* ==================================================== */
+
+        .table {
+
+            --bs-table-color:
+                var(--mp-text);
+
+            --bs-table-bg:
+                transparent;
+
+            --bs-table-border-color:
+                var(--mp-border-soft);
+
+            --bs-table-striped-color:
+                var(--mp-text);
+
+            --bs-table-striped-bg:
+                rgba(255, 255, 255, .025);
+
+            --bs-table-hover-color:
+                var(--mp-text);
+
+            --bs-table-hover-bg:
+                rgba(79, 134, 182, .08);
+
+            color:
+                var(--mp-text);
+        }
+
+
+        .table-light {
+
+            --bs-table-color:
+                var(--mp-text);
+
+            --bs-table-bg:
+                var(--mp-panel-soft);
+
+            --bs-table-border-color:
+                var(--mp-border);
+        }
+
+
+        /* ==================================================== */
+        /* LIST GROUPS                                           */
+        /* ==================================================== */
+
+        .list-group-item {
+
+            color:
+                var(--mp-text);
+
+            background-color:
+                var(--mp-panel);
+
+            border-color:
+                var(--mp-border);
+        }
+
+
+        /* ==================================================== */
+        /* ACCORDIONS                                            */
+        /* ==================================================== */
+
+        .accordion {
+
+            --bs-accordion-color:
+                var(--mp-text);
+
+            --bs-accordion-bg:
+                var(--mp-panel);
+
+            --bs-accordion-border-color:
+                var(--mp-border);
+
+            --bs-accordion-btn-color:
+                var(--mp-text);
+
+            --bs-accordion-btn-bg:
+                var(--mp-panel-soft);
+
+            --bs-accordion-active-color:
+                #ffffff;
+
+            --bs-accordion-active-bg:
+                #1b2d42;
+        }
+
+
+        /* ==================================================== */
+        /* MODALS                                                */
+        /* ==================================================== */
+
+        .modal-content {
+
+            color:
+                var(--mp-text);
+
+            background-color:
+                var(--mp-panel);
+
+            border-color:
+                var(--mp-border);
+        }
+
+
+        .modal-header,
+        .modal-footer {
+
+            border-color:
+                var(--mp-border);
+        }
+
+
+        /* ==================================================== */
+        /* DROPDOWNS                                             */
+        /* ==================================================== */
+
+        .dropdown-menu {
+
+            color:
+                var(--mp-text);
+
+            background-color:
+                var(--mp-panel);
+
+            border-color:
+                var(--mp-border);
+        }
+
+
+        .dropdown-item {
+
+            color:
+                var(--mp-text);
+        }
+
+
+        .dropdown-item:hover,
+        .dropdown-item:focus {
+
+            color:
+                #ffffff;
+
+            background-color:
+                var(--mp-panel-soft);
+        }
+
+
+        /* ==================================================== */
+        /* BUTTONS                                               */
+        /* ==================================================== */
+
+        .btn-primary {
+
+            --bs-btn-color:
+                #ffffff;
+
+            --bs-btn-bg:
+                #3f739e;
+
+            --bs-btn-border-color:
+                #4f86b6;
+
+            --bs-btn-hover-color:
+                #ffffff;
+
+            --bs-btn-hover-bg:
+                var(--mp-primary-hover);
+
+            --bs-btn-hover-border-color:
+                var(--mp-primary-hover);
+
+            --bs-btn-active-color:
+                #ffffff;
+
+            --bs-btn-active-bg:
+                #477aa5;
+
+            --bs-btn-active-border-color:
+                #477aa5;
+        }
+
+
+        .btn-outline-primary {
+
+            --bs-btn-color:
+                #86b2d5;
+
+            --bs-btn-border-color:
+                var(--mp-primary);
+
+            --bs-btn-hover-color:
+                #ffffff;
+
+            --bs-btn-hover-bg:
+                var(--mp-primary);
+
+            --bs-btn-hover-border-color:
+                var(--mp-primary);
+        }
+
+
+        .btn-outline-dark {
+
+            --bs-btn-color:
+                var(--mp-text);
+
+            --bs-btn-border-color:
+                var(--mp-border);
+
+            --bs-btn-hover-color:
+                #ffffff;
+
+            --bs-btn-hover-bg:
+                var(--mp-panel-soft);
+
+            --bs-btn-hover-border-color:
+                var(--mp-primary);
+        }
+
+
+        /* ==================================================== */
+        /* ALERTS                                                */
+        /* ==================================================== */
+
+        .alert {
+
+            border-width:
+                1px;
+        }
+
+
+        .alert-light {
+
+            color:
+                var(--mp-text)
+                !important;
+
+            background-color:
+                var(--mp-panel-soft)
+                !important;
+
+            border-color:
+                var(--mp-border)
+                !important;
+        }
+
+
+        /* ==================================================== */
+        /* BORDERS                                               */
+        /* ==================================================== */
+
+        .border,
+        .border-top,
+        .border-bottom,
+        .border-start,
+        .border-end {
+
+            border-color:
+                var(--mp-border)
+                !important;
+        }
+
+
+        hr {
+
+            color:
+                var(--mp-border);
+
+            opacity:
+                1;
+        }
+
+
+        /* ==================================================== */
+        /* FOOTER                                                */
+        /* ==================================================== */
+
+        .marketpulse-footer {
+
+            color:
+                var(--mp-muted);
+
+            background:
+                var(--mp-nav);
+
+            border-top:
+                1px solid
+                var(--mp-border-soft);
+        }
+
+
+        /* ==================================================== */
+        /* ACCESSIBILITY                                         */
+        /* ==================================================== */
+
+        .skip-link {
+
+            position:
+                absolute;
+
+            top:
+                -100px;
+
+            left:
+                1rem;
+
+            z-index:
+                2000;
+
+            padding:
+                .65rem
+                1rem;
+
+            color:
+                #ffffff;
+
+            background:
+                var(--mp-primary);
+
+            border-radius:
+                .4rem;
+
+            text-decoration:
+                none;
+        }
+
+
+        .skip-link:focus {
+
+            top:
+                1rem;
+        }
+
+
+        /* ==================================================== */
+        /* SELECTION                                             */
+        /* ==================================================== */
+
+        ::selection {
+
+            color:
+                #ffffff;
+
+            background:
+                rgba(79, 134, 182, .72);
+        }
+
+
+        /* ==================================================== */
+        /* SCROLLBAR                                             */
+        /* ==================================================== */
+
+        * {
+
+            scrollbar-color:
+                #40546b
+                var(--mp-bg);
+
+            scrollbar-width:
+                thin;
+        }
+
+    </style>
 
 </head>
 
@@ -92,10 +869,20 @@
 {# 2. PAGE BODY                                             #}
 {# ======================================================== #}
 
-<body class="marketpulse-body">
+<body
+    class="
+        marketpulse-body
+        d-flex
+        flex-column
+        min-vh-100
+    "
+>
 
 
-    {# Accessibility link for keyboard and screen-reader users. #}
+    {# ==================================================== #}
+    {# 2.1 ACCESSIBILITY                                    #}
+    {# ==================================================== #}
+
     <a
         class="skip-link"
         href="#main-content"
@@ -105,38 +892,36 @@
 
 
     {# ==================================================== #}
-    {# 3. SHARED BOOTSTRAP NAVIGATION                       #}
+    {# 3. SHARED NAVIGATION                                 #}
     {# ==================================================== #}
 
-    {#                                                      #}
-    {# navbar-expand-lg:                                    #}
-    {#   The menu is expanded on large screens and collapses #}
-    {#   into the mobile menu button on smaller screens.    #}
-    {#                                                      #}
-    {# navbar-dark:                                         #}
-    {#   Makes text and icons suitable for a dark/blue bar. #}
-    {#                                                      #}
-    {# bg-primary:                                          #}
-    {#   Creates the blue navigation bar in the design.     #}
-    {#                                                      #}
-    {# sticky-top:                                          #}
-    {#   Keeps navigation visible while scrolling.          #}
-
     <nav
-        class="navbar navbar-expand-lg navbar-dark bg-primary
-               sticky-top shadow-sm"
+        class="
+            navbar
+            navbar-expand-lg
+            navbar-dark
+            bg-primary
+            sticky-top
+            shadow-sm
+            marketpulse-navbar
+        "
     >
 
         <div class="container-fluid px-3 px-lg-4">
 
 
-            {# ------------------------------------------------ #}
-            {# MARKETPULSE BRAND                                #}
-            {# ------------------------------------------------ #}
+            {# ================================================= #}
+            {# 3.1 MARKETPULSE BRAND                              #}
+            {# ================================================= #}
 
             <a
-                class="navbar-brand fw-bold d-flex
-                       align-items-center gap-2"
+                class="
+                    navbar-brand
+                    fw-bold
+                    d-flex
+                    align-items-center
+                    gap-2
+                "
                 href="{% url 'home' %}"
             >
 
@@ -152,9 +937,9 @@
             </a>
 
 
-            {# ------------------------------------------------ #}
-            {# MOBILE NAVIGATION BUTTON                          #}
-            {# ------------------------------------------------ #}
+            {# ================================================= #}
+            {# 3.2 MOBILE NAVIGATION TOGGLE                       #}
+            {# ================================================= #}
 
             <button
                 class="navbar-toggler"
@@ -163,7 +948,7 @@
                 data-bs-target="#mainNav"
                 aria-controls="mainNav"
                 aria-expanded="false"
-                aria-label="Open navigation"
+                aria-label="Toggle navigation"
             >
 
                 <span class="navbar-toggler-icon"></span>
@@ -171,9 +956,9 @@
             </button>
 
 
-            {# ------------------------------------------------ #}
-            {# COLLAPSIBLE NAVIGATION CONTENT                    #}
-            {# ------------------------------------------------ #}
+            {# ================================================= #}
+            {# 3.3 COLLAPSIBLE NAVIGATION                         #}
+            {# ================================================= #}
 
             <div
                 class="collapse navbar-collapse"
@@ -181,24 +966,27 @@
             >
 
 
-                {# ============================================ #}
-                {# LEFT NAVIGATION                              #}
-                {# ============================================ #}
+                {# ============================================= #}
+                {# LEFT NAVIGATION                               #}
+                {# ============================================= #}
 
                 <ul class="navbar-nav me-auto ms-lg-3">
 
 
-                    {# ---------------------------------------- #}
-                    {# HOME                                     #}
-                    {# ---------------------------------------- #}
+                    {# ----------------------------------------- #}
+                    {# HOME                                      #}
+                    {# ----------------------------------------- #}
 
                     <li class="nav-item">
 
                         <a
-                            class="nav-link
-                            {% if request.resolver_match.url_name == 'home' %}
-                                active fw-semibold
-                            {% endif %}"
+                            class="
+                                nav-link
+                                {% if request.resolver_match.url_name == 'home' %}
+                                    active
+                                    fw-semibold
+                                {% endif %}
+                            "
                             href="{% url 'home' %}"
                         >
 
@@ -214,21 +1002,23 @@
                     </li>
 
 
-                    {# Application pages require authentication. #}
                     {% if user.is_authenticated %}
 
 
-                        {# ------------------------------------ #}
-                        {# DASHBOARD                            #}
-                        {# ------------------------------------ #}
+                        {# ------------------------------------- #}
+                        {# DASHBOARD                             #}
+                        {# ------------------------------------- #}
 
                         <li class="nav-item">
 
                             <a
-                                class="nav-link
-                                {% if request.resolver_match.url_name == 'dashboard' %}
-                                    active fw-semibold
-                                {% endif %}"
+                                class="
+                                    nav-link
+                                    {% if request.resolver_match.url_name == 'dashboard' %}
+                                        active
+                                        fw-semibold
+                                    {% endif %}
+                                "
                                 href="{% url 'dashboard' %}"
                             >
 
@@ -244,25 +1034,20 @@
                         </li>
 
 
-                        {# ------------------------------------ #}
-                        {# DATA                                 #}
-                        {# ------------------------------------ #}
-
-                        {#                                      #}
-                        {# request.resolver_match.namespace     #}
-                        {# identifies which Django application  #}
-                        {# owns the current URL.                 #}
-                        {#                                      #}
-                        {# Therefore, every data_management URL #}
-                        {# automatically highlights Data.       #}
+                        {# ------------------------------------- #}
+                        {# DATA                                  #}
+                        {# ------------------------------------- #}
 
                         <li class="nav-item">
 
                             <a
-                                class="nav-link
-                                {% if request.resolver_match.namespace == 'data_management' %}
-                                    active fw-semibold
-                                {% endif %}"
+                                class="
+                                    nav-link
+                                    {% if request.resolver_match.namespace == 'data_management' %}
+                                        active
+                                        fw-semibold
+                                    {% endif %}
+                                "
                                 href="{% url 'data_management:import' %}"
                             >
 
@@ -278,17 +1063,20 @@
                         </li>
 
 
-                        {# ------------------------------------ #}
-                        {# STRATEGIES                           #}
-                        {# ------------------------------------ #}
+                        {# ------------------------------------- #}
+                        {# STRATEGIES                            #}
+                        {# ------------------------------------- #}
 
                         <li class="nav-item">
 
                             <a
-                                class="nav-link
-                                {% if request.resolver_match.namespace == 'strategy_builder' %}
-                                    active fw-semibold
-                                {% endif %}"
+                                class="
+                                    nav-link
+                                    {% if request.resolver_match.namespace == 'strategy_builder' %}
+                                        active
+                                        fw-semibold
+                                    {% endif %}
+                                "
                                 href="{% url 'strategy_builder:list' %}"
                             >
 
@@ -304,17 +1092,20 @@
                         </li>
 
 
-                        {# ------------------------------------ #}
-                        {# RISK                                 #}
-                        {# ------------------------------------ #}
+                        {# ------------------------------------- #}
+                        {# RISK                                  #}
+                        {# ------------------------------------- #}
 
                         <li class="nav-item">
 
                             <a
-                                class="nav-link
-                                {% if request.resolver_match.namespace == 'risk_management' %}
-                                    active fw-semibold
-                                {% endif %}"
+                                class="
+                                    nav-link
+                                    {% if request.resolver_match.namespace == 'risk_management' %}
+                                        active
+                                        fw-semibold
+                                    {% endif %}
+                                "
                                 href="{% url 'risk_management:calculator' %}"
                             >
 
@@ -335,9 +1126,9 @@
                 </ul>
 
 
-                {# ============================================ #}
-                {# RIGHT AUTHENTICATION NAVIGATION              #}
-                {# ============================================ #}
+                {# ============================================= #}
+                {# RIGHT AUTHENTICATION NAVIGATION               #}
+                {# ============================================= #}
 
                 <ul class="navbar-nav align-items-lg-center">
 
@@ -345,14 +1136,20 @@
                     {% if user.is_authenticated %}
 
 
-                        {# ------------------------------------ #}
-                        {# USER PROFILE                         #}
-                        {# ------------------------------------ #}
+                        {# ------------------------------------- #}
+                        {# USER PROFILE                          #}
+                        {# ------------------------------------- #}
 
                         <li class="nav-item">
 
                             <a
-                                class="nav-link"
+                                class="
+                                    nav-link
+                                    {% if request.resolver_match.namespace == 'accounts' and request.resolver_match.url_name == 'profile' %}
+                                        active
+                                        fw-semibold
+                                    {% endif %}
+                                "
                                 href="{% url 'accounts:profile' %}"
                             >
 
@@ -368,31 +1165,37 @@
                         </li>
 
 
-                        {# ------------------------------------ #}
-                        {# LOGOUT                               #}
-                        {# ------------------------------------ #}
-
-                        {# Logout uses POST for improved security. #}
+                        {# ------------------------------------- #}
+                        {# LOGOUT                                #}
+                        {# ------------------------------------- #}
 
                         <li class="nav-item">
 
                             <form
                                 method="post"
                                 action="{% url 'accounts:logout' %}"
+                                class="m-0"
                             >
 
                                 {% csrf_token %}
 
                                 <button
-                                    class="nav-link border-0
-                                           bg-transparent"
+                                    class="
+                                        nav-link
+                                        border-0
+                                        bg-transparent
+                                        text-start
+                                        w-100
+                                    "
                                     type="submit"
                                 >
 
                                     <i
-                                        class="fa-solid
-                                               fa-arrow-right-from-bracket
-                                               me-1"
+                                        class="
+                                            fa-solid
+                                            fa-arrow-right-from-bracket
+                                            me-1
+                                        "
                                         aria-hidden="true"
                                     ></i>
 
@@ -408,14 +1211,20 @@
                     {% else %}
 
 
-                        {# ------------------------------------ #}
-                        {# LOGIN                                #}
-                        {# ------------------------------------ #}
+                        {# ------------------------------------- #}
+                        {# LOGIN                                 #}
+                        {# ------------------------------------- #}
 
                         <li class="nav-item">
 
                             <a
-                                class="nav-link"
+                                class="
+                                    nav-link
+                                    {% if request.resolver_match.namespace == 'accounts' and request.resolver_match.url_name == 'login' %}
+                                        active
+                                        fw-semibold
+                                    {% endif %}
+                                "
                                 href="{% url 'accounts:login' %}"
                             >
                                 Login
@@ -424,14 +1233,19 @@
                         </li>
 
 
-                        {# ------------------------------------ #}
-                        {# REGISTER                             #}
-                        {# ------------------------------------ #}
+                        {# ------------------------------------- #}
+                        {# REGISTER                              #}
+                        {# ------------------------------------- #}
 
-                        <li class="nav-item ms-lg-2">
+                        <li class="nav-item ms-lg-2 mt-2 mt-lg-0">
 
                             <a
-                                class="btn btn-light btn-sm px-3"
+                                class="
+                                    btn
+                                    btn-outline-light
+                                    btn-sm
+                                    px-3
+                                "
                                 href="{% url 'accounts:register' %}"
                             >
                                 Register
@@ -452,26 +1266,25 @@
 
 
     {# ==================================================== #}
-    {# 4. MAIN PAGE CONTENT                                 #}
+    {# 4. MAIN APPLICATION CONTENT                          #}
     {# ==================================================== #}
 
     <main
         id="main-content"
-        class="marketpulse-main container-fluid
-               px-3 px-lg-4 py-4"
+        class="
+            marketpulse-main
+            container-fluid
+            flex-grow-1
+            px-3
+            px-lg-4
+            py-4
+        "
     >
 
 
-        {# ------------------------------------------------ #}
-        {# DJANGO MESSAGES                                  #}
-        {# ------------------------------------------------ #}
-
-        {#                                                  #}
-        {# Messages are created in Django views using:      #}
-        {#                                                  #}
-        {# messages.success(request, "Import completed.")   #}
-        {#                                                  #}
-        {# They are then displayed here automatically.      #}
+        {# ================================================= #}
+        {# 4.1 DJANGO MESSAGES                                #}
+        {# ================================================= #}
 
         {% if messages %}
 
@@ -483,9 +1296,13 @@
                 {% for message in messages %}
 
                     <div
-                        class="alert
-                               alert-{{ message.tags|default:'info' }}
-                               alert-dismissible fade show"
+                        class="
+                            alert
+                            alert-{{ message.tags|default:'info' }}
+                            alert-dismissible
+                            fade
+                            show
+                        "
                         role="alert"
                     >
 
@@ -507,11 +1324,9 @@
         {% endif %}
 
 
-        {# ------------------------------------------------ #}
-        {# CHILD TEMPLATE CONTENT                           #}
-        {# ------------------------------------------------ #}
-
-        {# Every page extending base.html is inserted here. #}
+        {# ================================================= #}
+        {# 4.2 CHILD TEMPLATE CONTENT                         #}
+        {# ================================================= #}
 
         {% block content %}
         {% endblock %}
@@ -524,17 +1339,33 @@
     {# 5. SHARED FOOTER                                     #}
     {# ==================================================== #}
 
-    <footer class="marketpulse-footer mt-auto py-3">
+    <footer
+        class="
+            marketpulse-footer
+            mt-auto
+            py-3
+        "
+    >
 
         <div
-            class="container-fluid px-3 px-lg-4
-                   d-flex flex-column flex-sm-row
-                   justify-content-between gap-2 small"
+            class="
+                container-fluid
+                px-3
+                px-lg-4
+                d-flex
+                flex-column
+                flex-sm-row
+                justify-content-between
+                align-items-sm-center
+                gap-2
+                small
+            "
         >
 
             <span>
                 &copy; {% now "Y" %} MarketPulse
             </span>
+
 
             <span>
 
@@ -557,8 +1388,6 @@
     {# 6. BOOTSTRAP JAVASCRIPT                              #}
     {# ==================================================== #}
 
-    {# Required for the mobile menu and dismissible alerts. #}
-
     {% bootstrap_javascript %}
 
 
@@ -570,7 +1399,7 @@
 
 
     {# ==================================================== #}
-    {# 8. PAGE-SPECIFIC JAVASCRIPT                          #}
+    {# 8. OPTIONAL PAGE-SPECIFIC JAVASCRIPT                 #}
     {# ==================================================== #}
 
     {% block extra_js %}
