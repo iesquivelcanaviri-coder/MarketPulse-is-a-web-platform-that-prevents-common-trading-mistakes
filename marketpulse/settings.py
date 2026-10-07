@@ -37,6 +37,21 @@ CUSTOM USER MODEL:
 accounts/models.py
 
 
+AUTHENTICATION FLOW:
+
+Guest
+    ↓
+Login
+    ↓
+Django validates credentials
+    ↓
+Authenticated session created
+    ↓
+MarketPulse Home
+    ↓
+Dashboard / Data / Strategies / Risk
+
+
 PASSWORD RECOVERY:
 
 Login
@@ -404,6 +419,13 @@ X_FRAME_OPTIONS = "DENY"
 # Dashboard data
 #
 #
+# community
+#     ↓
+# Community posts
+# Private messages
+# Inbox
+#
+#
 # data_management
 #     ↓
 # Alpaca historical imports
@@ -479,9 +501,11 @@ INSTALLED_APPS = [
     # --------------------------------------------------------
 
     "accounts",
+
     "core",
-    
+
     "community",
+
     "data_management",
 
     "strategy_builder",
@@ -776,15 +800,79 @@ AUTH_PASSWORD_VALIDATORS = [
 # 12. LOGIN AND LOGOUT CONFIGURATION
 # ============================================================
 
-# @login_required sends unauthenticated users here.
+# LOGIN_URL is used by Django when an unauthenticated user
+# tries to open a view protected by @login_required.
+#
+# Example:
+#
+# User tries to open Risk while logged out
+#     ↓
+# Django redirects to:
+#
+# accounts:login
+#
+#     ↓
+# The requested URL is normally preserved in ?next=...
 LOGIN_URL = "accounts:login"
 
 
-# Successful login.
-LOGIN_REDIRECT_URL = "dashboard"
+# ------------------------------------------------------------
+# SUCCESSFUL NORMAL LOGIN
+# ------------------------------------------------------------
+#
+# When a user opens the Login page normally and signs in
+# successfully, Django redirects them to the MarketPulse
+# Home page.
+#
+#
+# Previous behaviour:
+#
+# Login
+#     ↓
+# Dashboard
+#
+#
+# Current behaviour:
+#
+# Login
+#     ↓
+# Home
+#     ↓
+# User can choose Dashboard / Data / Strategies / Risk
+#
+#
+# IMPORTANT:
+#
+# If Django sent the user to Login because they originally
+# attempted to access a protected page, the "next" parameter
+# takes priority.
+#
+# Example:
+#
+# User requests:
+#     /risk/
+#
+# while logged out:
+#
+# /risk/
+#     ↓
+# /accounts/login/?next=/risk/
+#     ↓
+# Successful login
+#     ↓
+# /risk/
+#
+# This behaviour should be preserved because it returns the
+# user to the page they originally requested.
+LOGIN_REDIRECT_URL = "home"
 
 
-# Successful logout.
+# ------------------------------------------------------------
+# SUCCESSFUL LOGOUT
+# ------------------------------------------------------------
+#
+# After logout the authenticated session ends and the user
+# returns to the public MarketPulse Home page.
 LOGOUT_REDIRECT_URL = "home"
 
 
@@ -1272,7 +1360,6 @@ EMAIL_TIMEOUT = config(
 #
 #
 # The password itself is stored by Django as a secure hash.
-
 
 
 # ============================================================
