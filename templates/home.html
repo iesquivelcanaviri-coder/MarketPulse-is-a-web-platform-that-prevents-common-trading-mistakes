@@ -63,7 +63,7 @@ MarketPulse | Trading Decision Support
 
 <section class="hero p-4 p-md-5 rounded-4 mb-4">
 
-    <div class="row align-items-center g-4">
+    <div class="row align-items-stretch g-4">
 
 
         <!-- =================================================
@@ -72,74 +72,83 @@ MarketPulse | Trading Decision Support
 
         <div class="col-lg-7">
 
-            <span
-                class="
-                    badge
-                    bg-primary-subtle
-                    text-primary-emphasis
-                    border
-                    border-primary-subtle
-                    mb-3
-                "
-            >
+            <div class="h-100 d-flex flex-column justify-content-center">
 
-                Django + React + MATLAB
-
-            </span>
-
-
-            <!-- ------------------------------------------------
-                 MAIN MESSAGE
-            ------------------------------------------------- -->
-
-            <h1 class="display-4 fw-bold mb-3">
-
-                Research markets.<br>
-                Test strategies.<br>
-                Manage trading risk.
-
-            </h1>
-
-
-            <p class="lead text-secondary mb-4">
-
-                A trading decision-support platform for market
-                research, strategy testing and risk management.
-
-            </p>
-
-
-            <!-- =================================================
-                 PRIMARY ACTION
-            ================================================== -->
-
-            {% if user.is_authenticated %}
-
-                <a
-                    class="btn btn-primary btn-lg"
-                    href="{% url 'dashboard' %}"
+                <span
+                    class="
+                        badge
+                        bg-primary-subtle
+                        text-primary-emphasis
+                        border
+                        border-primary-subtle
+                        mb-3
+                        align-self-start
+                    "
                 >
 
-                    <i class="fa-solid fa-gauge-high me-2"></i>
+                    Django + React + MATLAB
 
-                    Open Dashboard
+                </span>
 
-                </a>
 
-            {% else %}
+                <!-- ------------------------------------------------
+                     MAIN MESSAGE
+                ------------------------------------------------- -->
 
-                <a
-                    class="btn btn-primary btn-lg"
-                    href="{% url 'accounts:register' %}"
-                >
+                <h1 class="display-4 fw-bold mb-3">
 
-                    <i class="fa-solid fa-user-plus me-2"></i>
+                    Research markets.<br>
+                    Test strategies.<br>
+                    Manage trading risk.
 
-                    Get Started
+                </h1>
 
-                </a>
 
-            {% endif %}
+                <p class="lead text-secondary mb-4">
+
+                    A trading decision-support platform for market
+                    research, strategy testing and risk management.
+
+                </p>
+
+
+                <!-- =================================================
+                     PRIMARY ACTION
+                ================================================== -->
+
+                <div>
+
+                    {% if user.is_authenticated %}
+
+                        <a
+                            class="btn btn-primary btn-lg"
+                            href="{% url 'dashboard' %}"
+                        >
+
+                            <i class="fa-solid fa-gauge-high me-2"></i>
+
+                            Open Dashboard
+
+                        </a>
+
+                    {% else %}
+
+                        <a
+                            class="btn btn-primary btn-lg"
+                            href="{% url 'accounts:register' %}"
+                        >
+
+                            <i class="fa-solid fa-user-plus me-2"></i>
+
+                            Get Started
+
+                        </a>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
 
         </div>
 
@@ -150,82 +159,208 @@ MarketPulse | Trading Decision Support
 
         <div class="col-lg-5">
 
-            <div class="glass-card h-100">
+            <div
+                class="
+                    card
+                    h-100
+                    border
+                    rounded-4
+                    shadow-sm
+                "
+            >
 
-                <h5 class="mb-3">
-
-                    <i class="fa-solid fa-layer-group me-2"></i>
-
-                    Technology Stack
-
-                </h5>
+                <div class="card-body p-4">
 
 
-                <div class="small">
+                    <!-- -----------------------------------------
+                         STACK HEADER
+                    ------------------------------------------ -->
 
-                    <p class="mb-2">
+                    <div
+                        class="
+                            d-flex
+                            align-items-center
+                            gap-2
+                            mb-4
+                        "
+                    >
 
-                        <strong>
-                            Backend:
-                        </strong>
+                        <span
+                            class="
+                                d-inline-flex
+                                align-items-center
+                                justify-content-center
+                                rounded-3
+                                bg-primary-subtle
+                                text-primary-emphasis
+                                border
+                                border-primary-subtle
+                                p-2
+                            "
+                        >
 
-                        <span class="text-secondary">
-                            Django 5.2 + PostgreSQL + DRF
+                            <i class="fa-solid fa-layer-group"></i>
+
                         </span>
 
-                    </p>
+
+                        <div>
+
+                            <h5 class="mb-0">
+
+                                Technology Stack
+
+                            </h5>
+
+                            <small class="text-secondary">
+
+                                Full-stack architecture
+
+                            </small>
+
+                        </div>
+
+                    </div>
 
 
-                    <p class="mb-2">
+                    <!-- -----------------------------------------
+                         STACK ITEMS
+                    ------------------------------------------ -->
 
-                        <strong>
-                            Frontend:
-                        </strong>
-
-                        <span class="text-secondary">
-                            React + Bootstrap 5 + Chart.js
-                        </span>
-
-                    </p>
+                    <div class="vstack gap-3 small">
 
 
-                    <p class="mb-2">
+                        <div>
 
-                        <strong>
-                            Market Data:
-                        </strong>
+                            <div class="fw-semibold mb-1">
 
-                        <span class="text-secondary">
-                            Alpaca + pandas + NumPy
-                        </span>
+                                <i
+                                    class="
+                                        fa-solid
+                                        fa-server
+                                        text-primary
+                                        me-2
+                                    "
+                                ></i>
 
-                    </p>
+                                Backend
+
+                            </div>
+
+                            <div class="text-secondary">
+
+                                Django 5.2 + PostgreSQL + DRF
+
+                            </div>
+
+                        </div>
 
 
-                    <p class="mb-2">
+                        <div>
 
-                        <strong>
-                            Analytics:
-                        </strong>
+                            <div class="fw-semibold mb-1">
 
-                        <span class="text-secondary">
-                            MATLAB Integration
-                        </span>
+                                <i
+                                    class="
+                                        fa-solid
+                                        fa-desktop
+                                        text-primary
+                                        me-2
+                                    "
+                                ></i>
 
-                    </p>
+                                Frontend
+
+                            </div>
+
+                            <div class="text-secondary">
+
+                                React + Bootstrap 5 + Chart.js
+
+                            </div>
+
+                        </div>
 
 
-                    <p class="mb-0">
+                        <div>
 
-                        <strong>
-                            Email & Security:
-                        </strong>
+                            <div class="fw-semibold mb-1">
 
-                        <span class="text-secondary">
-                            Django Authentication + Email Service
-                        </span>
+                                <i
+                                    class="
+                                        fa-solid
+                                        fa-chart-column
+                                        text-primary
+                                        me-2
+                                    "
+                                ></i>
 
-                    </p>
+                                Market Data
+
+                            </div>
+
+                            <div class="text-secondary">
+
+                                Alpaca + pandas + NumPy
+
+                            </div>
+
+                        </div>
+
+
+                        <div>
+
+                            <div class="fw-semibold mb-1">
+
+                                <i
+                                    class="
+                                        fa-solid
+                                        fa-square-root-variable
+                                        text-primary
+                                        me-2
+                                    "
+                                ></i>
+
+                                Analytics
+
+                            </div>
+
+                            <div class="text-secondary">
+
+                                MATLAB Integration
+
+                            </div>
+
+                        </div>
+
+
+                        <div>
+
+                            <div class="fw-semibold mb-1">
+
+                                <i
+                                    class="
+                                        fa-solid
+                                        fa-shield-halved
+                                        text-primary
+                                        me-2
+                                    "
+                                ></i>
+
+                                Email & Security
+
+                            </div>
+
+                            <div class="text-secondary">
+
+                                Django Authentication + Email Service
+
+                            </div>
+
+                        </div>
+
+
+                    </div>
 
                 </div>
 
