@@ -112,6 +112,31 @@ All colours inherit from the shared MarketPulse theme tokens:
 --mp-warning
 --mp-danger
 
+
+RESPONSIVE ARCHITECTURE:
+
+Large Desktop
+    ↓
+Maximum workspace width of 1480px
+
+Desktop
+    ↓
+Multi-column research layout
+
+Tablet
+    ↓
+Two-column filters / workflow / metrics
+
+Phone
+    ↓
+Single-column content
+    ↓
+Full-width actions
+    ↓
+Comparison table scrolls inside its own wrapper
+    ↓
+No complete-page horizontal scrolling
+
 ============================================================
 {% endcomment %}
 
@@ -222,30 +247,33 @@ Strategies | MarketPulse
 
 
     width:
-        min(
-            1500px,
-            calc(
-                100vw
-                -
-                48px
-            )
-        );
+        100%;
 
     max-width:
-        none;
+        1480px;
+
+    min-width:
+        0;
 
     margin-left:
-        50%;
+        auto;
 
-    transform:
-        translateX(
-            -50%
-        );
+    margin-right:
+        auto;
 
     color:
         var(
             --strategy-text
         );
+
+}
+
+
+.strategy-workspace,
+.strategy-workspace * {
+
+    box-sizing:
+        border-box;
 
 }
 
@@ -273,11 +301,25 @@ Strategies | MarketPulse
     justify-content:
         space-between;
 
+    flex-wrap:
+        wrap;
+
     gap:
         1rem;
 
     margin-bottom:
         1rem;
+
+    min-width:
+        0;
+
+}
+
+
+.strategy-page-header > * {
+
+    min-width:
+        0;
 
 }
 
@@ -293,13 +335,20 @@ Strategies | MarketPulse
         );
 
     font-size:
-        1.65rem;
+        clamp(
+            1.55rem,
+            3vw,
+            1.65rem
+        );
 
     font-weight:
         700;
 
     letter-spacing:
         -.02em;
+
+    overflow-wrap:
+        anywhere;
 
 }
 
@@ -323,6 +372,9 @@ Strategies | MarketPulse
     line-height:
         1.45;
 
+    overflow-wrap:
+        anywhere;
+
 }
 
 
@@ -337,6 +389,9 @@ Strategies | MarketPulse
     gap:
         .45rem;
 
+    min-width:
+        0;
+
 }
 
 
@@ -345,6 +400,12 @@ Strategies | MarketPulse
 /* ======================================================== */
 
 .strategy-panel {
+
+    width:
+        100%;
+
+    min-width:
+        0;
 
     margin-bottom:
         1rem;
@@ -410,11 +471,25 @@ Strategies | MarketPulse
     justify-content:
         space-between;
 
+    flex-wrap:
+        wrap;
+
     gap:
         .8rem;
 
     margin-bottom:
         .7rem;
+
+    min-width:
+        0;
+
+}
+
+
+.strategy-section-header > * {
+
+    min-width:
+        0;
 
 }
 
@@ -434,6 +509,9 @@ Strategies | MarketPulse
 
     font-weight:
         750;
+
+    overflow-wrap:
+        anywhere;
 
 }
 
@@ -456,6 +534,9 @@ Strategies | MarketPulse
 
     line-height:
         1.45;
+
+    overflow-wrap:
+        anywhere;
 
 }
 
@@ -484,6 +565,12 @@ Strategies | MarketPulse
     gap:
         .55rem;
 
+    width:
+        100%;
+
+    min-width:
+        0;
+
 }
 
 
@@ -497,6 +584,14 @@ Strategies | MarketPulse
 
     gap:
         .55rem;
+
+    min-width:
+        0;
+
+}
+
+
+.strategy-flow-step > * {
 
     min-width:
         0;
@@ -589,6 +684,14 @@ Strategies | MarketPulse
 }
 
 
+.strategy-flow-copy {
+
+    min-width:
+        0;
+
+}
+
+
 .strategy-flow-copy strong {
 
     display:
@@ -604,6 +707,9 @@ Strategies | MarketPulse
 
     font-size:
         .63rem;
+
+    overflow-wrap:
+        anywhere;
 
 }
 
@@ -623,6 +729,9 @@ Strategies | MarketPulse
 
     line-height:
         1.3;
+
+    overflow-wrap:
+        anywhere;
 
 }
 
@@ -659,6 +768,20 @@ Strategies | MarketPulse
     gap:
         .65rem;
 
+    width:
+        100%;
+
+    min-width:
+        0;
+
+}
+
+
+.strategy-filter-grid > * {
+
+    min-width:
+        0;
+
 }
 
 
@@ -683,6 +806,9 @@ Strategies | MarketPulse
 
     position:
         relative;
+
+    min-width:
+        0;
 
 }
 
@@ -717,6 +843,12 @@ Strategies | MarketPulse
 
 .strategy-search-wrapper input {
 
+    width:
+        100%;
+
+    min-width:
+        0;
+
     padding-left:
         2rem;
 
@@ -741,6 +873,9 @@ Strategies | MarketPulse
     gap:
         .45rem;
 
+    min-width:
+        0;
+
 }
 
 
@@ -753,6 +888,9 @@ Strategies | MarketPulse
 
     font-size:
         .55rem;
+
+    overflow-wrap:
+        anywhere;
 
 }
 
@@ -772,10 +910,22 @@ Strategies | MarketPulse
     gap:
         .55rem;
 
+    width:
+        100%;
+
+    min-width:
+        0;
+
 }
 
 
 .strategy-category-item {
+
+    width:
+        100%;
+
+    min-width:
+        0;
 
     overflow:
         hidden;
@@ -809,6 +959,12 @@ Strategies | MarketPulse
 
     gap:
         .6rem;
+
+    width:
+        100%;
+
+    min-width:
+        0;
 
     padding:
         .7rem .8rem;
@@ -877,6 +1033,9 @@ Strategies | MarketPulse
 
 .strategy-category-button::after {
 
+    flex:
+        0 0 auto;
+
     filter:
         brightness(0)
         invert(1);
@@ -936,12 +1095,21 @@ Strategies | MarketPulse
 .strategy-category-name {
 
     flex:
-        1;
+        1 1 auto;
+
+    min-width:
+        0;
+
+    overflow-wrap:
+        anywhere;
 
 }
 
 
 .strategy-category-count {
+
+    flex:
+        0 0 auto;
 
     margin-right:
         .55rem;
@@ -962,6 +1130,9 @@ Strategies | MarketPulse
 
 .strategy-category-body {
 
+    min-width:
+        0;
+
     padding:
         0 .8rem;
 
@@ -978,6 +1149,12 @@ Strategies | MarketPulse
 /* ======================================================== */
 
 .strategy-model-row {
+
+    width:
+        100%;
+
+    min-width:
+        0;
 
     padding:
         .75rem 0;
@@ -1015,6 +1192,20 @@ Strategies | MarketPulse
     gap:
         .7rem;
 
+    width:
+        100%;
+
+    min-width:
+        0;
+
+}
+
+
+.strategy-model-main > * {
+
+    min-width:
+        0;
+
 }
 
 
@@ -1031,6 +1222,9 @@ Strategies | MarketPulse
 
     width:
         28px;
+
+    min-width:
+        0;
 
 }
 
@@ -1057,6 +1251,9 @@ Strategies | MarketPulse
     gap:
         .4rem;
 
+    min-width:
+        0;
+
     margin-bottom:
         .18rem;
 
@@ -1064,6 +1261,9 @@ Strategies | MarketPulse
 
 
 .strategy-model-title-row h3 {
+
+    min-width:
+        0;
 
     margin:
         0;
@@ -1079,10 +1279,16 @@ Strategies | MarketPulse
     font-weight:
         720;
 
+    overflow-wrap:
+        anywhere;
+
 }
 
 
 .strategy-model-title-row .badge {
+
+    flex:
+        0 0 auto;
 
     font-size:
         .48rem;
@@ -1109,6 +1315,9 @@ Strategies | MarketPulse
     line-height:
         1.45;
 
+    overflow-wrap:
+        anywhere;
+
 }
 
 
@@ -1120,11 +1329,14 @@ Strategies | MarketPulse
     align-items:
         center;
 
+    flex-wrap:
+        wrap;
+
     gap:
         .45rem;
 
-    flex:
-        0 0 auto;
+    min-width:
+        0;
 
 }
 
@@ -1134,6 +1346,9 @@ Strategies | MarketPulse
 /* ======================================================== */
 
 .strategy-model-details {
+
+    min-width:
+        0;
 
     margin-top:
         .55rem;
@@ -1154,6 +1369,12 @@ Strategies | MarketPulse
 
     justify-content:
         space-between;
+
+    gap:
+        .6rem;
+
+    min-width:
+        0;
 
     cursor:
         pointer;
@@ -1190,6 +1411,17 @@ Strategies | MarketPulse
 }
 
 
+.strategy-model-details summary > span {
+
+    min-width:
+        0;
+
+    overflow-wrap:
+        anywhere;
+
+}
+
+
 .strategy-model-details summary::-webkit-details-marker {
 
     display:
@@ -1199,6 +1431,9 @@ Strategies | MarketPulse
 
 
 .strategy-details-chevron {
+
+    flex:
+        0 0 auto;
 
     color:
         var(
@@ -1236,6 +1471,12 @@ Strategies | MarketPulse
 
     gap:
         .6rem;
+
+    width:
+        100%;
+
+    min-width:
+        0;
 
     margin-top:
         .5rem;
@@ -1310,6 +1551,9 @@ Strategies | MarketPulse
     line-height:
         1.45;
 
+    overflow-wrap:
+        anywhere;
+
 }
 
 
@@ -1324,10 +1568,16 @@ Strategies | MarketPulse
     gap:
         .3rem;
 
+    min-width:
+        0;
+
 }
 
 
 .strategy-parameter-list span {
+
+    max-width:
+        100%;
 
     padding:
         .22rem .34rem;
@@ -1349,6 +1599,9 @@ Strategies | MarketPulse
 
     font-size:
         .51rem;
+
+    overflow-wrap:
+        anywhere;
 
 }
 
@@ -1379,6 +1632,12 @@ Strategies | MarketPulse
 
     gap:
         1rem;
+
+    width:
+        100%;
+
+    min-width:
+        0;
 
     margin-top:
         1rem;
@@ -1425,6 +1684,9 @@ Strategies | MarketPulse
 
 .strategy-compare-copy {
 
+    min-width:
+        0;
+
     color:
         var(
             --strategy-muted
@@ -1432,6 +1694,9 @@ Strategies | MarketPulse
 
     font-size:
         .57rem;
+
+    overflow-wrap:
+        anywhere;
 
 }
 
@@ -1460,6 +1725,12 @@ Strategies | MarketPulse
 /* ======================================================== */
 
 .strategy-no-results {
+
+    width:
+        100%;
+
+    min-width:
+        0;
 
     margin-top:
         .8rem;
@@ -1492,12 +1763,32 @@ Strategies | MarketPulse
     font-size:
         .6rem;
 
+    overflow-wrap:
+        anywhere;
+
 }
 
 
 /* ======================================================== */
 /* 12. COMPARISON TABLE                                     */
 /* ======================================================== */
+
+.strategy-workspace .table-responsive {
+
+    width:
+        100%;
+
+    max-width:
+        100%;
+
+    overflow-x:
+        auto;
+
+    -webkit-overflow-scrolling:
+        touch;
+
+}
+
 
 .strategy-comparison-table {
 
@@ -1513,6 +1804,12 @@ Strategies | MarketPulse
         var(
             --strategy-border
         );
+
+    width:
+        max-content;
+
+    min-width:
+        100%;
 
 }
 
@@ -1573,10 +1870,22 @@ Strategies | MarketPulse
     gap:
         .55rem;
 
+    width:
+        100%;
+
+    min-width:
+        0;
+
 }
 
 
 .my-strategy-item {
+
+    width:
+        100%;
+
+    min-width:
+        0;
 
     overflow:
         hidden;
@@ -1618,8 +1927,22 @@ Strategies | MarketPulse
     gap:
         .8rem;
 
+    width:
+        100%;
+
+    min-width:
+        0;
+
     padding:
         .7rem .8rem;
+
+}
+
+
+.my-strategy-summary > * {
+
+    min-width:
+        0;
 
 }
 
@@ -1638,10 +1961,16 @@ Strategies | MarketPulse
     gap:
         .4rem;
 
+    min-width:
+        0;
+
 }
 
 
 .my-strategy-name h3 {
+
+    min-width:
+        0;
 
     margin:
         0;
@@ -1656,6 +1985,9 @@ Strategies | MarketPulse
 
     font-weight:
         720;
+
+    overflow-wrap:
+        anywhere;
 
 }
 
@@ -1673,6 +2005,9 @@ Strategies | MarketPulse
     font-size:
         .55rem;
 
+    overflow-wrap:
+        anywhere;
+
 }
 
 
@@ -1687,10 +2022,16 @@ Strategies | MarketPulse
     gap:
         .4rem;
 
+    min-width:
+        0;
+
 }
 
 
 .my-strategy-details {
+
+    min-width:
+        0;
 
     border-top:
         1px solid
@@ -1726,6 +2067,9 @@ Strategies | MarketPulse
     font-weight:
         650;
 
+    overflow-wrap:
+        anywhere;
+
 }
 
 
@@ -1739,8 +2083,27 @@ Strategies | MarketPulse
 
 .my-strategy-detail-body {
 
+    min-width:
+        0;
+
     padding:
         .75rem .8rem;
+
+}
+
+
+.my-strategy-detail-body ul {
+
+    padding-left:
+        1.1rem;
+
+}
+
+
+.my-strategy-detail-body li {
+
+    overflow-wrap:
+        anywhere;
 
 }
 
@@ -1762,6 +2125,12 @@ Strategies | MarketPulse
     gap:
         .5rem;
 
+    width:
+        100%;
+
+    min-width:
+        0;
+
     margin-top:
         .65rem;
 
@@ -1769,6 +2138,9 @@ Strategies | MarketPulse
 
 
 .my-strategy-metric {
+
+    min-width:
+        0;
 
     padding:
         .55rem;
@@ -1806,6 +2178,9 @@ Strategies | MarketPulse
     text-transform:
         uppercase;
 
+    overflow-wrap:
+        anywhere;
+
 }
 
 
@@ -1824,6 +2199,9 @@ Strategies | MarketPulse
 
     font-size:
         .65rem;
+
+    overflow-wrap:
+        anywhere;
 
 }
 
@@ -1849,10 +2227,19 @@ Strategies | MarketPulse
     gap:
         .65rem;
 
+    width:
+        100%;
+
+    min-width:
+        0;
+
 }
 
 
 .validation-box {
+
+    min-width:
+        0;
 
     padding:
         .8rem;
@@ -1890,6 +2277,9 @@ Strategies | MarketPulse
     font-weight:
         720;
 
+    overflow-wrap:
+        anywhere;
+
 }
 
 
@@ -1906,10 +2296,16 @@ Strategies | MarketPulse
     line-height:
         1.45;
 
+    overflow-wrap:
+        anywhere;
+
 }
 
 
 .validation-question {
+
+    min-width:
+        0;
 
     padding:
         .55rem;
@@ -1933,6 +2329,9 @@ Strategies | MarketPulse
 
     font-size:
         .55rem;
+
+    overflow-wrap:
+        anywhere;
 
 }
 
@@ -1958,10 +2357,19 @@ Strategies | MarketPulse
     gap:
         .65rem;
 
+    width:
+        100%;
+
+    min-width:
+        0;
+
 }
 
 
 .related-tool {
+
+    min-width:
+        0;
 
     padding:
         .75rem;
@@ -1996,6 +2404,9 @@ Strategies | MarketPulse
     font-size:
         .7rem;
 
+    overflow-wrap:
+        anywhere;
+
 }
 
 
@@ -2015,6 +2426,9 @@ Strategies | MarketPulse
     line-height:
         1.45;
 
+    overflow-wrap:
+        anywhere;
+
 }
 
 
@@ -2023,6 +2437,9 @@ Strategies | MarketPulse
 /* ======================================================== */
 
 .strategy-workspace .btn {
+
+    max-width:
+        100%;
 
     border-radius:
         6px;
@@ -2122,6 +2539,15 @@ Strategies | MarketPulse
 .strategy-workspace .form-control,
 .strategy-workspace .form-select {
 
+    width:
+        100%;
+
+    max-width:
+        100%;
+
+    min-width:
+        0;
+
     min-height:
         34px;
 
@@ -2220,6 +2646,9 @@ Strategies | MarketPulse
 
 .strategy-workspace .alert {
 
+    min-width:
+        0;
+
     color:
         var(
             --strategy-text
@@ -2234,6 +2663,9 @@ Strategies | MarketPulse
         var(
             --strategy-border
         );
+
+    overflow-wrap:
+        anywhere;
 
 }
 
@@ -2345,6 +2777,9 @@ Strategies | MarketPulse
 
 .strategy-requirement-badge {
 
+    max-width:
+        100%;
+
     color:
         #d6e1eb;
 
@@ -2357,39 +2792,31 @@ Strategies | MarketPulse
             --strategy-border-soft
         );
 
+    white-space:
+        normal;
+
+    overflow-wrap:
+        anywhere;
+
 }
 
 
 /* ======================================================== */
-/* 17. RESPONSIVE                                           */
+/* 17. RESPONSIVE — TABLET / SMALL DESKTOP                  */
 /* ======================================================== */
 
 @media (
-    min-width:
-    1400px
+    max-width:
+    1199.98px
 ) {
 
     .strategy-workspace {
 
-        width:
-            min(
-                1480px,
-                calc(
-                    100vw
-                    -
-                    64px
-                )
-            );
+        max-width:
+            100%;
 
     }
 
-}
-
-
-@media (
-    max-width:
-    991.98px
-) {
 
     .strategy-flow {
 
@@ -2412,6 +2839,17 @@ Strategies | MarketPulse
 
     }
 
+}
+
+
+/* ======================================================== */
+/* 18. RESPONSIVE — TABLET                                  */
+/* ======================================================== */
+
+@media (
+    max-width:
+    991.98px
+) {
 
     .strategy-filter-grid {
 
@@ -2440,8 +2878,46 @@ Strategies | MarketPulse
 
     }
 
+
+    .strategy-model-main {
+
+        grid-template-columns:
+            auto
+            minmax(
+                0,
+                1fr
+            );
+
+        align-items:
+            start;
+
+    }
+
+
+    .strategy-model-actions {
+
+        grid-column:
+            1 / -1;
+
+        padding-left:
+            0;
+
+    }
+
+
+    .strategy-model-actions .btn {
+
+        width:
+            auto;
+
+    }
+
 }
 
+
+/* ======================================================== */
+/* 19. RESPONSIVE — PHONE                                   */
+/* ======================================================== */
 
 @media (
     max-width:
@@ -2451,11 +2927,19 @@ Strategies | MarketPulse
     .strategy-workspace {
 
         width:
-            calc(
-                100vw
-                -
-                20px
-            );
+            100%;
+
+        max-width:
+            100%;
+
+        min-width:
+            0;
+
+        margin:
+            0;
+
+        transform:
+            none;
 
     }
 
@@ -2465,6 +2949,25 @@ Strategies | MarketPulse
 
         flex-direction:
             column;
+
+        align-items:
+            stretch;
+
+    }
+
+
+    .strategy-header-actions {
+
+        width:
+            100%;
+
+    }
+
+
+    .strategy-header-actions .btn {
+
+        width:
+            100%;
 
     }
 
@@ -2476,7 +2979,64 @@ Strategies | MarketPulse
     .strategy-model-detail-content {
 
         grid-template-columns:
-            1fr;
+            minmax(
+                0,
+                1fr
+            );
+
+    }
+
+
+    .strategy-flow {
+
+        gap:
+            .7rem;
+
+    }
+
+
+    .strategy-flow-step {
+
+        width:
+            100%;
+
+        padding:
+            .25rem 0;
+
+    }
+
+
+    .strategy-filter-grid {
+
+        align-items:
+            stretch;
+
+    }
+
+
+    .strategy-category-button {
+
+        align-items:
+            center;
+
+    }
+
+
+    .strategy-category-count {
+
+        margin-right:
+            .25rem;
+
+        white-space:
+            nowrap;
+
+    }
+
+
+    .strategy-category-body {
+
+        padding:
+            0 .65rem;
 
     }
 
@@ -2490,6 +3050,12 @@ Strategies | MarketPulse
                 1fr
             );
 
+        align-items:
+            start;
+
+        gap:
+            .55rem;
+
     }
 
 
@@ -2498,8 +3064,11 @@ Strategies | MarketPulse
         grid-column:
             1 / -1;
 
+        width:
+            100%;
+
         padding-left:
-            36px;
+            0;
 
     }
 
@@ -2520,18 +3089,10 @@ Strategies | MarketPulse
     }
 
 
-    .my-strategy-summary {
+    .strategy-model-detail-content {
 
-        grid-template-columns:
-            1fr;
-
-    }
-
-
-    .my-strategy-actions .btn {
-
-        flex:
-            1;
+        padding:
+            .6rem;
 
     }
 
@@ -2546,6 +3107,237 @@ Strategies | MarketPulse
 
         align-items:
             stretch;
+
+    }
+
+
+    .strategy-compare-bar .btn {
+
+        width:
+            100%;
+
+    }
+
+
+    .my-strategy-summary {
+
+        grid-template-columns:
+            minmax(
+                0,
+                1fr
+            );
+
+        align-items:
+            stretch;
+
+    }
+
+
+    .my-strategy-actions {
+
+        width:
+            100%;
+
+        flex-direction:
+            column;
+
+    }
+
+
+    .my-strategy-actions .btn {
+
+        width:
+            100%;
+
+        flex:
+            0 0 auto;
+
+    }
+
+
+    .my-strategy-metrics {
+
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+    }
+
+
+    .validation-box .btn,
+    .related-tool .btn {
+
+        width:
+            100%;
+
+    }
+
+
+    .strategy-panel {
+
+        padding:
+            .8rem;
+
+    }
+
+}
+
+
+/* ======================================================== */
+/* 20. RESPONSIVE — VERY SMALL PHONE                        */
+/* ======================================================== */
+
+@media (
+    max-width:
+    575.98px
+) {
+
+    .strategy-page-title {
+
+        font-size:
+            1.45rem;
+
+    }
+
+
+    .strategy-page-subtitle {
+
+        font-size:
+            .68rem;
+
+    }
+
+
+    .strategy-panel {
+
+        padding:
+            .7rem;
+
+        border-radius:
+            7px;
+
+    }
+
+
+    .strategy-flow {
+
+        grid-template-columns:
+            minmax(
+                0,
+                1fr
+            );
+
+    }
+
+
+    .strategy-flow-step {
+
+        align-items:
+            flex-start;
+
+    }
+
+
+    .strategy-filter-grid {
+
+        grid-template-columns:
+            minmax(
+                0,
+                1fr
+            );
+
+    }
+
+
+    .strategy-category-button {
+
+        gap:
+            .45rem;
+
+        padding:
+            .65rem;
+
+    }
+
+
+    .strategy-category-count {
+
+        font-size:
+            .48rem;
+
+    }
+
+
+    .strategy-category-body {
+
+        padding:
+            0 .55rem;
+
+    }
+
+
+    .strategy-model-row {
+
+        padding:
+            .65rem 0;
+
+    }
+
+
+    .strategy-model-main {
+
+        gap:
+            .45rem;
+
+    }
+
+
+    .strategy-model-title-row {
+
+        align-items:
+            flex-start;
+
+    }
+
+
+    .strategy-model-details summary {
+
+        padding:
+            .5rem;
+
+    }
+
+
+    .my-strategy-summary,
+    .my-strategy-detail-body {
+
+        padding:
+            .65rem;
+
+    }
+
+
+    .my-strategy-metrics {
+
+        grid-template-columns:
+            minmax(
+                0,
+                1fr
+            );
+
+    }
+
+
+    .strategy-comparison-table th,
+    .strategy-comparison-table td {
+
+        padding:
+            .5rem;
 
     }
 

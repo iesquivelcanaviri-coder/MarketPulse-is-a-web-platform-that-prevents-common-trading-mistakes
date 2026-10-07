@@ -34,13 +34,14 @@
 {# - Shared navigation colours                              #}
 {# - Shared typography                                      #}
 {#                                                          #}
-{# IMPORTANT:                                               #}
+{# RESPONSIVE FOUNDATION:                                   #}
 {#                                                          #}
-{# Some older MarketPulse templates still contain legacy    #}
-{# page-specific light CSS. The final theme guard in this   #}
-{# base template ensures that the application page canvas   #}
-{# remains dark while those legacy styles are progressively #}
-{# removed.                                                 #}
+{# base.html also provides a small responsive safety layer  #}
+{# so child templates cannot accidentally force the whole   #}
+{# application wider than the browser viewport.             #}
+{#                                                          #}
+{# Page-specific layouts such as Data, Strategies and Risk  #}
+{# still define their own component breakpoints.            #}
 {# ======================================================== #}
 
 
@@ -122,7 +123,7 @@
 
 
     {# ---------------------------------------------------- #}
-    {# FINAL MARKETPULSE THEME GUARD                        #}
+    {# FINAL MARKETPULSE THEME + RESPONSIVE GUARD           #}
     {# ---------------------------------------------------- #}
     {#                                                      #}
     {# IMPORTANT:                                           #}
@@ -130,13 +131,13 @@
     {# This small shared layer is intentionally placed      #}
     {# AFTER page-specific CSS.                             #}
     {#                                                      #}
-    {# Several older templates still contain their own      #}
-    {# light-theme rules. This guard prevents those pages   #}
-    {# from turning the complete application background     #}
-    {# white.                                               #}
+    {# It provides:                                         #}
     {#                                                      #}
-    {# Component-specific legacy CSS should still be        #}
-    {# removed from those templates over time.              #}
+    {# - final MarketPulse dark-theme protection            #}
+    {# - shared Bootstrap component colouring               #}
+    {# - responsive overflow protection                     #}
+    {# - safe table scrolling                               #}
+    {# - safe canvas/image sizing                           #}
 
     <style>
 
@@ -180,30 +181,41 @@
             /* Bootstrap colour mapping                        */
             /* ----------------------------------------------- */
 
-            --bs-body-bg: var(--mp-bg);
+            --bs-body-bg:
+                var(--mp-bg);
 
-            --bs-body-color: var(--mp-text);
+            --bs-body-color:
+                var(--mp-text);
 
-            --bs-emphasis-color: var(--mp-text);
+            --bs-emphasis-color:
+                var(--mp-text);
 
-            --bs-secondary-color: var(--mp-muted);
+            --bs-secondary-color:
+                var(--mp-muted);
 
-            --bs-tertiary-color: var(--mp-muted);
+            --bs-tertiary-color:
+                var(--mp-muted);
 
-            --bs-border-color: var(--mp-border);
+            --bs-border-color:
+                var(--mp-border);
 
             --bs-border-color-translucent:
                 rgba(49, 66, 88, .65);
 
-            --bs-primary: var(--mp-primary);
+            --bs-primary:
+                var(--mp-primary);
 
-            --bs-primary-rgb: 79, 134, 182;
+            --bs-primary-rgb:
+                79, 134, 182;
 
-            --bs-success: var(--mp-success);
+            --bs-success:
+                var(--mp-success);
 
-            --bs-warning: var(--mp-warning);
+            --bs-warning:
+                var(--mp-warning);
 
-            --bs-danger: var(--mp-danger);
+            --bs-danger:
+                var(--mp-danger);
         }
 
 
@@ -213,20 +225,27 @@
 
         html {
 
-            min-height: 100%;
+            min-height:
+                100%;
 
-            background-color: var(--mp-bg) !important;
+            background-color:
+                var(--mp-bg)
+                !important;
         }
 
 
         body,
         body.marketpulse-body {
 
-            min-height: 100vh;
+            min-height:
+                100vh;
 
-            margin: 0;
+            margin:
+                0;
 
-            color: var(--mp-text) !important;
+            color:
+                var(--mp-text)
+                !important;
 
             background:
                 var(--mp-bg)
@@ -241,7 +260,9 @@
         #main-content,
         .marketpulse-main {
 
-            color: var(--mp-text) !important;
+            color:
+                var(--mp-text)
+                !important;
 
             background:
                 var(--mp-bg)
@@ -858,6 +879,271 @@
 
             scrollbar-width:
                 thin;
+        }
+
+
+        /* ==================================================== */
+        /* SHARED RESPONSIVE SAFETY                              */
+        /* ==================================================== */
+        /*
+        These rules provide a safe responsive foundation for
+        every MarketPulse page.
+
+        They do NOT replace page-specific Bootstrap/grid
+        breakpoints.
+
+        Their purpose is to prevent individual child components
+        from forcing the complete application wider than the
+        browser viewport.
+        */
+
+
+        /* ---------------------------------------------------- */
+        /* Main content must always fit inside the viewport      */
+        /* ---------------------------------------------------- */
+
+        #main-content,
+        .marketpulse-main {
+
+            width:
+                100%;
+
+            max-width:
+                100%;
+
+            min-width:
+                0;
+
+            overflow-x:
+                hidden;
+        }
+
+
+        /* ---------------------------------------------------- */
+        /* Direct child workspaces must be allowed to shrink     */
+        /* ---------------------------------------------------- */
+
+        .marketpulse-main > * {
+
+            min-width:
+                0;
+
+            max-width:
+                100%;
+        }
+
+
+        /* ---------------------------------------------------- */
+        /* Bootstrap rows and columns must be shrinkable         */
+        /* ---------------------------------------------------- */
+
+        .marketpulse-main .row,
+        .marketpulse-main [class*="col-"],
+        .marketpulse-main .card,
+        .marketpulse-main .card-body,
+        .marketpulse-main .card-header,
+        .marketpulse-main .card-footer {
+
+            min-width:
+                0;
+        }
+
+
+        /* ---------------------------------------------------- */
+        /* Responsive media                                     */
+        /* ---------------------------------------------------- */
+
+        .marketpulse-main img,
+        .marketpulse-main svg,
+        .marketpulse-main video {
+
+            max-width:
+                100%;
+
+            height:
+                auto;
+        }
+
+
+        /*
+        Canvas elements are commonly used by MarketPulse charts.
+
+        Width is restricted to the available parent space.
+
+        Height is deliberately NOT forced to auto because chart
+        libraries frequently manage canvas height themselves.
+        */
+
+        .marketpulse-main canvas {
+
+            max-width:
+                100%;
+        }
+
+
+        /* ---------------------------------------------------- */
+        /* Responsive tables                                    */
+        /* ---------------------------------------------------- */
+
+        .marketpulse-main .table-responsive {
+
+            display:
+                block;
+
+            width:
+                100%;
+
+            max-width:
+                100%;
+
+            overflow-x:
+                auto;
+
+            -webkit-overflow-scrolling:
+                touch;
+        }
+
+
+        /*
+        Financial tables may legitimately be wider than a phone.
+
+        The table wrapper should scroll horizontally rather than
+        causing the complete page to overflow.
+        */
+
+        .marketpulse-main .table-responsive > .table {
+
+            margin-bottom:
+                0;
+        }
+
+
+        /* ---------------------------------------------------- */
+        /* Forms and buttons                                    */
+        /* ---------------------------------------------------- */
+
+        .marketpulse-main .form-control,
+        .marketpulse-main .form-select,
+        .marketpulse-main .input-group,
+        .marketpulse-main .btn {
+
+            max-width:
+                100%;
+        }
+
+
+        /* ---------------------------------------------------- */
+        /* Long text must not force horizontal overflow          */
+        /* ---------------------------------------------------- */
+
+        .marketpulse-main p,
+        .marketpulse-main small,
+        .marketpulse-main span,
+        .marketpulse-main strong,
+        .marketpulse-main a,
+        .marketpulse-main td,
+        .marketpulse-main th {
+
+            overflow-wrap:
+                break-word;
+        }
+
+
+        /* ==================================================== */
+        /* SHARED MOBILE REFINEMENTS                             */
+        /* ==================================================== */
+
+        @media (max-width: 767.98px) {
+
+            /*
+            Bootstrap already changes the navbar at this
+            breakpoint.
+
+            These rules only reduce application-content spacing
+            slightly on smaller devices.
+            */
+
+            .marketpulse-main {
+
+                padding-left:
+                    .75rem
+                    !important;
+
+                padding-right:
+                    .75rem
+                    !important;
+
+                padding-top:
+                    1rem
+                    !important;
+
+                padding-bottom:
+                    1rem
+                    !important;
+            }
+
+
+            /*
+            Allow action groups built with flexbox to wrap instead
+            of forcing the browser viewport wider.
+            */
+
+            .marketpulse-main .d-flex {
+
+                min-width:
+                    0;
+            }
+
+
+            /*
+            Buttons may wrap text on narrow phones.
+
+            This is particularly useful for longer actions such as:
+            - Run Strategy Robustness
+            - Send Password Reset Link
+            - Calculate Position Size
+            */
+
+            .marketpulse-main .btn {
+
+                white-space:
+                    normal;
+            }
+
+        }
+
+
+        /* ==================================================== */
+        /* VERY SMALL DEVICES                                    */
+        /* ==================================================== */
+
+        @media (max-width: 575.98px) {
+
+            .marketpulse-main {
+
+                padding-left:
+                    .625rem
+                    !important;
+
+                padding-right:
+                    .625rem
+                    !important;
+            }
+
+
+            /*
+            Prevent unusually long headings from overflowing
+            narrow phone screens.
+            */
+
+            .marketpulse-main h1,
+            .marketpulse-main h2,
+            .marketpulse-main h3 {
+
+                overflow-wrap:
+                    anywhere;
+            }
+
         }
 
     </style>

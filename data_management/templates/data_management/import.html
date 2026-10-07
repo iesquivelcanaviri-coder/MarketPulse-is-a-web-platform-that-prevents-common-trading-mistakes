@@ -56,6 +56,25 @@ PURPOSE:
 5. Inspect stored OHLCV observations
 
 
+RESPONSIVE DESIGN:
+
+Large desktop
+    ↓
+Wide MarketPulse workspace
+
+Desktop / tablet
+    ↓
+Multi-column layout where space allows
+
+Phone
+    ↓
+Single-column workflow
+    ↓
+Stacked controls
+    ↓
+Scrollable financial tables
+
+
 THEME ARCHITECTURE:
 
 This template supports the shared MarketPulse theme tokens:
@@ -198,34 +217,37 @@ Market Data | MarketPulse
 
 
     /* ---------------------------------------------------- */
-    /* WIDE APPLICATION WORKSPACE                           */
+    /* RESPONSIVE APPLICATION WORKSPACE                     */
     /* ---------------------------------------------------- */
 
     width:
-        min(
-            1500px,
-            calc(
-                100vw
-                -
-                48px
-            )
-        );
+        100%;
 
     max-width:
-        none;
+        1480px;
+
+    min-width:
+        0;
 
     margin-left:
-        50%;
+        auto;
 
-    transform:
-        translateX(
-            -50%
-        );
+    margin-right:
+        auto;
 
     color:
         var(
             --data-text
         );
+
+}
+
+
+.data-workspace,
+.data-workspace * {
+
+    box-sizing:
+        border-box;
 
 }
 
@@ -239,7 +261,50 @@ Market Data | MarketPulse
 
 
 /* ======================================================== */
-/* 1.1 PAGE / BASE OVERRIDES                                */
+/* 1.1 RESPONSIVE WIDTH SAFETY                              */
+/* ======================================================== */
+
+.data-workspace,
+.data-page-header,
+.data-flow,
+.data-flow-step,
+.data-import-panel,
+.data-import-grid,
+.data-field,
+.dataset-workspace,
+.dataset-header,
+.dataset-title-area,
+.dataset-main,
+.dataset-chart-column,
+.market-condition-panel,
+.dataset-use,
+.model-selector-layout,
+.workspace-details,
+.workspace-details-body,
+.model-detail-grid,
+.model-detail-box,
+.data-table-wrapper,
+.recent-imports,
+.recent-imports-body,
+.data-empty {
+
+    min-width:
+        0;
+
+}
+
+
+.data-workspace img,
+.data-workspace svg {
+
+    max-width:
+        100%;
+
+}
+
+
+/* ======================================================== */
+/* 1.2 PAGE / BASE FALLBACKS                                */
 /* ======================================================== */
 
 html,
@@ -266,164 +331,6 @@ body {
 }
 
 
-main,
-main.container,
-main.container-fluid,
-.content-wrapper,
-.page-content {
-
-    background:
-        var(
-            --mp-bg,
-            #0c1420
-        )
-        !important;
-
-}
-
-
-main > .container,
-main > .container-fluid {
-
-    background:
-        transparent
-        !important;
-
-}
-
-
-body > main,
-body > .container,
-body > .container-fluid {
-
-    background-color:
-        var(
-            --mp-bg,
-            #0c1420
-        );
-
-}
-
-
-/* ======================================================== */
-/* 1.2 NAVBAR OVERRIDE                                      */
-/* ======================================================== */
-
-.navbar,
-nav.navbar,
-.navbar.bg-primary {
-
-    background-color:
-        var(
-            --mp-nav,
-            #111c2b
-        )
-        !important;
-
-    border-bottom:
-        1px solid
-        var(
-            --mp-border-soft,
-            #29394d
-        );
-
-    box-shadow:
-        0 3px 12px
-        rgba(
-            0,
-            0,
-            0,
-            .16
-        );
-
-}
-
-
-.navbar .navbar-brand {
-
-    color:
-        var(
-            --mp-text,
-            #f3f6fa
-        )
-        !important;
-
-}
-
-
-.navbar .nav-link {
-
-    color:
-        #aebdcd
-        !important;
-
-    transition:
-        color .16s ease,
-        background-color .16s ease;
-
-}
-
-
-.navbar .nav-link:hover {
-
-    color:
-        #ffffff
-        !important;
-
-    background:
-        rgba(
-            255,
-            255,
-            255,
-            .03
-        );
-
-}
-
-
-.navbar .nav-link.active,
-.navbar .nav-item.active .nav-link {
-
-    color:
-        #ffffff
-        !important;
-
-    background:
-        var(
-            --mp-primary-soft,
-            rgba(
-                79,
-                134,
-                182,
-                .12
-            )
-        );
-
-    border-radius:
-        5px;
-
-}
-
-
-.navbar .nav-link i,
-.navbar .navbar-brand i {
-
-    color:
-        inherit
-        !important;
-
-}
-
-
-.navbar-toggler {
-
-    border-color:
-        #40546b
-        !important;
-
-}
-
-
 /* ======================================================== */
 /* 2. PAGE HEADER                                           */
 /* ======================================================== */
@@ -439,11 +346,25 @@ nav.navbar,
     align-items:
         flex-start;
 
+    flex-wrap:
+        wrap;
+
     gap:
         1rem;
 
     margin-bottom:
         1rem;
+
+}
+
+
+.data-page-header > div {
+
+    min-width:
+        0;
+
+    flex:
+        1 1 420px;
 
 }
 
@@ -460,7 +381,11 @@ nav.navbar,
         !important;
 
     font-size:
-        1.65rem;
+        clamp(
+            1.4rem,
+            3vw,
+            1.65rem
+        );
 
     font-weight:
         700;
@@ -472,6 +397,9 @@ nav.navbar,
 
 
 .data-page-subtitle {
+
+    max-width:
+        720px;
 
     margin:
         0;
@@ -508,6 +436,9 @@ nav.navbar,
     min-height:
         34px;
 
+    max-width:
+        100%;
+
     padding:
         .48rem .72rem;
 
@@ -531,6 +462,9 @@ nav.navbar,
 
     font-weight:
         600;
+
+    text-align:
+        center;
 
 }
 
@@ -574,6 +508,9 @@ nav.navbar,
 
     overflow:
         hidden;
+
+    width:
+        100%;
 
     background:
         var(
@@ -675,6 +612,14 @@ nav.navbar,
 }
 
 
+.data-flow-step > span:last-child {
+
+    min-width:
+        0;
+
+}
+
+
 .data-flow-step strong {
 
     display:
@@ -718,6 +663,9 @@ nav.navbar,
 /* ======================================================== */
 
 .data-import-panel {
+
+    width:
+        100%;
 
     margin-bottom:
         1rem;
@@ -791,10 +739,13 @@ nav.navbar,
         grid;
 
     grid-template-columns:
-        1fr
-        1fr
-        1fr
-        1fr
+        repeat(
+            4,
+            minmax(
+                0,
+                1fr
+            )
+        )
         auto;
 
     gap:
@@ -802,6 +753,17 @@ nav.navbar,
 
     align-items:
         end;
+
+    width:
+        100%;
+
+}
+
+
+.data-field {
+
+    min-width:
+        0;
 
 }
 
@@ -831,6 +793,12 @@ nav.navbar,
 
     width:
         100%;
+
+    max-width:
+        100%;
+
+    min-width:
+        0;
 
     min-height:
         34px;
@@ -911,6 +879,9 @@ nav.navbar,
     min-height:
         34px;
 
+    max-width:
+        100%;
+
     padding:
         .4rem .68rem;
 
@@ -942,8 +913,11 @@ nav.navbar,
     font-weight:
         700;
 
+    text-align:
+        center;
+
     white-space:
-        nowrap;
+        normal;
 
 }
 
@@ -999,6 +973,9 @@ nav.navbar,
 
 .data-error {
 
+    width:
+        100%;
+
     margin-top:
         .6rem;
 
@@ -1031,6 +1008,9 @@ nav.navbar,
     font-size:
         .62rem;
 
+    overflow-wrap:
+        anywhere;
+
 }
 
 
@@ -1042,6 +1022,9 @@ nav.navbar,
 
     overflow:
         hidden;
+
+    width:
+        100%;
 
     margin-bottom:
         1rem;
@@ -1088,6 +1071,9 @@ nav.navbar,
     gap:
         .85rem;
 
+    width:
+        100%;
+
     padding:
         .68rem .85rem;
 
@@ -1100,6 +1086,14 @@ nav.navbar,
 }
 
 
+.dataset-title-area {
+
+    min-width:
+        0;
+
+}
+
+
 .dataset-symbol-row {
 
     display:
@@ -1107,6 +1101,9 @@ nav.navbar,
 
     align-items:
         center;
+
+    flex-wrap:
+        wrap;
 
     gap:
         .35rem;
@@ -1129,6 +1126,9 @@ nav.navbar,
 
     font-weight:
         800;
+
+    overflow-wrap:
+        anywhere;
 
 }
 
@@ -1171,13 +1171,16 @@ nav.navbar,
     font-size:
         .53rem;
 
+    overflow-wrap:
+        anywhere;
+
 }
 
 
 .dataset-stat {
 
     min-width:
-        65px;
+        0;
 
 }
 
@@ -1212,13 +1215,16 @@ nav.navbar,
     font-size:
         .61rem;
 
+    overflow-wrap:
+        anywhere;
+
 }
 
 
 .dataset-switcher {
 
     min-width:
-        105px;
+        0;
 
 }
 
@@ -1256,6 +1262,9 @@ nav.navbar,
             .85fr
         );
 
+    width:
+        100%;
+
 }
 
 
@@ -1264,6 +1273,9 @@ nav.navbar,
 /* ======================================================== */
 
 .dataset-chart-column {
+
+    min-width:
+        0;
 
     padding:
         .78rem .88rem .9rem;
@@ -1299,8 +1311,11 @@ nav.navbar,
     display:
         flex;
 
+    flex-wrap:
+        wrap;
+
     gap:
-        .7rem;
+        .35rem .7rem;
 
     margin-bottom:
         .6rem;
@@ -1347,8 +1362,17 @@ nav.navbar,
     position:
         relative;
 
+    width:
+        100%;
+
+    min-width:
+        0;
+
     min-height:
         250px;
+
+    overflow:
+        hidden;
 
 }
 
@@ -1359,6 +1383,9 @@ nav.navbar,
         block;
 
     width:
+        100%;
+
+    max-width:
         100%;
 
     height:
@@ -1372,6 +1399,9 @@ nav.navbar,
 /* ======================================================== */
 
 .market-condition-panel {
+
+    min-width:
+        0;
 
     padding:
         .78rem .88rem;
@@ -1424,6 +1454,9 @@ nav.navbar,
 
     font-weight:
         800;
+
+    overflow-wrap:
+        anywhere;
 
 }
 
@@ -1515,6 +1548,15 @@ nav.navbar,
 }
 
 
+.market-condition-row span,
+.market-condition-row strong {
+
+    min-width:
+        0;
+
+}
+
+
 .market-condition-row strong {
 
     color:
@@ -1522,6 +1564,9 @@ nav.navbar,
 
     text-align:
         right;
+
+    overflow-wrap:
+        anywhere;
 
 }
 
@@ -1583,6 +1628,9 @@ nav.navbar,
 /* ======================================================== */
 
 .dataset-use {
+
+    width:
+        100%;
 
     padding:
         .72rem .85rem .82rem;
@@ -1646,6 +1694,17 @@ nav.navbar,
     gap:
         .5rem;
 
+    width:
+        100%;
+
+}
+
+
+.model-selector-layout > div {
+
+    min-width:
+        0;
+
 }
 
 
@@ -1675,6 +1734,9 @@ nav.navbar,
 
 .workspace-details {
 
+    width:
+        100%;
+
     border-top:
         1px solid
         var(
@@ -1692,6 +1754,9 @@ nav.navbar,
     list-style:
         none;
 
+    width:
+        100%;
+
     padding:
         .65rem .85rem;
 
@@ -1703,6 +1768,9 @@ nav.navbar,
 
     font-weight:
         700;
+
+    overflow-wrap:
+        anywhere;
 
 }
 
@@ -1723,6 +1791,9 @@ nav.navbar,
     float:
         right;
 
+    margin-left:
+        .5rem;
+
     color:
         var(
             --data-blue
@@ -1740,6 +1811,9 @@ nav.navbar,
 
 
 .workspace-details-body {
+
+    width:
+        100%;
 
     padding:
         0 .85rem .85rem;
@@ -1768,10 +1842,16 @@ nav.navbar,
     gap:
         .6rem;
 
+    width:
+        100%;
+
 }
 
 
 .model-detail-box {
+
+    min-width:
+        0;
 
     padding:
         .65rem;
@@ -1836,6 +1916,9 @@ nav.navbar,
     align-items:
         center;
 
+    max-width:
+        100%;
+
     margin-left:
         .35rem;
 
@@ -1850,6 +1933,9 @@ nav.navbar,
 
     font-weight:
         700;
+
+    vertical-align:
+        middle;
 
 }
 
@@ -1945,6 +2031,9 @@ nav.navbar,
 
 .requirement {
 
+    max-width:
+        100%;
+
     padding:
         .2rem .34rem;
 
@@ -1966,6 +2055,9 @@ nav.navbar,
     font-size:
         .5rem;
 
+    overflow-wrap:
+        anywhere;
+
 }
 
 
@@ -1975,7 +2067,16 @@ nav.navbar,
 
 .data-table-wrapper {
 
-    overflow:
+    width:
+        100%;
+
+    max-width:
+        100%;
+
+    overflow-x:
+        auto;
+
+    overflow-y:
         auto;
 
     max-height:
@@ -1989,6 +2090,9 @@ nav.navbar,
 
     border-radius:
         6px;
+
+    -webkit-overflow-scrolling:
+        touch;
 
 }
 
@@ -2039,6 +2143,9 @@ nav.navbar,
             --data-border
         );
 
+    white-space:
+        nowrap;
+
 }
 
 
@@ -2075,6 +2182,9 @@ nav.navbar,
     font-variant-numeric:
         tabular-nums;
 
+    white-space:
+        nowrap;
+
 }
 
 
@@ -2083,6 +2193,9 @@ nav.navbar,
 /* ======================================================== */
 
 .recent-imports {
+
+    width:
+        100%;
 
     margin-top:
         1rem;
@@ -2115,6 +2228,9 @@ nav.navbar,
     list-style:
         none;
 
+    width:
+        100%;
+
     padding:
         .66rem .85rem;
 
@@ -2126,6 +2242,9 @@ nav.navbar,
 
     font-weight:
         700;
+
+    overflow-wrap:
+        anywhere;
 
 }
 
@@ -2146,6 +2265,9 @@ nav.navbar,
     float:
         right;
 
+    margin-left:
+        .5rem;
+
     color:
         var(
             --data-blue
@@ -2164,6 +2286,9 @@ nav.navbar,
 
 .recent-imports-body {
 
+    width:
+        100%;
+
     padding:
         0 .85rem .85rem;
 
@@ -2175,6 +2300,9 @@ nav.navbar,
 /* ======================================================== */
 
 .data-empty {
+
+    width:
+        100%;
 
     padding:
         2rem 1rem;
@@ -2212,6 +2340,9 @@ nav.navbar,
     font-size:
         .82rem;
 
+    overflow-wrap:
+        anywhere;
+
 }
 
 
@@ -2248,15 +2379,8 @@ nav.navbar,
 
     .data-workspace {
 
-        width:
-            min(
-                1480px,
-                calc(
-                    100vw
-                    -
-                    64px
-                )
-            );
+        max-width:
+            1480px;
 
     }
 
@@ -2295,7 +2419,7 @@ nav.navbar,
 
 
 /* ======================================================== */
-/* 10. RESPONSIVE                                           */
+/* 10. TABLET / SMALL DESKTOP                               */
 /* ======================================================== */
 
 @media (
@@ -2317,10 +2441,24 @@ nav.navbar,
     }
 
 
+    .data-import-grid > .data-primary-button {
+
+        grid-column:
+            1 / -1;
+
+        width:
+            100%;
+
+    }
+
+
     .dataset-main {
 
         grid-template-columns:
-            1fr;
+            minmax(
+                0,
+                1fr
+            );
 
     }
 
@@ -2342,17 +2480,46 @@ nav.navbar,
     .dataset-header {
 
         grid-template-columns:
-            minmax(
-                0,
-                1fr
-            )
-            auto
-            auto;
+            repeat(
+                4,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+    }
+
+
+    .dataset-title-area {
+
+        grid-column:
+            1 / -1;
+
+    }
+
+
+    .dataset-switcher {
+
+        width:
+            100%;
+
+    }
+
+
+    .dataset-switcher select {
+
+        width:
+            100%;
 
     }
 
 }
 
+
+/* ======================================================== */
+/* 11. MOBILE                                               */
+/* ======================================================== */
 
 @media (
     max-width:
@@ -2362,19 +2529,16 @@ nav.navbar,
     .data-workspace {
 
         width:
-            calc(
-                100vw
-                -
-                20px
-            );
+            100%;
 
-        margin-left:
-            50%;
+        max-width:
+            100%;
+
+        margin:
+            0 auto;
 
         transform:
-            translateX(
-                -50%
-            );
+            none;
 
     }
 
@@ -2384,13 +2548,38 @@ nav.navbar,
         flex-direction:
             column;
 
+        align-items:
+            stretch;
+
+    }
+
+
+    .data-page-header > div {
+
+        flex:
+            1 1 auto;
+
+        width:
+            100%;
+
+    }
+
+
+    .data-history-button {
+
+        width:
+            100%;
+
     }
 
 
     .data-flow {
 
         grid-template-columns:
-            1fr;
+            minmax(
+                0,
+                1fr
+            );
 
     }
 
@@ -2420,7 +2609,21 @@ nav.navbar,
     .data-import-grid {
 
         grid-template-columns:
-            1fr;
+            minmax(
+                0,
+                1fr
+            );
+
+    }
+
+
+    .data-import-grid > .data-primary-button {
+
+        grid-column:
+            auto;
+
+        width:
+            100%;
 
     }
 
@@ -2436,6 +2639,9 @@ nav.navbar,
                 )
             );
 
+        gap:
+            .65rem;
+
     }
 
 
@@ -2448,11 +2654,242 @@ nav.navbar,
     }
 
 
+    .dataset-switcher {
+
+        width:
+            100%;
+
+    }
+
+
+    .dataset-switcher select {
+
+        width:
+            100%;
+
+    }
+
+
     .model-selector-layout,
     .model-detail-grid {
 
         grid-template-columns:
-            1fr;
+            minmax(
+                0,
+                1fr
+            );
+
+    }
+
+
+    .model-selector-layout .data-primary-button {
+
+        width:
+            100%;
+
+    }
+
+
+    .dataset-tabs {
+
+        gap:
+            .3rem .55rem;
+
+    }
+
+
+    .market-condition-row {
+
+        align-items:
+            flex-start;
+
+    }
+
+
+    .workspace-details summary {
+
+        padding:
+            .65rem .7rem;
+
+    }
+
+
+    .workspace-details-body {
+
+        padding:
+            0 .7rem .7rem;
+
+    }
+
+
+    .recent-imports summary {
+
+        padding:
+            .66rem .7rem;
+
+    }
+
+
+    .recent-imports-body {
+
+        padding:
+            0 .7rem .7rem;
+
+    }
+
+}
+
+
+/* ======================================================== */
+/* 12. VERY SMALL PHONE                                     */
+/* ======================================================== */
+
+@media (
+    max-width:
+    575.98px
+) {
+
+    .data-page-title {
+
+        font-size:
+            1.4rem;
+
+    }
+
+
+    .data-import-panel {
+
+        padding:
+            .75rem;
+
+    }
+
+
+    .data-flow-step {
+
+        padding:
+            .65rem .7rem;
+
+    }
+
+
+    .dataset-header {
+
+        grid-template-columns:
+            minmax(
+                0,
+                1fr
+            );
+
+        padding:
+            .7rem;
+
+    }
+
+
+    .dataset-title-area,
+    .dataset-switcher {
+
+        grid-column:
+            auto;
+
+    }
+
+
+    .dataset-stat {
+
+        padding-top:
+            .35rem;
+
+        border-top:
+            1px solid
+            var(
+                --data-border-soft
+            );
+
+    }
+
+
+    .dataset-chart-column,
+    .market-condition-panel,
+    .dataset-use {
+
+        padding-left:
+            .7rem;
+
+        padding-right:
+            .7rem;
+
+    }
+
+
+    .market-condition-row {
+
+        flex-direction:
+            column;
+
+        gap:
+            .15rem;
+
+    }
+
+
+    .market-condition-row strong {
+
+        text-align:
+            left;
+
+    }
+
+
+    .model-status {
+
+        margin-left:
+            .15rem;
+
+    }
+
+
+    .data-provider-line {
+
+        flex-direction:
+            column;
+
+        gap:
+            .25rem;
+
+    }
+
+
+    .data-empty {
+
+        padding:
+            1.4rem .75rem;
+
+    }
+
+
+    .data-table-wrapper {
+
+        border-radius:
+            5px;
+
+    }
+
+
+    .data-table {
+
+        font-size:
+            .52rem;
+
+    }
+
+
+    .data-table thead th,
+    .data-table tbody td {
+
+        padding:
+            .4rem .45rem;
 
     }
 
@@ -3177,10 +3614,6 @@ nav.navbar,
                 </div>
 
 
-                <!-- ========================================== -->
-                <!-- MARKET CONDITION INTERPRETATION            -->
-                <!-- ========================================== -->
-
                 <div class="market-condition-description">
 
 
@@ -3245,185 +3678,116 @@ nav.navbar,
                 </div>
 
 
-                <!-- ========================================== -->
-                <!-- MARKET METRICS                             -->
-                <!-- ========================================== -->
-
                 <div class="market-condition-metrics">
 
 
                     <div class="market-condition-row">
 
-
                         <span>
-
                             Period return
-
                         </span>
-
 
                         <strong id="periodReturn">
-
                             —
-
                         </strong>
-
 
                     </div>
 
 
                     <div class="market-condition-row">
 
-
                         <span>
-
                             Average daily return
-
                         </span>
-
 
                         <strong id="averageReturn">
-
                             —
-
                         </strong>
-
 
                     </div>
 
 
                     <div class="market-condition-row">
 
-
                         <span>
-
                             Annualised volatility
-
                         </span>
-
 
                         <strong id="annualVolatility">
-
                             —
-
                         </strong>
-
 
                     </div>
 
 
                     <div class="market-condition-row">
 
-
                         <span>
-
                             Maximum drawdown
-
                         </span>
-
 
                         <strong id="maximumDrawdown">
-
                             —
-
                         </strong>
-
 
                     </div>
 
 
                     <div class="market-condition-row">
 
-
                         <span>
-
                             Momentum
-
                         </span>
-
 
                         <strong id="momentum">
-
                             —
-
                         </strong>
-
 
                     </div>
 
 
                     <div class="market-condition-row">
 
-
                         <span>
-
                             Volume behaviour
-
                         </span>
-
 
                         <strong id="volumeBehaviour">
-
                             —
-
                         </strong>
-
 
                     </div>
 
 
                     <div class="market-condition-row">
 
-
                         <span>
-
                             Confidence score
-
                         </span>
 
-
                         <strong>
-
-
                             {{ latest_regime.confidence|floatformat:2 }}
-
                             / 1.00
-
-
                         </strong>
-
 
                     </div>
 
 
                     <div class="market-condition-row">
 
-
                         <span>
-
                             Volatility score
-
                         </span>
 
-
                         <strong>
-
-
                             {{ latest_regime.volatility|floatformat:2 }}
-
-
                         </strong>
-
 
                     </div>
 
 
                 </div>
 
-
-                <!-- ========================================== -->
-                <!-- INTERPRETATION                              -->
-                <!-- ========================================== -->
 
                 <div class="market-condition-subheading">
 
@@ -3444,10 +3808,6 @@ nav.navbar,
 
                 </div>
 
-
-                <!-- ========================================== -->
-                <!-- CALCULATION EXPLANATION                    -->
-                <!-- ========================================== -->
 
                 <div class="market-condition-subheading">
 
@@ -3540,10 +3900,6 @@ nav.navbar,
 
             {% endif %}
 
-
-            <!-- ========================================== -->
-            <!-- MARKET CONDITION ACTION                   -->
-            <!-- ========================================== -->
 
             <div class="market-condition-action">
 
@@ -3809,8 +4165,6 @@ nav.navbar,
                 <div class="model-detail-grid">
 
 
-                    <!-- WHAT DOES IT DO? -->
-
                     <div class="model-detail-box">
 
 
@@ -3846,8 +4200,6 @@ nav.navbar,
                     </div>
 
 
-                    <!-- WHY USE IT? -->
-
                     <div class="model-detail-box">
 
 
@@ -3882,8 +4234,6 @@ nav.navbar,
 
                     </div>
 
-
-                    <!-- DATA REQUIRED -->
 
                     <div class="model-detail-box">
 
@@ -3929,8 +4279,6 @@ nav.navbar,
                     </div>
 
 
-                    <!-- EXPECTED OUTPUT -->
-
                     <div class="model-detail-box">
 
 
@@ -3968,10 +4316,6 @@ nav.navbar,
 
                 </div>
 
-
-                <!-- ====================================== -->
-                <!-- MODEL PARAMETERS                       -->
-                <!-- ====================================== -->
 
                 <div
                     class="model-detail-box"
@@ -4132,44 +4476,32 @@ nav.navbar,
 
 
                             <th>
-
                                 Date
-
                             </th>
 
 
                             <th class="numeric">
-
                                 Open
-
                             </th>
 
 
                             <th class="numeric">
-
                                 High
-
                             </th>
 
 
                             <th class="numeric">
-
                                 Low
-
                             </th>
 
 
                             <th class="numeric">
-
                                 Close
-
                             </th>
 
 
                             <th class="numeric">
-
                                 Volume
-
                             </th>
 
 
@@ -4189,30 +4521,22 @@ nav.navbar,
 
 
                                 <td>
-
                                     {{ row.date|date:"d/m/Y" }}
-
                                 </td>
 
 
                                 <td class="numeric">
-
                                     {{ row.open_price|floatformat:2 }}
-
                                 </td>
 
 
                                 <td class="numeric">
-
                                     {{ row.high_price|floatformat:2 }}
-
                                 </td>
 
 
                                 <td class="numeric">
-
                                     {{ row.low_price|floatformat:2 }}
-
                                 </td>
 
 
@@ -4357,10 +4681,17 @@ document.addEventListener(
                     canvas.getBoundingClientRect();
 
 
+                /*
+                Use the real responsive width of the canvas.
+
+                The previous 260px minimum could force the chart
+                wider than very small phone containers.
+                */
+
                 const width =
                     Math.max(
                         rectangle.width,
-                        260
+                        1
                     );
 
 
@@ -4369,7 +4700,13 @@ document.addEventListener(
                     ?
                     300
                     :
-                    250;
+                    (
+                        window.innerWidth <= 575
+                        ?
+                        220
+                        :
+                        250
+                    );
 
 
                 canvas.width =
@@ -4427,19 +4764,25 @@ document.addEventListener(
 
 
                 const plotWidth =
-                    width
-                    -
-                    left
-                    -
-                    right;
+                    Math.max(
+                        width
+                        -
+                        left
+                        -
+                        right,
+                        1
+                    );
 
 
                 const plotHeight =
-                    height
-                    -
-                    top
-                    -
-                    bottom;
+                    Math.max(
+                        height
+                        -
+                        top
+                        -
+                        bottom,
+                        1
+                    );
 
 
                 const prices =
@@ -4891,10 +5234,6 @@ document.addEventListener(
             }
 
 
-            /* --------------------------------------------- */
-            /* PERIOD RETURN                                 */
-            /* --------------------------------------------- */
-
             const firstClose =
                 data[0].close;
 
@@ -4917,10 +5256,6 @@ document.addEventListener(
                 1;
 
 
-            /* --------------------------------------------- */
-            /* AVERAGE DAILY RETURN                          */
-            /* --------------------------------------------- */
-
             const averageReturn =
                 returns.reduce(
                     function (
@@ -4940,10 +5275,6 @@ document.addEventListener(
                 /
                 returns.length;
 
-
-            /* --------------------------------------------- */
-            /* SAMPLE VARIANCE                               */
-            /* --------------------------------------------- */
 
             const variance =
                 returns.length
@@ -4991,10 +5322,6 @@ document.addEventListener(
                 0;
 
 
-            /* --------------------------------------------- */
-            /* ANNUALISED VOLATILITY                         */
-            /* --------------------------------------------- */
-
             const annualVolatility =
                 Math.sqrt(
                     variance
@@ -5004,10 +5331,6 @@ document.addEventListener(
                     252
                 );
 
-
-            /* --------------------------------------------- */
-            /* MAXIMUM DRAWDOWN                              */
-            /* --------------------------------------------- */
 
             let peak =
                 data[0].close;
@@ -5063,10 +5386,6 @@ document.addEventListener(
             );
 
 
-            /* --------------------------------------------- */
-            /* MOMENTUM                                      */
-            /* --------------------------------------------- */
-
             let momentum =
                 "Neutral";
 
@@ -5098,10 +5417,6 @@ document.addEventListener(
 
             }
 
-
-            /* --------------------------------------------- */
-            /* VOLUME BEHAVIOUR                              */
-            /* --------------------------------------------- */
 
             const volumes =
                 data
@@ -5249,10 +5564,6 @@ document.addEventListener(
             }
 
 
-            /* --------------------------------------------- */
-            /* PERCENTAGE FORMATTER                          */
-            /* --------------------------------------------- */
-
             function percentage(value) {
 
 
@@ -5276,10 +5587,6 @@ document.addEventListener(
 
             }
 
-
-            /* --------------------------------------------- */
-            /* FIND DISPLAY ELEMENTS                         */
-            /* --------------------------------------------- */
 
             const periodReturnElement =
                 document.getElementById(
@@ -5316,10 +5623,6 @@ document.addEventListener(
                     "volumeBehaviour"
                 );
 
-
-            /* --------------------------------------------- */
-            /* WRITE CALCULATED VALUES                       */
-            /* --------------------------------------------- */
 
             if (
                 periodReturnElement
@@ -5535,37 +5838,27 @@ document.addEventListener(
 
 
                         <th>
-
                             Symbol
-
                         </th>
 
 
                         <th>
-
                             Source
-
                         </th>
 
 
                         <th>
-
                             Status
-
                         </th>
 
 
                         <th class="numeric">
-
                             Records
-
                         </th>
 
 
                         <th>
-
                             Imported
-
                         </th>
 
 
@@ -5583,8 +5876,6 @@ document.addEventListener(
 
                         <tr>
 
-
-                            <!-- SYMBOL -->
 
                             <td>
 
@@ -5607,8 +5898,6 @@ document.addEventListener(
                             </td>
 
 
-                            <!-- SOURCE -->
-
                             <td>
 
 
@@ -5617,8 +5906,6 @@ document.addEventListener(
 
                             </td>
 
-
-                            <!-- STATUS -->
 
                             <td>
 
@@ -5691,8 +5978,6 @@ document.addEventListener(
                             </td>
 
 
-                            <!-- RECORDS -->
-
                             <td class="numeric">
 
 
@@ -5701,8 +5986,6 @@ document.addEventListener(
 
                             </td>
 
-
-                            <!-- IMPORT DATE -->
 
                             <td>
 
@@ -5766,6 +6049,3 @@ document.addEventListener(
 
 
 {% endblock %}
-
-
-

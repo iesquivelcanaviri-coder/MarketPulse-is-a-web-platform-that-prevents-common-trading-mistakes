@@ -236,26 +236,31 @@ forms, buttons, badges, alerts and responsive utilities.
         );
 
 
+    /*
+    IMPORTANT RESPONSIVE CHANGE:
+
+    The Risk workspace now stays inside the responsive
+    container supplied by base.html.
+
+    The old 100vw / 50% / translateX approach has been
+    removed because it could make the page wider than
+    the browser viewport.
+    */
+
     width:
-        min(
-            1500px,
-            calc(
-                100vw
-                -
-                48px
-            )
-        );
+        100%;
 
     max-width:
-        none;
+        1480px;
+
+    min-width:
+        0;
 
     margin-left:
-        50%;
+        auto;
 
-    transform:
-        translateX(
-            -50%
-        );
+    margin-right:
+        auto;
 
     color:
         var(
@@ -268,6 +273,18 @@ forms, buttons, badges, alerts and responsive utilities.
 
     text-decoration:
         none;
+}
+
+
+/*
+Allow every direct Risk child to shrink inside
+Bootstrap's responsive container.
+*/
+
+.risk-workspace > * {
+
+    min-width:
+        0;
 }
 
 
@@ -286,11 +303,24 @@ forms, buttons, badges, alerts and responsive utilities.
     justify-content:
         space-between;
 
+    flex-wrap:
+        wrap;
+
     gap:
         1rem;
 
+    min-width:
+        0;
+
     margin-bottom:
         1rem;
+}
+
+
+.risk-page-header > * {
+
+    min-width:
+        0;
 }
 
 
@@ -305,7 +335,11 @@ forms, buttons, badges, alerts and responsive utilities.
         );
 
     font-size:
-        1.65rem;
+        clamp(
+            1.45rem,
+            3vw,
+            1.65rem
+        );
 
     line-height:
         1.15;
@@ -315,6 +349,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     letter-spacing:
         -.02em;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -336,6 +373,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     line-height:
         1.45;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -378,6 +418,12 @@ forms, buttons, badges, alerts and responsive utilities.
 
 .risk-panel {
 
+    width:
+        100%;
+
+    min-width:
+        0;
+
     margin-bottom:
         1rem;
 
@@ -405,7 +451,17 @@ forms, buttons, badges, alerts and responsive utilities.
 }
 
 
+.risk-panel > * {
+
+    min-width:
+        0;
+}
+
+
 .risk-workspace .btn {
+
+    max-width:
+        100%;
 
     border-radius:
         6px;
@@ -603,6 +659,19 @@ forms, buttons, badges, alerts and responsive utilities.
 
 .risk-workspace .form-control,
 .risk-workspace .form-select,
+.risk-workspace .input-group,
+.risk-workspace .input-group-text {
+
+    min-width:
+        0;
+
+    max-width:
+        100%;
+}
+
+
+.risk-workspace .form-control,
+.risk-workspace .form-select,
 .risk-workspace .input-group-text {
 
     color:
@@ -688,6 +757,12 @@ forms, buttons, badges, alerts and responsive utilities.
     gap:
         .55rem;
 
+    width:
+        100%;
+
+    min-width:
+        0;
+
     margin-bottom:
         1rem;
 
@@ -720,6 +795,13 @@ forms, buttons, badges, alerts and responsive utilities.
 
     gap:
         .5rem;
+
+    min-width:
+        0;
+}
+
+
+.risk-flow-step > div {
 
     min-width:
         0;
@@ -851,6 +933,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     font-size:
         .67rem;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -869,6 +954,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     line-height:
         1.3;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -887,6 +975,12 @@ forms, buttons, badges, alerts and responsive utilities.
 /* ======================================================== */
 
 .risk-source-strip {
+
+    width:
+        100%;
+
+    min-width:
+        0;
 
     margin-bottom:
         1rem;
@@ -920,15 +1014,28 @@ forms, buttons, badges, alerts and responsive utilities.
 
     gap:
         .7rem;
+
+    min-width:
+        0;
 }
 
 
 .risk-source-main > i {
 
+    flex:
+        0 0 auto;
+
     color:
         var(
             --risk-blue
         );
+}
+
+
+.risk-source-main > div {
+
+    min-width:
+        0;
 }
 
 
@@ -947,6 +1054,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     font-size:
         .7rem;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -959,10 +1069,16 @@ forms, buttons, badges, alerts and responsive utilities.
 
     font-size:
         .6rem;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
 .risk-source-details {
+
+    min-width:
+        0;
 
     margin-top:
         .65rem;
@@ -976,6 +1092,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     width:
         fit-content;
+
+    max-width:
+        100%;
 
     color:
         #87b1d3;
@@ -1015,12 +1134,21 @@ forms, buttons, badges, alerts and responsive utilities.
     gap:
         .6rem;
 
+    width:
+        100%;
+
+    min-width:
+        0;
+
     margin-top:
         .7rem;
 }
 
 
 .risk-source-grid > div {
+
+    min-width:
+        0;
 
     padding:
         .65rem;
@@ -1068,6 +1196,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     line-height:
         1.4;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -1076,6 +1207,9 @@ forms, buttons, badges, alerts and responsive utilities.
 /* ======================================================== */
 
 .risk-planner-heading {
+
+    min-width:
+        0;
 
     margin-bottom:
         .8rem;
@@ -1127,6 +1261,12 @@ forms, buttons, badges, alerts and responsive utilities.
 
 .risk-step {
 
+    width:
+        100%;
+
+    min-width:
+        0;
+
     overflow:
         hidden;
 
@@ -1159,6 +1299,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     gap:
         .65rem;
+
+    min-width:
+        0;
 
     cursor:
         pointer;
@@ -1245,7 +1388,7 @@ forms, buttons, badges, alerts and responsive utilities.
 .risk-step-summary-copy {
 
     flex:
-        1;
+        1 1 auto;
 
     min-width:
         0;
@@ -1267,6 +1410,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     font-size:
         .72rem;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -1282,6 +1428,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     font-size:
         .58rem;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -1295,6 +1444,12 @@ forms, buttons, badges, alerts and responsive utilities.
 
     gap:
         .3rem;
+
+    flex:
+        0 0 auto;
+
+    max-width:
+        100%;
 
     padding:
         .22rem .45rem;
@@ -1328,6 +1483,12 @@ forms, buttons, badges, alerts and responsive utilities.
 
 
 .risk-step-content {
+
+    width:
+        100%;
+
+    min-width:
+        0;
 
     padding:
         .85rem;
@@ -1368,6 +1529,15 @@ forms, buttons, badges, alerts and responsive utilities.
 .risk-step-content input,
 .risk-step-content select {
 
+    width:
+        100%;
+
+    max-width:
+        100%;
+
+    min-width:
+        0;
+
     min-height:
         38px;
 
@@ -1385,8 +1555,20 @@ forms, buttons, badges, alerts and responsive utilities.
     z-index:
         1050;
 
+    width:
+        100%;
+
+    max-width:
+        100%;
+
+    min-width:
+        0;
+
     max-height:
         340px;
+
+    overflow-x:
+        hidden;
 
     overflow-y:
         auto;
@@ -1400,6 +1582,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
 
 .risk-workspace .list-group-item {
+
+    min-width:
+        0;
 
     color:
         var(
@@ -1415,6 +1600,9 @@ forms, buttons, badges, alerts and responsive utilities.
         var(
             --risk-border-soft
         );
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -1436,6 +1624,12 @@ forms, buttons, badges, alerts and responsive utilities.
 /* ======================================================== */
 
 .market-summary-panel {
+
+    width:
+        100%;
+
+    min-width:
+        0;
 
     margin-top:
         .75rem;
@@ -1470,8 +1664,21 @@ forms, buttons, badges, alerts and responsive utilities.
     justify-content:
         space-between;
 
+    flex-wrap:
+        wrap;
+
     gap:
         .75rem;
+
+    min-width:
+        0;
+}
+
+
+.market-summary-header > * {
+
+    min-width:
+        0;
 }
 
 
@@ -1490,6 +1697,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     font-weight:
         720;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -1502,6 +1712,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     font-size:
         .6rem;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -1522,12 +1735,21 @@ forms, buttons, badges, alerts and responsive utilities.
     gap:
         .5rem;
 
+    width:
+        100%;
+
+    min-width:
+        0;
+
     margin-top:
         .7rem;
 }
 
 
 .market-primary-stat {
+
+    min-width:
+        0;
 
     padding:
         .6rem;
@@ -1575,10 +1797,16 @@ forms, buttons, badges, alerts and responsive utilities.
 
     font-size:
         .72rem;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
 .market-detail-dropdown {
+
+    min-width:
+        0;
 
     margin-top:
         .65rem;
@@ -1645,12 +1873,21 @@ forms, buttons, badges, alerts and responsive utilities.
     gap:
         .4rem;
 
+    width:
+        100%;
+
+    min-width:
+        0;
+
     margin-top:
         .5rem;
 }
 
 
 .market-detail-stat {
+
+    min-width:
+        0;
 
     padding:
         .5rem;
@@ -1698,10 +1935,16 @@ forms, buttons, badges, alerts and responsive utilities.
 
     font-size:
         .62rem;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
 .market-capabilities {
+
+    min-width:
+        0;
 
     margin-top:
         .55rem;
@@ -1709,6 +1952,15 @@ forms, buttons, badges, alerts and responsive utilities.
 
 
 .market-capabilities .badge {
+
+    max-width:
+        100%;
+
+    margin-bottom:
+        .2rem;
+
+    white-space:
+        normal;
 
     font-size:
         .52rem;
@@ -1725,6 +1977,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     gap:
         .4rem;
+
+    min-width:
+        0;
 
     margin-top:
         .65rem;
@@ -1743,6 +1998,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     font-size:
         .54rem;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -1761,8 +2019,14 @@ forms, buttons, badges, alerts and responsive utilities.
     justify-content:
         space-between;
 
+    flex-wrap:
+        wrap;
+
     gap:
         1rem;
+
+    min-width:
+        0;
 
     margin-top:
         .7rem;
@@ -1810,6 +2074,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     font-size:
         .95rem;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -1818,6 +2085,12 @@ forms, buttons, badges, alerts and responsive utilities.
 /* ======================================================== */
 
 .risk-plan-hero {
+
+    width:
+        100%;
+
+    min-width:
+        0;
 
     overflow:
         hidden;
@@ -1851,8 +2124,14 @@ forms, buttons, badges, alerts and responsive utilities.
     justify-content:
         space-between;
 
+    flex-wrap:
+        wrap;
+
     gap:
         1rem;
+
+    min-width:
+        0;
 
     padding:
         .7rem .8rem;
@@ -1886,6 +2165,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     font-size:
         1rem;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -1902,10 +2184,19 @@ forms, buttons, badges, alerts and responsive utilities.
                 1fr
             )
         );
+
+    width:
+        100%;
+
+    min-width:
+        0;
 }
 
 
 .risk-plan-grid > div {
+
+    min-width:
+        0;
 
     padding:
         .65rem;
@@ -1952,6 +2243,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     font-size:
         .67rem;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -1966,6 +2260,12 @@ forms, buttons, badges, alerts and responsive utilities.
 
     top:
         85px;
+
+    width:
+        100%;
+
+    min-width:
+        0;
 
     padding:
         .9rem;
@@ -2002,11 +2302,24 @@ forms, buttons, badges, alerts and responsive utilities.
     justify-content:
         space-between;
 
+    flex-wrap:
+        wrap;
+
     gap:
         .75rem;
 
+    min-width:
+        0;
+
     margin-bottom:
         .75rem;
+}
+
+
+.risk-snapshot-header > * {
+
+    min-width:
+        0;
 }
 
 
@@ -2029,6 +2342,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
 
 .risk-symbol-badge {
+
+    max-width:
+        100%;
 
     padding:
         .25rem .5rem;
@@ -2055,10 +2371,16 @@ forms, buttons, badges, alerts and responsive utilities.
 
     font-weight:
         700;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
 .risk-snapshot-section {
+
+    min-width:
+        0;
 
     padding:
         .7rem 0;
@@ -2100,6 +2422,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
 
 .risk-current-price {
+
+    min-width:
+        0;
 
     padding:
         .65rem;
@@ -2153,6 +2478,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     font-size:
         .95rem;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -2168,6 +2496,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     font-size:
         .56rem;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -2187,10 +2518,19 @@ forms, buttons, badges, alerts and responsive utilities.
 
     gap:
         .4rem;
+
+    width:
+        100%;
+
+    min-width:
+        0;
 }
 
 
 .risk-mini-stat {
+
+    min-width:
+        0;
 
     padding:
         .5rem;
@@ -2241,6 +2581,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     font-size:
         .63rem;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -2260,10 +2603,19 @@ forms, buttons, badges, alerts and responsive utilities.
 
     gap:
         .4rem;
+
+    width:
+        100%;
+
+    min-width:
+        0;
 }
 
 
 .risk-plan-snapshot-item {
+
+    min-width:
+        0;
 
     padding:
         .5rem;
@@ -2314,6 +2666,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     font-size:
         .64rem;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -2322,6 +2677,9 @@ forms, buttons, badges, alerts and responsive utilities.
 /* ======================================================== */
 
 .risk-help {
+
+    min-width:
+        0;
 
     margin-top:
         .6rem;
@@ -2332,6 +2690,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     cursor:
         pointer;
+
+    max-width:
+        100%;
 
     padding:
         .5rem .6rem;
@@ -2361,6 +2722,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     font-weight:
         650;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -2373,12 +2737,18 @@ forms, buttons, badges, alerts and responsive utilities.
 
 .risk-help-body {
 
+    min-width:
+        0;
+
     margin-top:
         .5rem;
 }
 
 
 .risk-help-body .accordion-item {
+
+    min-width:
+        0;
 
     background:
         var(
@@ -2393,6 +2763,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
 
 .risk-help-body .accordion-button {
+
+    min-width:
+        0;
 
     padding:
         .6rem;
@@ -2409,6 +2782,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     font-size:
         .6rem;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -2426,6 +2802,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
 .risk-help-body .accordion-body {
 
+    min-width:
+        0;
+
     color:
         var(
             --risk-muted
@@ -2441,6 +2820,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     line-height:
         1.5;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -2459,14 +2841,27 @@ forms, buttons, badges, alerts and responsive utilities.
     justify-content:
         space-between;
 
+    flex-wrap:
+        wrap;
+
     gap:
         1rem;
+
+    min-width:
+        0;
 
     cursor:
         pointer;
 
     list-style:
         none;
+}
+
+
+.risk-explanation-summary > div {
+
+    min-width:
+        0;
 }
 
 
@@ -2486,6 +2881,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     font-size:
         .74rem;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -2507,12 +2905,21 @@ forms, buttons, badges, alerts and responsive utilities.
     gap:
         .6rem;
 
+    width:
+        100%;
+
+    min-width:
+        0;
+
     margin-top:
         .85rem;
 }
 
 
 .risk-formula-card {
+
+    min-width:
+        0;
 
     min-height:
         125px;
@@ -2610,11 +3017,23 @@ forms, buttons, badges, alerts and responsive utilities.
 
 .risk-formula-card code {
 
+    display:
+        block;
+
+    max-width:
+        100%;
+
     color:
         #9ec2df;
 
     font-size:
         .57rem;
+
+    white-space:
+        normal;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -2648,10 +3067,19 @@ forms, buttons, badges, alerts and responsive utilities.
 
     gap:
         .55rem;
+
+    width:
+        100%;
+
+    min-width:
+        0;
 }
 
 
 .server-result-stat {
+
+    min-width:
+        0;
 
     padding:
         .65rem;
@@ -2699,6 +3127,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     font-size:
         .8rem;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -2707,6 +3138,9 @@ forms, buttons, badges, alerts and responsive utilities.
 /* ======================================================== */
 
 .risk-stress-panel {
+
+    min-width:
+        0;
 
     overflow:
         hidden;
@@ -2724,14 +3158,27 @@ forms, buttons, badges, alerts and responsive utilities.
     justify-content:
         space-between;
 
+    flex-wrap:
+        wrap;
+
     gap:
         1rem;
+
+    min-width:
+        0;
 
     cursor:
         pointer;
 
     list-style:
         none;
+}
+
+
+.risk-stress-summary > * {
+
+    min-width:
+        0;
 }
 
 
@@ -2775,6 +3222,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     font-size:
         .64rem;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -2782,6 +3232,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     flex:
         0 0 auto;
+
+    max-width:
+        100%;
 
     padding:
         .4rem .65rem;
@@ -2814,6 +3267,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
 .risk-stress-content {
 
+    min-width:
+        0;
+
     margin-top:
         .85rem;
 
@@ -2844,6 +3300,12 @@ forms, buttons, badges, alerts and responsive utilities.
 
     gap:
         .5rem;
+
+    width:
+        100%;
+
+    min-width:
+        0;
 }
 
 
@@ -2857,6 +3319,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     gap:
         .6rem;
+
+    min-width:
+        0;
 
     padding:
         .65rem;
@@ -2874,6 +3339,13 @@ forms, buttons, badges, alerts and responsive utilities.
 
     border-radius:
         6px;
+}
+
+
+.risk-scenario > div {
+
+    min-width:
+        0;
 }
 
 
@@ -2952,6 +3424,9 @@ forms, buttons, badges, alerts and responsive utilities.
 
     line-height:
         1.4;
+
+    overflow-wrap:
+        anywhere;
 }
 
 
@@ -3011,6 +3486,9 @@ forms, buttons, badges, alerts and responsive utilities.
     gap:
         .6rem;
 
+    min-width:
+        0;
+
     margin-top:
         .8rem;
 
@@ -3045,7 +3523,20 @@ forms, buttons, badges, alerts and responsive utilities.
 }
 
 
+.risk-educational-notice > div {
+
+    min-width:
+        0;
+
+    overflow-wrap:
+        anywhere;
+}
+
+
 .risk-educational-notice i {
+
+    flex:
+        0 0 auto;
 
     margin-top:
         .1rem;
@@ -3060,6 +3551,16 @@ forms, buttons, badges, alerts and responsive utilities.
 /* ======================================================== */
 /* 19. ALERTS                                               */
 /* ======================================================== */
+
+.risk-workspace .alert {
+
+    max-width:
+        100%;
+
+    overflow-wrap:
+        anywhere;
+}
+
 
 .risk-workspace .alert-warning {
 
@@ -3108,7 +3609,38 @@ forms, buttons, badges, alerts and responsive utilities.
 
 
 /* ======================================================== */
-/* 20. RESPONSIVE                                           */
+/* 20. GENERAL RESPONSIVE SAFETY                            */
+/* ======================================================== */
+
+.risk-workspace .row,
+.risk-workspace [class*="col-"] {
+
+    min-width:
+        0;
+}
+
+
+.risk-workspace p,
+.risk-workspace small,
+.risk-workspace strong,
+.risk-workspace span,
+.risk-workspace code {
+
+    max-width:
+        100%;
+}
+
+
+.risk-workspace img,
+.risk-workspace svg {
+
+    max-width:
+        100%;
+}
+
+
+/* ======================================================== */
+/* 21. LARGE DESKTOP                                        */
 /* ======================================================== */
 
 @media (
@@ -3119,23 +3651,37 @@ forms, buttons, badges, alerts and responsive utilities.
     .risk-workspace {
 
         width:
-            min(
-                1480px,
-                calc(
-                    100vw
-                    -
-                    64px
-                )
-            );
+            100%;
+
+        max-width:
+            1480px;
+    }
+
+
+    .risk-panel {
+
+        padding:
+            1rem;
     }
 
 }
 
 
+/* ======================================================== */
+/* 22. LAPTOP / SMALL DESKTOP                               */
+/* ======================================================== */
+
 @media (
     max-width:
     1199.98px
 ) {
+
+    /*
+    The Bootstrap planner/snapshot columns become stacked
+    below XL.
+
+    The workflow itself becomes a three-column grid.
+    */
 
     .risk-workflow-panel {
 
@@ -3161,17 +3707,49 @@ forms, buttons, badges, alerts and responsive utilities.
 
         position:
             static;
+
+        top:
+            auto;
+    }
+
+
+    .market-detail-grid {
+
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
     }
 
 }
 
+
+/* ======================================================== */
+/* 23. TABLET                                               */
+/* ======================================================== */
 
 @media (
     max-width:
     991.98px
 ) {
 
-    .risk-source-grid,
+    .risk-source-grid {
+
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+    }
+
+
     .risk-calculation-flow {
 
         grid-template-columns:
@@ -3198,8 +3776,52 @@ forms, buttons, badges, alerts and responsive utilities.
             );
     }
 
+
+    .risk-plan-grid {
+
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+    }
+
+
+    .risk-plan-grid > div {
+
+        border-right:
+            0;
+
+        border-bottom:
+            1px solid
+            var(
+                --risk-border-soft
+            );
+    }
+
+
+    .risk-plan-grid > div:nth-last-child(-n+2) {
+
+        border-bottom:
+            0;
+    }
+
+
+    .risk-scenario-list {
+
+        grid-template-columns:
+            1fr;
+    }
+
 }
 
+
+/* ======================================================== */
+/* 24. MOBILE                                               */
+/* ======================================================== */
 
 @media (
     max-width:
@@ -3209,19 +3831,19 @@ forms, buttons, badges, alerts and responsive utilities.
     .risk-workspace {
 
         width:
-            calc(
-                100vw
-                -
-                20px
-            );
+            100%;
 
-        margin-left:
-            50%;
+        max-width:
+            100%;
+
+        min-width:
+            0;
+
+        margin:
+            0;
 
         transform:
-            translateX(
-                -50%
-            );
+            none;
     }
 
 
@@ -3230,10 +3852,43 @@ forms, buttons, badges, alerts and responsive utilities.
 
         flex-direction:
             column;
+
+        align-items:
+            stretch;
     }
 
 
-    .risk-workflow-panel,
+    /*
+    Five-step workflow becomes two columns on wider phones
+    and narrow tablets.
+    */
+
+    .risk-workflow-panel {
+
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        align-items:
+            stretch;
+    }
+
+
+    .risk-flow-step {
+
+        align-items:
+            flex-start;
+
+        padding:
+            .15rem;
+    }
+
+
     .risk-source-grid,
     .market-primary-grid,
     .market-detail-grid,
@@ -3259,10 +3914,388 @@ forms, buttons, badges, alerts and responsive utilities.
     }
 
 
+    .risk-plan-grid > div:nth-last-child(-n+2) {
+
+        border-bottom:
+            1px solid
+            var(
+                --risk-border-soft
+            );
+    }
+
+
     .risk-plan-grid > div:last-child {
 
         border-bottom:
             0;
+    }
+
+
+    .risk-budget-preview,
+    .risk-plan-primary {
+
+        flex-direction:
+            column;
+
+        align-items:
+            flex-start;
+    }
+
+
+    .market-actions {
+
+        align-items:
+            stretch;
+    }
+
+
+    .market-actions .btn {
+
+        flex:
+            1 1 auto;
+    }
+
+
+    .risk-panel,
+    .risk-workflow-panel,
+    .risk-source-strip,
+    .risk-snapshot-panel {
+
+        padding:
+            .8rem;
+    }
+
+
+    .risk-step-content {
+
+        padding:
+            .75rem;
+    }
+
+
+    .risk-workspace .btn {
+
+        white-space:
+            normal;
+    }
+
+
+    .risk-step-summary {
+
+        align-items:
+            flex-start;
+
+        flex-wrap:
+            wrap;
+    }
+
+
+    .risk-step-status {
+
+        margin-left:
+            34px;
+    }
+
+
+    .risk-explanation-summary {
+
+        align-items:
+            flex-start;
+    }
+
+
+    .risk-stress-action {
+
+        align-self:
+            flex-start;
+    }
+
+}
+
+
+/* ======================================================== */
+/* 25. SMALL PHONE                                          */
+/* ======================================================== */
+
+@media (
+    max-width:
+    575.98px
+) {
+
+    /*
+    Every major custom Risk grid becomes one column.
+    */
+
+    .risk-workflow-panel,
+    .risk-source-grid,
+    .market-primary-grid,
+    .market-detail-grid,
+    .risk-plan-grid,
+    .risk-mini-grid,
+    .risk-plan-snapshot,
+    .risk-scenario-list,
+    .server-result-grid {
+
+        grid-template-columns:
+            1fr;
+    }
+
+
+    .risk-workflow-panel {
+
+        gap:
+            .45rem;
+    }
+
+
+    .risk-flow-step {
+
+        width:
+            100%;
+
+        padding:
+            .35rem 0;
+    }
+
+
+    .risk-page-title {
+
+        font-size:
+            1.4rem;
+    }
+
+
+    .risk-page-subtitle {
+
+        font-size:
+            .68rem;
+    }
+
+
+    .risk-panel,
+    .risk-workflow-panel,
+    .risk-source-strip,
+    .risk-snapshot-panel {
+
+        padding:
+            .7rem;
+    }
+
+
+    .risk-step-content {
+
+        padding:
+            .65rem;
+    }
+
+
+    .risk-step-summary {
+
+        padding:
+            .65rem;
+    }
+
+
+    .risk-step-status {
+
+        width:
+            auto;
+
+        margin-left:
+            34px;
+    }
+
+
+    .risk-source-main {
+
+        align-items:
+            flex-start;
+    }
+
+
+    .market-summary-header {
+
+        flex-direction:
+            column;
+
+        align-items:
+            stretch;
+    }
+
+
+    .market-actions {
+
+        flex-direction:
+            column;
+    }
+
+
+    .market-actions .btn {
+
+        width:
+            100%;
+    }
+
+
+    .risk-budget-preview {
+
+        gap:
+            .35rem;
+    }
+
+
+    .risk-budget-preview strong {
+
+        width:
+            100%;
+    }
+
+
+    .risk-plan-primary {
+
+        gap:
+            .35rem;
+    }
+
+
+    .risk-plan-primary strong {
+
+        width:
+            100%;
+    }
+
+
+    .risk-mini-stat,
+    .risk-plan-snapshot-item,
+    .server-result-stat {
+
+        padding:
+            .55rem;
+    }
+
+
+    .risk-calculation-flow {
+
+        gap:
+            .5rem;
+    }
+
+
+    .risk-formula-card {
+
+        min-height:
+            0;
+    }
+
+
+    .risk-stress-action {
+
+        width:
+            100%;
+
+        text-align:
+            center;
+    }
+
+
+    #alpacaSearchResults .d-flex {
+
+        flex-direction:
+            column;
+
+        gap:
+            .25rem
+            !important;
+    }
+
+
+    #alpacaSearchResults .text-end {
+
+        text-align:
+            left
+            !important;
+    }
+
+}
+
+
+/* ======================================================== */
+/* 26. VERY SMALL PHONE                                     */
+/* ======================================================== */
+
+@media (
+    max-width:
+    399.98px
+) {
+
+    .risk-panel,
+    .risk-workflow-panel,
+    .risk-source-strip,
+    .risk-snapshot-panel {
+
+        padding:
+            .6rem;
+    }
+
+
+    .risk-step-content {
+
+        padding:
+            .6rem;
+    }
+
+
+    .risk-page-title {
+
+        font-size:
+            1.3rem;
+    }
+
+
+    .risk-flow-icon {
+
+        width:
+            29px;
+
+        height:
+            29px;
+    }
+
+
+    .risk-flow-number {
+
+        width:
+            22px;
+
+        height:
+            22px;
+    }
+
+
+    .risk-workspace .btn {
+
+        width:
+            100%;
+    }
+
+
+    .risk-workspace .d-flex.gap-2.flex-wrap .btn {
+
+        width:
+            auto;
+    }
+
+
+    .risk-step-status {
+
+        margin-left:
+            0;
+
+        width:
+            100%;
+
+        justify-content:
+            center;
     }
 
 }
@@ -3582,7 +4615,7 @@ forms, buttons, badges, alerts and responsive utilities.
 <div class="row g-4 align-items-start">
 
 
-    <div class="col-xl-8">
+    <div class="col-12 col-xl-8">
 
 
         <section class="risk-panel">
@@ -4746,7 +5779,7 @@ forms, buttons, badges, alerts and responsive utilities.
     </div>
 
 
-    <div class="col-xl-4">
+    <div class="col-12 col-xl-4">
 
 
         <aside class="risk-snapshot-panel">
@@ -5703,7 +6736,7 @@ forms, buttons, badges, alerts and responsive utilities.
     <div class="row g-3 mt-1">
 
 
-        <div class="col-md-6">
+        <div class="col-12 col-md-6">
 
             <div class="server-result-stat h-100">
 
@@ -5730,7 +6763,7 @@ forms, buttons, badges, alerts and responsive utilities.
         </div>
 
 
-        <div class="col-md-6">
+        <div class="col-12 col-md-6">
 
             <div class="server-result-stat h-100">
 
