@@ -28,16 +28,57 @@ PostgreSQL / MarketPulse Interface
 
 MAIN RESPONSIBILITIES:
 
-1. Validate Alpaca configuration
-2. Authenticate server-side requests
-3. Search Alpaca's active US-equity universe
-4. Retrieve asset information
-5. Retrieve current stock snapshots
-6. Retrieve multiple stock snapshots
-7. Retrieve historical OHLCV bars
-8. Retrieve US market clock information
-9. Build the Dashboard market overview
-10. Retrieve market history for Dashboard charts
+1. Validate Alpaca configuration.
+2. Authenticate server-side requests.
+3. Search Alpaca's active US-equity universe.
+4. Retrieve asset information.
+5. Retrieve current stock snapshots.
+6. Retrieve multiple stock snapshots.
+7. Retrieve historical OHLCV bars.
+8. Retrieve sufficient recent daily history for
+   Market Condition analysis.
+9. Retrieve US market clock information.
+10. Build the Dashboard market overview.
+11. Retrieve market history for Dashboard charts.
+
+
+IMPORTANT MARKET CONDITION ARCHITECTURE:
+
+Market Condition does NOT implement a second Alpaca client.
+
+Instead:
+
+get_market_condition_history()
+        ↓
+get_historical_bars()
+        ↓
+Alpaca Historical Bars API
+
+
+This keeps one reusable historical-data implementation.
+
+Market Condition requires historical observations because
+classification depends on:
+
+- recent price direction
+- moving averages
+- historical volatility
+- trend strength
+
+A single live price cannot provide these measurements.
+
+For current/latest context, the Market Condition helper can
+also retrieve:
+
+get_stock_snapshot()
+        ↓
+latest trade / quote / daily bar
+
+
+The snapshot is supplementary market context.
+
+The historical daily bars remain the reproducible input used
+by MarketPulse's Market Regime analysis.
 
 
 SECURITY:
@@ -47,8 +88,8 @@ The browser NEVER receives:
 - ALPACA_API_KEY_ID
 - ALPACA_API_SECRET_KEY
 
-Credentials remain inside Django settings and environment
-variables.
+Credentials remain inside Django settings and private
+environment variables.
 
 ============================================================
 """
@@ -58,13 +99,7 @@ variables.
 # 1. STANDARD LIBRARY IMPORTS
 # ============================================================
 
-from datetime import (
-    date,
-    datetime,
-    time,
-    timedelta,
-    timezone as datetime_timezone,
-)
+from datetime import timedelta
 
 from urllib.parse import quote
 
@@ -97,8 +132,9 @@ class AlpacaServiceError(Exception):
     Raised when MarketPulse cannot successfully communicate
     with Alpaca or when the Alpaca configuration is invalid.
 
-    Views can catch this exception and display a friendly
-    message instead of exposing raw API errors to the user.
+    Views and business-logic functions can catch this exception
+    and display a friendly message instead of exposing raw
+    external API errors.
     """
 
     pass
@@ -137,28 +173,23 @@ def _normalise_base_url(url):
 
         https://data.alpaca.markets
 
-    However, if /v2 or /v3 was accidentally included in the
-    environment variable, this helper removes it.
+    If /v2 or /v3 was accidentally included in the configured
+    environment variable, remove it.
 
-    This prevents URLs such as:
+    This prevents malformed URLs such as:
 
         /v2/v2/assets
-
-    from being created.
     ------------------------------------------------------------
     """
 
     if not url:
-
         return ""
-
 
     cleaned_url = (
         str(url)
         .strip()
         .rstrip("/")
     )
-
 
     for ending in (
         "/v2",
@@ -174,7 +205,6 @@ def _normalise_base_url(url):
                     :-len(ending)
                 ]
             )
-
 
     return cleaned_url.rstrip("/")
 
@@ -197,13 +227,11 @@ def _trading_base_url():
         )
     )
 
-
     if not url:
 
         raise AlpacaServiceError(
             "ALPACA_TRADING_BASE_URL is not configured."
         )
-
 
     return url
 
@@ -226,13 +254,11 @@ def _data_base_url():
         )
     )
 
-
     if not url:
 
         raise AlpacaServiceError(
             "ALPACA_DATA_BASE_URL is not configured."
         )
-
 
     return url
 
@@ -246,8 +272,7 @@ def _data_feed():
     """
     Return the configured stock market-data feed.
 
-    For the current MarketPulse educational project this will
-    normally be:
+    MarketPulse currently normally uses:
 
         iex
     """
@@ -262,13 +287,11 @@ def _data_feed():
         "iex"
     )
 
-
     feed = (
         str(feed)
         .strip()
         .lower()
     )
-
 
     if feed not in ALLOWED_DATA_FEEDS:
 
@@ -278,7 +301,6 @@ def _data_feed():
                 f"{feed}"
             )
         )
-
 
     return feed
 
@@ -294,12 +316,26 @@ def _request_timeout():
     request should wait before failing.
     """
 
-    return int(
-        getattr(
-            settings,
-            "ALPACA_REQUEST_TIMEOUT",
-            8,
+    try:
+
+        timeout = int(
+            getattr(
+                settings,
+                "ALPACA_REQUEST_TIMEOUT",
+                8,
+            )
         )
+
+    except (
+        TypeError,
+        ValueError,
+    ):
+
+        timeout = 8
+
+    return max(
+        1,
+        timeout,
     )
 
 
@@ -331,7 +367,6 @@ def _alpaca_headers():
         ""
     )
 
-
     secret_key = (
         getattr(
             settings,
@@ -342,18 +377,15 @@ def _alpaca_headers():
         ""
     )
 
-
     api_key = (
         str(api_key)
         .strip()
     )
 
-
     secret_key = (
         str(secret_key)
         .strip()
     )
-
 
     if not api_key:
 
@@ -361,15 +393,14 @@ def _alpaca_headers():
             "ALPACA_API_KEY_ID is not configured."
         )
 
-
     if not secret_key:
 
         raise AlpacaServiceError(
             "ALPACA_API_SECRET_KEY is not configured."
         )
 
-
     return {
+
         "APCA-API-KEY-ID":
             api_key,
 
@@ -399,12 +430,12 @@ def _alpaca_get(
     All GET requests from this service pass through this
     function.
 
-    This gives MarketPulse one place to manage:
+    This provides one central location for:
 
     - authentication
-    - timeouts
+    - request timeouts
     - HTTP errors
-    - connection failures
+    - network failures
     - JSON decoding
     ------------------------------------------------------------
     """
@@ -417,7 +448,6 @@ def _alpaca_get(
         path.lstrip("/")
     )
 
-
     try:
 
         response = requests.get(
@@ -426,7 +456,6 @@ def _alpaca_get(
             params=params or {},
             timeout=_request_timeout(),
         )
-
 
     except requests.Timeout as exc:
 
@@ -437,7 +466,6 @@ def _alpaca_get(
             )
         ) from exc
 
-
     except requests.ConnectionError as exc:
 
         raise AlpacaServiceError(
@@ -446,7 +474,6 @@ def _alpaca_get(
                 "Check the internet connection and try again."
             )
         ) from exc
-
 
     except requests.RequestException as exc:
 
@@ -466,7 +493,6 @@ def _alpaca_get(
 
         message = ""
 
-
         try:
 
             error_data = (
@@ -474,7 +500,6 @@ def _alpaca_get(
                 or
                 {}
             )
-
 
             if isinstance(
                 error_data,
@@ -497,14 +522,12 @@ def _alpaca_get(
 
             message = ""
 
-
         if response.status_code == 401:
 
             friendly_message = (
                 "Alpaca authentication failed. "
                 "Check the configured API credentials."
             )
-
 
         elif response.status_code == 403:
 
@@ -514,13 +537,11 @@ def _alpaca_get(
                 "market-data resource or feed."
             )
 
-
         elif response.status_code == 404:
 
             friendly_message = (
                 "The requested Alpaca resource was not found."
             )
-
 
         elif response.status_code == 429:
 
@@ -529,14 +550,12 @@ def _alpaca_get(
                 "Please wait briefly and try again."
             )
 
-
         elif response.status_code >= 500:
 
             friendly_message = (
                 "Alpaca is temporarily unavailable. "
                 "Please try again later."
             )
-
 
         else:
 
@@ -545,13 +564,11 @@ def _alpaca_get(
                 f"{response.status_code}."
             )
 
-
         if message:
 
             friendly_message += (
                 f" {message}"
             )
-
 
         raise AlpacaServiceError(
             friendly_message
@@ -565,7 +582,6 @@ def _alpaca_get(
     try:
 
         return response.json()
-
 
     except ValueError as exc:
 
@@ -588,14 +604,13 @@ def _to_float(value):
     """
 
     if value is None:
-
         return None
-
 
     try:
 
-        return float(value)
-
+        return float(
+            value
+        )
 
     except (
         TypeError,
@@ -614,14 +629,13 @@ def _to_int(value):
     """
 
     if value is None:
-
         return None
-
 
     try:
 
-        return int(value)
-
+        return int(
+            value
+        )
 
     except (
         TypeError,
@@ -649,39 +663,61 @@ def _normalise_asset(asset):
 
         return {}
 
-
     return {
+
         "id":
-            asset.get("id"),
+            asset.get(
+                "id"
+            ),
 
         "symbol":
             (
-                asset.get("symbol")
+                asset.get(
+                    "symbol"
+                )
                 or
                 ""
             ).upper(),
 
         "name":
-            asset.get("name")
-            or
-            "",
+            (
+                asset.get(
+                    "name"
+                )
+                or
+                ""
+            ),
 
         "exchange":
-            asset.get("exchange")
-            or
-            "",
+            (
+                asset.get(
+                    "exchange"
+                )
+                or
+                ""
+            ),
 
         "asset_class":
-            asset.get("class")
-            or
-            asset.get("asset_class")
-            or
-            "",
+            (
+                asset.get(
+                    "class"
+                )
+                or
+                asset.get(
+                    "asset_class"
+                )
+                or
+                ""
+            ),
 
         "status":
-            asset.get("status")
-            or
-            "",
+            (
+                asset.get(
+                    "status"
+                )
+                or
+                ""
+            ),
 
         "tradable":
             bool(
@@ -762,25 +798,28 @@ def _normalise_bar(
 
         return None
 
-
     timestamp = (
-        bar.get("t")
+        bar.get(
+            "t"
+        )
         or
-        bar.get("timestamp")
+        bar.get(
+            "timestamp"
+        )
     )
 
-
     date_value = None
-
 
     if timestamp:
 
         date_value = (
-            str(timestamp)[:10]
+            str(
+                timestamp
+            )[:10]
         )
 
-
     return {
+
         "symbol":
             (
                 symbol.upper()
@@ -796,42 +835,64 @@ def _normalise_bar(
 
         "open":
             _to_float(
-                bar.get("o")
+                bar.get(
+                    "o"
+                )
                 if "o" in bar
-                else bar.get("open")
+                else bar.get(
+                    "open"
+                )
             ),
 
         "high":
             _to_float(
-                bar.get("h")
+                bar.get(
+                    "h"
+                )
                 if "h" in bar
-                else bar.get("high")
+                else bar.get(
+                    "high"
+                )
             ),
 
         "low":
             _to_float(
-                bar.get("l")
+                bar.get(
+                    "l"
+                )
                 if "l" in bar
-                else bar.get("low")
+                else bar.get(
+                    "low"
+                )
             ),
 
         "close":
             _to_float(
-                bar.get("c")
+                bar.get(
+                    "c"
+                )
                 if "c" in bar
-                else bar.get("close")
+                else bar.get(
+                    "close"
+                )
             ),
 
         "volume":
             _to_int(
-                bar.get("v")
+                bar.get(
+                    "v"
+                )
                 if "v" in bar
-                else bar.get("volume")
+                else bar.get(
+                    "volume"
+                )
             ),
 
         "trade_count":
             _to_int(
-                bar.get("n")
+                bar.get(
+                    "n"
+                )
                 if "n" in bar
                 else bar.get(
                     "trade_count"
@@ -840,9 +901,13 @@ def _normalise_bar(
 
         "vwap":
             _to_float(
-                bar.get("vw")
+                bar.get(
+                    "vw"
+                )
                 if "vw" in bar
-                else bar.get("vwap")
+                else bar.get(
+                    "vwap"
+                )
             ),
     }
 
@@ -858,7 +923,7 @@ def _normalise_snapshot(
 ):
     """
     Convert the Alpaca snapshot response into data that the
-    Dashboard and Risk tab can consume consistently.
+    Dashboard, Risk and Data tab can consume consistently.
     """
 
     if not isinstance(
@@ -867,7 +932,6 @@ def _normalise_snapshot(
     ):
 
         raw_snapshot = {}
-
 
     latest_trade = (
         raw_snapshot.get(
@@ -881,7 +945,6 @@ def _normalise_snapshot(
         {}
     )
 
-
     latest_quote = (
         raw_snapshot.get(
             "latestQuote"
@@ -893,7 +956,6 @@ def _normalise_snapshot(
         or
         {}
     )
-
 
     minute_bar_raw = (
         raw_snapshot.get(
@@ -907,7 +969,6 @@ def _normalise_snapshot(
         {}
     )
 
-
     daily_bar_raw = (
         raw_snapshot.get(
             "dailyBar"
@@ -919,7 +980,6 @@ def _normalise_snapshot(
         or
         {}
     )
-
 
     previous_daily_bar_raw = (
         raw_snapshot.get(
@@ -933,36 +993,37 @@ def _normalise_snapshot(
         {}
     )
 
-
     latest_price = _to_float(
-        latest_trade.get("p")
+        latest_trade.get(
+            "p"
+        )
         if "p" in latest_trade
         else latest_trade.get(
             "price"
         )
     )
 
-
     bid_price = _to_float(
-        latest_quote.get("bp")
+        latest_quote.get(
+            "bp"
+        )
         if "bp" in latest_quote
         else latest_quote.get(
             "bid_price"
         )
     )
 
-
     ask_price = _to_float(
-        latest_quote.get("ap")
+        latest_quote.get(
+            "ap"
+        )
         if "ap" in latest_quote
         else latest_quote.get(
             "ask_price"
         )
     )
 
-
     spread = None
-
 
     if (
         bid_price is not None
@@ -976,11 +1037,11 @@ def _normalise_snapshot(
             bid_price
         )
 
-
-    daily_bar = _normalise_bar(
-        daily_bar_raw
+    daily_bar = (
+        _normalise_bar(
+            daily_bar_raw
+        )
     )
-
 
     previous_daily_bar = (
         _normalise_bar(
@@ -988,13 +1049,11 @@ def _normalise_snapshot(
         )
     )
 
-
     minute_bar = (
         _normalise_bar(
             minute_bar_raw
         )
     )
-
 
     previous_close = (
         previous_daily_bar.get(
@@ -1004,11 +1063,9 @@ def _normalise_snapshot(
         else None
     )
 
-
     daily_change = None
 
     daily_change_pct = None
-
 
     if (
         latest_price is not None
@@ -1024,7 +1081,6 @@ def _normalise_snapshot(
             previous_close
         )
 
-
         daily_change_pct = (
             daily_change
             /
@@ -1033,21 +1089,27 @@ def _normalise_snapshot(
             100
         )
 
-
     return {
+
         "feed":
-            feed
-            or
-            _data_feed(),
+            (
+                feed
+                or
+                _data_feed()
+            ),
 
         "latest_price":
             latest_price,
 
         "latest_trade_timestamp":
-            latest_trade.get("t")
-            or
-            latest_trade.get(
-                "timestamp"
+            (
+                latest_trade.get(
+                    "t"
+                )
+                or
+                latest_trade.get(
+                    "timestamp"
+                )
             ),
 
         "bid_price":
@@ -1100,16 +1162,13 @@ def get_active_us_equities():
         "marketpulse_alpaca_active_us_equities"
     )
 
-
     cached_assets = cache.get(
         cache_key
     )
 
-
     if cached_assets is not None:
 
         return cached_assets
-
 
     response = _alpaca_get(
         _trading_base_url(),
@@ -1123,7 +1182,6 @@ def get_active_us_equities():
         },
     )
 
-
     if not isinstance(
         response,
         list,
@@ -1136,27 +1194,27 @@ def get_active_us_equities():
             )
         )
 
-
     assets = []
-
 
     for raw_asset in response:
 
-        asset = _normalise_asset(
-            raw_asset
+        asset = (
+            _normalise_asset(
+                raw_asset
+            )
         )
-
 
         if (
             asset
             and
-            asset.get("symbol")
+            asset.get(
+                "symbol"
+            )
         ):
 
             assets.append(
                 asset
             )
-
 
     cache_seconds = int(
         getattr(
@@ -1166,13 +1224,11 @@ def get_active_us_equities():
         )
     )
 
-
     cache.set(
         cache_key,
         assets,
         cache_seconds,
     )
-
 
     return assets
 
@@ -1209,22 +1265,21 @@ def search_assets(
         ""
     )
 
-
     query = (
         str(query)
         .strip()
         .upper()
     )
 
-
     if not query:
 
         return []
 
-
     try:
 
-        limit = int(limit)
+        limit = int(
+            limit
+        )
 
     except (
         TypeError,
@@ -1232,7 +1287,6 @@ def search_assets(
     ):
 
         limit = 12
-
 
     limit = max(
         1,
@@ -1242,14 +1296,11 @@ def search_assets(
         ),
     )
 
-
     assets = (
         get_active_us_equities()
     )
 
-
     ranked = []
-
 
     for asset in assets:
 
@@ -1261,7 +1312,6 @@ def search_assets(
             .upper()
         )
 
-
         name = (
             asset.get(
                 "name",
@@ -1270,14 +1320,11 @@ def search_assets(
             .upper()
         )
 
-
         score = None
-
 
         if symbol == query:
 
             score = 0
-
 
         elif symbol.startswith(
             query
@@ -1285,11 +1332,9 @@ def search_assets(
 
             score = 1
 
-
         elif query in symbol:
 
             score = 2
-
 
         elif name.startswith(
             query
@@ -1297,18 +1342,13 @@ def search_assets(
 
             score = 3
 
-
         elif query in name:
 
             score = 4
 
-
         if score is None:
 
             continue
-
-
-        # Tradable assets receive a small ranking preference.
 
         tradable_penalty = (
             0
@@ -1318,17 +1358,17 @@ def search_assets(
             else 1
         )
 
-
         ranked.append(
             (
                 score,
                 tradable_penalty,
-                len(symbol),
+                len(
+                    symbol
+                ),
                 symbol,
                 asset,
             )
         )
-
 
     ranked.sort(
         key=lambda row: (
@@ -1338,7 +1378,6 @@ def search_assets(
             row[3],
         )
     )
-
 
     return [
         row[4]
@@ -1362,13 +1401,11 @@ def get_asset(symbol):
         ""
     )
 
-
     symbol = (
         str(symbol)
         .strip()
         .upper()
     )
-
 
     if not symbol:
 
@@ -1376,23 +1413,21 @@ def get_asset(symbol):
             "A symbol is required."
         )
 
-
     cache_key = (
         "marketpulse_alpaca_asset_"
         +
         symbol
     )
 
-
-    cached_asset = cache.get(
-        cache_key
+    cached_asset = (
+        cache.get(
+            cache_key
+        )
     )
-
 
     if cached_asset is not None:
 
         return cached_asset
-
 
     response = _alpaca_get(
         _trading_base_url(),
@@ -1406,11 +1441,11 @@ def get_asset(symbol):
         ),
     )
 
-
-    asset = _normalise_asset(
-        response
+    asset = (
+        _normalise_asset(
+            response
+        )
     )
-
 
     if not asset:
 
@@ -1421,13 +1456,11 @@ def get_asset(symbol):
             )
         )
 
-
     cache.set(
         cache_key,
         asset,
         1800,
     )
-
 
     return asset
 
@@ -1456,6 +1489,13 @@ def get_stock_snapshot(
     - daily bar
     - previous daily bar
     - daily price change
+
+    IMPORTANT:
+
+    Snapshot data represents current/latest market context.
+
+    Market Condition classification itself uses historical
+    daily bars rather than one current quote.
     ------------------------------------------------------------
     """
 
@@ -1465,13 +1505,11 @@ def get_stock_snapshot(
         ""
     )
 
-
     symbol = (
         str(symbol)
         .strip()
         .upper()
     )
-
 
     if not symbol:
 
@@ -1479,9 +1517,9 @@ def get_stock_snapshot(
             "A symbol is required."
         )
 
-
-    feed = _data_feed()
-
+    feed = (
+        _data_feed()
+    )
 
     cache_key = (
         "marketpulse_alpaca_snapshot_"
@@ -1493,16 +1531,15 @@ def get_stock_snapshot(
         symbol
     )
 
-
-    cached_snapshot = cache.get(
-        cache_key
+    cached_snapshot = (
+        cache.get(
+            cache_key
+        )
     )
-
 
     if cached_snapshot is not None:
 
         return cached_snapshot
-
 
     response = _alpaca_get(
         _data_base_url(),
@@ -1525,7 +1562,6 @@ def get_stock_snapshot(
         },
     )
 
-
     snapshot = (
         _normalise_snapshot(
             response,
@@ -1533,9 +1569,9 @@ def get_stock_snapshot(
         )
     )
 
-
-    snapshot["symbol"] = symbol
-
+    snapshot[
+        "symbol"
+    ] = symbol
 
     cache_seconds = int(
         getattr(
@@ -1545,13 +1581,11 @@ def get_stock_snapshot(
         )
     )
 
-
     cache.set(
         cache_key,
         snapshot,
         cache_seconds,
     )
-
 
     return snapshot
 
@@ -1569,9 +1603,8 @@ def get_stock_snapshots(
     GET MULTIPLE ALPACA STOCK SNAPSHOTS
     ------------------------------------------------------------
 
-    This is useful for the Dashboard because SPY, QQQ, DIA
-    and IWM can be requested together rather than requiring
-    four separate HTTP requests.
+    Useful for Dashboard benchmark data because multiple
+    symbols can be requested together.
     ------------------------------------------------------------
     """
 
@@ -1581,12 +1614,12 @@ def get_stock_snapshots(
     ):
 
         symbols = (
-            symbols.split(",")
+            symbols.split(
+                ","
+            )
         )
 
-
     cleaned_symbols = []
-
 
     for symbol in symbols or []:
 
@@ -1595,7 +1628,6 @@ def get_stock_snapshots(
             .strip()
             .upper()
         )
-
 
         if (
             symbol
@@ -1607,21 +1639,19 @@ def get_stock_snapshots(
                 symbol
             )
 
-
     if not cleaned_symbols:
 
         return {}
 
-
-    # Prevent an accidentally huge request.
+    # Prevent accidentally huge requests.
 
     cleaned_symbols = (
         cleaned_symbols[:50]
     )
 
-
-    feed = _data_feed()
-
+    feed = (
+        _data_feed()
+    )
 
     response = _alpaca_get(
         _data_base_url(),
@@ -1640,7 +1670,6 @@ def get_stock_snapshots(
         },
     )
 
-
     if not isinstance(
         response,
         dict,
@@ -1653,41 +1682,38 @@ def get_stock_snapshots(
             )
         )
 
-
     snapshots = {}
-
 
     for symbol in cleaned_symbols:
 
         raw_snapshot = (
-            response.get(symbol)
+            response.get(
+                symbol
+            )
             or
             response.get(
                 symbol.upper()
             )
         )
 
-
         if raw_snapshot is None:
 
             continue
 
-
-        snapshot = _normalise_snapshot(
-            raw_snapshot,
-            feed=feed,
+        snapshot = (
+            _normalise_snapshot(
+                raw_snapshot,
+                feed=feed,
+            )
         )
 
+        snapshot[
+            "symbol"
+        ] = symbol
 
-        snapshot["symbol"] = (
+        snapshots[
             symbol
-        )
-
-
-        snapshots[symbol] = (
-            snapshot
-        )
-
+        ] = snapshot
 
     return snapshots
 
@@ -1710,19 +1736,27 @@ def get_historical_bars(
     GET ALPACA HISTORICAL OHLCV DATA
     ------------------------------------------------------------
 
-    This function replaces the Yahoo Finance data-retrieval
-    responsibility in MarketPulse.
+    This is MarketPulse's CENTRAL historical-data retrieval
+    function.
 
-    It can be used by:
+    Other parts of the application should reuse this function
+    rather than implementing additional direct Alpaca
+    historical-data requests.
+
+    Used by:
 
         data_management/utils.py
-            ↓
-        MarketData
-            ↓
-        Data tab
-        Strategies
-        Market Condition
+
+        Market Data imports
+
+        Dashboard charts
+
+        Market Condition data preparation
+
+        Strategy analysis
+
         Risk analytics
+
         Stress testing
 
 
@@ -1765,20 +1799,17 @@ def get_historical_bars(
         ""
     )
 
-
     symbol = (
         str(symbol)
         .strip()
         .upper()
     )
 
-
     if not symbol:
 
         raise AlpacaServiceError(
             "A symbol is required."
         )
-
 
     if not start_date:
 
@@ -1789,7 +1820,6 @@ def get_historical_bars(
             )
         )
 
-
     if not end_date:
 
         raise AlpacaServiceError(
@@ -1799,16 +1829,16 @@ def get_historical_bars(
             )
         )
 
-
     start_value = (
         start_date.isoformat()
         if hasattr(
             start_date,
             "isoformat",
         )
-        else str(start_date)
+        else str(
+            start_date
+        )
     )
-
 
     end_value = (
         end_date.isoformat()
@@ -1816,13 +1846,16 @@ def get_historical_bars(
             end_date,
             "isoformat",
         )
-        else str(end_date)
+        else str(
+            end_date
+        )
     )
-
 
     try:
 
-        limit = int(limit)
+        limit = int(
+            limit
+        )
 
     except (
         TypeError,
@@ -1830,7 +1863,6 @@ def get_historical_bars(
     ):
 
         limit = 10000
-
 
     limit = max(
         1,
@@ -1840,9 +1872,9 @@ def get_historical_bars(
         ),
     )
 
-
-    feed = _data_feed()
-
+    feed = (
+        _data_feed()
+    )
 
     all_bars = []
 
@@ -1852,11 +1884,9 @@ def get_historical_bars(
 
     max_pages = 100
 
-
     while True:
 
         page_count += 1
-
 
         if page_count > max_pages:
 
@@ -1867,8 +1897,8 @@ def get_historical_bars(
                 )
             )
 
-
         params = {
+
             "timeframe":
                 timeframe,
 
@@ -1891,13 +1921,11 @@ def get_historical_bars(
                 "asc",
         }
 
-
         if page_token:
 
             params[
                 "page_token"
             ] = page_token
-
 
         response = _alpaca_get(
             _data_base_url(),
@@ -1914,7 +1942,6 @@ def get_historical_bars(
             params=params,
         )
 
-
         if not isinstance(
             response,
             dict,
@@ -1927,7 +1954,6 @@ def get_historical_bars(
                 )
             )
 
-
         raw_bars = (
             response.get(
                 "bars"
@@ -1936,36 +1962,34 @@ def get_historical_bars(
             []
         )
 
-
         for raw_bar in raw_bars:
 
-            bar = _normalise_bar(
-                raw_bar,
-                symbol=symbol,
+            bar = (
+                _normalise_bar(
+                    raw_bar,
+                    symbol=symbol,
+                )
             )
 
+            if not bar:
 
-            if bar:
+                continue
 
-                bar["provider"] = (
-                    "Alpaca"
-                )
+            bar[
+                "provider"
+            ] = "Alpaca"
 
+            bar[
+                "feed"
+            ] = feed
 
-                bar["feed"] = (
-                    feed
-                )
+            bar[
+                "timeframe"
+            ] = timeframe
 
-
-                bar["timeframe"] = (
-                    timeframe
-                )
-
-
-                all_bars.append(
-                    bar
-                )
-
+            all_bars.append(
+                bar
+            )
 
         page_token = (
             response.get(
@@ -1973,17 +1997,681 @@ def get_historical_bars(
             )
         )
 
-
         if not page_token:
 
             break
-
 
     return all_bars
 
 
 # ============================================================
-# 23. GET US MARKET CLOCK
+# 23. MARKET CONDITION HISTORY
+# ============================================================
+
+
+def get_market_condition_history(
+    symbol,
+    minimum_observations=60,
+    initial_calendar_days=120,
+    maximum_calendar_days=730,
+    include_snapshot=True,
+):
+    """
+    ============================================================
+    GET DATA REQUIRED FOR MARKET CONDITION ANALYSIS
+    ============================================================
+
+    PURPOSE:
+
+    Retrieve enough recent Alpaca daily history for
+    MarketPulse's Market Condition / Market Regime analysis.
+
+    IMPORTANT:
+
+    This function does NOT contain another implementation of
+    the Alpaca historical-bars API.
+
+    It deliberately reuses:
+
+        get_historical_bars()
+
+    Therefore:
+
+        Market Condition
+            ↓
+        get_market_condition_history()
+            ↓
+        get_historical_bars()
+            ↓
+        _alpaca_get()
+            ↓
+        Alpaca
+
+
+    WHY 60 OBSERVATIONS?
+
+    analysis_tools.analyzers.identify_market_regime()
+    currently calculates:
+
+        - 20-period moving average
+        - 60-period moving average
+        - annualised historical volatility
+        - trend strength
+
+    Therefore at least 60 historical observations are required
+    before the classification can be calculated consistently.
+
+
+    HISTORICAL VS CURRENT DATA:
+
+    Historical daily bars
+        ↓
+    Used for actual Market Condition classification.
+
+    Current Alpaca snapshot
+        ↓
+    Used only as supplementary current-market context.
+
+    A single current quote must not replace the historical
+    series used by the analysis.
+
+
+    ADAPTIVE HISTORY WINDOW:
+
+    US equity markets do not trade every calendar day.
+
+    Therefore 60 observations normally require considerably
+    more than 60 calendar days.
+
+    MarketPulse begins with approximately 120 calendar days.
+
+    If that does not provide enough observations, the helper
+    progressively expands the historical window up to the
+    configured maximum.
+
+
+    RETURNS:
+
+    {
+        "symbol": "SPY",
+        "provider": "Alpaca",
+        "feed": "IEX",
+        "timeframe": "1Day",
+        "minimum_observations": 60,
+        "count": 83,
+        "has_minimum_history": True,
+        "bars": [...],
+        "snapshot": {...},
+        "latest_price": 123.45,
+        ...
+    }
+
+    The calling business-logic layer can then persist
+    the returned bars into core.MarketData before calling:
+
+        identify_market_regime(symbol)
+    ============================================================
+    """
+
+
+    # ========================================================
+    # 23.1 NORMALISE SYMBOL
+    # ========================================================
+
+    symbol = (
+        symbol
+        or
+        ""
+    )
+
+    symbol = (
+        str(symbol)
+        .strip()
+        .upper()
+    )
+
+    if not symbol:
+
+        raise AlpacaServiceError(
+            (
+                "A symbol is required for Market Condition "
+                "data retrieval."
+            )
+        )
+
+
+    # ========================================================
+    # 23.2 NORMALISE MINIMUM OBSERVATION COUNT
+    # ========================================================
+
+    try:
+
+        minimum_observations = int(
+            minimum_observations
+        )
+
+    except (
+        TypeError,
+        ValueError,
+    ):
+
+        minimum_observations = 60
+
+    minimum_observations = max(
+        60,
+        minimum_observations,
+    )
+
+
+    # ========================================================
+    # 23.3 NORMALISE INITIAL WINDOW
+    # ========================================================
+
+    try:
+
+        initial_calendar_days = int(
+            initial_calendar_days
+        )
+
+    except (
+        TypeError,
+        ValueError,
+    ):
+
+        initial_calendar_days = 120
+
+
+    # Approximately two calendar days per required trading
+    # observation provides a safe initial margin for weekends
+    # and holidays.
+
+    initial_calendar_days = max(
+        initial_calendar_days,
+        minimum_observations * 2,
+    )
+
+
+    # ========================================================
+    # 23.4 NORMALISE MAXIMUM WINDOW
+    # ========================================================
+
+    try:
+
+        maximum_calendar_days = int(
+            maximum_calendar_days
+        )
+
+    except (
+        TypeError,
+        ValueError,
+    ):
+
+        maximum_calendar_days = 730
+
+    maximum_calendar_days = max(
+        initial_calendar_days,
+        maximum_calendar_days,
+    )
+
+
+    # ========================================================
+    # 23.5 DATE RANGE
+    # ========================================================
+
+    # Add one day so the upper boundary safely includes the
+    # most recent available daily observation returned by
+    # Alpaca.
+
+    end_value = (
+        timezone.localdate()
+        +
+        timedelta(
+            days=1
+        )
+    )
+
+
+    # ========================================================
+    # 23.6 BUILD PROGRESSIVE SEARCH WINDOWS
+    # ========================================================
+
+    history_windows = []
+
+    current_window = (
+        initial_calendar_days
+    )
+
+    while True:
+
+        history_windows.append(
+            current_window
+        )
+
+        if (
+            current_window
+            >=
+            maximum_calendar_days
+        ):
+
+            break
+
+
+        # Expand progressively instead of making dozens of
+        # small Alpaca requests.
+
+        expanded_window = max(
+            current_window + 60,
+            int(
+                current_window
+                *
+                1.75
+            ),
+        )
+
+
+        current_window = min(
+            expanded_window,
+            maximum_calendar_days,
+        )
+
+
+    # ========================================================
+    # 23.7 FETCH HISTORICAL BARS
+    # ========================================================
+
+    selected_bars = []
+
+    selected_start = None
+
+    calendar_days_used = None
+
+
+    for calendar_days in history_windows:
+
+        start_value = (
+            end_value
+            -
+            timedelta(
+                days=calendar_days
+            )
+        )
+
+
+        # ----------------------------------------------------
+        # IMPORTANT:
+        #
+        # Reuse the existing historical-data implementation.
+        #
+        # No direct requests.get() call is introduced here.
+        # ----------------------------------------------------
+
+        bars = (
+            get_historical_bars(
+                symbol=symbol,
+                start_date=start_value,
+                end_date=end_value,
+                timeframe="1Day",
+                adjustment="raw",
+            )
+        )
+
+
+        # ====================================================
+        # 23.8 CLEAN DAILY BARS
+        # ====================================================
+
+        # A valid analytical observation requires:
+        #
+        # - a date
+        # - open
+        # - high
+        # - low
+        # - close
+        #
+        # Volume may legitimately be zero in unusual cases,
+        # so it is not used to reject the observation.
+
+        valid_bars = []
+
+        for bar in bars:
+
+            if not bar.get(
+                "date"
+            ):
+
+                continue
+
+
+            if bar.get(
+                "open"
+            ) is None:
+
+                continue
+
+
+            if bar.get(
+                "high"
+            ) is None:
+
+                continue
+
+
+            if bar.get(
+                "low"
+            ) is None:
+
+                continue
+
+
+            if bar.get(
+                "close"
+            ) is None:
+
+                continue
+
+
+            valid_bars.append(
+                bar
+            )
+
+
+        # ====================================================
+        # 23.9 REMOVE DUPLICATE DAILY OBSERVATIONS
+        # ====================================================
+
+        # Historical data should contain one daily observation
+        # per symbol/date before it is persisted to MarketData.
+
+        bars_by_date = {}
+
+        for bar in valid_bars:
+
+            bars_by_date[
+                bar[
+                    "date"
+                ]
+            ] = bar
+
+
+        valid_bars = [
+
+            bars_by_date[
+                bar_date
+            ]
+
+            for bar_date in sorted(
+                bars_by_date
+            )
+        ]
+
+
+        selected_bars = (
+            valid_bars
+        )
+
+        selected_start = (
+            start_value
+        )
+
+        calendar_days_used = (
+            calendar_days
+        )
+
+
+        # Stop as soon as enough real trading observations are
+        # available.
+
+        if (
+            len(
+                selected_bars
+            )
+            >=
+            minimum_observations
+        ):
+
+            break
+
+
+    # ========================================================
+    # 23.10 CURRENT / LIVE SNAPSHOT
+    # ========================================================
+
+    snapshot = None
+
+    snapshot_error = None
+
+
+    if include_snapshot:
+
+        try:
+
+            snapshot = (
+                get_stock_snapshot(
+                    symbol
+                )
+            )
+
+        except AlpacaServiceError as exc:
+
+            # Snapshot failure should not invalidate valid
+            # historical data.
+
+            snapshot_error = (
+                str(exc)
+            )
+
+
+    # ========================================================
+    # 23.11 RESULT STATUS
+    # ========================================================
+
+    observation_count = (
+        len(
+            selected_bars
+        )
+    )
+
+
+    has_minimum_history = (
+
+        observation_count
+        >=
+        minimum_observations
+
+    )
+
+
+    latest_bar = (
+
+        selected_bars[-1]
+
+        if selected_bars
+
+        else None
+    )
+
+
+    earliest_bar = (
+
+        selected_bars[0]
+
+        if selected_bars
+
+        else None
+    )
+
+
+    latest_price = None
+
+
+    if snapshot:
+
+        latest_price = (
+            snapshot.get(
+                "latest_price"
+            )
+        )
+
+
+    # If a current trade is temporarily unavailable, use the
+    # latest historical close as display context.
+
+    if (
+        latest_price is None
+        and
+        latest_bar
+    ):
+
+        latest_price = (
+            latest_bar.get(
+                "close"
+            )
+        )
+
+
+    # ========================================================
+    # 23.12 USER-FRIENDLY MESSAGE
+    # ========================================================
+
+    if has_minimum_history:
+
+        message = (
+            f"{observation_count} daily Alpaca observations "
+            f"are available for {symbol}. "
+            "The dataset is ready for Market Condition "
+            "analysis."
+        )
+
+    elif observation_count:
+
+        message = (
+            f"Alpaca returned {observation_count} daily "
+            f"observations for {symbol}. "
+            f"At least {minimum_observations} observations "
+            "are required for Market Condition analysis."
+        )
+
+    else:
+
+        message = (
+            f"Alpaca returned no usable daily historical "
+            f"observations for {symbol}."
+        )
+
+
+    # ========================================================
+    # 23.13 RETURN MARKET CONDITION DATA PACKAGE
+    # ========================================================
+
+    return {
+
+        "symbol":
+            symbol,
+
+
+        # ----------------------------------------------------
+        # Provenance
+        # ----------------------------------------------------
+
+        "provider":
+            "Alpaca",
+
+        "feed":
+            _data_feed()
+            .upper(),
+
+        "timeframe":
+            "1Day",
+
+
+        # ----------------------------------------------------
+        # Analytical requirement
+        # ----------------------------------------------------
+
+        "minimum_observations":
+            minimum_observations,
+
+        "count":
+            observation_count,
+
+        "has_minimum_history":
+            has_minimum_history,
+
+
+        # ----------------------------------------------------
+        # Requested historical window
+        # ----------------------------------------------------
+
+        "calendar_days_used":
+            calendar_days_used,
+
+        "requested_start":
+            (
+                selected_start.isoformat()
+                if selected_start
+                else None
+            ),
+
+        "requested_end":
+            end_value.isoformat(),
+
+
+        # ----------------------------------------------------
+        # Actual historical coverage
+        # ----------------------------------------------------
+
+        "earliest_date":
+            (
+                earliest_bar.get(
+                    "date"
+                )
+                if earliest_bar
+                else None
+            ),
+
+        "latest_date":
+            (
+                latest_bar.get(
+                    "date"
+                )
+                if latest_bar
+                else None
+            ),
+
+
+        # ----------------------------------------------------
+        # Current/latest Alpaca market context
+        # ----------------------------------------------------
+
+        "latest_price":
+            latest_price,
+
+        "snapshot":
+            snapshot,
+
+        "snapshot_error":
+            snapshot_error,
+
+
+        # ----------------------------------------------------
+        # Historical observations used by the importing layer
+        # ----------------------------------------------------
+
+        "bars":
+            selected_bars,
+
+
+        # ----------------------------------------------------
+        # Display status
+        # ----------------------------------------------------
+
+        "message":
+            message,
+    }
+
+
+# ============================================================
+# 24. GET US MARKET CLOCK
 # ============================================================
 
 
@@ -2000,7 +2688,7 @@ def get_market_clock():
     - next market open
     - next market close
 
-    This is useful for the live Dashboard header.
+    Useful for the live Dashboard header.
     ------------------------------------------------------------
     """
 
@@ -2008,22 +2696,20 @@ def get_market_clock():
         "marketpulse_alpaca_market_clock"
     )
 
-
-    cached_clock = cache.get(
-        cache_key
+    cached_clock = (
+        cache.get(
+            cache_key
+        )
     )
-
 
     if cached_clock is not None:
 
         return cached_clock
 
-
     response = _alpaca_get(
         _trading_base_url(),
         "/v2/clock",
     )
-
 
     if not isinstance(
         response,
@@ -2037,8 +2723,8 @@ def get_market_clock():
             )
         )
 
-
     market_clock = {
+
         "timestamp":
             response.get(
                 "timestamp"
@@ -2063,22 +2749,17 @@ def get_market_clock():
             ),
     }
 
-
-    # The market clock can be refreshed frequently while still
-    # avoiding an unnecessary request on every page render.
-
     cache.set(
         cache_key,
         market_clock,
         30,
     )
 
-
     return market_clock
 
 
 # ============================================================
-# 24. DASHBOARD MARKET OVERVIEW
+# 25. DASHBOARD MARKET OVERVIEW
 # ============================================================
 
 
@@ -2089,9 +2770,6 @@ def get_dashboard_market_overview(
     ------------------------------------------------------------
     BUILD DASHBOARD MARKET OVERVIEW
     ------------------------------------------------------------
-
-    The Dashboard uses a small benchmark set to give the user
-    immediate context about the US equity market.
 
     Default benchmarks:
 
@@ -2118,15 +2796,14 @@ def get_dashboard_market_overview(
             "IWM",
         ]
 
-
     snapshots = (
         get_stock_snapshots(
             symbols
         )
     )
 
-
     benchmark_names = {
+
         "SPY":
             "S&P 500 ETF",
 
@@ -2140,9 +2817,7 @@ def get_dashboard_market_overview(
             "Russell 2000 ETF",
     }
 
-
     benchmarks = []
-
 
     for symbol in symbols:
 
@@ -2152,18 +2827,17 @@ def get_dashboard_market_overview(
             .upper()
         )
 
-
         snapshot = (
             snapshots.get(
                 symbol
             )
         )
 
-
         if not snapshot:
 
             benchmarks.append(
                 {
+
                     "symbol":
                         symbol,
 
@@ -2202,9 +2876,7 @@ def get_dashboard_market_overview(
                 }
             )
 
-
             continue
-
 
         daily_bar = (
             snapshot.get(
@@ -2214,9 +2886,9 @@ def get_dashboard_market_overview(
             {}
         )
 
-
         benchmarks.append(
             {
+
                 "symbol":
                     symbol,
 
@@ -2271,17 +2943,16 @@ def get_dashboard_market_overview(
             }
         )
 
-
     try:
 
         market_clock = (
             get_market_clock()
         )
 
-
     except AlpacaServiceError:
 
         market_clock = {
+
             "timestamp":
                 None,
 
@@ -2295,8 +2966,8 @@ def get_dashboard_market_overview(
                 None,
         }
 
-
     return {
+
         "provider":
             "Alpaca",
 
@@ -2311,13 +2982,15 @@ def get_dashboard_market_overview(
             benchmarks,
 
         "updated_at":
-            timezone.now()
-            .isoformat(),
+            (
+                timezone.now()
+                .isoformat()
+            ),
     }
 
 
 # ============================================================
-# 25. DASHBOARD CHART HISTORY
+# 26. DASHBOARD CHART HISTORY
 # ============================================================
 
 
@@ -2366,7 +3039,7 @@ def get_chart_history(
 
 
     # ========================================================
-    # 25.1 NORMALISE SYMBOL
+    # 26.1 NORMALISE SYMBOL
     # ========================================================
 
     symbol = (
@@ -2375,15 +3048,11 @@ def get_chart_history(
         "SPY"
     )
 
-
     symbol = (
-        str(
-            symbol
-        )
+        str(symbol)
         .strip()
         .upper()
     )
-
 
     if not symbol:
 
@@ -2391,7 +3060,7 @@ def get_chart_history(
 
 
     # ========================================================
-    # 25.2 NORMALISE PERIOD
+    # 26.2 NORMALISE PERIOD
     # ========================================================
 
     period = (
@@ -2400,26 +3069,18 @@ def get_chart_history(
         "1M"
     )
 
-
     period = (
-        str(
-            period
-        )
+        str(period)
         .strip()
         .upper()
     )
 
 
     # ========================================================
-    # 25.3 PERIOD CONFIGURATION
+    # 26.3 PERIOD CONFIGURATION
     # ========================================================
 
     period_config = {
-
-
-        # ----------------------------------------------------
-        # ONE-DAY / RECENT INTRADAY VIEW
-        # ----------------------------------------------------
 
         "1D": {
 
@@ -2436,11 +3097,6 @@ def get_chart_history(
                 False,
         },
 
-
-        # ----------------------------------------------------
-        # FIVE-DAY VIEW
-        # ----------------------------------------------------
-
         "5D": {
 
             "calendar_days":
@@ -2455,14 +3111,6 @@ def get_chart_history(
             "date_only":
                 False,
         },
-
-
-        # ----------------------------------------------------
-        # 30 TRADING SESSIONS
-        # ----------------------------------------------------
-        #
-        # MarketPulse requests 60 calendar days because
-        # weekends and market holidays do not produce bars.
 
         "1M": {
 
@@ -2479,11 +3127,6 @@ def get_chart_history(
                 True,
         },
 
-
-        # ----------------------------------------------------
-        # APPROXIMATELY THREE MONTHS
-        # ----------------------------------------------------
-
         "3M": {
 
             "calendar_days":
@@ -2498,16 +3141,13 @@ def get_chart_history(
             "date_only":
                 True,
         },
-
     }
-
 
     config = (
         period_config.get(
             period
         )
     )
-
 
     if config is None:
 
@@ -2520,18 +3160,12 @@ def get_chart_history(
 
 
     # ========================================================
-    # 25.4 BUILD ALPACA DATE RANGE
+    # 26.4 BUILD ALPACA DATE RANGE
     # ========================================================
 
     if config[
         "date_only"
     ]:
-
-        # Daily bars work cleanly with YYYY-MM-DD dates.
-        #
-        # Adding one day to today's date creates a safe
-        # inclusive upper boundary for the latest completed
-        # trading session.
 
         end_value = (
             timezone.localdate()
@@ -2541,7 +3175,6 @@ def get_chart_history(
             )
         )
 
-
         start_value = (
             end_value
             -
@@ -2552,15 +3185,11 @@ def get_chart_history(
             )
         )
 
-
     else:
-
-        # Intraday data requires datetime values.
 
         end_value = (
             timezone.now()
         )
-
 
         start_value = (
             end_value
@@ -2574,7 +3203,7 @@ def get_chart_history(
 
 
     # ========================================================
-    # 25.5 REQUEST HISTORICAL BARS FROM ALPACA
+    # 26.5 REQUEST HISTORICAL BARS FROM ALPACA
     # ========================================================
 
     bars = (
@@ -2591,7 +3220,7 @@ def get_chart_history(
 
 
     # ========================================================
-    # 25.6 KEEP THE LATEST REQUIRED OBSERVATIONS
+    # 26.6 KEEP LATEST REQUIRED OBSERVATIONS
     # ========================================================
 
     max_points = (
@@ -2599,7 +3228,6 @@ def get_chart_history(
             "max_points"
         ]
     )
-
 
     if (
         max_points
@@ -2619,11 +3247,10 @@ def get_chart_history(
 
 
     # ========================================================
-    # 25.7 BUILD CHART.JS POINTS
+    # 26.7 BUILD CHART POINTS
     # ========================================================
 
     chart_points = []
-
 
     for bar in bars:
 
@@ -2633,25 +3260,19 @@ def get_chart_history(
             )
         )
 
-
         close_price = (
             bar.get(
                 "close"
             )
         )
 
-
-        # Chart.js cannot plot a useful price observation when
-        # either the timestamp or close price is missing.
         if not timestamp:
 
             continue
 
-
         if close_price is None:
 
             continue
-
 
         chart_points.append(
             {
@@ -2686,13 +3307,12 @@ def get_chart_history(
                     bar.get(
                         "volume"
                     ),
-
             }
         )
 
 
     # ========================================================
-    # 25.8 BUILD USER-FRIENDLY STATUS MESSAGE
+    # 26.8 STATUS MESSAGE
     # ========================================================
 
     if chart_points:
@@ -2702,7 +3322,6 @@ def get_chart_history(
             f"{config['timeframe']} bars were returned "
             f"from Alpaca."
         )
-
 
     else:
 
@@ -2714,7 +3333,7 @@ def get_chart_history(
 
 
     # ========================================================
-    # 25.9 RETURN DASHBOARD CHART DATA
+    # 26.9 RETURN DASHBOARD DATA
     # ========================================================
 
     return {
@@ -2734,8 +3353,10 @@ def get_chart_history(
             "Alpaca",
 
         "feed":
-            _data_feed()
-            .upper(),
+            (
+                _data_feed()
+                .upper()
+            ),
 
         "requested_start":
             (
@@ -2777,8 +3398,10 @@ def get_chart_history(
         "message":
             message,
     }
+
+
 # ============================================================
-# 26. TEST ALPACA CONNECTION
+# 27. TEST ALPACA CONNECTION
 # ============================================================
 
 
@@ -2790,8 +3413,8 @@ def test_alpaca_connection():
 
     This helper deliberately does not expose API credentials.
 
-    It simply confirms whether MarketPulse can authenticate
-    with Alpaca and retrieve the US market clock.
+    It confirms only whether MarketPulse can authenticate
+    successfully and retrieve Alpaca market-clock information.
     ------------------------------------------------------------
     """
 
@@ -2801,8 +3424,8 @@ def test_alpaca_connection():
             get_market_clock()
         )
 
-
         return {
+
             "success":
                 True,
 
@@ -2810,8 +3433,10 @@ def test_alpaca_connection():
                 "Alpaca",
 
             "feed":
-                _data_feed()
-                .upper(),
+                (
+                    _data_feed()
+                    .upper()
+                ),
 
             "market_open":
                 market_clock.get(
@@ -2825,10 +3450,10 @@ def test_alpaca_connection():
                 ),
         }
 
-
     except AlpacaServiceError as exc:
 
         return {
+
             "success":
                 False,
 
@@ -2842,5 +3467,7 @@ def test_alpaca_connection():
                 None,
 
             "message":
-                str(exc),
+                str(
+                    exc
+                ),
         }

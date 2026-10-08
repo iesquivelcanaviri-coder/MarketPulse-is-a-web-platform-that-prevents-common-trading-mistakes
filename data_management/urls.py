@@ -3,47 +3,181 @@
 DATA MANAGEMENT - URL CONFIGURATION
 ============================================================
 
-This file defines the user-facing routes for the
-MarketPulse Data section.
+This file defines the routes belonging to the MarketPulse
+Data section.
 
-Framework mapping:
+============================================================
+FRAMEWORK MAPPING
+============================================================
 
+Browser / Django Template
+        ↓
 marketpulse/urls.py
         ↓
 data_management/urls.py
         ↓
 data_management/views.py
         ↓
+core.MarketData / analysis_tools
+        ↓
+PostgreSQL / Neon
+        ↓
 templates/data_management/
 
 
-Main Data workflows:
+============================================================
+FINAL USER-FACING DATA WORKFLOW
+============================================================
+
+Data
+    ↓
+/data/import/
+    ↓
+Historical Market Data Workspace
+    ↓
+Import / Select Dataset
+    ↓
+Historical Chart + Data Table
+    ↓
+Detailed Market Condition
+    ↓
+Run Market Condition Analysis
+    ↓
+POST /data/market-condition/
+    ↓
+views.market_condition()
+    ↓
+analysis_tools.analyzers.identify_market_regime()
+    ↓
+analysis_tools.models.MarketRegime
+    ↓
+PostgreSQL
+    ↓
+Redirect back to:
+
+/data/import/?symbol=SYMBOL#market-condition
+
+    ↓
+Updated Market Condition displayed inside the
+same Data workspace
+
+
+============================================================
+IMPORTANT ARCHITECTURE CHANGE
+============================================================
+
+Market Condition is no longer treated as a separate
+user-facing page.
+
+Previously:
+
+Data
+    ↓
+Open Market Condition
+    ↓
+Separate Market Condition page
+    ↓
+Run analysis
+    ↓
+View result
+
+
+Current architecture:
+
+Data
+    ↓
+Detailed Market Condition
+    ↓
+Run analysis
+    ↓
+Result displayed inside Data
+
+
+This produces a simpler and more coherent workflow because
+Market Condition is an analysis of the historical dataset
+already being viewed inside the Data tab.
+
+
+============================================================
+ROUTE PURPOSES
+============================================================
 
 /data/import/
-    Historical market-data import and dataset workspace
+
+    Main Data workspace.
+
+    Handles:
+
+    - Alpaca historical-data import
+    - stored dataset selection
+    - historical OHLCV review
+    - historical chart
+    - dataset statistics
+    - latest Market Condition result
+    - Detailed Market Condition interface
+
 
 /data/history/
-    Previous historical-data imports
+
+    Displays historical import jobs and their status.
+
 
 /data/market-condition/
-    Market Condition analysis
+
+    Analysis ACTION endpoint.
+
+    This route does not need to render a separate page.
+
+    POST:
+        Runs Market Regime Analysis and redirects back
+        to the Data workspace.
+
+    GET:
+        Older links can safely redirect back to Data.
+
 
 /data/market-condition/results/
-    Previous Market Condition / Market Regime results
+
+    Legacy compatibility route.
+
+    Older MarketPulse code may still reference this URL.
+
+    It should redirect back to the Data workspace rather
+    than render a separate results page.
 
 
-ARCHITECTURE NOTE:
+============================================================
+INTERNAL ANALYTICS ARCHITECTURE
+============================================================
 
-Market Regime Analysis previously appeared inside the
-separate Analysis section.
+The user-facing feature belongs to data_management.
 
-It now belongs under Data because a market regime describes
-the behaviour of the underlying market data rather than a
-specific trading account or individual risk position.
+The technical analytical implementation remains inside:
 
-The technical calculations can remain inside
-analysis_tools.analyzers, while the user-facing workflow
-belongs to data_management.
+analysis_tools/analyzers.py
+
+This separation is intentional:
+
+data_management
+    ↓
+Owns the Data user workflow
+
+analysis_tools
+    ↓
+Owns reusable statistical calculations
+
+
+============================================================
+SECURITY
+============================================================
+
+All Data views requiring authentication should use
+@login_required inside data_management/views.py.
+
+External market-data credentials remain on the Django
+backend and must never be exposed through URL configuration,
+templates or JavaScript.
+
 ============================================================
 """
 
@@ -61,13 +195,23 @@ from . import views
 # 2. APPLICATION NAMESPACE
 # ============================================================
 
-# The namespace allows templates and Python code to refer to
-# these URLs safely using names such as:
+# Using an application namespace allows templates and Python
+# code to reference routes safely.
 #
-# data_management:import
-# data_management:history
-# data_management:market_condition
-# data_management:market_condition_results
+# Examples:
+#
+# {% url 'data_management:import' %}
+#
+# {% url 'data_management:history' %}
+#
+# {% url 'data_management:market_condition' %}
+#
+# {% url 'data_management:market_condition_results' %}
+#
+#
+# Python example:
+#
+# reverse("data_management:import")
 
 app_name = "data_management"
 
@@ -80,26 +224,66 @@ urlpatterns = [
 
 
     # ========================================================
-    # 3.1 HISTORICAL MARKET DATA IMPORT
+    # 3.1 MAIN DATA WORKSPACE
     # ========================================================
-
+    #
     # URL:
     #
     # /data/import/
     #
-    # Purpose:
     #
-    # Allows the user to import and review historical
-    # market-data observations used throughout MarketPulse.
+    # VIEW:
     #
-    # These observations can later support:
+    # views.data_import
     #
-    # - historical OHLCV analysis
-    # - strategy backtesting
-    # - ATR calculations
-    # - volatility calculations
-    # - drawdown calculations
-    # - market-condition analysis
+    #
+    # TEMPLATE:
+    #
+    # data_management/import.html
+    #
+    #
+    # PURPOSE:
+    #
+    # This is now the primary user-facing workspace for the
+    # complete MarketPulse Data workflow.
+    #
+    #
+    # USER WORKFLOW:
+    #
+    # Data
+    #   ↓
+    # Import Historical Data
+    #   ↓
+    # Select Stored Dataset
+    #   ↓
+    # Review Historical Chart
+    #   ↓
+    # Review Historical OHLCV Data
+    #   ↓
+    # Detailed Market Condition
+    #
+    #
+    # DATA PROVIDED BY THIS VIEW:
+    #
+    # - import form
+    # - selected symbol
+    # - available symbols
+    # - MarketData observations
+    # - observation count
+    # - earliest record
+    # - latest record
+    # - recent imports
+    # - selected strategy/model information
+    # - latest MarketRegime result
+    # - market-data provider
+    # - market-data feed
+    #
+    #
+    # Template reference:
+    #
+    # {% url 'data_management:import' %}
+    #
+    # ========================================================
 
     path(
         "import/",
@@ -109,18 +293,45 @@ urlpatterns = [
 
 
     # ========================================================
-    # 3.2 HISTORICAL IMPORT HISTORY
+    # 3.2 IMPORT HISTORY
     # ========================================================
-
+    #
     # URL:
     #
     # /data/history/
     #
-    # Purpose:
     #
-    # Displays previous market-data import activity so the
-    # user can see which datasets have already been added
-    # to MarketPulse.
+    # VIEW:
+    #
+    # views.import_history
+    #
+    #
+    # TEMPLATE:
+    #
+    # data_management/history.html
+    #
+    #
+    # PURPOSE:
+    #
+    # Displays previous historical-data import activity.
+    #
+    #
+    # The user can review:
+    #
+    # - imported symbol
+    # - provider
+    # - requested dates
+    # - number of imported observations
+    # - completion status
+    # - error information
+    # - import timestamp
+    #
+    #
+    # Template reference:
+    #
+    # {% url 'data_management:history' %}
+    #
+    # ========================================================
 
     path(
         "history/",
@@ -130,38 +341,95 @@ urlpatterns = [
 
 
     # ========================================================
-    # 3.3 MARKET CONDITION ANALYSIS
+    # 3.3 MARKET CONDITION ANALYSIS ACTION
     # ========================================================
-
+    #
     # URL:
     #
     # /data/market-condition/
     #
-    # User-facing purpose:
     #
-    # Answers the question:
+    # VIEW:
     #
-    # "What type of market environment has this asset
-    # recently experienced?"
+    # views.market_condition
     #
-    # Possible classifications can include:
     #
-    # - Uptrend
-    # - Downtrend
-    # - Sideways
-    # - High volatility
+    # IMPORTANT:
     #
-    # Technical method:
+    # This is no longer intended to be a separate
+    # user-facing page.
     #
-    # Market Regime Analysis
     #
-    # The analytical calculations can remain inside the
-    # internal analysis_tools application, while this route
-    # places the feature where the user naturally expects it:
+    # The visible interface now lives inside:
     #
-    # Data
-    #   ↓
-    # Market Condition
+    # data_management/import.html
+    #
+    # under:
+    #
+    # Detailed Market Condition
+    #
+    #
+    # ========================================================
+    # POST WORKFLOW
+    # ========================================================
+    #
+    # User clicks:
+    #
+    # Run Market Condition Analysis
+    #
+    #       ↓
+    #
+    # POST /data/market-condition/
+    #
+    #       ↓
+    #
+    # views.market_condition()
+    #
+    #       ↓
+    #
+    # Validate selected symbol
+    #
+    #       ↓
+    #
+    # Check at least 20 MarketData observations
+    #
+    #       ↓
+    #
+    # identify_market_regime()
+    #
+    #       ↓
+    #
+    # MarketRegime saved
+    #
+    #       ↓
+    #
+    # Redirect:
+    #
+    # /data/import/?symbol=SPY#market-condition
+    #
+    #       ↓
+    #
+    # Updated result appears inside the same Data workspace
+    #
+    #
+    # ========================================================
+    # GET WORKFLOW
+    # ========================================================
+    #
+    # Older bookmarks may still point directly to:
+    #
+    # /data/market-condition/?symbol=SPY
+    #
+    # The view can safely redirect those requests back to:
+    #
+    # /data/import/?symbol=SPY#market-condition
+    #
+    #
+    # Template form action:
+    #
+    # {% url 'data_management:market_condition' %}
+    #
+    # ========================================================
 
     path(
         "market-condition/",
@@ -171,26 +439,70 @@ urlpatterns = [
 
 
     # ========================================================
-    # 3.4 MARKET CONDITION RESULTS
+    # 3.4 LEGACY MARKET CONDITION RESULTS ROUTE
     # ========================================================
-
+    #
     # URL:
     #
     # /data/market-condition/results/
     #
-    # Purpose:
     #
-    # Displays previously calculated MarketRegime results.
+    # VIEW:
     #
-    # The complete user-facing workflow becomes:
+    # views.market_condition_results
+    #
+    #
+    # STATUS:
+    #
+    # LEGACY / COMPATIBILITY ROUTE
+    #
+    #
+    # Older versions of MarketPulse used a separate
+    # Market Condition results workflow.
+    #
+    # The final application no longer needs a separate
+    # results page.
+    #
+    #
+    # OLD:
     #
     # Data
     #   ↓
-    # Historical Market Data
+    # Market Condition page
     #   ↓
-    # Market Condition
+    # Results page
+    #
+    #
+    # NEW:
+    #
+    # Data
     #   ↓
-    # Analysis Result
+    # Detailed Market Condition
+    #   ↓
+    # Analysis + Result
+    #
+    #
+    # Therefore this route should now redirect users back to:
+    #
+    # /data/import/?symbol=SYMBOL#market-condition
+    #
+    #
+    # WHY KEEP IT?
+    #
+    # Keeping the route temporarily prevents older:
+    #
+    # - template links
+    # - bookmarks
+    # - redirects
+    # - demonstration URLs
+    #
+    # from producing a 404 error.
+    #
+    #
+    # It can be removed later once the project has been
+    # completely checked for legacy references.
+    #
+    # ========================================================
 
     path(
         "market-condition/results/",
