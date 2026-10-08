@@ -77,37 +77,11 @@ Alpaca latest market snapshot
 Current/latest price shown above chart
 
 
-IMPORTANT:
-
-"Current Alpaca" does not mean streaming WebSocket data.
-
-It means the chart retrieves the latest available Alpaca
-historical bars when selected.
-
-The Alpaca snapshot endpoint supplies the latest available
-trade/quote information separately.
-
-
 MARKET CONDITION FLOW:
 
-User selects stored dataset
+Stored / refreshed historical data
     ↓
-Detailed Market Condition panel
-    ↓
-POST to data_management:market_condition
-    ↓
-data_management/views.py
-    ↓
-Check available historical observations
-    ↓
-If fewer than 60 observations:
-    refresh recent historical OHLCV bars from Alpaca
-    ↓
-Store / update core.MarketData
-    ↓
-Confirm at least 60 observations
-    ↓
-analysis_tools/analyzers.py
+Detailed Market Condition
     ↓
 identify_market_regime()
     ↓
@@ -115,103 +89,25 @@ MarketRegime
     ↓
 PostgreSQL
     ↓
-Redirect to Data workspace
-    ↓
-latest_regime
-    ↓
-Result appears inside the same
-Detailed Market Condition panel
+Result remains inside this Data workspace
 
 
-WHY 60 OBSERVATIONS?
+DESIGN UPDATE:
 
-The Market Condition classifier calculates:
+The Data workspace now follows the same readable typography
+scale used by the Dashboard.
 
-- historical daily returns
-- annualised volatility
-- 20-period moving average
-- 60-period moving average
-- trend strength
+Normal interface text:
+    approximately Bootstrap small/body scale
 
-Therefore at least 60 historical observations are required
-before the current Market Regime classifier can run correctly.
+Metadata:
+    compact but readable
 
+The price-chart viewport is intentionally narrower than before.
 
-IMPORTANT ALPACA DISTINCTION:
-
-Market Condition is a HISTORICAL classification.
-
-Alpaca supplies recent historical OHLCV observations.
-
-The analysis is NOT calculated from one live/latest quote.
-
-A single latest price cannot establish historical trend or
-historical volatility.
-
-
-CURRENT MARKET REGIME VALUES:
-
-bull
-    User-facing meaning: Uptrend
-
-bear
-    User-facing meaning: Downtrend
-
-sideways
-    User-facing meaning: Sideways
-
-volatile
-    User-facing meaning: High Volatility
-
-
-IMPORTANT UX DECISION:
-
-Market Condition remains inside the Data workspace.
-
-The user can:
-
-1. Import historical market data
-2. Select a stored ticker
-3. View the numerical price chart
-4. Switch between stored and current Alpaca data
-5. Run Market Condition analysis
-6. Review the complete analytical result
-7. Select a strategy/model
-
-without opening another page.
-
-
-CHART UX:
-
-The old:
-
-Overview
-Chart
-Data table
-
-navigation has been removed.
-
-The chart is now the main historical-data visualisation.
-
-
-THEME ARCHITECTURE:
-
-Shared MarketPulse theme tokens:
-
---mp-bg
---mp-nav
---mp-panel
---mp-panel-soft
---mp-panel-dark
---mp-border
---mp-border-soft
---mp-text
---mp-muted
---mp-primary
---mp-primary-hover
---mp-success
---mp-warning
---mp-danger
+The chart itself can extend horizontally inside a scrollable
+container so a large historical dataset does not compress all
+observations into a very small visual space.
 
 ============================================================
 {% endcomment %}
@@ -227,97 +123,60 @@ Market Data | MarketPulse
 <style>
 
 /* ============================================================
-   1. MARKETPULSE DATA THEME
+   1. DATA WORKSPACE / SHARED MARKETPULSE THEME
 ============================================================ */
 
 .data-workspace {
+    --data-background: var(--mp-bg, #0c1420);
+    --data-nav: var(--mp-nav, #111c2b);
+    --data-panel: var(--mp-panel, #152235);
+    --data-panel-soft: var(--mp-panel-soft, #18283a);
+    --data-panel-dark: var(--mp-panel-dark, #101a28);
+    --data-border: var(--mp-border, #314258);
+    --data-border-soft: var(--mp-border-soft, #26374b);
+    --data-text: var(--mp-text, #f1f5f9);
+    --data-muted: var(--mp-muted, #93a4b8);
+    --data-blue: var(--mp-primary, #4f86b6);
+    --data-blue-hover: var(--mp-primary-hover, #6095c2);
+    --data-blue-soft: var(
+        --mp-primary-soft,
+        rgba(79, 134, 182, .15)
+    );
+    --data-green: var(--mp-success, #32c98b);
+    --data-yellow: var(--mp-warning, #d3a854);
+    --data-danger: var(--mp-danger, #dc6b75);
 
-    --data-background:
-        var(--mp-bg, #0c1420);
+    width: 100%;
+    max-width: 1480px;
+    min-width: 0;
 
-    --data-nav:
-        var(--mp-nav, #111c2b);
+    margin-left: auto;
+    margin-right: auto;
 
-    --data-panel:
-        var(--mp-panel, #152235);
+    color: var(--data-text);
 
-    --data-panel-soft:
-        var(--mp-panel-soft, #18283a);
+    /*
+    Dashboard-style readable base typography.
 
-    --data-panel-dark:
-        var(--mp-panel-dark, #101a28);
-
-    --data-border:
-        var(--mp-border, #314258);
-
-    --data-border-soft:
-        var(--mp-border-soft, #26374b);
-
-    --data-text:
-        var(--mp-text, #f1f5f9);
-
-    --data-muted:
-        var(--mp-muted, #93a4b8);
-
-    --data-blue:
-        var(--mp-primary, #4f86b6);
-
-    --data-blue-hover:
-        var(--mp-primary-hover, #6095c2);
-
-    --data-blue-soft:
-        var(
-            --mp-primary-soft,
-            rgba(79, 134, 182, .15)
-        );
-
-    --data-green:
-        var(--mp-success, #32c98b);
-
-    --data-yellow:
-        var(--mp-warning, #d3a854);
-
-    --data-danger:
-        var(--mp-danger, #dc6b75);
-
-    width:
-        100%;
-
-    max-width:
-        1480px;
-
-    min-width:
-        0;
-
-    margin-left:
-        auto;
-
-    margin-right:
-        auto;
-
-    color:
-        var(--data-text);
+    The old Data page contained many values around
+    .48rem - .58rem, which were considerably smaller
+    than the Dashboard.
+    */
+    font-size: .875rem;
+    line-height: 1.5;
 }
 
 
 .data-workspace,
 .data-workspace * {
-
-    box-sizing:
-        border-box;
+    box-sizing: border-box;
 }
 
 
 .data-workspace a {
-
-    text-decoration:
-        none;
+    text-decoration: none;
 }
 
-
-/* ============================================================
-   1.1 RESPONSIVE WIDTH SAFETY
-============================================================ */
 
 .data-workspace,
 .data-page-header,
@@ -335,6 +194,8 @@ Market Data | MarketPulse
 .chart-toolbar-main,
 .chart-controls,
 .chart-summary-grid,
+.chart-frame,
+.chart-scroll-content,
 .market-condition-panel,
 .market-condition-result-card,
 .market-condition-stat-grid,
@@ -350,37 +211,24 @@ Market Data | MarketPulse
 .recent-imports,
 .recent-imports-body,
 .data-empty {
-
-    min-width:
-        0;
+    min-width: 0;
 }
 
 
 .data-workspace img,
 .data-workspace svg {
-
-    max-width:
-        100%;
+    max-width: 100%;
 }
 
-
-/* ============================================================
-   1.2 PAGE / BASE FALLBACKS
-============================================================ */
 
 html,
 body {
-
-    background:
-        var(--mp-bg, #0c1420)
-        !important;
+    background: var(--mp-bg, #0c1420) !important;
 }
 
 
 body {
-
-    color:
-        var(--mp-text, #f1f5f9);
+    color: var(--mp-text, #f1f5f9);
 }
 
 
@@ -389,149 +237,86 @@ body {
 ============================================================ */
 
 .data-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
 
-    display:
-        flex;
-
-    justify-content:
-        space-between;
-
-    align-items:
-        flex-start;
-
-    flex-wrap:
-        wrap;
-
-    gap:
-        1rem;
-
-    margin-bottom:
-        1rem;
+    gap: 1rem;
+    margin-bottom: 1rem;
 }
 
 
 .data-page-header > div {
-
-    min-width:
-        0;
-
-    flex:
-        1 1 420px;
+    min-width: 0;
+    flex: 1 1 420px;
 }
 
 
 .data-page-title {
+    margin: 0 0 .25rem;
 
-    margin:
-        0 0 .2rem;
+    color: var(--data-text) !important;
 
-    color:
-        var(--data-text)
-        !important;
+    font-size: clamp(
+        1.5rem,
+        3vw,
+        1.75rem
+    );
 
-    font-size:
-        clamp(
-            1.4rem,
-            3vw,
-            1.65rem
-        );
-
-    font-weight:
-        700;
-
-    letter-spacing:
-        -.02em;
+    font-weight: 700;
+    letter-spacing: -.02em;
 }
 
 
 .data-page-subtitle {
+    max-width: 760px;
+    margin: 0;
 
-    max-width:
-        720px;
+    color: var(--data-muted) !important;
 
-    margin:
-        0;
-
-    color:
-        var(--data-muted)
-        !important;
-
-    font-size:
-        .72rem;
-
-    line-height:
-        1.45;
+    font-size: .875rem;
+    line-height: 1.5;
 }
 
 
 .data-history-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 
-    display:
-        inline-flex;
+    gap: .45rem;
 
-    align-items:
-        center;
+    min-height: 36px;
+    max-width: 100%;
 
-    justify-content:
-        center;
+    padding: .45rem .75rem;
 
-    gap:
-        .4rem;
+    color: #dbe4ee;
+    background: transparent;
 
-    min-height:
-        34px;
+    border: 1px solid var(--data-border);
+    border-radius: 7px;
 
-    max-width:
-        100%;
-
-    padding:
-        .48rem .72rem;
-
-    color:
-        #dbe4ee;
-
-    background:
-        transparent;
-
-    border:
-        1px solid
-        var(--data-border);
-
-    border-radius:
-        7px;
-
-    font-size:
-        .67rem;
-
-    font-weight:
-        600;
-
-    text-align:
-        center;
+    font-size: .8125rem;
+    font-weight: 600;
+    text-align: center;
 }
 
 
 .data-history-button:hover {
-
-    color:
-        #ffffff;
-
-    background:
-        rgba(255, 255, 255, .03);
-
-    border-color:
-        #536d89;
+    color: #ffffff;
+    background: rgba(255, 255, 255, .03);
+    border-color: #536d89;
 }
 
 
 /* ============================================================
-   3. THREE STEP FLOW
+   3. THREE-STEP FLOW
 ============================================================ */
 
 .data-flow {
-
-    display:
-        grid;
+    display: grid;
 
     grid-template-columns:
         repeat(
@@ -539,131 +324,84 @@ body {
             minmax(0, 1fr)
         );
 
-    overflow:
-        hidden;
+    overflow: hidden;
 
-    width:
-        100%;
+    width: 100%;
 
-    background:
-        var(--data-panel);
+    background: var(--data-panel);
 
-    border:
-        1px solid
-        var(--data-border);
-
-    border-radius:
-        8px 8px 0 0;
+    border: 1px solid var(--data-border);
+    border-radius: 8px 8px 0 0;
 }
 
 
 .data-flow-step {
+    display: flex;
+    align-items: center;
 
-    display:
-        flex;
+    gap: .7rem;
 
-    align-items:
-        center;
+    min-height: 68px;
 
-    gap:
-        .62rem;
+    padding: .8rem .95rem;
 
-    min-height:
-        62px;
-
-    padding:
-        .7rem .85rem;
-
-    border-right:
-        1px solid
-        var(--data-border);
+    border-right: 1px solid var(--data-border);
 }
 
 
 .data-flow-step:last-child {
-
-    border-right:
-        0;
+    border-right: 0;
 }
 
 
 .data-step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 
-    display:
-        inline-flex;
+    flex: 0 0 auto;
 
-    align-items:
-        center;
+    width: 26px;
+    height: 26px;
 
-    justify-content:
-        center;
+    color: #ffffff;
+    background: var(--data-blue);
 
-    flex:
-        0 0 auto;
-
-    width:
-        23px;
-
-    height:
-        23px;
-
-    color:
-        #ffffff;
-
-    background:
-        var(--data-blue);
-
-    border-radius:
-        50%;
+    border-radius: 50%;
 
     box-shadow:
         0 0 0 3px
         rgba(79, 134, 182, .08);
 
-    font-size:
-        .62rem;
-
-    font-weight:
-        800;
+    font-size: .75rem;
+    font-weight: 800;
 }
 
 
 .data-flow-step > span:last-child {
-
-    min-width:
-        0;
+    min-width: 0;
 }
 
 
 .data-flow-step strong {
+    display: block;
 
-    display:
-        block;
+    margin-bottom: .08rem;
 
-    margin-bottom:
-        .08rem;
+    color: var(--data-text);
 
-    color:
-        var(--data-text);
-
-    font-size:
-        .67rem;
+    font-size: .8125rem;
+    font-weight: 700;
 }
 
 
 .data-flow-step span span {
+    display: block;
 
-    display:
-        block;
+    color: var(--data-muted);
 
-    color:
-        var(--data-muted);
-
-    font-size:
-        .56rem;
-
-    line-height:
-        1.3;
+    font-size: .75rem;
+    line-height: 1.4;
 }
 
 
@@ -672,68 +410,46 @@ body {
 ============================================================ */
 
 .data-import-panel {
+    width: 100%;
 
-    width:
-        100%;
+    margin-bottom: 1rem;
 
-    margin-bottom:
-        1rem;
+    padding: 1rem;
 
-    padding:
-        .85rem .9rem .9rem;
+    background: var(--data-panel);
 
-    background:
-        var(--data-panel);
-
-    border:
-        1px solid
-        var(--data-border);
-
-    border-top:
-        0;
-
-    border-radius:
-        0 0 8px 8px;
+    border: 1px solid var(--data-border);
+    border-top: 0;
+    border-radius: 0 0 8px 8px;
 }
 
 
 .data-import-heading {
-
-    margin-bottom:
-        .65rem;
+    margin-bottom: .8rem;
 }
 
 
 .data-import-heading strong {
+    display: block;
 
-    display:
-        block;
+    margin-bottom: .1rem;
 
-    margin-bottom:
-        .08rem;
+    color: var(--data-text);
 
-    color:
-        var(--data-text);
-
-    font-size:
-        .76rem;
+    font-size: .9rem;
 }
 
 
 .data-import-heading span {
+    color: var(--data-muted);
 
-    color:
-        var(--data-muted);
-
-    font-size:
-        .57rem;
+    font-size: .75rem;
+    line-height: 1.45;
 }
 
 
 .data-import-grid {
-
-    display:
-        grid;
+    display: grid;
 
     grid-template-columns:
         repeat(
@@ -742,89 +458,58 @@ body {
         )
         auto;
 
-    gap:
-        .55rem;
+    gap: .65rem;
 
-    align-items:
-        end;
+    align-items: end;
 
-    width:
-        100%;
+    width: 100%;
 }
 
 
 .data-field {
-
-    min-width:
-        0;
+    min-width: 0;
 }
 
 
 .data-field label {
+    display: block;
 
-    display:
-        block;
+    margin-bottom: .3rem;
 
-    margin-bottom:
-        .22rem;
+    color: #d7e0eb;
 
-    color:
-        #d7e0eb;
-
-    font-size:
-        .55rem;
-
-    font-weight:
-        700;
+    font-size: .75rem;
+    font-weight: 700;
 }
 
 
 .data-workspace input,
 .data-workspace select,
 .data-workspace textarea {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
 
-    width:
-        100%;
+    min-height: 36px;
 
-    max-width:
-        100%;
+    padding: .4rem .55rem;
 
-    min-width:
-        0;
+    color: var(--data-text);
+    background: #142131;
 
-    min-height:
-        34px;
+    border: 1px solid #3a4d64;
+    border-radius: 6px;
 
-    padding:
-        .36rem .45rem;
-
-    color:
-        var(--data-text);
-
-    background:
-        #142131;
-
-    border:
-        1px solid
-        #3a4d64;
-
-    border-radius:
-        6px;
-
-    font-size:
-        .62rem;
+    font-size: .8125rem;
 }
 
 
 .data-workspace input:focus,
 .data-workspace select:focus,
 .data-workspace textarea:focus {
+    outline: 0;
 
-    outline:
-        0;
-
-    border-color:
-        var(--data-blue);
+    border-color: var(--data-blue);
 
     box-shadow:
         0 0 0 2px
@@ -834,150 +519,92 @@ body {
 
 .data-workspace select option,
 .data-workspace select optgroup {
-
-    color:
-        #111111;
-
-    background:
-        #ffffff;
+    color: #111111;
+    background: #ffffff;
 }
 
 
 .data-primary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 
-    display:
-        inline-flex;
+    gap: .4rem;
 
-    align-items:
-        center;
+    min-height: 36px;
+    max-width: 100%;
 
-    justify-content:
-        center;
+    padding: .45rem .75rem;
 
-    gap:
-        .35rem;
+    color: #f7fbff;
+    background: #3f739e;
 
-    min-height:
-        34px;
-
-    max-width:
-        100%;
-
-    padding:
-        .4rem .68rem;
-
-    color:
-        #f7fbff;
-
-    background:
-        #3f739e;
-
-    border:
-        1px solid
-        #4c83af;
-
-    border-radius:
-        6px;
+    border: 1px solid #4c83af;
+    border-radius: 6px;
 
     box-shadow:
         0 2px 5px
         rgba(0, 0, 0, .12);
 
-    font-size:
-        .62rem;
+    font-size: .8125rem;
+    font-weight: 700;
 
-    font-weight:
-        700;
-
-    text-align:
-        center;
-
-    white-space:
-        normal;
+    text-align: center;
+    white-space: normal;
 }
 
 
 .data-primary-button:hover {
+    color: #ffffff;
 
-    color:
-        #ffffff;
-
-    background:
-        var(--data-blue-hover);
-
-    border-color:
-        #6a9fc9;
+    background: var(--data-blue-hover);
+    border-color: #6a9fc9;
 }
 
 
 .data-primary-button:disabled {
-
-    cursor:
-        not-allowed;
-
-    opacity:
-        .55;
+    cursor: not-allowed;
+    opacity: .55;
 }
 
 
 .data-provider-line {
+    display: flex;
+    flex-wrap: wrap;
 
-    display:
-        flex;
+    gap: .35rem 1rem;
 
-    flex-wrap:
-        wrap;
+    margin-top: .65rem;
 
-    gap:
-        .3rem 1rem;
+    color: var(--data-muted);
 
-    margin-top:
-        .55rem;
-
-    color:
-        var(--data-muted);
-
-    font-size:
-        .54rem;
+    font-size: .75rem;
 }
 
 
 .data-provider-line strong {
-
-    color:
-        #dce5ef;
+    color: #dce5ef;
 }
 
 
 .data-error {
+    width: 100%;
 
-    width:
-        100%;
+    margin-top: .7rem;
+    padding: .65rem .75rem;
 
-    margin-top:
-        .6rem;
-
-    padding:
-        .6rem .7rem;
-
-    color:
-        #ffdce0;
-
-    background:
-        rgba(220, 107, 117, .1);
+    color: #ffdce0;
+    background: rgba(220, 107, 117, .1);
 
     border:
         1px solid
         rgba(220, 107, 117, .28);
 
-    border-radius:
-        6px;
+    border-radius: 6px;
 
-    font-size:
-        .62rem;
+    font-size: .8125rem;
 
-    overflow-wrap:
-        anywhere;
+    overflow-wrap: anywhere;
 }
 
 
@@ -986,25 +613,16 @@ body {
 ============================================================ */
 
 .dataset-workspace {
+    overflow: hidden;
 
-    overflow:
-        hidden;
+    width: 100%;
 
-    width:
-        100%;
+    margin-bottom: 1rem;
 
-    margin-bottom:
-        1rem;
+    background: var(--data-panel);
 
-    background:
-        var(--data-panel);
-
-    border:
-        1px solid
-        var(--data-border);
-
-    border-radius:
-        8px;
+    border: 1px solid var(--data-border);
+    border-radius: 8px;
 }
 
 
@@ -1013,9 +631,7 @@ body {
 ============================================================ */
 
 .dataset-header {
-
-    display:
-        grid;
+    display: grid;
 
     grid-template-columns:
         minmax(0, 1fr)
@@ -1024,190 +640,135 @@ body {
         auto
         auto;
 
-    align-items:
-        center;
+    align-items: center;
 
-    gap:
-        .85rem;
+    gap: 1rem;
 
-    width:
-        100%;
+    width: 100%;
 
-    padding:
-        .68rem .85rem;
+    padding: .8rem 1rem;
 
-    border-bottom:
-        1px solid
-        var(--data-border);
+    border-bottom: 1px solid var(--data-border);
 }
 
 
 .dataset-title-area {
-
-    min-width:
-        0;
+    min-width: 0;
 }
 
 
 .dataset-symbol-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
 
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    flex-wrap:
-        wrap;
-
-    gap:
-        .35rem;
+    gap: .4rem;
 }
 
 
 .dataset-symbol {
+    margin: 0;
 
-    margin:
-        0;
+    color: var(--data-text);
 
-    color:
-        var(--data-text);
+    font-size: 1.1rem;
+    font-weight: 800;
 
-    font-size:
-        .95rem;
-
-    font-weight:
-        800;
-
-    overflow-wrap:
-        anywhere;
+    overflow-wrap: anywhere;
 }
 
 
 .dataset-ready,
 .dataset-needs-history {
+    display: inline-flex;
+    align-items: center;
 
-    display:
-        inline-flex;
+    gap: .25rem;
 
-    align-items:
-        center;
-
-    gap:
-        .2rem;
-
-    font-size:
-        .52rem;
-
-    font-weight:
-        700;
+    font-size: .7rem;
+    font-weight: 700;
 }
 
 
 .dataset-ready {
-
-    color:
-        var(--data-green);
+    color: var(--data-green);
 }
 
 
 .dataset-needs-history {
-
-    color:
-        var(--data-yellow);
+    color: var(--data-yellow);
 }
 
 
 .dataset-subtitle {
+    margin-top: .1rem;
 
-    margin-top:
-        .08rem;
+    color: var(--data-muted);
 
-    color:
-        var(--data-muted);
+    font-size: .75rem;
 
-    font-size:
-        .53rem;
-
-    overflow-wrap:
-        anywhere;
+    overflow-wrap: anywhere;
 }
 
 
 .dataset-stat {
-
-    min-width:
-        0;
+    min-width: 0;
 }
 
 
 .dataset-stat span {
+    display: block;
 
-    display:
-        block;
+    color: var(--data-muted);
 
-    color:
-        var(--data-muted);
-
-    font-size:
-        .49rem;
+    font-size: .7rem;
 }
 
 
 .dataset-stat strong {
+    display: block;
 
-    display:
-        block;
+    margin-top: .08rem;
 
-    margin-top:
-        .08rem;
+    color: #eef3f8;
 
-    color:
-        #eef3f8;
+    font-size: .8125rem;
 
-    font-size:
-        .61rem;
-
-    overflow-wrap:
-        anywhere;
+    overflow-wrap: anywhere;
 }
 
 
 .dataset-switcher {
-
-    min-width:
-        0;
+    min-width: 0;
 }
 
 
 .dataset-switcher select {
+    min-height: 34px;
 
-    min-height:
-        30px;
+    padding: .35rem 1.8rem .35rem .5rem;
 
-    padding:
-        .28rem .4rem;
-
-    font-size:
-        .57rem;
+    font-size: .8125rem;
 }
 
 
 /* ============================================================
    5.2 MAIN DATASET AREA
+
+   IMPORTANT:
+   The chart no longer dominates the desktop workspace.
+
+   The Market Condition panel receives slightly more room.
 ============================================================ */
 
 .dataset-main {
-
-    display:
-        grid;
+    display: grid;
 
     grid-template-columns:
-        minmax(0, 1.15fr)
-        minmax(330px, .85fr);
+        minmax(0, .95fr)
+        minmax(430px, 1.05fr);
 
-    width:
-        100%;
+    width: 100%;
 }
 
 
@@ -1216,166 +777,108 @@ body {
 ============================================================ */
 
 .dataset-chart-column {
+    min-width: 0;
 
-    min-width:
-        0;
+    padding: 1rem;
 
-    padding:
-        .78rem .88rem .9rem;
-
-    border-right:
-        1px solid
-        var(--data-border);
+    border-right: 1px solid var(--data-border);
 }
 
 
 .dataset-heading {
+    color: #edf3f8;
 
-    color:
-        #edf3f8;
-
-    font-size:
-        .65rem;
-
-    font-weight:
-        700;
+    font-size: .8125rem;
+    font-weight: 700;
 }
 
 
 .chart-toolbar {
+    display: flex;
 
-    display:
-        flex;
+    align-items: flex-start;
+    justify-content: space-between;
 
-    align-items:
-        flex-start;
+    flex-wrap: wrap;
 
-    justify-content:
-        space-between;
+    gap: .8rem;
 
-    flex-wrap:
-        wrap;
-
-    gap:
-        .75rem;
-
-    margin-bottom:
-        .7rem;
+    margin-bottom: .8rem;
 }
 
 
 .chart-toolbar-main {
-
-    flex:
-        1 1 250px;
+    flex: 1 1 230px;
 }
 
 
 .chart-title {
+    margin: .15rem 0;
 
-    margin:
-        .1rem 0;
+    color: #ffffff;
 
-    color:
-        #ffffff;
-
-    font-size:
-        .86rem;
-
-    font-weight:
-        800;
+    font-size: 1rem;
+    font-weight: 800;
 }
 
 
 .chart-source-description {
+    margin: 0;
 
-    margin:
-        0;
+    color: var(--data-muted);
 
-    color:
-        var(--data-muted);
-
-    font-size:
-        .52rem;
-
-    line-height:
-        1.4;
+    font-size: .75rem;
+    line-height: 1.45;
 }
 
 
 .chart-controls {
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
+    justify-content: flex-end;
 
-    align-items:
-        center;
+    flex-wrap: wrap;
 
-    justify-content:
-        flex-end;
-
-    flex-wrap:
-        wrap;
-
-    gap:
-        .42rem;
+    gap: .45rem;
 }
 
 
 .chart-source-buttons {
-
-    display:
-        inline-flex;
-
-    flex-wrap:
-        nowrap;
+    display: inline-flex;
+    flex-wrap: nowrap;
 }
 
 
 .chart-source-buttons .btn {
+    min-height: 34px;
 
-    min-height:
-        30px;
+    padding: .35rem .6rem;
 
-    padding:
-        .3rem .52rem;
-
-    font-size:
-        .54rem;
-
-    font-weight:
-        700;
+    font-size: .75rem;
+    font-weight: 700;
 }
 
 
 .chart-period-select {
+    width: auto !important;
 
-    width:
-        auto
-        !important;
-
-    min-width:
-        92px
-        !important;
-
-    min-height:
-        30px
-        !important;
+    min-width: 105px !important;
+    min-height: 34px !important;
 
     padding:
-        .28rem 1.8rem .28rem .45rem
+        .35rem
+        1.9rem
+        .35rem
+        .5rem
         !important;
 
-    font-size:
-        .54rem
-        !important;
+    font-size: .75rem !important;
 }
 
 
 .chart-summary-grid {
-
-    display:
-        grid;
+    display: grid;
 
     grid-template-columns:
         repeat(
@@ -1383,148 +886,147 @@ body {
             minmax(0, 1fr)
         );
 
-    gap:
-        .42rem;
+    gap: .5rem;
 
-    margin-bottom:
-        .65rem;
+    margin-bottom: .75rem;
 }
 
 
 .chart-summary-item {
+    min-width: 0;
 
-    min-width:
-        0;
+    padding: .55rem .6rem;
 
-    padding:
-        .46rem .5rem;
+    background: var(--data-panel-dark);
 
-    background:
-        var(--data-panel-dark);
-
-    border:
-        1px solid
-        var(--data-border-soft);
-
-    border-radius:
-        6px;
+    border: 1px solid var(--data-border-soft);
+    border-radius: 6px;
 }
 
 
 .chart-summary-item span {
+    display: block;
 
-    display:
-        block;
+    margin-bottom: .1rem;
 
-    margin-bottom:
-        .08rem;
+    color: var(--data-muted);
 
-    color:
-        var(--data-muted);
-
-    font-size:
-        .46rem;
+    font-size: .7rem;
 }
 
 
 .chart-summary-item strong {
+    display: block;
 
-    display:
-        block;
+    color: #ffffff;
 
-    color:
-        #ffffff;
+    font-size: .8125rem;
 
-    font-size:
-        .6rem;
+    font-variant-numeric: tabular-nums;
 
-    font-variant-numeric:
-        tabular-nums;
-
-    overflow-wrap:
-        anywhere;
+    overflow-wrap: anywhere;
 }
 
 
+/* ============================================================
+   5.3.1 HORIZONTALLY SCROLLABLE CHART
+============================================================ */
+
 .chart-frame {
+    position: relative;
 
-    position:
-        relative;
+    width: 100%;
+    max-width: 100%;
 
-    width:
-        100%;
+    overflow-x: auto;
+    overflow-y: hidden;
 
-    min-width:
-        0;
+    padding-top: .35rem;
+    padding-bottom: .6rem;
 
-    height:
-        360px;
+    border-top: 1px solid var(--data-border-soft);
 
-    min-height:
-        360px;
+    -webkit-overflow-scrolling: touch;
 
-    overflow:
-        hidden;
+    scrollbar-width: thin;
 
-    padding:
-        .2rem 0 0;
+    scrollbar-color:
+        var(--data-blue)
+        var(--data-panel-dark);
+}
 
-    border-top:
-        1px solid
-        var(--data-border-soft);
+
+.chart-frame::-webkit-scrollbar {
+    height: 10px;
+}
+
+
+.chart-frame::-webkit-scrollbar-track {
+    background: var(--data-panel-dark);
+
+    border-radius: 999px;
+}
+
+
+.chart-frame::-webkit-scrollbar-thumb {
+    background: var(--data-blue);
+
+    border-radius: 999px;
+}
+
+
+.chart-frame::-webkit-scrollbar-thumb:hover {
+    background: var(--data-blue-hover);
+}
+
+
+/*
+This element is deliberately wider than its visible parent.
+
+JavaScript adjusts its width depending on the number of
+observations.
+
+That provides an actual horizontal timeline instead of
+squeezing hundreds of observations into one narrow chart.
+*/
+
+.chart-scroll-content {
+    position: relative;
+
+    width: 100%;
+    min-width: 950px;
+
+    height: 330px;
 }
 
 
 #historicalPriceChart {
+    display: block;
 
-    display:
-        block;
-
-    width:
-        100%
-        !important;
-
-    max-width:
-        100%;
-
-    height:
-        100%
-        !important;
+    width: 100% !important;
+    height: 100% !important;
 }
 
 
 .chart-status {
+    display: flex;
+    align-items: flex-start;
 
-    display:
-        flex;
+    gap: .4rem;
 
-    align-items:
-        flex-start;
+    margin-top: .55rem;
 
-    gap:
-        .35rem;
+    color: var(--data-muted);
 
-    margin-top:
-        .45rem;
-
-    color:
-        var(--data-muted);
-
-    font-size:
-        .49rem;
-
-    line-height:
-        1.4;
+    font-size: .75rem;
+    line-height: 1.45;
 }
 
 
 .chart-status i {
+    margin-top: .15rem;
 
-    margin-top:
-        .1rem;
-
-    color:
-        var(--data-blue);
+    color: var(--data-blue);
 }
 
 
@@ -1533,152 +1035,98 @@ body {
 ============================================================ */
 
 #market-condition {
-
-    scroll-margin-top:
-        90px;
+    scroll-margin-top: 90px;
 }
 
 
 .market-condition-panel {
+    min-width: 0;
 
-    min-width:
-        0;
+    padding: 1rem;
 
-    padding:
-        .78rem .88rem;
-
-    background:
-        var(--data-panel-soft);
+    background: var(--data-panel-soft);
 }
 
 
 .market-condition-eyebrow {
+    margin-bottom: .3rem;
 
-    margin-bottom:
-        .25rem;
+    color: var(--data-green);
 
-    color:
-        var(--data-green);
+    font-size: .7rem;
+    font-weight: 800;
 
-    font-size:
-        .48rem;
-
-    font-weight:
-        800;
-
-    letter-spacing:
-        .06em;
-
-    text-transform:
-        uppercase;
+    letter-spacing: .06em;
+    text-transform: uppercase;
 }
 
 
 .market-condition-heading-row {
+    display: flex;
 
-    display:
-        flex;
+    align-items: flex-start;
+    justify-content: space-between;
 
-    align-items:
-        flex-start;
+    gap: .8rem;
 
-    justify-content:
-        space-between;
-
-    gap:
-        .7rem;
-
-    margin-bottom:
-        .55rem;
+    margin-bottom: .7rem;
 }
 
 
 .market-condition-title {
+    margin: 0 0 .2rem;
 
-    margin:
-        0 0 .16rem;
+    color: var(--data-text);
 
-    color:
-        var(--data-text);
+    font-size: 1.1rem;
+    font-weight: 800;
 
-    font-size:
-        1rem;
-
-    font-weight:
-        800;
-
-    overflow-wrap:
-        anywhere;
+    overflow-wrap: anywhere;
 }
 
 
 .market-condition-context {
+    margin: 0;
 
-    margin:
-        0;
+    color: var(--data-muted);
 
-    color:
-        var(--data-muted);
-
-    font-size:
-        .54rem;
-
-    line-height:
-        1.4;
+    font-size: .75rem;
+    line-height: 1.45;
 }
 
 
 .market-condition-status {
+    display: inline-flex;
+    align-items: center;
 
-    display:
-        inline-flex;
+    gap: .25rem;
 
-    align-items:
-        center;
+    flex: 0 0 auto;
 
-    gap:
-        .2rem;
+    padding: .25rem .45rem;
 
-    flex:
-        0 0 auto;
+    color: #a8f3d0;
 
-    padding:
-        .2rem .38rem;
-
-    color:
-        #a8f3d0;
-
-    background:
-        rgba(50, 201, 139, .09);
+    background: rgba(50, 201, 139, .09);
 
     border:
         1px solid
         rgba(50, 201, 139, .24);
 
-    border-radius:
-        999px;
+    border-radius: 999px;
 
-    font-size:
-        .47rem;
-
-    font-weight:
-        700;
+    font-size: .7rem;
+    font-weight: 700;
 }
 
 
 .market-condition-description {
+    margin-bottom: .65rem;
 
-    margin-bottom:
-        .55rem;
+    color: #bcc8d4;
 
-    color:
-        #bcc8d4;
-
-    font-size:
-        .56rem;
-
-    line-height:
-        1.5;
+    font-size: .8125rem;
+    line-height: 1.5;
 }
 
 
@@ -1687,44 +1135,27 @@ body {
 ============================================================ */
 
 .market-condition-readiness {
+    display: flex;
 
-    display:
-        flex;
+    align-items: flex-start;
 
-    align-items:
-        flex-start;
+    gap: .5rem;
 
-    gap:
-        .45rem;
+    margin: .7rem 0;
+    padding: .65rem;
 
-    margin:
-        .6rem 0;
+    border: 1px solid var(--data-border-soft);
+    border-radius: 6px;
 
-    padding:
-        .5rem .55rem;
-
-    border:
-        1px solid
-        var(--data-border-soft);
-
-    border-radius:
-        6px;
-
-    font-size:
-        .53rem;
-
-    line-height:
-        1.45;
+    font-size: .75rem;
+    line-height: 1.5;
 }
 
 
 .market-condition-readiness.ready {
+    color: #bdeed8;
 
-    color:
-        #bdeed8;
-
-    background:
-        rgba(50, 201, 139, .08);
+    background: rgba(50, 201, 139, .08);
 
     border-color:
         rgba(50, 201, 139, .22);
@@ -1732,12 +1163,9 @@ body {
 
 
 .market-condition-readiness.warning {
+    color: #f5deb1;
 
-    color:
-        #f5deb1;
-
-    background:
-        rgba(211, 168, 84, .08);
+    background: rgba(211, 168, 84, .08);
 
     border-color:
         rgba(211, 168, 84, .22);
@@ -1745,71 +1173,47 @@ body {
 
 
 /* ============================================================
-   5.4.2 OBSERVATION REQUIREMENT PROGRESS
+   5.4.2 REQUIREMENT PROGRESS
 ============================================================ */
 
 .market-condition-progress {
-
-    margin-top:
-        .38rem;
+    margin-top: .45rem;
 }
 
 
 .market-condition-progress-track {
+    width: 100%;
+    height: 6px;
 
-    width:
-        100%;
+    overflow: hidden;
 
-    height:
-        5px;
+    background: var(--data-panel-dark);
 
-    overflow:
-        hidden;
-
-    background:
-        var(--data-panel-dark);
-
-    border:
-        1px solid
-        var(--data-border-soft);
-
-    border-radius:
-        999px;
+    border: 1px solid var(--data-border-soft);
+    border-radius: 999px;
 }
 
 
 .market-condition-progress-bar {
+    height: 100%;
 
-    height:
-        100%;
+    background: var(--data-blue);
 
-    background:
-        var(--data-blue);
-
-    border-radius:
-        999px;
+    border-radius: 999px;
 }
 
 
 .market-condition-progress-label {
+    display: flex;
+    justify-content: space-between;
 
-    display:
-        flex;
+    gap: .5rem;
 
-    justify-content:
-        space-between;
+    margin-top: .3rem;
 
-    gap:
-        .5rem;
+    color: var(--data-muted);
 
-    margin-top:
-        .22rem;
-
-    color:
-        var(--data-muted);
-
-    font-size:
-        .46rem;
+    font-size: .7rem;
 }
 
 
@@ -1818,9 +1222,7 @@ body {
 ============================================================ */
 
 .market-condition-summary-grid {
-
-    display:
-        grid;
+    display: grid;
 
     grid-template-columns:
         repeat(
@@ -1828,63 +1230,43 @@ body {
             minmax(0, 1fr)
         );
 
-    gap:
-        .42rem;
+    gap: .5rem;
 
-    margin:
-        .55rem 0;
+    margin: .65rem 0;
 }
 
 
 .market-condition-summary-item {
+    min-width: 0;
 
-    min-width:
-        0;
+    padding: .6rem;
 
-    padding:
-        .48rem .52rem;
+    background: var(--data-panel-dark);
 
-    background:
-        var(--data-panel-dark);
-
-    border:
-        1px solid
-        var(--data-border-soft);
-
-    border-radius:
-        6px;
+    border: 1px solid var(--data-border-soft);
+    border-radius: 6px;
 }
 
 
 .market-condition-summary-item span {
+    display: block;
 
-    display:
-        block;
+    margin-bottom: .1rem;
 
-    margin-bottom:
-        .08rem;
+    color: var(--data-muted);
 
-    color:
-        var(--data-muted);
-
-    font-size:
-        .48rem;
+    font-size: .7rem;
 }
 
 
 .market-condition-summary-item strong {
+    display: block;
 
-    display:
-        block;
+    color: #ffffff;
 
-    color:
-        #ffffff;
+    font-size: .8125rem;
 
-    font-size:
-        .58rem;
-
-    overflow-wrap:
-        anywhere;
+    overflow-wrap: anywhere;
 }
 
 
@@ -1893,48 +1275,33 @@ body {
 ============================================================ */
 
 .market-condition-action {
-
-    margin:
-        .65rem 0;
+    margin: .8rem 0;
 }
 
 
 .market-condition-action .data-primary-button {
-
-    width:
-        100%;
+    width: 100%;
 }
 
 
 .market-condition-action-note {
+    margin: .45rem 0 0;
 
-    margin:
-        .35rem 0 0;
+    color: var(--data-muted);
 
-    color:
-        var(--data-muted);
+    font-size: .75rem;
+    line-height: 1.45;
 
-    font-size:
-        .48rem;
-
-    line-height:
-        1.45;
-
-    text-align:
-        center;
+    text-align: center;
 }
 
 
 .market-condition-divider {
+    height: 1px;
 
-    height:
-        1px;
+    margin: .8rem 0;
 
-    margin:
-        .65rem 0;
-
-    background:
-        var(--data-border);
+    background: var(--data-border);
 }
 
 
@@ -1943,115 +1310,74 @@ body {
 ============================================================ */
 
 .market-condition-result-card {
+    padding: .8rem;
 
-    padding:
-        .65rem;
+    background: var(--data-panel-dark);
 
-    background:
-        var(--data-panel-dark);
-
-    border:
-        1px solid
-        var(--data-border);
-
-    border-radius:
-        7px;
+    border: 1px solid var(--data-border);
+    border-radius: 7px;
 }
 
 
 .market-condition-result-header {
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
+    justify-content: space-between;
 
-    align-items:
-        center;
+    gap: .7rem;
 
-    justify-content:
-        space-between;
-
-    gap:
-        .6rem;
-
-    margin-bottom:
-        .6rem;
+    margin-bottom: .75rem;
 }
 
 
 .market-condition-result-label {
+    display: block;
 
-    display:
-        block;
+    margin-bottom: .1rem;
 
-    margin-bottom:
-        .08rem;
+    color: var(--data-muted);
 
-    color:
-        var(--data-muted);
+    font-size: .7rem;
 
-    font-size:
-        .48rem;
-
-    text-transform:
-        uppercase;
-
-    letter-spacing:
-        .04em;
+    text-transform: uppercase;
+    letter-spacing: .04em;
 }
 
 
 .market-condition-result-name {
+    color: #ffffff;
 
-    color:
-        #ffffff;
-
-    font-size:
-        .78rem;
-
-    font-weight:
-        800;
+    font-size: .95rem;
+    font-weight: 800;
 }
 
 
 .market-condition-result-icon {
+    display: inline-flex;
 
-    display:
-        inline-flex;
+    align-items: center;
+    justify-content: center;
 
-    align-items:
-        center;
+    flex: 0 0 auto;
 
-    justify-content:
-        center;
+    width: 38px;
+    height: 38px;
 
-    flex:
-        0 0 auto;
-
-    width:
-        34px;
-
-    height:
-        34px;
-
-    background:
-        var(--data-blue-soft);
+    background: var(--data-blue-soft);
 
     border:
         1px solid
         rgba(79, 134, 182, .25);
 
-    border-radius:
-        8px;
+    border-radius: 8px;
 
-    font-size:
-        .8rem;
+    font-size: .95rem;
 }
 
 
 .market-condition-stat-grid {
-
-    display:
-        grid;
+    display: grid;
 
     grid-template-columns:
         repeat(
@@ -2059,18 +1385,14 @@ body {
             minmax(0, 1fr)
         );
 
-    gap:
-        .4rem;
+    gap: .5rem;
 }
 
 
 .market-condition-stat {
+    min-width: 0;
 
-    min-width:
-        0;
-
-    padding:
-        .42rem .48rem;
+    padding: .55rem .6rem;
 
     background:
         rgba(255, 255, 255, .015);
@@ -2079,72 +1401,48 @@ body {
         1px solid
         var(--data-border-soft);
 
-    border-radius:
-        5px;
+    border-radius: 5px;
 }
 
 
 .market-condition-stat span {
+    display: block;
 
-    display:
-        block;
+    margin-bottom: .1rem;
 
-    margin-bottom:
-        .08rem;
+    color: var(--data-muted);
 
-    color:
-        var(--data-muted);
-
-    font-size:
-        .47rem;
+    font-size: .7rem;
 }
 
 
 .market-condition-stat strong {
+    display: block;
 
-    display:
-        block;
+    color: #ffffff;
 
-    color:
-        #ffffff;
+    font-size: .8125rem;
 
-    font-size:
-        .56rem;
-
-    overflow-wrap:
-        anywhere;
+    overflow-wrap: anywhere;
 }
 
 
 .market-condition-subheading {
+    margin-top: .75rem;
+    margin-bottom: .25rem;
 
-    margin-top:
-        .6rem;
+    color: #ffffff;
 
-    margin-bottom:
-        .18rem;
-
-    color:
-        #ffffff;
-
-    font-size:
-        .55rem;
-
-    font-weight:
-        700;
+    font-size: .8125rem;
+    font-weight: 700;
 }
 
 
 .market-condition-copy {
+    color: var(--data-muted);
 
-    color:
-        var(--data-muted);
-
-    font-size:
-        .52rem;
-
-    line-height:
-        1.5;
+    font-size: .8125rem;
+    line-height: 1.55;
 }
 
 
@@ -2153,108 +1451,74 @@ body {
 ============================================================ */
 
 .market-condition-details {
+    width: 100%;
 
-    width:
-        100%;
+    margin-top: .6rem;
 
-    margin-top:
-        .48rem;
+    background: var(--data-panel-dark);
 
-    background:
-        var(--data-panel-dark);
-
-    border:
-        1px solid
-        var(--data-border-soft);
-
-    border-radius:
-        6px;
+    border: 1px solid var(--data-border-soft);
+    border-radius: 6px;
 }
 
 
 .market-condition-details summary {
+    cursor: pointer;
 
-    cursor:
-        pointer;
+    list-style: none;
 
-    list-style:
-        none;
+    padding: .7rem;
 
-    padding:
-        .55rem .58rem;
+    color: #e7eef5;
 
-    color:
-        #e7eef5;
-
-    font-size:
-        .53rem;
-
-    font-weight:
-        700;
+    font-size: .8125rem;
+    font-weight: 700;
 }
 
 
 .market-condition-details summary::-webkit-details-marker {
-
-    display:
-        none;
+    display: none;
 }
 
 
 .market-condition-details summary::after {
+    content: "+";
 
-    content:
-        "+";
+    float: right;
 
-    float:
-        right;
+    margin-left: .4rem;
 
-    margin-left:
-        .4rem;
-
-    color:
-        var(--data-blue);
+    color: var(--data-blue);
 }
 
 
 .market-condition-details[open] summary::after {
-
-    content:
-        "−";
+    content: "−";
 }
 
 
 .market-condition-details-body {
-
-    padding:
-        0 .58rem .58rem;
+    padding: 0 .7rem .7rem;
 }
 
 
 .market-condition-analysis-flow {
+    display: grid;
 
-    display:
-        grid;
-
-    gap:
-        .4rem;
+    gap: .5rem;
 }
 
 
 .market-condition-analysis-step {
-
-    display:
-        grid;
+    display: grid;
 
     grid-template-columns:
         auto
         minmax(0, 1fr);
 
-    gap:
-        .45rem;
+    gap: .55rem;
 
-    padding:
-        .45rem;
+    padding: .6rem;
 
     background:
         rgba(255, 255, 255, .012);
@@ -2263,87 +1527,55 @@ body {
         1px solid
         var(--data-border-soft);
 
-    border-radius:
-        5px;
+    border-radius: 5px;
 }
 
 
 .market-condition-step-number {
+    display: inline-flex;
 
-    display:
-        inline-flex;
+    align-items: center;
+    justify-content: center;
 
-    align-items:
-        center;
+    width: 24px;
+    height: 24px;
 
-    justify-content:
-        center;
+    color: #ffffff;
+    background: var(--data-blue);
 
-    width:
-        20px;
+    border-radius: 50%;
 
-    height:
-        20px;
-
-    color:
-        #ffffff;
-
-    background:
-        var(--data-blue);
-
-    border-radius:
-        50%;
-
-    font-size:
-        .47rem;
-
-    font-weight:
-        800;
+    font-size: .7rem;
+    font-weight: 800;
 }
 
 
 .market-condition-analysis-step strong {
+    display: block;
 
-    display:
-        block;
+    margin-bottom: .1rem;
 
-    margin-bottom:
-        .08rem;
+    color: #ffffff;
 
-    color:
-        #ffffff;
-
-    font-size:
-        .51rem;
+    font-size: .8125rem;
 }
 
 
 .market-condition-analysis-step p {
+    margin: 0;
 
-    margin:
-        0;
+    color: var(--data-muted);
 
-    color:
-        var(--data-muted);
-
-    font-size:
-        .48rem;
-
-    line-height:
-        1.45;
+    font-size: .75rem;
+    line-height: 1.5;
 }
 
 
 .market-condition-backend {
+    margin-top: .55rem;
+    padding: .6rem;
 
-    margin-top:
-        .45rem;
-
-    padding:
-        .45rem .5rem;
-
-    color:
-        var(--data-muted);
+    color: var(--data-muted);
 
     background:
         rgba(79, 134, 182, .05);
@@ -2352,21 +1584,15 @@ body {
         1px solid
         var(--data-border-soft);
 
-    border-radius:
-        5px;
+    border-radius: 5px;
 
-    font-size:
-        .48rem;
-
-    line-height:
-        1.5;
+    font-size: .75rem;
+    line-height: 1.55;
 }
 
 
 .market-condition-backend code {
-
-    color:
-        #9fc2dd;
+    color: #9fc2dd;
 }
 
 
@@ -2375,19 +1601,14 @@ body {
 ============================================================ */
 
 .market-condition-classification-grid {
+    display: grid;
 
-    display:
-        grid;
-
-    gap:
-        .4rem;
+    gap: .5rem;
 }
 
 
 .market-condition-classification {
-
-    padding:
-        .48rem;
+    padding: .6rem;
 
     background:
         rgba(255, 255, 255, .012);
@@ -2396,15 +1617,12 @@ body {
         1px solid
         var(--data-border-soft);
 
-    border-radius:
-        5px;
+    border-radius: 5px;
 }
 
 
 .market-condition-classification.active {
-
-    border-color:
-        var(--data-blue);
+    border-color: var(--data-blue);
 
     box-shadow:
         inset 3px 0 0
@@ -2413,91 +1631,58 @@ body {
 
 
 .market-condition-classification-heading {
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
+    justify-content: space-between;
 
-    align-items:
-        center;
-
-    justify-content:
-        space-between;
-
-    gap:
-        .4rem;
+    gap: .4rem;
 }
 
 
 .market-condition-classification strong {
+    color: #ffffff;
 
-    color:
-        #ffffff;
-
-    font-size:
-        .52rem;
+    font-size: .8125rem;
 }
 
 
 .market-condition-classification p {
+    margin: .25rem 0 0;
 
-    margin:
-        .18rem 0 0;
+    color: var(--data-muted);
 
-    color:
-        var(--data-muted);
-
-    font-size:
-        .48rem;
-
-    line-height:
-        1.45;
+    font-size: .75rem;
+    line-height: 1.5;
 }
 
 
 .market-condition-current {
+    display: inline-flex;
 
-    display:
-        inline-flex;
+    padding: .18rem .35rem;
 
-    padding:
-        .14rem .3rem;
+    color: #ffffff;
+    background: var(--data-blue);
 
-    color:
-        #ffffff;
+    border-radius: 999px;
 
-    background:
-        var(--data-blue);
-
-    border-radius:
-        999px;
-
-    font-size:
-        .43rem;
-
-    font-weight:
-        700;
+    font-size: .65rem;
+    font-weight: 700;
 }
 
 
 .market-condition-notice {
+    display: flex;
 
-    display:
-        flex;
+    align-items: flex-start;
 
-    align-items:
-        flex-start;
+    gap: .5rem;
 
-    gap:
-        .42rem;
+    margin-top: .65rem;
+    padding: .65rem;
 
-    margin-top:
-        .5rem;
-
-    padding:
-        .5rem .55rem;
-
-    color:
-        var(--data-muted);
+    color: var(--data-muted);
 
     background:
         rgba(211, 168, 84, .035);
@@ -2506,21 +1691,15 @@ body {
         1px solid
         rgba(211, 168, 84, .17);
 
-    border-radius:
-        6px;
+    border-radius: 6px;
 
-    font-size:
-        .49rem;
-
-    line-height:
-        1.5;
+    font-size: .75rem;
+    line-height: 1.5;
 }
 
 
 .market-condition-notice strong {
-
-    color:
-        #e7eef5;
+    color: #e7eef5;
 }
 
 
@@ -2529,88 +1708,61 @@ body {
 ============================================================ */
 
 .dataset-use {
+    width: 100%;
 
-    width:
-        100%;
+    padding: .9rem 1rem;
 
-    padding:
-        .72rem .85rem .82rem;
-
-    border-top:
-        1px solid
-        var(--data-border);
+    border-top: 1px solid var(--data-border);
 }
 
 
 .dataset-use h3 {
+    margin: 0 0 .1rem;
 
-    margin:
-        0 0 .08rem;
+    color: var(--data-text);
 
-    color:
-        var(--data-text);
-
-    font-size:
-        .68rem;
+    font-size: .95rem;
 }
 
 
 .dataset-use p {
+    margin: 0 0 .65rem;
 
-    margin:
-        0 0 .5rem;
+    color: var(--data-muted);
 
-    color:
-        var(--data-muted);
-
-    font-size:
-        .53rem;
+    font-size: .8125rem;
 }
 
 
 .model-selector-layout {
-
-    display:
-        grid;
+    display: grid;
 
     grid-template-columns:
         minmax(0, 1fr)
         auto;
 
-    align-items:
-        end;
+    align-items: end;
 
-    gap:
-        .5rem;
+    gap: .6rem;
 
-    width:
-        100%;
+    width: 100%;
 }
 
 
 .model-selector-layout > div {
-
-    min-width:
-        0;
+    min-width: 0;
 }
 
 
 .model-selector-layout label {
+    display: block;
 
-    display:
-        block;
+    margin-bottom: .3rem;
 
-    margin-bottom:
-        .2rem;
+    color: #d7e0eb;
 
-    color:
-        #d7e0eb;
-
-    font-size:
-        .53rem;
-
-    font-weight:
-        700;
+    font-size: .75rem;
+    font-weight: 700;
 }
 
 
@@ -2619,81 +1771,55 @@ body {
 ============================================================ */
 
 .workspace-details {
+    width: 100%;
 
-    width:
-        100%;
-
-    border-top:
-        1px solid
-        var(--data-border);
+    border-top: 1px solid var(--data-border);
 }
 
 
 .workspace-details summary {
+    cursor: pointer;
 
-    cursor:
-        pointer;
+    list-style: none;
 
-    list-style:
-        none;
+    width: 100%;
 
-    width:
-        100%;
+    padding: .8rem 1rem;
 
-    padding:
-        .65rem .85rem;
+    color: #e7eef5;
 
-    color:
-        #e7eef5;
+    font-size: .8125rem;
+    font-weight: 700;
 
-    font-size:
-        .59rem;
-
-    font-weight:
-        700;
-
-    overflow-wrap:
-        anywhere;
+    overflow-wrap: anywhere;
 }
 
 
 .workspace-details summary::-webkit-details-marker {
-
-    display:
-        none;
+    display: none;
 }
 
 
 .workspace-details summary::after {
+    content: "+";
 
-    content:
-        "+";
+    float: right;
 
-    float:
-        right;
+    margin-left: .5rem;
 
-    margin-left:
-        .5rem;
-
-    color:
-        var(--data-blue);
+    color: var(--data-blue);
 }
 
 
 .workspace-details[open] summary::after {
-
-    content:
-        "−";
+    content: "−";
 }
 
 
 .workspace-details-body {
+    width: 100%;
 
-    width:
-        100%;
-
-    padding:
-        0 .85rem .85rem;
+    padding: 0 1rem 1rem;
 }
 
 
@@ -2702,9 +1828,7 @@ body {
 ============================================================ */
 
 .model-detail-grid {
-
-    display:
-        grid;
+    display: grid;
 
     grid-template-columns:
         repeat(
@@ -2712,98 +1836,64 @@ body {
             minmax(0, 1fr)
         );
 
-    gap:
-        .6rem;
+    gap: .7rem;
 
-    width:
-        100%;
+    width: 100%;
 }
 
 
 .model-detail-box {
+    min-width: 0;
 
-    min-width:
-        0;
+    padding: .8rem;
 
-    padding:
-        .65rem;
+    background: var(--data-panel-dark);
 
-    background:
-        var(--data-panel-dark);
-
-    border:
-        1px solid
-        var(--data-border-soft);
-
-    border-radius:
-        6px;
+    border: 1px solid var(--data-border-soft);
+    border-radius: 6px;
 }
 
 
 .model-detail-box h4 {
+    margin: 0 0 .3rem;
 
-    margin:
-        0 0 .22rem;
+    color: var(--data-text);
 
-    color:
-        var(--data-text);
-
-    font-size:
-        .59rem;
+    font-size: .875rem;
 }
 
 
 .model-detail-box p {
+    margin: 0;
 
-    margin:
-        0;
+    color: var(--data-muted);
 
-    color:
-        var(--data-muted);
-
-    font-size:
-        .54rem;
-
-    line-height:
-        1.45;
+    font-size: .8125rem;
+    line-height: 1.5;
 }
 
 
 .model-status {
+    display: inline-flex;
+    align-items: center;
 
-    display:
-        inline-flex;
+    max-width: 100%;
 
-    align-items:
-        center;
+    margin-left: .35rem;
 
-    max-width:
-        100%;
+    padding: .2rem .4rem;
 
-    margin-left:
-        .35rem;
+    border-radius: 999px;
 
-    padding:
-        .17rem .34rem;
+    font-size: .7rem;
+    font-weight: 700;
 
-    border-radius:
-        999px;
-
-    font-size:
-        .47rem;
-
-    font-weight:
-        700;
-
-    vertical-align:
-        middle;
+    vertical-align: middle;
 }
 
 
 .model-status.ready {
-
-    color:
-        #a8f3d0;
+    color: #a8f3d0;
 
     background:
         rgba(50, 201, 139, .10);
@@ -2815,9 +1905,7 @@ body {
 
 
 .model-status.experimental {
-
-    color:
-        #ffe6ac;
+    color: #ffe6ac;
 
     background:
         rgba(211, 168, 84, .10);
@@ -2829,9 +1917,7 @@ body {
 
 
 .model-status.catalogued {
-
-    color:
-        #c5d0dc;
+    color: #c5d0dc;
 
     background:
         rgba(149, 166, 184, .10);
@@ -2843,132 +1929,92 @@ body {
 
 
 .requirement-list {
+    display: flex;
 
-    display:
-        flex;
+    flex-wrap: wrap;
 
-    flex-wrap:
-        wrap;
-
-    gap:
-        .28rem;
+    gap: .35rem;
 }
 
 
 .requirement {
+    max-width: 100%;
 
-    max-width:
-        100%;
+    padding: .25rem .4rem;
 
-    padding:
-        .2rem .34rem;
-
-    color:
-        #d8e1ea;
-
-    background:
-        #122031;
+    color: #d8e1ea;
+    background: #122031;
 
     border:
         1px solid
         var(--data-border-soft);
 
-    border-radius:
-        5px;
+    border-radius: 5px;
 
-    font-size:
-        .5rem;
+    font-size: .75rem;
 
-    overflow-wrap:
-        anywhere;
+    overflow-wrap: anywhere;
 }
 
 
 /* ============================================================
-   6.2 SMALL TABLES USED BY MODEL DETAILS / IMPORT HISTORY
+   6.2 SMALL TABLES
 ============================================================ */
 
 .data-table-wrapper {
+    width: 100%;
+    max-width: 100%;
 
-    width:
-        100%;
+    overflow-x: auto;
+    overflow-y: auto;
 
-    max-width:
-        100%;
-
-    overflow-x:
-        auto;
-
-    overflow-y:
-        auto;
-
-    max-height:
-        390px;
+    max-height: 390px;
 
     border:
         1px solid
         var(--data-border-soft);
 
-    border-radius:
-        6px;
+    border-radius: 6px;
 
-    -webkit-overflow-scrolling:
-        touch;
+    -webkit-overflow-scrolling: touch;
 }
 
 
 .data-table {
+    width: 100%;
 
-    width:
-        100%;
+    margin: 0;
 
-    margin:
-        0;
+    border-collapse: collapse;
 
-    border-collapse:
-        collapse;
+    color: #edf3f8;
 
-    color:
-        #edf3f8;
-
-    font-size:
-        .55rem;
+    font-size: .8125rem;
 }
 
 
 .data-table thead th {
+    position: sticky;
 
-    position:
-        sticky;
+    top: 0;
 
-    top:
-        0;
+    z-index: 2;
 
-    z-index:
-        2;
+    padding: .55rem .6rem;
 
-    padding:
-        .46rem .52rem;
-
-    color:
-        #cad6e2;
-
-    background:
-        #1d2c40;
+    color: #cad6e2;
+    background: #1d2c40;
 
     border-bottom:
         1px solid
         var(--data-border);
 
-    white-space:
-        nowrap;
+    white-space: nowrap;
 }
 
 
 .data-table tbody td {
-
-    padding:
-        .42rem .52rem;
+    padding: .5rem .6rem;
 
     border-bottom:
         1px solid
@@ -2977,22 +2023,17 @@ body {
 
 
 .data-table tbody tr:hover {
-
     background:
         rgba(255, 255, 255, .025);
 }
 
 
 .data-table .numeric {
+    text-align: right;
 
-    text-align:
-        right;
+    font-variant-numeric: tabular-nums;
 
-    font-variant-numeric:
-        tabular-nums;
-
-    white-space:
-        nowrap;
+    white-space: nowrap;
 }
 
 
@@ -3001,93 +2042,62 @@ body {
 ============================================================ */
 
 .recent-imports {
+    width: 100%;
 
-    width:
-        100%;
+    margin-top: 1rem;
 
-    margin-top:
-        1rem;
+    overflow: hidden;
 
-    overflow:
-        hidden;
+    background: var(--data-panel);
 
-    background:
-        var(--data-panel);
-
-    border:
-        1px solid
-        var(--data-border);
-
-    border-radius:
-        8px;
+    border: 1px solid var(--data-border);
+    border-radius: 8px;
 }
 
 
 .recent-imports summary {
+    cursor: pointer;
 
-    cursor:
-        pointer;
+    list-style: none;
 
-    list-style:
-        none;
+    width: 100%;
 
-    width:
-        100%;
+    padding: .8rem 1rem;
 
-    padding:
-        .66rem .85rem;
+    color: #e8eef5;
 
-    color:
-        #e8eef5;
+    font-size: .8125rem;
+    font-weight: 700;
 
-    font-size:
-        .59rem;
-
-    font-weight:
-        700;
-
-    overflow-wrap:
-        anywhere;
+    overflow-wrap: anywhere;
 }
 
 
 .recent-imports summary::-webkit-details-marker {
-
-    display:
-        none;
+    display: none;
 }
 
 
 .recent-imports summary::after {
+    content: "+";
 
-    content:
-        "+";
+    float: right;
 
-    float:
-        right;
+    margin-left: .5rem;
 
-    margin-left:
-        .5rem;
-
-    color:
-        var(--data-blue);
+    color: var(--data-blue);
 }
 
 
 .recent-imports[open] summary::after {
-
-    content:
-        "−";
+    content: "−";
 }
 
 
 .recent-imports-body {
+    width: 100%;
 
-    width:
-        100%;
-
-    padding:
-        0 .85rem .85rem;
+    padding: 0 1rem 1rem;
 }
 
 
@@ -3096,60 +2106,39 @@ body {
 ============================================================ */
 
 .data-empty {
+    width: 100%;
 
-    width:
-        100%;
+    padding: 2rem 1rem;
 
-    padding:
-        2rem 1rem;
+    text-align: center;
 
-    text-align:
-        center;
+    background: var(--data-panel);
 
-    background:
-        var(--data-panel);
-
-    border:
-        1px solid
-        var(--data-border);
-
-    border-radius:
-        8px;
+    border: 1px solid var(--data-border);
+    border-radius: 8px;
 }
 
 
 .data-empty h3 {
+    margin-bottom: .35rem;
 
-    margin-bottom:
-        .3rem;
+    color: var(--data-text);
 
-    color:
-        var(--data-text);
+    font-size: 1rem;
 
-    font-size:
-        .82rem;
-
-    overflow-wrap:
-        anywhere;
+    overflow-wrap: anywhere;
 }
 
 
 .data-empty p {
+    max-width: 650px;
 
-    max-width:
-        620px;
+    margin: 0 auto;
 
-    margin:
-        0 auto;
+    color: var(--data-muted);
 
-    color:
-        var(--data-muted);
-
-    font-size:
-        .6rem;
-
-    line-height:
-        1.5;
+    font-size: .8125rem;
+    line-height: 1.5;
 }
 
 
@@ -3160,27 +2149,29 @@ body {
 @media (min-width: 1400px) {
 
     .data-workspace {
-
-        max-width:
-            1480px;
+        max-width: 1480px;
     }
 
+
+    /*
+    Previous layout:
+        1.42fr / .78fr
+
+    New layout:
+        chart slightly narrower
+        Market Condition slightly wider
+    */
 
     .dataset-main {
-
         grid-template-columns:
-            minmax(0, 1.42fr)
-            minmax(380px, .78fr);
+            minmax(0, .95fr)
+            minmax(460px, 1.05fr);
     }
 
 
-    .chart-frame {
-
-        height:
-            400px;
-
-        min-height:
-            400px;
+    .chart-scroll-content {
+        min-width: 1050px;
+        height: 340px;
     }
 
 }
@@ -3193,7 +2184,6 @@ body {
 @media (max-width: 991.98px) {
 
     .data-import-grid {
-
         grid-template-columns:
             repeat(
                 2,
@@ -3203,26 +2193,20 @@ body {
 
 
     .data-import-grid > .data-primary-button {
+        grid-column: 1 / -1;
 
-        grid-column:
-            1 / -1;
-
-        width:
-            100%;
+        width: 100%;
     }
 
 
     .dataset-main {
-
         grid-template-columns:
             minmax(0, 1fr);
     }
 
 
     .dataset-chart-column {
-
-        border-right:
-            0;
+        border-right: 0;
 
         border-bottom:
             1px solid
@@ -3231,7 +2215,6 @@ body {
 
 
     .dataset-header {
-
         grid-template-columns:
             repeat(
                 4,
@@ -3241,28 +2224,21 @@ body {
 
 
     .dataset-title-area {
-
-        grid-column:
-            1 / -1;
+        grid-column: 1 / -1;
     }
 
 
     .dataset-switcher {
-
-        width:
-            100%;
+        width: 100%;
     }
 
 
     .dataset-switcher select {
-
-        width:
-            100%;
+        width: 100%;
     }
 
 
     .chart-summary-grid {
-
         grid-template-columns:
             repeat(
                 2,
@@ -3272,12 +2248,16 @@ body {
 
 
     .market-condition-stat-grid {
-
         grid-template-columns:
             repeat(
-                4,
+                2,
                 minmax(0, 1fr)
             );
+    }
+
+
+    .chart-scroll-content {
+        min-width: 900px;
     }
 
 }
@@ -3290,59 +2270,42 @@ body {
 @media (max-width: 767.98px) {
 
     .data-workspace {
+        width: 100%;
+        max-width: 100%;
 
-        width:
-            100%;
+        margin: 0 auto;
 
-        max-width:
-            100%;
-
-        margin:
-            0 auto;
-
-        transform:
-            none;
+        transform: none;
     }
 
 
     .data-page-header {
+        flex-direction: column;
 
-        flex-direction:
-            column;
-
-        align-items:
-            stretch;
+        align-items: stretch;
     }
 
 
     .data-page-header > div {
+        flex: 1 1 auto;
 
-        flex:
-            1 1 auto;
-
-        width:
-            100%;
+        width: 100%;
     }
 
 
     .data-history-button {
-
-        width:
-            100%;
+        width: 100%;
     }
 
 
     .data-flow {
-
         grid-template-columns:
             minmax(0, 1fr);
     }
 
 
     .data-flow-step {
-
-        border-right:
-            0;
+        border-right: 0;
 
         border-bottom:
             1px solid
@@ -3351,109 +2314,83 @@ body {
 
 
     .data-flow-step:last-child {
-
-        border-bottom:
-            0;
+        border-bottom: 0;
     }
 
 
     .data-import-grid {
-
         grid-template-columns:
             minmax(0, 1fr);
     }
 
 
     .data-import-grid > .data-primary-button {
+        grid-column: auto;
 
-        grid-column:
-            auto;
-
-        width:
-            100%;
+        width: 100%;
     }
 
 
     .dataset-header {
-
         grid-template-columns:
             repeat(
                 2,
                 minmax(0, 1fr)
             );
 
-        gap:
-            .65rem;
+        gap: .75rem;
     }
 
 
     .dataset-title-area,
     .dataset-switcher {
-
-        grid-column:
-            1 / -1;
+        grid-column: 1 / -1;
     }
 
 
     .dataset-switcher,
     .dataset-switcher select {
-
-        width:
-            100%;
+        width: 100%;
     }
 
 
     .chart-toolbar {
+        flex-direction: column;
 
-        flex-direction:
-            column;
-
-        align-items:
-            stretch;
+        align-items: stretch;
     }
 
 
     .chart-toolbar-main {
-
-        flex:
-            1 1 auto;
+        flex: 1 1 auto;
     }
 
 
     .chart-controls {
-
-        justify-content:
-            flex-start;
+        justify-content: flex-start;
     }
 
 
-    .chart-frame {
+    .chart-scroll-content {
+        min-width: 820px;
 
-        height:
-            320px;
-
-        min-height:
-            320px;
+        height: 310px;
     }
 
 
     .model-selector-layout,
     .model-detail-grid {
-
         grid-template-columns:
             minmax(0, 1fr);
     }
 
 
     .model-selector-layout .data-primary-button {
-
-        width:
-            100%;
+        width: 100%;
     }
 
 
     .market-condition-stat-grid {
-
         grid-template-columns:
             repeat(
                 2,
@@ -3463,30 +2400,22 @@ body {
 
 
     .workspace-details summary {
-
-        padding:
-            .65rem .7rem;
+        padding: .75rem;
     }
 
 
     .workspace-details-body {
-
-        padding:
-            0 .7rem .7rem;
+        padding: 0 .75rem .75rem;
     }
 
 
     .recent-imports summary {
-
-        padding:
-            .66rem .7rem;
+        padding: .75rem;
     }
 
 
     .recent-imports-body {
-
-        padding:
-            0 .7rem .7rem;
+        padding: 0 .75rem .75rem;
     }
 
 }
@@ -3499,48 +2428,36 @@ body {
 @media (max-width: 575.98px) {
 
     .data-page-title {
-
-        font-size:
-            1.4rem;
+        font-size: 1.45rem;
     }
 
 
     .data-import-panel {
-
-        padding:
-            .75rem;
+        padding: .8rem;
     }
 
 
     .data-flow-step {
-
-        padding:
-            .65rem .7rem;
+        padding: .75rem;
     }
 
 
     .dataset-header {
-
         grid-template-columns:
             minmax(0, 1fr);
 
-        padding:
-            .7rem;
+        padding: .8rem;
     }
 
 
     .dataset-title-area,
     .dataset-switcher {
-
-        grid-column:
-            auto;
+        grid-column: auto;
     }
 
 
     .dataset-stat {
-
-        padding-top:
-            .35rem;
+        padding-top: .4rem;
 
         border-top:
             1px solid
@@ -3551,19 +2468,13 @@ body {
     .dataset-chart-column,
     .market-condition-panel,
     .dataset-use {
-
-        padding-left:
-            .7rem;
-
-        padding-right:
-            .7rem;
+        padding-left: .8rem;
+        padding-right: .8rem;
     }
 
 
     .chart-controls {
-
-        display:
-            grid;
+        display: grid;
 
         grid-template-columns:
             minmax(0, 1fr);
@@ -3571,29 +2482,21 @@ body {
 
 
     .chart-source-buttons {
-
-        width:
-            100%;
+        width: 100%;
     }
 
 
     .chart-source-buttons .btn {
-
-        flex:
-            1 1 50%;
+        flex: 1 1 50%;
     }
 
 
     .chart-period-select {
-
-        width:
-            100%
-            !important;
+        width: 100% !important;
     }
 
 
     .chart-summary-grid {
-
         grid-template-columns:
             repeat(
                 2,
@@ -3602,74 +2505,44 @@ body {
     }
 
 
-    .chart-frame {
+    .chart-scroll-content {
+        min-width: 760px;
 
-        height:
-            290px;
-
-        min-height:
-            290px;
+        height: 290px;
     }
 
 
     .market-condition-heading-row {
-
-        flex-direction:
-            column;
+        flex-direction: column;
     }
 
 
     .market-condition-summary-grid,
     .market-condition-stat-grid {
-
         grid-template-columns:
             minmax(0, 1fr);
     }
 
 
     .model-status {
-
-        margin-left:
-            .15rem;
+        margin-left: .15rem;
     }
 
 
     .data-provider-line {
+        flex-direction: column;
 
-        flex-direction:
-            column;
-
-        gap:
-            .25rem;
+        gap: .3rem;
     }
 
 
     .data-empty {
-
-        padding:
-            1.4rem .75rem;
+        padding: 1.5rem .8rem;
     }
 
 
     .data-table-wrapper {
-
-        border-radius:
-            5px;
-    }
-
-
-    .data-table {
-
-        font-size:
-            .52rem;
-    }
-
-
-    .data-table thead th,
-    .data-table tbody td {
-
-        padding:
-            .4rem .45rem;
+        border-radius: 5px;
     }
 
 }
@@ -4115,7 +2988,7 @@ body {
 
 
     <!-- ======================================================
-         4.2 NUMERICAL PRICE CHART + MARKET CONDITION
+         4.2 PRICE CHART + MARKET CONDITION
     ======================================================= -->
 
     <div class="dataset-main">
@@ -4128,19 +3001,13 @@ body {
         <div class="dataset-chart-column">
 
 
-            <!-- ==============================================
-                 CHART HEADER + DATA SOURCE CONTROLS
-            =============================================== -->
-
             <div class="chart-toolbar">
 
 
                 <div class="chart-toolbar-main">
 
                     <div class="dataset-heading">
-
                         Price History
-
                     </div>
 
 
@@ -4165,10 +3032,6 @@ body {
 
                 <div class="chart-controls">
 
-
-                    <!-- ======================================
-                         STORED VS ALPACA
-                    ======================================= -->
 
                     <div
                         class="
@@ -4207,10 +3070,6 @@ body {
 
                     </div>
 
-
-                    <!-- ======================================
-                         ALPACA PERIOD
-                    ======================================= -->
 
                     <label
                         for="alpacaChartPeriod"
@@ -4270,9 +3129,7 @@ body {
                     </span>
 
                     <strong id="chartSymbol">
-
                         {{ selected_symbol }}
-
                     </strong>
 
                 </div>
@@ -4308,9 +3165,7 @@ body {
                     </span>
 
                     <strong id="chartObservationCount">
-
                         {{ market_data|length }}
-
                     </strong>
 
                 </div>
@@ -4323,9 +3178,7 @@ body {
                     </span>
 
                     <strong id="chartSource">
-
                         Stored Data
-
                     </strong>
 
                 </div>
@@ -4334,23 +3187,29 @@ body {
 
 
             <!-- ==============================================
-                 NUMERICAL CHART
+                 HORIZONTALLY SCROLLABLE NUMERICAL CHART
             =============================================== -->
 
-            <div class="chart-frame">
+            <div
+                id="chartScrollContainer"
+                class="chart-frame"
+            >
 
-                <canvas
-                    id="historicalPriceChart"
-                    aria-label="{{ selected_symbol }} numerical market price history"
+                <div
+                    id="chartScrollContent"
+                    class="chart-scroll-content"
                 >
-                </canvas>
+
+                    <canvas
+                        id="historicalPriceChart"
+                        aria-label="{{ selected_symbol }} numerical market price history"
+                    >
+                    </canvas>
+
+                </div>
 
             </div>
 
-
-            <!-- ==============================================
-                 CHART STATUS / DATA PROVENANCE
-            =============================================== -->
 
             <div
                 id="chartStatus"
@@ -4365,6 +3224,9 @@ body {
                     Showing stored historical observations for
                     {{ selected_symbol }}.
 
+                    Use the horizontal scrollbar below the chart
+                    to move through the price history.
+
                 </span>
 
             </div>
@@ -4373,7 +3235,7 @@ body {
 
 
         <!-- ==================================================
-             RIGHT - COMPLETE DETAILED MARKET CONDITION
+             RIGHT - DETAILED MARKET CONDITION
         =================================================== -->
 
         <aside
@@ -4381,10 +3243,6 @@ body {
             class="market-condition-panel"
         >
 
-
-            <!-- ==============================================
-                 CONDITION HEADER
-            =============================================== -->
 
             <div class="market-condition-eyebrow">
                 Detailed Market Condition
@@ -4398,9 +3256,7 @@ body {
 
                     {% if latest_regime %}
 
-
                         <h3 class="market-condition-title">
-
 
                             {% if latest_regime.regime == "bull" or latest_regime.regime == "uptrend" %}
 
@@ -4423,7 +3279,6 @@ body {
                                 {{ latest_regime.get_regime_display }}
 
                             {% endif %}
-
 
                         </h3>
 
@@ -4581,7 +3436,6 @@ body {
 
             {% if total_records >= 60 %}
 
-
                 <div class="market-condition-readiness ready">
 
                     <i class="fa-solid fa-circle-check"></i>
@@ -4618,10 +3472,7 @@ body {
                         </strong>
 
                         {{ selected_symbol }} currently has
-
-                        {{ total_records }}
-
-                        stored observations.
+                        {{ total_records }} stored observations.
 
                         The Market Condition engine requires at
                         least 60.
@@ -4681,12 +3532,11 @@ body {
 
                 </div>
 
-
             {% endif %}
 
 
             <!-- ==============================================
-                 RUN / REFRESH + RUN ANALYSIS
+                 ANALYSIS ACTION
             =============================================== -->
 
             <div class="market-condition-action">
@@ -4765,7 +3615,7 @@ body {
 
 
             <!-- ==============================================
-                 EXISTING ANALYSIS RESULT
+                 ANALYSIS RESULT
             =============================================== -->
 
             {% if latest_regime %}
@@ -4791,7 +3641,6 @@ body {
 
                             <span class="market-condition-result-name">
 
-
                                 {% if latest_regime.regime == "bull" or latest_regime.regime == "uptrend" %}
 
                                     Uptrend
@@ -4814,7 +3663,6 @@ body {
 
                                 {% endif %}
 
-
                             </span>
 
                         </div>
@@ -4822,60 +3670,25 @@ body {
 
                         <span class="market-condition-result-icon">
 
-
                             {% if latest_regime.regime == "bull" or latest_regime.regime == "uptrend" %}
 
-                                <i
-                                    class="
-                                        fa-solid
-                                        fa-arrow-trend-up
-                                        text-success
-                                    "
-                                ></i>
-
+                                <i class="fa-solid fa-arrow-trend-up text-success"></i>
 
                             {% elif latest_regime.regime == "bear" or latest_regime.regime == "downtrend" %}
 
-                                <i
-                                    class="
-                                        fa-solid
-                                        fa-arrow-trend-down
-                                        text-danger
-                                    "
-                                ></i>
-
+                                <i class="fa-solid fa-arrow-trend-down text-danger"></i>
 
                             {% elif latest_regime.regime == "sideways" %}
 
-                                <i
-                                    class="
-                                        fa-solid
-                                        fa-arrows-left-right
-                                        text-primary
-                                    "
-                                ></i>
-
+                                <i class="fa-solid fa-arrows-left-right text-primary"></i>
 
                             {% elif latest_regime.regime == "volatile" or latest_regime.regime == "high_volatility" %}
 
-                                <i
-                                    class="
-                                        fa-solid
-                                        fa-wave-square
-                                        text-warning
-                                    "
-                                ></i>
-
+                                <i class="fa-solid fa-wave-square text-warning"></i>
 
                             {% else %}
 
-                                <i
-                                    class="
-                                        fa-solid
-                                        fa-chart-line
-                                        text-primary
-                                    "
-                                ></i>
+                                <i class="fa-solid fa-chart-line text-primary"></i>
 
                             {% endif %}
 
@@ -4883,10 +3696,6 @@ body {
 
                     </div>
 
-
-                    <!-- ======================================
-                         HISTORICAL METRICS
-                    ======================================= -->
 
                     <div class="market-condition-stat-grid">
 
@@ -5035,10 +3844,6 @@ body {
                 </div>
 
 
-                <!-- ==========================================
-                     INTERPRETATION
-                =========================================== -->
-
                 <div class="market-condition-subheading">
 
                     What does this mean?
@@ -5050,7 +3855,6 @@ body {
 
 
                     {% if latest_regime.regime == "bull" or latest_regime.regime == "uptrend" %}
-
 
                         During the analysed historical period,
                         {{ selected_symbol }} showed an upward
@@ -5064,7 +3868,6 @@ body {
 
                     {% elif latest_regime.regime == "bear" or latest_regime.regime == "downtrend" %}
 
-
                         During the analysed historical period,
                         {{ selected_symbol }} showed a downward
                         price structure.
@@ -5076,19 +3879,16 @@ body {
 
                     {% elif latest_regime.regime == "sideways" %}
 
-
                         During the analysed historical period,
                         {{ selected_symbol }} did not satisfy the
                         stronger directional conditions required
                         for an Uptrend or Downtrend.
 
                         MarketPulse therefore classified the
-                        recent historical environment as
-                        Sideways.
+                        recent historical environment as Sideways.
 
 
                     {% elif latest_regime.regime == "volatile" or latest_regime.regime == "high_volatility" %}
-
 
                         Historical daily returns for
                         {{ selected_symbol }} produced elevated
@@ -5101,12 +3901,10 @@ body {
 
                     {% else %}
 
-
                         MarketPulse classified the recent
                         historical market environment using
                         stored price behaviour, moving averages,
                         trend strength and historical volatility.
-
 
                     {% endif %}
 
@@ -5115,10 +3913,6 @@ body {
 
             {% else %}
 
-
-                <!-- ==========================================
-                     NO SAVED ANALYSIS YET
-                =========================================== -->
 
                 <div class="market-condition-result-card">
 
@@ -5135,7 +3929,6 @@ body {
 
                             <span class="market-condition-result-name">
 
-
                                 {% if total_records >= 60 %}
 
                                     Ready to Analyse
@@ -5146,7 +3939,6 @@ body {
 
                                 {% endif %}
 
-
                             </span>
 
                         </div>
@@ -5156,23 +3948,11 @@ body {
 
                             {% if total_records >= 60 %}
 
-                                <i
-                                    class="
-                                        fa-solid
-                                        fa-chart-area
-                                        text-primary
-                                    "
-                                ></i>
+                                <i class="fa-solid fa-chart-area text-primary"></i>
 
                             {% else %}
 
-                                <i
-                                    class="
-                                        fa-solid
-                                        fa-database
-                                        text-warning
-                                    "
-                                ></i>
+                                <i class="fa-solid fa-database text-warning"></i>
 
                             {% endif %}
 
@@ -5182,7 +3962,6 @@ body {
 
 
                     <p class="market-condition-copy mb-0">
-
 
                         {% if total_records >= 60 %}
 
@@ -5195,13 +3974,10 @@ body {
                             historical volatility and trend
                             strength.
 
-
                         {% else %}
 
                             {{ selected_symbol }} currently has
-
                             {{ total_records }}
-
                             stored historical observations.
 
                             The classifier requires at least
@@ -5220,7 +3996,6 @@ body {
 
                         {% endif %}
 
-
                     </p>
 
                 </div>
@@ -5236,14 +4011,7 @@ body {
 
                 <summary>
 
-                    <i
-                        class="
-                            fa-solid
-                            fa-gears
-                            text-primary
-                            me-1
-                        "
-                    ></i>
+                    <i class="fa-solid fa-gears text-primary me-1"></i>
 
                     How does Market Condition work?
 
@@ -5403,9 +4171,7 @@ body {
 
                         <br>
 
-                        <code>
-                            Alpaca
-                        </code>
+                        <code>Alpaca</code>
 
                         →
 
@@ -5453,21 +4219,14 @@ body {
 
 
             <!-- ==============================================
-                 FOUR USER-FACING MARKET CONDITIONS
+                 MARKET CONDITION DEFINITIONS
             =============================================== -->
 
             <details class="market-condition-details">
 
                 <summary>
 
-                    <i
-                        class="
-                            fa-solid
-                            fa-tags
-                            text-primary
-                            me-1
-                        "
-                    ></i>
+                    <i class="fa-solid fa-tags text-primary me-1"></i>
 
                     What do the market conditions mean?
 
@@ -5492,14 +4251,7 @@ body {
 
                                 <strong>
 
-                                    <i
-                                        class="
-                                            fa-solid
-                                            fa-arrow-trend-up
-                                            text-success
-                                            me-1
-                                        "
-                                    ></i>
+                                    <i class="fa-solid fa-arrow-trend-up text-success me-1"></i>
 
                                     Uptrend
 
@@ -5509,9 +4261,7 @@ body {
                                 {% if latest_regime.regime == "bull" or latest_regime.regime == "uptrend" %}
 
                                     <span class="market-condition-current">
-
                                         Current Result
-
                                     </span>
 
                                 {% endif %}
@@ -5543,14 +4293,7 @@ body {
 
                                 <strong>
 
-                                    <i
-                                        class="
-                                            fa-solid
-                                            fa-arrow-trend-down
-                                            text-danger
-                                            me-1
-                                        "
-                                    ></i>
+                                    <i class="fa-solid fa-arrow-trend-down text-danger me-1"></i>
 
                                     Downtrend
 
@@ -5560,9 +4303,7 @@ body {
                                 {% if latest_regime.regime == "bear" or latest_regime.regime == "downtrend" %}
 
                                     <span class="market-condition-current">
-
                                         Current Result
-
                                     </span>
 
                                 {% endif %}
@@ -5594,14 +4335,7 @@ body {
 
                                 <strong>
 
-                                    <i
-                                        class="
-                                            fa-solid
-                                            fa-arrows-left-right
-                                            text-primary
-                                            me-1
-                                        "
-                                    ></i>
+                                    <i class="fa-solid fa-arrows-left-right text-primary me-1"></i>
 
                                     Sideways
 
@@ -5611,9 +4345,7 @@ body {
                                 {% if latest_regime.regime == "sideways" %}
 
                                     <span class="market-condition-current">
-
                                         Current Result
-
                                     </span>
 
                                 {% endif %}
@@ -5646,14 +4378,7 @@ body {
 
                                 <strong>
 
-                                    <i
-                                        class="
-                                            fa-solid
-                                            fa-wave-square
-                                            text-warning
-                                            me-1
-                                        "
-                                    ></i>
+                                    <i class="fa-solid fa-wave-square text-warning me-1"></i>
 
                                     High Volatility
 
@@ -5663,9 +4388,7 @@ body {
                                 {% if latest_regime.regime == "volatile" or latest_regime.regime == "high_volatility" %}
 
                                     <span class="market-condition-current">
-
                                         Current Result
-
                                     </span>
 
                                 {% endif %}
@@ -5699,14 +4422,7 @@ body {
 
                 <summary>
 
-                    <i
-                        class="
-                            fa-solid
-                            fa-database
-                            text-primary
-                            me-1
-                        "
-                    ></i>
+                    <i class="fa-solid fa-database text-primary me-1"></i>
 
                     Data source and calculation
 
@@ -5794,7 +4510,7 @@ body {
 
                         <p class="mb-0">
 
-                            The final classification is created by:
+                            The final classification is created by
 
                             <code>
                                 identify_market_regime()
@@ -5818,19 +4534,9 @@ body {
             </details>
 
 
-            <!-- ==============================================
-                 EDUCATIONAL NOTICE
-            =============================================== -->
-
             <div class="market-condition-notice">
 
-                <i
-                    class="
-                        fa-solid
-                        fa-circle-info
-                        text-warning
-                    "
-                ></i>
+                <i class="fa-solid fa-circle-info text-warning"></i>
 
 
                 <div>
@@ -6115,7 +4821,7 @@ body {
 
                 <div
                     class="model-detail-box"
-                    style="margin-top: .6rem;"
+                    style="margin-top: .7rem;"
                 >
 
                     <h4>
@@ -6226,7 +4932,7 @@ document.addEventListener(
 
 
         /* =====================================================
-           6.2 BUILD STORED POSTGRESQL OBSERVATION ARRAY
+           6.2 STORED POSTGRESQL OBSERVATIONS
         ===================================================== */
 
         const storedObservations = [
@@ -6284,6 +4990,18 @@ document.addEventListener(
         const canvas =
             document.getElementById(
                 "historicalPriceChart"
+            );
+
+
+        const chartScrollContainer =
+            document.getElementById(
+                "chartScrollContainer"
+            );
+
+
+        const chartScrollContent =
+            document.getElementById(
+                "chartScrollContent"
             );
 
 
@@ -6690,7 +5408,106 @@ document.addEventListener(
 
 
         /* =====================================================
-           6.9 RENDER NUMERICAL CHART
+           6.9 SET HORIZONTAL CHART WIDTH
+
+           More chart observations create a wider internal
+           timeline.
+
+           The outer chart-frame remains the same size and
+           provides the horizontal scrollbar.
+        ===================================================== */
+
+        function updateScrollableChartWidth(
+            pointCount,
+            period
+        ) {
+
+            if (
+                !chartScrollContent
+            ) {
+
+                return;
+
+            }
+
+
+            let minimumWidth =
+                950;
+
+
+            if (
+                window.innerWidth <= 767
+            ) {
+
+                minimumWidth =
+                    820;
+
+            }
+
+
+            if (
+                window.innerWidth <= 575
+            ) {
+
+                minimumWidth =
+                    760;
+
+            }
+
+
+            let pixelsPerPoint =
+                6;
+
+
+            if (
+                currentChartSource === "alpaca"
+                &&
+                (
+                    period === "1D"
+                    ||
+                    period === "5D"
+                )
+            ) {
+
+                pixelsPerPoint =
+                    8;
+
+            }
+
+
+            let calculatedWidth =
+                Math.max(
+                    minimumWidth,
+                    pointCount
+                    *
+                    pixelsPerPoint
+                );
+
+
+            /*
+            Prevent an extremely large DOM canvas.
+
+            2600px is sufficient to give a useful scrolling
+            timeline while remaining efficient.
+            */
+
+            calculatedWidth =
+                Math.min(
+                    calculatedWidth,
+                    2600
+                );
+
+
+            chartScrollContent.style.width =
+                calculatedWidth
+                +
+                "px";
+
+        }
+
+
+        /* =====================================================
+           6.10 RENDER NUMERICAL CHART
         ===================================================== */
 
         function renderPriceChart(
@@ -6719,7 +5536,6 @@ document.addEventListener(
             ) {
 
                 priceChart.destroy();
-
 
                 priceChart =
                     null;
@@ -6767,6 +5583,12 @@ document.addEventListener(
                 return;
 
             }
+
+
+            updateScrollableChartWidth(
+                data.length,
+                period
+            );
 
 
             const labels =
@@ -6892,6 +5714,9 @@ document.addEventListener(
                             maintainAspectRatio:
                                 false,
 
+                            animation:
+                                false,
+
 
                             interaction: {
 
@@ -6918,6 +5743,20 @@ document.addEventListener(
 
                                     displayColors:
                                         false,
+
+                                    titleFont: {
+
+                                        size:
+                                            12
+
+                                    },
+
+                                    bodyFont: {
+
+                                        size:
+                                            12
+
+                                    },
 
 
                                     callbacks: {
@@ -7098,16 +5937,26 @@ document.addEventListener(
                                     ticks: {
 
                                         color:
-                                            "#93a4b8",
+                                            "#b7c6d6",
 
                                         maxTicksLimit:
-                                            8,
+                                            12,
 
                                         autoSkip:
                                             true,
 
                                         maxRotation:
-                                            0
+                                            0,
+
+                                        padding:
+                                            6,
+
+                                        font: {
+
+                                            size:
+                                                12
+
+                                        }
 
                                     },
 
@@ -7135,12 +5984,15 @@ document.addEventListener(
                                             "Date",
 
                                         color:
-                                            "#93a4b8",
+                                            "#b7c6d6",
 
                                         font: {
 
                                             size:
-                                                10
+                                                12,
+
+                                            weight:
+                                                "600"
 
                                         }
 
@@ -7174,7 +6026,17 @@ document.addEventListener(
                                     ticks: {
 
                                         color:
-                                            "#93a4b8",
+                                            "#b7c6d6",
+
+                                        padding:
+                                            6,
+
+                                        font: {
+
+                                            size:
+                                                12
+
+                                        },
 
 
                                         callback:
@@ -7211,12 +6073,15 @@ document.addEventListener(
                                             "Price (USD)",
 
                                         color:
-                                            "#93a4b8",
+                                            "#b7c6d6",
 
                                         font: {
 
                                             size:
-                                                10
+                                                12,
+
+                                            weight:
+                                                "600"
 
                                         }
 
@@ -7248,14 +6113,39 @@ document.addEventListener(
                     +
                     sourceLabel
                     +
+                    " · Scroll horizontally to inspect additional observations."
+                    +
                     "</span>"
                 );
+
+
+            /*
+            Start on the newest observations.
+
+            The user can drag the scrollbar left to review
+            older observations.
+            */
+
+            if (
+                chartScrollContainer
+            ) {
+
+                requestAnimationFrame(
+                    function () {
+
+                        chartScrollContainer.scrollLeft =
+                            chartScrollContainer.scrollWidth;
+
+                    }
+                );
+
+            }
 
         }
 
 
         /* =====================================================
-           6.10 SHOW STORED MARKETPULSE DATA
+           6.11 SHOW STORED DATA
         ===================================================== */
 
         function showStoredData() {
@@ -7283,7 +6173,7 @@ document.addEventListener(
 
 
         /* =====================================================
-           6.11 FETCH CURRENT ALPACA MARKET DATA
+           6.12 FETCH CURRENT ALPACA MARKET DATA
         ===================================================== */
 
         async function showAlpacaData() {
@@ -7405,10 +6295,6 @@ document.addEventListener(
                     );
 
 
-                /* =============================================
-                   HISTORY RESPONSE
-                ============================================== */
-
                 if (
                     requests[0].status
                     !==
@@ -7506,10 +6392,6 @@ document.addEventListener(
                 }
 
 
-                /* =============================================
-                   SNAPSHOT RESPONSE
-                ============================================== */
-
                 let latestSnapshotPrice =
                     null;
 
@@ -7575,10 +6457,6 @@ document.addEventListener(
                 }
 
 
-                /* =============================================
-                   CURRENT PRICE
-                ============================================== */
-
                 const normalisedAlpacaPoints =
                     normalisePoints(
                         alpacaPoints
@@ -7617,10 +6495,6 @@ document.addEventListener(
                     );
 
 
-                /* =============================================
-                   SOURCE LABEL
-                ============================================== */
-
                 const feed =
                     String(
                         historyPayload.feed
@@ -7651,10 +6525,6 @@ document.addEventListener(
                         feed
                     );
 
-
-                /* =============================================
-                   DRAW ALPACA CHART
-                ============================================== */
 
                 renderPriceChart(
                     alpacaPoints,
@@ -7729,7 +6599,7 @@ document.addEventListener(
 
 
         /* =====================================================
-           6.12 SOURCE BUTTON EVENTS
+           6.13 SOURCE BUTTON EVENTS
         ===================================================== */
 
         if (
@@ -7781,26 +6651,19 @@ document.addEventListener(
 
 
         /* =====================================================
-           6.13 INITIAL CHART = STORED DATA
+           6.14 INITIAL CHART
         ===================================================== */
 
         showStoredData();
 
 
         /* =====================================================
-           6.14 MARKET CONDITION DISPLAY METRICS
+           6.15 MARKET CONDITION DISPLAY METRICS
 
-           IMPORTANT:
+           These calculations continue to use STORED data.
 
-           These calculations intentionally continue to use the
-           STORED MarketPulse dataset.
-
-           The Detailed Market Condition panel represents the
-           historical dataset used by Django's analytical engine.
-
-           Switching the visual chart to Current Alpaca must not
-           silently change the meaning of saved MarketRegime
-           results.
+           Current Alpaca chart mode is visual-only and does not
+           silently modify the saved MarketRegime calculation.
         ===================================================== */
 
         const data =
@@ -8284,7 +7147,7 @@ document.addEventListener(
 
 
         /* =====================================================
-           6.15 SCROLL BACK TO MARKET CONDITION AFTER ANALYSIS
+           6.16 SCROLL TO MARKET CONDITION AFTER ANALYSIS
         ===================================================== */
 
         if (
@@ -8480,9 +7343,7 @@ document.addEventListener(
 
 
                             <td>
-
                                 {{ item.source.name }}
-
                             </td>
 
 
@@ -8547,16 +7408,12 @@ document.addEventListener(
 
 
                             <td class="numeric">
-
                                 {{ item.records_imported }}
-
                             </td>
 
 
                             <td>
-
                                 {{ item.created_at|date:"d/m/Y H:i" }}
-
                             </td>
 
                         </tr>
@@ -8573,7 +7430,7 @@ document.addEventListener(
         <a
             href="{% url 'data_management:history' %}"
             class="data-history-button"
-            style="margin-top: .6rem;"
+            style="margin-top: .75rem;"
         >
 
             <i class="fa-solid fa-clock-rotate-left"></i>
