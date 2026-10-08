@@ -40,43 +40,6 @@ Price USD Y-axis
 OHLCV hover information
 
 
-STORED DATA MODE:
-
-core.MarketData
-    ↓
-Selected symbol
-    ↓
-Stored historical observations
-    ↓
-Chart
-
-
-CURRENT ALPACA MODE:
-
-Selected symbol
-    ↓
-/api/alpaca/stocks/<symbol>/history/
-    ↓
-data_management.services.alpaca.get_chart_history()
-    ↓
-get_historical_bars()
-    ↓
-Alpaca Historical Market Data API
-    ↓
-1D / 5D / 1M / 3M chart
-
-
-CURRENT PRICE:
-
-Selected symbol
-    ↓
-/api/alpaca/stocks/<symbol>/snapshot/
-    ↓
-Alpaca latest market snapshot
-    ↓
-Current/latest price shown above chart
-
-
 MARKET CONDITION FLOW:
 
 Stored / refreshed historical data
@@ -92,22 +55,38 @@ PostgreSQL
 Result remains inside this Data workspace
 
 
-DESIGN UPDATE:
+MODEL SELECTION FLOW:
 
-The Data workspace now follows the same readable typography
-scale used by the Dashboard.
+Selected historical dataset
+    ↓
+Strategy / quantitative-model catalogue
+    ↓
+User chooses model
+    ↓
+GET request preserves:
+        symbol
+        model
+    ↓
+data_management.views.data_import()
+    ↓
+StrategyLibraryItem
+    ↓
+Selected model metadata
+    ↓
+Return to #use-dataset
+    ↓
+Model details remain inside the same section
 
-Normal interface text:
-    approximately Bootstrap small/body scale
 
-Metadata:
-    compact but readable
+IMPORTANT:
 
-The price-chart viewport is intentionally narrower than before.
+Selecting a model currently loads the model definition and
+parameters.
 
-The chart itself can extend horizontally inside a scrollable
-container so a large historical dataset does not compress all
-observations into a very small visual space.
+It does NOT yet execute the quantitative model.
+
+Actual model execution belongs to the strategy/model-running
+backend and should not be implied by the selection button.
 
 ============================================================
 {% endcomment %}
@@ -123,12 +102,11 @@ Market Data | MarketPulse
 <style>
 
 /* ============================================================
-   1. DATA WORKSPACE / SHARED MARKETPULSE THEME
+   1. DATA WORKSPACE
 ============================================================ */
 
 .data-workspace {
     --data-background: var(--mp-bg, #0c1420);
-    --data-nav: var(--mp-nav, #111c2b);
     --data-panel: var(--mp-panel, #152235);
     --data-panel-soft: var(--mp-panel-soft, #18283a);
     --data-panel-dark: var(--mp-panel-dark, #101a28);
@@ -138,10 +116,7 @@ Market Data | MarketPulse
     --data-muted: var(--mp-muted, #93a4b8);
     --data-blue: var(--mp-primary, #4f86b6);
     --data-blue-hover: var(--mp-primary-hover, #6095c2);
-    --data-blue-soft: var(
-        --mp-primary-soft,
-        rgba(79, 134, 182, .15)
-    );
+    --data-blue-soft: rgba(79, 134, 182, .15);
     --data-green: var(--mp-success, #32c98b);
     --data-yellow: var(--mp-warning, #d3a854);
     --data-danger: var(--mp-danger, #dc6b75);
@@ -150,18 +125,10 @@ Market Data | MarketPulse
     max-width: 1480px;
     min-width: 0;
 
-    margin-left: auto;
-    margin-right: auto;
+    margin: 0 auto;
 
     color: var(--data-text);
 
-    /*
-    Dashboard-style readable base typography.
-
-    The old Data page contained many values around
-    .48rem - .58rem, which were considerably smaller
-    than the Dashboard.
-    */
     font-size: .875rem;
     line-height: 1.5;
 }
@@ -178,57 +145,10 @@ Market Data | MarketPulse
 }
 
 
-.data-workspace,
-.data-page-header,
-.data-flow,
-.data-flow-step,
-.data-import-panel,
-.data-import-grid,
-.data-field,
-.dataset-workspace,
-.dataset-header,
-.dataset-title-area,
-.dataset-main,
-.dataset-chart-column,
-.chart-toolbar,
-.chart-toolbar-main,
-.chart-controls,
-.chart-summary-grid,
-.chart-frame,
-.chart-scroll-content,
-.market-condition-panel,
-.market-condition-result-card,
-.market-condition-stat-grid,
-.market-condition-analysis-flow,
-.market-condition-classification-grid,
-.dataset-use,
-.model-selector-layout,
-.workspace-details,
-.workspace-details-body,
-.model-detail-grid,
-.model-detail-box,
-.data-table-wrapper,
-.recent-imports,
-.recent-imports-body,
-.data-empty {
-    min-width: 0;
-}
-
-
-.data-workspace img,
-.data-workspace svg {
-    max-width: 100%;
-}
-
-
-html,
-body {
-    background: var(--mp-bg, #0c1420) !important;
-}
-
-
-body {
-    color: var(--mp-text, #f1f5f9);
+#market-condition,
+#use-dataset,
+#selected-model-details {
+    scroll-margin-top: 90px;
 }
 
 
@@ -243,40 +163,37 @@ body {
     flex-wrap: wrap;
 
     gap: 1rem;
+
     margin-bottom: 1rem;
 }
 
 
 .data-page-header > div {
-    min-width: 0;
     flex: 1 1 420px;
+    min-width: 0;
 }
 
 
 .data-page-title {
     margin: 0 0 .25rem;
 
-    color: var(--data-text) !important;
+    color: var(--data-text);
 
-    font-size: clamp(
-        1.5rem,
-        3vw,
-        1.75rem
-    );
-
+    font-size: clamp(1.5rem, 3vw, 1.75rem);
     font-weight: 700;
+
     letter-spacing: -.02em;
 }
 
 
 .data-page-subtitle {
     max-width: 760px;
+
     margin: 0;
 
-    color: var(--data-muted) !important;
+    color: var(--data-muted);
 
     font-size: .875rem;
-    line-height: 1.5;
 }
 
 
@@ -288,7 +205,6 @@ body {
     gap: .45rem;
 
     min-height: 36px;
-    max-width: 100%;
 
     padding: .45rem .75rem;
 
@@ -300,19 +216,20 @@ body {
 
     font-size: .8125rem;
     font-weight: 600;
-    text-align: center;
 }
 
 
 .data-history-button:hover {
     color: #ffffff;
+
     background: rgba(255, 255, 255, .03);
+
     border-color: #536d89;
 }
 
 
 /* ============================================================
-   3. THREE-STEP FLOW
+   3. WORKFLOW
 ============================================================ */
 
 .data-flow {
@@ -325,8 +242,6 @@ body {
         );
 
     overflow: hidden;
-
-    width: 100%;
 
     background: var(--data-panel);
 
@@ -369,29 +284,17 @@ body {
 
     border-radius: 50%;
 
-    box-shadow:
-        0 0 0 3px
-        rgba(79, 134, 182, .08);
-
     font-size: .75rem;
     font-weight: 800;
-}
-
-
-.data-flow-step > span:last-child {
-    min-width: 0;
 }
 
 
 .data-flow-step strong {
     display: block;
 
-    margin-bottom: .08rem;
-
     color: var(--data-text);
 
     font-size: .8125rem;
-    font-weight: 700;
 }
 
 
@@ -401,7 +304,6 @@ body {
     color: var(--data-muted);
 
     font-size: .75rem;
-    line-height: 1.4;
 }
 
 
@@ -410,16 +312,18 @@ body {
 ============================================================ */
 
 .data-import-panel {
-    width: 100%;
-
     margin-bottom: 1rem;
 
     padding: 1rem;
 
     background: var(--data-panel);
 
-    border: 1px solid var(--data-border);
+    border:
+        1px solid
+        var(--data-border);
+
     border-top: 0;
+
     border-radius: 0 0 8px 8px;
 }
 
@@ -444,7 +348,6 @@ body {
     color: var(--data-muted);
 
     font-size: .75rem;
-    line-height: 1.45;
 }
 
 
@@ -461,8 +364,6 @@ body {
     gap: .65rem;
 
     align-items: end;
-
-    width: 100%;
 }
 
 
@@ -471,7 +372,8 @@ body {
 }
 
 
-.data-field label {
+.data-field label,
+.model-selector-layout label {
     display: block;
 
     margin-bottom: .3rem;
@@ -487,9 +389,8 @@ body {
 .data-workspace select,
 .data-workspace textarea {
     width: 100%;
-    max-width: 100%;
-    min-width: 0;
 
+    min-width: 0;
     min-height: 36px;
 
     padding: .4rem .55rem;
@@ -532,25 +433,22 @@ body {
     gap: .4rem;
 
     min-height: 36px;
-    max-width: 100%;
 
     padding: .45rem .75rem;
 
-    color: #f7fbff;
+    color: #ffffff;
     background: #3f739e;
 
     border: 1px solid #4c83af;
     border-radius: 6px;
 
-    box-shadow:
-        0 2px 5px
-        rgba(0, 0, 0, .12);
-
     font-size: .8125rem;
     font-weight: 700;
 
-    text-align: center;
-    white-space: normal;
+    transition:
+        background-color .15s ease,
+        border-color .15s ease,
+        opacity .15s ease;
 }
 
 
@@ -558,13 +456,15 @@ body {
     color: #ffffff;
 
     background: var(--data-blue-hover);
+
     border-color: #6a9fc9;
 }
 
 
 .data-primary-button:disabled {
     cursor: not-allowed;
-    opacity: .55;
+
+    opacity: .5;
 }
 
 
@@ -588,9 +488,8 @@ body {
 
 
 .data-error {
-    width: 100%;
-
     margin-top: .7rem;
+
     padding: .65rem .75rem;
 
     color: #ffdce0;
@@ -603,19 +502,15 @@ body {
     border-radius: 6px;
 
     font-size: .8125rem;
-
-    overflow-wrap: anywhere;
 }
 
 
 /* ============================================================
-   5. DATASET WORKSPACE
+   5. DATASET
 ============================================================ */
 
 .dataset-workspace {
     overflow: hidden;
-
-    width: 100%;
 
     margin-bottom: 1rem;
 
@@ -625,10 +520,6 @@ body {
     border-radius: 8px;
 }
 
-
-/* ============================================================
-   5.1 DATASET HEADER
-============================================================ */
 
 .dataset-header {
     display: grid;
@@ -644,16 +535,9 @@ body {
 
     gap: 1rem;
 
-    width: 100%;
-
     padding: .8rem 1rem;
 
     border-bottom: 1px solid var(--data-border);
-}
-
-
-.dataset-title-area {
-    min-width: 0;
 }
 
 
@@ -669,12 +553,8 @@ body {
 .dataset-symbol {
     margin: 0;
 
-    color: var(--data-text);
-
     font-size: 1.1rem;
     font-weight: 800;
-
-    overflow-wrap: anywhere;
 }
 
 
@@ -700,25 +580,8 @@ body {
 }
 
 
-.dataset-subtitle {
-    margin-top: .1rem;
-
-    color: var(--data-muted);
-
-    font-size: .75rem;
-
-    overflow-wrap: anywhere;
-}
-
-
-.dataset-stat {
-    min-width: 0;
-}
-
-
+.dataset-subtitle,
 .dataset-stat span {
-    display: block;
-
     color: var(--data-muted);
 
     font-size: .7rem;
@@ -733,32 +596,18 @@ body {
     color: #eef3f8;
 
     font-size: .8125rem;
-
-    overflow-wrap: anywhere;
-}
-
-
-.dataset-switcher {
-    min-width: 0;
 }
 
 
 .dataset-switcher select {
     min-height: 34px;
 
-    padding: .35rem 1.8rem .35rem .5rem;
-
     font-size: .8125rem;
 }
 
 
 /* ============================================================
-   5.2 MAIN DATASET AREA
-
-   IMPORTANT:
-   The chart no longer dominates the desktop workspace.
-
-   The Market Condition panel receives slightly more room.
+   6. DATASET MAIN
 ============================================================ */
 
 .dataset-main {
@@ -767,13 +616,11 @@ body {
     grid-template-columns:
         minmax(0, .95fr)
         minmax(430px, 1.05fr);
-
-    width: 100%;
 }
 
 
 /* ============================================================
-   5.3 NUMERICAL PRICE CHART
+   7. CHART
 ============================================================ */
 
 .dataset-chart-column {
@@ -795,10 +642,8 @@ body {
 
 .chart-toolbar {
     display: flex;
-
     align-items: flex-start;
     justify-content: space-between;
-
     flex-wrap: wrap;
 
     gap: .8rem;
@@ -828,32 +673,21 @@ body {
     color: var(--data-muted);
 
     font-size: .75rem;
-    line-height: 1.45;
 }
 
 
 .chart-controls {
     display: flex;
-
     align-items: center;
     justify-content: flex-end;
-
     flex-wrap: wrap;
 
     gap: .45rem;
 }
 
 
-.chart-source-buttons {
-    display: inline-flex;
-    flex-wrap: nowrap;
-}
-
-
 .chart-source-buttons .btn {
     min-height: 34px;
-
-    padding: .35rem .6rem;
 
     font-size: .75rem;
     font-weight: 700;
@@ -864,14 +698,6 @@ body {
     width: auto !important;
 
     min-width: 105px !important;
-    min-height: 34px !important;
-
-    padding:
-        .35rem
-        1.9rem
-        .35rem
-        .5rem
-        !important;
 
     font-size: .75rem !important;
 }
@@ -893,8 +719,6 @@ body {
 
 
 .chart-summary-item {
-    min-width: 0;
-
     padding: .55rem .6rem;
 
     background: var(--data-panel-dark);
@@ -906,8 +730,6 @@ body {
 
 .chart-summary-item span {
     display: block;
-
-    margin-bottom: .1rem;
 
     color: var(--data-muted);
 
@@ -923,30 +745,25 @@ body {
     font-size: .8125rem;
 
     font-variant-numeric: tabular-nums;
-
-    overflow-wrap: anywhere;
 }
 
-
-/* ============================================================
-   5.3.1 HORIZONTALLY SCROLLABLE CHART
-============================================================ */
 
 .chart-frame {
     position: relative;
 
     width: 100%;
-    max-width: 100%;
 
     overflow-x: auto;
     overflow-y: hidden;
 
-    padding-top: .35rem;
-    padding-bottom: .6rem;
+    padding:
+        .35rem
+        0
+        .6rem;
 
-    border-top: 1px solid var(--data-border-soft);
-
-    -webkit-overflow-scrolling: touch;
+    border-top:
+        1px solid
+        var(--data-border-soft);
 
     scrollbar-width: thin;
 
@@ -955,40 +772,6 @@ body {
         var(--data-panel-dark);
 }
 
-
-.chart-frame::-webkit-scrollbar {
-    height: 10px;
-}
-
-
-.chart-frame::-webkit-scrollbar-track {
-    background: var(--data-panel-dark);
-
-    border-radius: 999px;
-}
-
-
-.chart-frame::-webkit-scrollbar-thumb {
-    background: var(--data-blue);
-
-    border-radius: 999px;
-}
-
-
-.chart-frame::-webkit-scrollbar-thumb:hover {
-    background: var(--data-blue-hover);
-}
-
-
-/*
-This element is deliberately wider than its visible parent.
-
-JavaScript adjusts its width depending on the number of
-observations.
-
-That provides an actual horizontal timeline instead of
-squeezing hundreds of observations into one narrow chart.
-*/
 
 .chart-scroll-content {
     position: relative;
@@ -1001,8 +784,6 @@ squeezing hundreds of observations into one narrow chart.
 
 
 #historicalPriceChart {
-    display: block;
-
     width: 100% !important;
     height: 100% !important;
 }
@@ -1019,25 +800,12 @@ squeezing hundreds of observations into one narrow chart.
     color: var(--data-muted);
 
     font-size: .75rem;
-    line-height: 1.45;
-}
-
-
-.chart-status i {
-    margin-top: .15rem;
-
-    color: var(--data-blue);
 }
 
 
 /* ============================================================
-   5.4 DETAILED MARKET CONDITION
+   8. MARKET CONDITION
 ============================================================ */
-
-#market-condition {
-    scroll-margin-top: 90px;
-}
-
 
 .market-condition-panel {
     min-width: 0;
@@ -1063,9 +831,8 @@ squeezing hundreds of observations into one narrow chart.
 
 .market-condition-heading-row {
     display: flex;
-
-    align-items: flex-start;
     justify-content: space-between;
+    align-items: flex-start;
 
     gap: .8rem;
 
@@ -1076,22 +843,17 @@ squeezing hundreds of observations into one narrow chart.
 .market-condition-title {
     margin: 0 0 .2rem;
 
-    color: var(--data-text);
-
     font-size: 1.1rem;
     font-weight: 800;
-
-    overflow-wrap: anywhere;
 }
 
 
-.market-condition-context {
-    margin: 0;
-
+.market-condition-context,
+.market-condition-copy {
     color: var(--data-muted);
 
     font-size: .75rem;
-    line-height: 1.45;
+    line-height: 1.5;
 }
 
 
@@ -1101,12 +863,9 @@ squeezing hundreds of observations into one narrow chart.
 
     gap: .25rem;
 
-    flex: 0 0 auto;
-
     padding: .25rem .45rem;
 
     color: #a8f3d0;
-
     background: rgba(50, 201, 139, .09);
 
     border:
@@ -1120,23 +879,55 @@ squeezing hundreds of observations into one narrow chart.
 }
 
 
-.market-condition-description {
-    margin-bottom: .65rem;
+.market-condition-summary-grid,
+.market-condition-stat-grid {
+    display: grid;
 
-    color: #bcc8d4;
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(0, 1fr)
+        );
 
-    font-size: .8125rem;
-    line-height: 1.5;
+    gap: .5rem;
+
+    margin: .65rem 0;
 }
 
 
-/* ============================================================
-   5.4.1 DATA READINESS
-============================================================ */
+.market-condition-summary-item,
+.market-condition-stat {
+    padding: .6rem;
+
+    background: var(--data-panel-dark);
+
+    border: 1px solid var(--data-border-soft);
+    border-radius: 6px;
+}
+
+
+.market-condition-summary-item span,
+.market-condition-stat span {
+    display: block;
+
+    color: var(--data-muted);
+
+    font-size: .7rem;
+}
+
+
+.market-condition-summary-item strong,
+.market-condition-stat strong {
+    display: block;
+
+    color: #ffffff;
+
+    font-size: .8125rem;
+}
+
 
 .market-condition-readiness {
     display: flex;
-
     align-items: flex-start;
 
     gap: .5rem;
@@ -1148,48 +939,28 @@ squeezing hundreds of observations into one narrow chart.
     border-radius: 6px;
 
     font-size: .75rem;
-    line-height: 1.5;
 }
 
 
 .market-condition-readiness.ready {
     color: #bdeed8;
-
     background: rgba(50, 201, 139, .08);
-
-    border-color:
-        rgba(50, 201, 139, .22);
 }
 
 
 .market-condition-readiness.warning {
     color: #f5deb1;
-
     background: rgba(211, 168, 84, .08);
-
-    border-color:
-        rgba(211, 168, 84, .22);
-}
-
-
-/* ============================================================
-   5.4.2 REQUIREMENT PROGRESS
-============================================================ */
-
-.market-condition-progress {
-    margin-top: .45rem;
 }
 
 
 .market-condition-progress-track {
-    width: 100%;
     height: 6px;
 
     overflow: hidden;
 
     background: var(--data-panel-dark);
 
-    border: 1px solid var(--data-border-soft);
     border-radius: 999px;
 }
 
@@ -1207,8 +978,6 @@ squeezing hundreds of observations into one narrow chart.
     display: flex;
     justify-content: space-between;
 
-    gap: .5rem;
-
     margin-top: .3rem;
 
     color: var(--data-muted);
@@ -1216,63 +985,6 @@ squeezing hundreds of observations into one narrow chart.
     font-size: .7rem;
 }
 
-
-/* ============================================================
-   5.4.3 DATASET SUMMARY
-============================================================ */
-
-.market-condition-summary-grid {
-    display: grid;
-
-    grid-template-columns:
-        repeat(
-            2,
-            minmax(0, 1fr)
-        );
-
-    gap: .5rem;
-
-    margin: .65rem 0;
-}
-
-
-.market-condition-summary-item {
-    min-width: 0;
-
-    padding: .6rem;
-
-    background: var(--data-panel-dark);
-
-    border: 1px solid var(--data-border-soft);
-    border-radius: 6px;
-}
-
-
-.market-condition-summary-item span {
-    display: block;
-
-    margin-bottom: .1rem;
-
-    color: var(--data-muted);
-
-    font-size: .7rem;
-}
-
-
-.market-condition-summary-item strong {
-    display: block;
-
-    color: #ffffff;
-
-    font-size: .8125rem;
-
-    overflow-wrap: anywhere;
-}
-
-
-/* ============================================================
-   5.4.4 ANALYSIS ACTION
-============================================================ */
 
 .market-condition-action {
     margin: .8rem 0;
@@ -1290,26 +1002,14 @@ squeezing hundreds of observations into one narrow chart.
     color: var(--data-muted);
 
     font-size: .75rem;
-    line-height: 1.45;
 
     text-align: center;
 }
 
 
-.market-condition-divider {
-    height: 1px;
-
-    margin: .8rem 0;
-
-    background: var(--data-border);
-}
-
-
-/* ============================================================
-   5.4.5 ANALYSIS RESULT
-============================================================ */
-
 .market-condition-result-card {
+    margin-top: .7rem;
+
     padding: .8rem;
 
     background: var(--data-panel-dark);
@@ -1321,9 +1021,8 @@ squeezing hundreds of observations into one narrow chart.
 
 .market-condition-result-header {
     display: flex;
-
-    align-items: center;
     justify-content: space-between;
+    align-items: center;
 
     gap: .7rem;
 
@@ -1334,14 +1033,11 @@ squeezing hundreds of observations into one narrow chart.
 .market-condition-result-label {
     display: block;
 
-    margin-bottom: .1rem;
-
     color: var(--data-muted);
 
     font-size: .7rem;
 
     text-transform: uppercase;
-    letter-spacing: .04em;
 }
 
 
@@ -1355,11 +1051,8 @@ squeezing hundreds of observations into one narrow chart.
 
 .market-condition-result-icon {
     display: inline-flex;
-
     align-items: center;
     justify-content: center;
-
-    flex: 0 0 auto;
 
     width: 38px;
     height: 38px;
@@ -1371,65 +1064,14 @@ squeezing hundreds of observations into one narrow chart.
         rgba(79, 134, 182, .25);
 
     border-radius: 8px;
-
-    font-size: .95rem;
-}
-
-
-.market-condition-stat-grid {
-    display: grid;
-
-    grid-template-columns:
-        repeat(
-            2,
-            minmax(0, 1fr)
-        );
-
-    gap: .5rem;
-}
-
-
-.market-condition-stat {
-    min-width: 0;
-
-    padding: .55rem .6rem;
-
-    background:
-        rgba(255, 255, 255, .015);
-
-    border:
-        1px solid
-        var(--data-border-soft);
-
-    border-radius: 5px;
-}
-
-
-.market-condition-stat span {
-    display: block;
-
-    margin-bottom: .1rem;
-
-    color: var(--data-muted);
-
-    font-size: .7rem;
-}
-
-
-.market-condition-stat strong {
-    display: block;
-
-    color: #ffffff;
-
-    font-size: .8125rem;
-
-    overflow-wrap: anywhere;
 }
 
 
 .market-condition-subheading {
-    margin-top: .75rem;
-    margin-bottom: .25rem;
+    margin:
+        .75rem
+        0
+        .25rem;
 
     color: #ffffff;
 
@@ -1438,21 +1080,7 @@ squeezing hundreds of observations into one narrow chart.
 }
 
 
-.market-condition-copy {
-    color: var(--data-muted);
-
-    font-size: .8125rem;
-    line-height: 1.55;
-}
-
-
-/* ============================================================
-   5.4.6 EXPLANATORY DETAILS
-============================================================ */
-
 .market-condition-details {
-    width: 100%;
-
     margin-top: .6rem;
 
     background: var(--data-panel-dark);
@@ -1476,17 +1104,10 @@ squeezing hundreds of observations into one narrow chart.
 }
 
 
-.market-condition-details summary::-webkit-details-marker {
-    display: none;
-}
-
-
 .market-condition-details summary::after {
     content: "+";
 
     float: right;
-
-    margin-left: .4rem;
 
     color: var(--data-blue);
 }
@@ -1498,14 +1119,29 @@ squeezing hundreds of observations into one narrow chart.
 
 
 .market-condition-details-body {
-    padding: 0 .7rem .7rem;
+    padding:
+        0
+        .7rem
+        .7rem;
 }
 
 
-.market-condition-analysis-flow {
+.market-condition-analysis-flow,
+.market-condition-classification-grid {
     display: grid;
 
     gap: .5rem;
+}
+
+
+.market-condition-analysis-step,
+.market-condition-classification {
+    padding: .6rem;
+
+    background: rgba(255, 255, 255, .012);
+
+    border: 1px solid var(--data-border-soft);
+    border-radius: 5px;
 }
 
 
@@ -1517,23 +1153,11 @@ squeezing hundreds of observations into one narrow chart.
         minmax(0, 1fr);
 
     gap: .55rem;
-
-    padding: .6rem;
-
-    background:
-        rgba(255, 255, 255, .012);
-
-    border:
-        1px solid
-        var(--data-border-soft);
-
-    border-radius: 5px;
 }
 
 
 .market-condition-step-number {
     display: inline-flex;
-
     align-items: center;
     justify-content: center;
 
@@ -1550,74 +1174,21 @@ squeezing hundreds of observations into one narrow chart.
 }
 
 
-.market-condition-analysis-step strong {
-    display: block;
-
-    margin-bottom: .1rem;
-
+.market-condition-analysis-step strong,
+.market-condition-classification strong {
     color: #ffffff;
 
     font-size: .8125rem;
 }
 
 
-.market-condition-analysis-step p {
-    margin: 0;
+.market-condition-analysis-step p,
+.market-condition-classification p {
+    margin: .25rem 0 0;
 
     color: var(--data-muted);
 
     font-size: .75rem;
-    line-height: 1.5;
-}
-
-
-.market-condition-backend {
-    margin-top: .55rem;
-    padding: .6rem;
-
-    color: var(--data-muted);
-
-    background:
-        rgba(79, 134, 182, .05);
-
-    border:
-        1px solid
-        var(--data-border-soft);
-
-    border-radius: 5px;
-
-    font-size: .75rem;
-    line-height: 1.55;
-}
-
-
-.market-condition-backend code {
-    color: #9fc2dd;
-}
-
-
-/* ============================================================
-   5.4.7 CONDITION DEFINITIONS
-============================================================ */
-
-.market-condition-classification-grid {
-    display: grid;
-
-    gap: .5rem;
-}
-
-
-.market-condition-classification {
-    padding: .6rem;
-
-    background:
-        rgba(255, 255, 255, .012);
-
-    border:
-        1px solid
-        var(--data-border-soft);
-
-    border-radius: 5px;
 }
 
 
@@ -1632,34 +1203,13 @@ squeezing hundreds of observations into one narrow chart.
 
 .market-condition-classification-heading {
     display: flex;
-
-    align-items: center;
     justify-content: space-between;
 
     gap: .4rem;
 }
 
 
-.market-condition-classification strong {
-    color: #ffffff;
-
-    font-size: .8125rem;
-}
-
-
-.market-condition-classification p {
-    margin: .25rem 0 0;
-
-    color: var(--data-muted);
-
-    font-size: .75rem;
-    line-height: 1.5;
-}
-
-
 .market-condition-current {
-    display: inline-flex;
-
     padding: .18rem .35rem;
 
     color: #ffffff;
@@ -1668,49 +1218,39 @@ squeezing hundreds of observations into one narrow chart.
     border-radius: 999px;
 
     font-size: .65rem;
-    font-weight: 700;
 }
 
 
+.market-condition-backend,
 .market-condition-notice {
-    display: flex;
-
-    align-items: flex-start;
-
-    gap: .5rem;
-
     margin-top: .65rem;
     padding: .65rem;
 
     color: var(--data-muted);
 
-    background:
-        rgba(211, 168, 84, .035);
-
     border:
         1px solid
-        rgba(211, 168, 84, .17);
+        var(--data-border-soft);
 
     border-radius: 6px;
 
     font-size: .75rem;
-    line-height: 1.5;
 }
 
 
-.market-condition-notice strong {
-    color: #e7eef5;
+.market-condition-backend code {
+    color: #9fc2dd;
 }
 
 
 /* ============================================================
-   5.5 MODEL SELECTOR
+   9. USE DATASET / MODEL SELECTION
 ============================================================ */
 
 .dataset-use {
     width: 100%;
 
-    padding: .9rem 1rem;
+    padding: 1rem;
 
     border-top: 1px solid var(--data-border);
 }
@@ -1719,14 +1259,12 @@ squeezing hundreds of observations into one narrow chart.
 .dataset-use h3 {
     margin: 0 0 .1rem;
 
-    color: var(--data-text);
-
     font-size: .95rem;
 }
 
 
-.dataset-use p {
-    margin: 0 0 .65rem;
+.dataset-use > p {
+    margin: 0 0 .8rem;
 
     color: var(--data-muted);
 
@@ -1744,36 +1282,81 @@ squeezing hundreds of observations into one narrow chart.
     align-items: end;
 
     gap: .6rem;
-
-    width: 100%;
 }
 
 
-.model-selector-layout > div {
-    min-width: 0;
-}
+/*
+The selected-model result now lives inside the same
+"Use this dataset" section instead of visually behaving like a
+separate page/section.
+*/
 
+.model-selection-feedback {
+    display: flex;
+    align-items: flex-start;
 
-.model-selector-layout label {
-    display: block;
+    gap: .6rem;
 
-    margin-bottom: .3rem;
+    margin-top: .8rem;
+    padding: .7rem .75rem;
 
-    color: #d7e0eb;
+    color: var(--data-muted);
+    background: var(--data-panel-dark);
+
+    border: 1px solid var(--data-border-soft);
+    border-radius: 6px;
 
     font-size: .75rem;
-    font-weight: 700;
 }
 
 
-/* ============================================================
-   6. COLLAPSIBLE MODEL SECTION
-============================================================ */
+.model-selection-feedback i {
+    margin-top: .15rem;
+
+    color: var(--data-blue);
+}
+
+
+.model-selection-feedback strong {
+    color: #ffffff;
+}
+
+
+.model-selection-feedback.ready {
+    background: rgba(50, 201, 139, .045);
+
+    border-color:
+        rgba(50, 201, 139, .20);
+}
+
+
+.model-selection-warning {
+    margin-top: .7rem;
+
+    padding: .65rem .75rem;
+
+    color: #e7cf9a;
+    background: rgba(211, 168, 84, .055);
+
+    border:
+        1px solid
+        rgba(211, 168, 84, .20);
+
+    border-radius: 6px;
+
+    font-size: .75rem;
+}
+
 
 .workspace-details {
-    width: 100%;
+    margin-top: .8rem;
 
-    border-top: 1px solid var(--data-border);
+    overflow: hidden;
+
+    background: rgba(255, 255, 255, .012);
+
+    border: 1px solid var(--data-border);
+    border-radius: 7px;
 }
 
 
@@ -1782,21 +1365,12 @@ squeezing hundreds of observations into one narrow chart.
 
     list-style: none;
 
-    width: 100%;
-
-    padding: .8rem 1rem;
+    padding: .8rem;
 
     color: #e7eef5;
 
     font-size: .8125rem;
     font-weight: 700;
-
-    overflow-wrap: anywhere;
-}
-
-
-.workspace-details summary::-webkit-details-marker {
-    display: none;
 }
 
 
@@ -1804,8 +1378,6 @@ squeezing hundreds of observations into one narrow chart.
     content: "+";
 
     float: right;
-
-    margin-left: .5rem;
 
     color: var(--data-blue);
 }
@@ -1817,15 +1389,12 @@ squeezing hundreds of observations into one narrow chart.
 
 
 .workspace-details-body {
-    width: 100%;
-
-    padding: 0 1rem 1rem;
+    padding:
+        0
+        .8rem
+        .8rem;
 }
 
-
-/* ============================================================
-   6.1 MODEL DETAILS
-============================================================ */
 
 .model-detail-grid {
     display: grid;
@@ -1837,14 +1406,10 @@ squeezing hundreds of observations into one narrow chart.
         );
 
     gap: .7rem;
-
-    width: 100%;
 }
 
 
 .model-detail-box {
-    min-width: 0;
-
     padding: .8rem;
 
     background: var(--data-panel-dark);
@@ -1857,8 +1422,6 @@ squeezing hundreds of observations into one narrow chart.
 .model-detail-box h4 {
     margin: 0 0 .3rem;
 
-    color: var(--data-text);
-
     font-size: .875rem;
 }
 
@@ -1869,68 +1432,41 @@ squeezing hundreds of observations into one narrow chart.
     color: var(--data-muted);
 
     font-size: .8125rem;
-    line-height: 1.5;
 }
 
 
 .model-status {
     display: inline-flex;
-    align-items: center;
-
-    max-width: 100%;
 
     margin-left: .35rem;
-
     padding: .2rem .4rem;
 
     border-radius: 999px;
 
     font-size: .7rem;
-    font-weight: 700;
-
-    vertical-align: middle;
 }
 
 
 .model-status.ready {
     color: #a8f3d0;
-
-    background:
-        rgba(50, 201, 139, .10);
-
-    border:
-        1px solid
-        rgba(50, 201, 139, .20);
+    background: rgba(50, 201, 139, .10);
 }
 
 
 .model-status.experimental {
     color: #ffe6ac;
-
-    background:
-        rgba(211, 168, 84, .10);
-
-    border:
-        1px solid
-        rgba(211, 168, 84, .20);
+    background: rgba(211, 168, 84, .10);
 }
 
 
 .model-status.catalogued {
     color: #c5d0dc;
-
-    background:
-        rgba(149, 166, 184, .10);
-
-    border:
-        1px solid
-        rgba(149, 166, 184, .20);
+    background: rgba(149, 166, 184, .10);
 }
 
 
 .requirement-list {
     display: flex;
-
     flex-wrap: wrap;
 
     gap: .35rem;
@@ -1938,45 +1474,29 @@ squeezing hundreds of observations into one narrow chart.
 
 
 .requirement {
-    max-width: 100%;
-
     padding: .25rem .4rem;
 
     color: #d8e1ea;
     background: #122031;
 
-    border:
-        1px solid
-        var(--data-border-soft);
-
+    border: 1px solid var(--data-border-soft);
     border-radius: 5px;
 
     font-size: .75rem;
-
-    overflow-wrap: anywhere;
 }
 
 
 /* ============================================================
-   6.2 SMALL TABLES
+   10. TABLES
 ============================================================ */
 
 .data-table-wrapper {
-    width: 100%;
-    max-width: 100%;
-
-    overflow-x: auto;
-    overflow-y: auto;
+    overflow: auto;
 
     max-height: 390px;
 
-    border:
-        1px solid
-        var(--data-border-soft);
-
+    border: 1px solid var(--data-border-soft);
     border-radius: 6px;
-
-    -webkit-overflow-scrolling: touch;
 }
 
 
@@ -1993,38 +1513,20 @@ squeezing hundreds of observations into one narrow chart.
 }
 
 
-.data-table thead th {
-    position: sticky;
-
-    top: 0;
-
-    z-index: 2;
-
+.data-table th {
     padding: .55rem .6rem;
 
     color: #cad6e2;
     background: #1d2c40;
 
-    border-bottom:
-        1px solid
-        var(--data-border);
-
-    white-space: nowrap;
+    border-bottom: 1px solid var(--data-border);
 }
 
 
-.data-table tbody td {
+.data-table td {
     padding: .5rem .6rem;
 
-    border-bottom:
-        1px solid
-        #22354a;
-}
-
-
-.data-table tbody tr:hover {
-    background:
-        rgba(255, 255, 255, .025);
+    border-bottom: 1px solid #22354a;
 }
 
 
@@ -2032,18 +1534,14 @@ squeezing hundreds of observations into one narrow chart.
     text-align: right;
 
     font-variant-numeric: tabular-nums;
-
-    white-space: nowrap;
 }
 
 
 /* ============================================================
-   7. RECENT IMPORTS
+   11. RECENT IMPORTS
 ============================================================ */
 
 .recent-imports {
-    width: 100%;
-
     margin-top: 1rem;
 
     overflow: hidden;
@@ -2058,23 +1556,14 @@ squeezing hundreds of observations into one narrow chart.
 .recent-imports summary {
     cursor: pointer;
 
-    list-style: none;
-
-    width: 100%;
-
     padding: .8rem 1rem;
+
+    list-style: none;
 
     color: #e8eef5;
 
     font-size: .8125rem;
     font-weight: 700;
-
-    overflow-wrap: anywhere;
-}
-
-
-.recent-imports summary::-webkit-details-marker {
-    display: none;
 }
 
 
@@ -2082,8 +1571,6 @@ squeezing hundreds of observations into one narrow chart.
     content: "+";
 
     float: right;
-
-    margin-left: .5rem;
 
     color: var(--data-blue);
 }
@@ -2095,19 +1582,18 @@ squeezing hundreds of observations into one narrow chart.
 
 
 .recent-imports-body {
-    width: 100%;
-
-    padding: 0 1rem 1rem;
+    padding:
+        0
+        1rem
+        1rem;
 }
 
 
 /* ============================================================
-   8. EMPTY STATES
+   12. EMPTY STATE
 ============================================================ */
 
 .data-empty {
-    width: 100%;
-
     padding: 2rem 1rem;
 
     text-align: center;
@@ -2120,13 +1606,7 @@ squeezing hundreds of observations into one narrow chart.
 
 
 .data-empty h3 {
-    margin-bottom: .35rem;
-
-    color: var(--data-text);
-
     font-size: 1rem;
-
-    overflow-wrap: anywhere;
 }
 
 
@@ -2138,47 +1618,11 @@ squeezing hundreds of observations into one narrow chart.
     color: var(--data-muted);
 
     font-size: .8125rem;
-    line-height: 1.5;
 }
 
 
 /* ============================================================
-   9. LARGE DESKTOP
-============================================================ */
-
-@media (min-width: 1400px) {
-
-    .data-workspace {
-        max-width: 1480px;
-    }
-
-
-    /*
-    Previous layout:
-        1.42fr / .78fr
-
-    New layout:
-        chart slightly narrower
-        Market Condition slightly wider
-    */
-
-    .dataset-main {
-        grid-template-columns:
-            minmax(0, .95fr)
-            minmax(460px, 1.05fr);
-    }
-
-
-    .chart-scroll-content {
-        min-width: 1050px;
-        height: 340px;
-    }
-
-}
-
-
-/* ============================================================
-   10. TABLET / SMALL DESKTOP
+   13. RESPONSIVE
 ============================================================ */
 
 @media (max-width: 991.98px) {
@@ -2200,8 +1644,7 @@ squeezing hundreds of observations into one narrow chart.
 
 
     .dataset-main {
-        grid-template-columns:
-            minmax(0, 1fr);
+        grid-template-columns: 1fr;
     }
 
 
@@ -2228,16 +1671,6 @@ squeezing hundreds of observations into one narrow chart.
     }
 
 
-    .dataset-switcher {
-        width: 100%;
-    }
-
-
-    .dataset-switcher select {
-        width: 100%;
-    }
-
-
     .chart-summary-grid {
         grid-template-columns:
             repeat(
@@ -2246,50 +1679,13 @@ squeezing hundreds of observations into one narrow chart.
             );
     }
 
-
-    .market-condition-stat-grid {
-        grid-template-columns:
-            repeat(
-                2,
-                minmax(0, 1fr)
-            );
-    }
-
-
-    .chart-scroll-content {
-        min-width: 900px;
-    }
-
 }
 
 
-/* ============================================================
-   11. MOBILE
-============================================================ */
-
 @media (max-width: 767.98px) {
-
-    .data-workspace {
-        width: 100%;
-        max-width: 100%;
-
-        margin: 0 auto;
-
-        transform: none;
-    }
-
 
     .data-page-header {
         flex-direction: column;
-
-        align-items: stretch;
-    }
-
-
-    .data-page-header > div {
-        flex: 1 1 auto;
-
-        width: 100%;
     }
 
 
@@ -2299,8 +1695,7 @@ squeezing hundreds of observations into one narrow chart.
 
 
     .data-flow {
-        grid-template-columns:
-            minmax(0, 1fr);
+        grid-template-columns: 1fr;
     }
 
 
@@ -2313,20 +1708,14 @@ squeezing hundreds of observations into one narrow chart.
     }
 
 
-    .data-flow-step:last-child {
-        border-bottom: 0;
+    .data-import-grid,
+    .model-selector-layout,
+    .model-detail-grid {
+        grid-template-columns: 1fr;
     }
 
 
-    .data-import-grid {
-        grid-template-columns:
-            minmax(0, 1fr);
-    }
-
-
-    .data-import-grid > .data-primary-button {
-        grid-column: auto;
-
+    .model-selector-layout .data-primary-button {
         width: 100%;
     }
 
@@ -2337,8 +1726,6 @@ squeezing hundreds of observations into one narrow chart.
                 2,
                 minmax(0, 1fr)
             );
-
-        gap: .75rem;
     }
 
 
@@ -2348,105 +1735,23 @@ squeezing hundreds of observations into one narrow chart.
     }
 
 
-    .dataset-switcher,
-    .dataset-switcher select {
-        width: 100%;
-    }
-
-
     .chart-toolbar {
         flex-direction: column;
-
-        align-items: stretch;
-    }
-
-
-    .chart-toolbar-main {
-        flex: 1 1 auto;
-    }
-
-
-    .chart-controls {
-        justify-content: flex-start;
     }
 
 
     .chart-scroll-content {
         min-width: 820px;
-
         height: 310px;
-    }
-
-
-    .model-selector-layout,
-    .model-detail-grid {
-        grid-template-columns:
-            minmax(0, 1fr);
-    }
-
-
-    .model-selector-layout .data-primary-button {
-        width: 100%;
-    }
-
-
-    .market-condition-stat-grid {
-        grid-template-columns:
-            repeat(
-                2,
-                minmax(0, 1fr)
-            );
-    }
-
-
-    .workspace-details summary {
-        padding: .75rem;
-    }
-
-
-    .workspace-details-body {
-        padding: 0 .75rem .75rem;
-    }
-
-
-    .recent-imports summary {
-        padding: .75rem;
-    }
-
-
-    .recent-imports-body {
-        padding: 0 .75rem .75rem;
     }
 
 }
 
 
-/* ============================================================
-   12. VERY SMALL PHONE
-============================================================ */
-
 @media (max-width: 575.98px) {
 
-    .data-page-title {
-        font-size: 1.45rem;
-    }
-
-
-    .data-import-panel {
-        padding: .8rem;
-    }
-
-
-    .data-flow-step {
-        padding: .75rem;
-    }
-
-
     .dataset-header {
-        grid-template-columns:
-            minmax(0, 1fr);
-
-        padding: .8rem;
+        grid-template-columns: 1fr;
     }
 
 
@@ -2456,38 +1761,27 @@ squeezing hundreds of observations into one narrow chart.
     }
 
 
-    .dataset-stat {
-        padding-top: .4rem;
-
-        border-top:
-            1px solid
-            var(--data-border-soft);
-    }
-
-
-    .dataset-chart-column,
-    .market-condition-panel,
-    .dataset-use {
-        padding-left: .8rem;
-        padding-right: .8rem;
+    .chart-summary-grid,
+    .market-condition-summary-grid,
+    .market-condition-stat-grid {
+        grid-template-columns: 1fr;
     }
 
 
     .chart-controls {
-        display: grid;
-
-        grid-template-columns:
-            minmax(0, 1fr);
+        width: 100%;
     }
 
 
     .chart-source-buttons {
+        display: flex;
+
         width: 100%;
     }
 
 
     .chart-source-buttons .btn {
-        flex: 1 1 50%;
+        flex: 1;
     }
 
 
@@ -2496,53 +1790,9 @@ squeezing hundreds of observations into one narrow chart.
     }
 
 
-    .chart-summary-grid {
-        grid-template-columns:
-            repeat(
-                2,
-                minmax(0, 1fr)
-            );
-    }
-
-
     .chart-scroll-content {
         min-width: 760px;
-
         height: 290px;
-    }
-
-
-    .market-condition-heading-row {
-        flex-direction: column;
-    }
-
-
-    .market-condition-summary-grid,
-    .market-condition-stat-grid {
-        grid-template-columns:
-            minmax(0, 1fr);
-    }
-
-
-    .model-status {
-        margin-left: .15rem;
-    }
-
-
-    .data-provider-line {
-        flex-direction: column;
-
-        gap: .3rem;
-    }
-
-
-    .data-empty {
-        padding: 1.5rem .8rem;
-    }
-
-
-    .data-table-wrapper {
-        border-radius: 5px;
     }
 
 }
@@ -2654,7 +1904,7 @@ squeezing hundreds of observations into one narrow chart.
             </strong>
 
             <span>
-                Continue to strategy or risk workflows
+                Continue to strategy or model workflows
             </span>
 
         </span>
@@ -2665,7 +1915,7 @@ squeezing hundreds of observations into one narrow chart.
 
 
 <!-- ==========================================================
-     3. IMPORT HISTORICAL DATA
+     3. IMPORT DATA
 =========================================================== -->
 
 <section class="data-import-panel">
@@ -2695,9 +1945,7 @@ squeezing hundreds of observations into one narrow chart.
 
             <div class="data-field">
 
-                <label
-                    for="{{ form.source.id_for_label }}"
-                >
+                <label for="{{ form.source.id_for_label }}">
                     Data source
                 </label>
 
@@ -2708,9 +1956,7 @@ squeezing hundreds of observations into one narrow chart.
 
             <div class="data-field">
 
-                <label
-                    for="{{ form.symbol.id_for_label }}"
-                >
+                <label for="{{ form.symbol.id_for_label }}">
                     Asset / symbol
                 </label>
 
@@ -2721,9 +1967,7 @@ squeezing hundreds of observations into one narrow chart.
 
             <div class="data-field">
 
-                <label
-                    for="{{ form.start_date.id_for_label }}"
-                >
+                <label for="{{ form.start_date.id_for_label }}">
                     Start date
                 </label>
 
@@ -2734,9 +1978,7 @@ squeezing hundreds of observations into one narrow chart.
 
             <div class="data-field">
 
-                <label
-                    for="{{ form.end_date.id_for_label }}"
-                >
+                <label for="{{ form.end_date.id_for_label }}">
                     End date
                 </label>
 
@@ -2816,7 +2058,7 @@ squeezing hundreds of observations into one narrow chart.
 
 
 <!-- ==========================================================
-     4. SELECTED DATASET WORKSPACE
+     4. SELECTED DATASET
 =========================================================== -->
 
 {% if selected_symbol and market_data %}
@@ -2846,7 +2088,7 @@ squeezing hundreds of observations into one narrow chart.
 
                         <i class="fa-solid fa-circle"></i>
 
-                        Ready for analysis
+                        Ready
 
                     </span>
 
@@ -2873,9 +2115,7 @@ squeezing hundreds of observations into one narrow chart.
 
                 {{ market_data_feed|default:"IEX" }}
 
-                ·
-
-                selected historical dataset
+                · selected dataset
 
             </div>
 
@@ -2951,18 +2191,10 @@ squeezing hundreds of observations into one narrow chart.
             class="dataset-switcher"
         >
 
-            <label
-                for="datasetSymbol"
-                class="visually-hidden"
-            >
-                Select historical dataset
-            </label>
-
-
             <select
-                id="datasetSymbol"
                 name="symbol"
                 onchange="this.form.submit()"
+                aria-label="Selected dataset"
             >
 
                 {% for symbol in available_symbols %}
@@ -2988,21 +2220,19 @@ squeezing hundreds of observations into one narrow chart.
 
 
     <!-- ======================================================
-         4.2 PRICE CHART + MARKET CONDITION
+         4.2 CHART + MARKET CONDITION
     ======================================================= -->
 
     <div class="dataset-main">
 
 
         <!-- ==================================================
-             LEFT - NUMERICAL PRICE CHART
+             LEFT - PRICE CHART
         =================================================== -->
 
         <div class="dataset-chart-column">
 
-
             <div class="chart-toolbar">
-
 
                 <div class="chart-toolbar-main">
 
@@ -3010,21 +2240,17 @@ squeezing hundreds of observations into one narrow chart.
                         Price History
                     </div>
 
-
                     <h3 class="chart-title">
 
                         {{ selected_symbol }} Market Price
 
                     </h3>
 
-
                     <p
                         id="chartSourceDescription"
                         class="chart-source-description"
                     >
-
                         Stored MarketPulse historical data
-
                     </p>
 
                 </div>
@@ -3032,15 +2258,8 @@ squeezing hundreds of observations into one narrow chart.
 
                 <div class="chart-controls">
 
-
                     <div
-                        class="
-                            btn-group
-                            btn-group-sm
-                            chart-source-buttons
-                        "
-                        role="group"
-                        aria-label="Chart data source"
+                        class="btn-group btn-group-sm chart-source-buttons"
                     >
 
                         <button
@@ -3071,21 +2290,9 @@ squeezing hundreds of observations into one narrow chart.
                     </div>
 
 
-                    <label
-                        for="alpacaChartPeriod"
-                        class="visually-hidden"
-                    >
-                        Alpaca chart period
-                    </label>
-
-
                     <select
                         id="alpacaChartPeriod"
-                        class="
-                            form-select
-                            form-select-sm
-                            chart-period-select
-                        "
+                        class="form-select form-select-sm chart-period-select"
                         disabled
                     >
 
@@ -3097,10 +2304,7 @@ squeezing hundreds of observations into one narrow chart.
                             5 Days
                         </option>
 
-                        <option
-                            value="1M"
-                            selected
-                        >
+                        <option value="1M" selected>
                             1 Month
                         </option>
 
@@ -3115,12 +2319,7 @@ squeezing hundreds of observations into one narrow chart.
             </div>
 
 
-            <!-- ==============================================
-                 CHART SUMMARY
-            =============================================== -->
-
             <div class="chart-summary-grid">
-
 
                 <div class="chart-summary-item">
 
@@ -3186,10 +2385,6 @@ squeezing hundreds of observations into one narrow chart.
             </div>
 
 
-            <!-- ==============================================
-                 HORIZONTALLY SCROLLABLE NUMERICAL CHART
-            =============================================== -->
-
             <div
                 id="chartScrollContainer"
                 class="chart-frame"
@@ -3200,11 +2395,7 @@ squeezing hundreds of observations into one narrow chart.
                     class="chart-scroll-content"
                 >
 
-                    <canvas
-                        id="historicalPriceChart"
-                        aria-label="{{ selected_symbol }} numerical market price history"
-                    >
-                    </canvas>
+                    <canvas id="historicalPriceChart"></canvas>
 
                 </div>
 
@@ -3224,9 +2415,6 @@ squeezing hundreds of observations into one narrow chart.
                     Showing stored historical observations for
                     {{ selected_symbol }}.
 
-                    Use the horizontal scrollbar below the chart
-                    to move through the price history.
-
                 </span>
 
             </div>
@@ -3235,14 +2423,13 @@ squeezing hundreds of observations into one narrow chart.
 
 
         <!-- ==================================================
-             RIGHT - DETAILED MARKET CONDITION
+             RIGHT - MARKET CONDITION
         =================================================== -->
 
         <aside
             id="market-condition"
             class="market-condition-panel"
         >
-
 
             <div class="market-condition-eyebrow">
                 Detailed Market Condition
@@ -3253,35 +2440,23 @@ squeezing hundreds of observations into one narrow chart.
 
                 <div>
 
-
                     {% if latest_regime %}
 
                         <h3 class="market-condition-title">
 
                             {% if latest_regime.regime == "bull" or latest_regime.regime == "uptrend" %}
-
                                 Uptrend
-
                             {% elif latest_regime.regime == "bear" or latest_regime.regime == "downtrend" %}
-
                                 Downtrend
-
                             {% elif latest_regime.regime == "sideways" %}
-
                                 Sideways
-
                             {% elif latest_regime.regime == "volatile" or latest_regime.regime == "high_volatility" %}
-
                                 High Volatility
-
                             {% else %}
-
                                 {{ latest_regime.get_regime_display }}
-
                             {% endif %}
 
                         </h3>
-
 
                         <p class="market-condition-context">
 
@@ -3293,16 +2468,11 @@ squeezing hundreds of observations into one narrow chart.
 
                         </p>
 
-
                     {% else %}
 
-
                         <h3 class="market-condition-title">
-
                             Not analysed yet
-
                         </h3>
-
 
                         <p class="market-condition-context">
 
@@ -3314,7 +2484,6 @@ squeezing hundreds of observations into one narrow chart.
                             </strong>.
 
                         </p>
-
 
                     {% endif %}
 
@@ -3336,10 +2505,6 @@ squeezing hundreds of observations into one narrow chart.
             </div>
 
 
-            <!-- ==============================================
-                 SELECTED DATASET SUMMARY
-            =============================================== -->
-
             <div class="market-condition-summary-grid">
 
                 <div class="market-condition-summary-item">
@@ -3349,11 +2514,7 @@ squeezing hundreds of observations into one narrow chart.
                     </span>
 
                     <strong>
-
-                        {{ total_records }}
-
-                        / 60 minimum
-
+                        {{ total_records }} / 60 minimum
                     </strong>
 
                 </div>
@@ -3368,13 +2529,9 @@ squeezing hundreds of observations into one narrow chart.
                     <strong>
 
                         {% if latest_record %}
-
                             ${{ latest_record.close_price|floatformat:2 }}
-
                         {% else %}
-
                             —
-
                         {% endif %}
 
                     </strong>
@@ -3391,13 +2548,9 @@ squeezing hundreds of observations into one narrow chart.
                     <strong>
 
                         {% if earliest_record %}
-
                             {{ earliest_record.date|date:"d M Y" }}
-
                         {% else %}
-
                             —
-
                         {% endif %}
 
                     </strong>
@@ -3414,13 +2567,9 @@ squeezing hundreds of observations into one narrow chart.
                     <strong>
 
                         {% if latest_record %}
-
                             {{ latest_record.date|date:"d M Y" }}
-
                         {% else %}
-
                             —
-
                         {% endif %}
 
                     </strong>
@@ -3429,10 +2578,6 @@ squeezing hundreds of observations into one narrow chart.
 
             </div>
 
-
-            <!-- ==============================================
-                 DATA READINESS
-            =============================================== -->
 
             {% if total_records >= 60 %}
 
@@ -3443,23 +2588,17 @@ squeezing hundreds of observations into one narrow chart.
                     <span>
 
                         <strong>
-                            Dataset ready for Market Condition analysis.
+                            Dataset ready for analysis.
                         </strong>
 
-                        {{ total_records }} stored historical
-                        observations are available.
-
-                        The current classifier requires at least
-                        60 observations because it evaluates both
-                        20-period and 60-period moving averages.
+                        {{ total_records }}
+                        stored observations are available.
 
                     </span>
 
                 </div>
 
-
             {% else %}
-
 
                 <div class="market-condition-readiness warning">
 
@@ -3472,15 +2611,10 @@ squeezing hundreds of observations into one narrow chart.
                         </strong>
 
                         {{ selected_symbol }} currently has
-                        {{ total_records }} stored observations.
+                        {{ total_records }} observations.
 
-                        The Market Condition engine requires at
-                        least 60.
-
-                        Running the analysis will allow the backend
-                        to request additional recent historical
-                        Alpaca observations before attempting the
-                        classification.
+                        The current Market Condition classifier
+                        requires at least 60.
 
                     </span>
 
@@ -3535,10 +2669,6 @@ squeezing hundreds of observations into one narrow chart.
             {% endif %}
 
 
-            <!-- ==============================================
-                 ANALYSIS ACTION
-            =============================================== -->
-
             <div class="market-condition-action">
 
                 <form
@@ -3547,7 +2677,6 @@ squeezing hundreds of observations into one narrow chart.
                 >
 
                     {% csrf_token %}
-
 
                     <input
                         type="hidden"
@@ -3585,198 +2714,73 @@ squeezing hundreds of observations into one narrow chart.
 
                 </form>
 
-
-                {% if total_records < 60 %}
-
-                    <p class="market-condition-action-note">
-
-                        MarketPulse will first attempt to obtain
-                        sufficient recent daily historical bars
-                        from Alpaca.
-
-                        Analysis only runs after the required
-                        historical dataset is available.
-
-                    </p>
-
-                {% else %}
-
-                    <p class="market-condition-action-note">
-
-                        Analysis uses the stored historical
-                        {{ selected_symbol }} dataset and saves
-                        the resulting Market Regime in PostgreSQL.
-
-                    </p>
-
-                {% endif %}
-
             </div>
 
 
-            <!-- ==============================================
-                 ANALYSIS RESULT
-            =============================================== -->
-
             {% if latest_regime %}
-
-
-                <div class="market-condition-divider"></div>
-
 
                 <div class="market-condition-result-card">
 
-
                     <div class="market-condition-result-header">
-
 
                         <div>
 
                             <span class="market-condition-result-label">
-
                                 Detected Market Condition
-
                             </span>
-
 
                             <span class="market-condition-result-name">
 
                                 {% if latest_regime.regime == "bull" or latest_regime.regime == "uptrend" %}
-
                                     Uptrend
-
                                 {% elif latest_regime.regime == "bear" or latest_regime.regime == "downtrend" %}
-
                                     Downtrend
-
                                 {% elif latest_regime.regime == "sideways" %}
-
                                     Sideways
-
                                 {% elif latest_regime.regime == "volatile" or latest_regime.regime == "high_volatility" %}
-
                                     High Volatility
-
                                 {% else %}
-
                                     {{ latest_regime.get_regime_display }}
-
                                 {% endif %}
 
                             </span>
 
                         </div>
 
-
-                        <span class="market-condition-result-icon">
-
-                            {% if latest_regime.regime == "bull" or latest_regime.regime == "uptrend" %}
-
-                                <i class="fa-solid fa-arrow-trend-up text-success"></i>
-
-                            {% elif latest_regime.regime == "bear" or latest_regime.regime == "downtrend" %}
-
-                                <i class="fa-solid fa-arrow-trend-down text-danger"></i>
-
-                            {% elif latest_regime.regime == "sideways" %}
-
-                                <i class="fa-solid fa-arrows-left-right text-primary"></i>
-
-                            {% elif latest_regime.regime == "volatile" or latest_regime.regime == "high_volatility" %}
-
-                                <i class="fa-solid fa-wave-square text-warning"></i>
-
-                            {% else %}
-
-                                <i class="fa-solid fa-chart-line text-primary"></i>
-
-                            {% endif %}
-
-                        </span>
-
                     </div>
 
 
                     <div class="market-condition-stat-grid">
 
-
                         <div class="market-condition-stat">
-
-                            <span>
-                                Period return
-                            </span>
-
-                            <strong id="periodReturn">
-                                —
-                            </strong>
-
+                            <span>Period return</span>
+                            <strong id="periodReturn">—</strong>
                         </div>
 
-
                         <div class="market-condition-stat">
-
-                            <span>
-                                Average daily return
-                            </span>
-
-                            <strong id="averageReturn">
-                                —
-                            </strong>
-
+                            <span>Average daily return</span>
+                            <strong id="averageReturn">—</strong>
                         </div>
 
-
                         <div class="market-condition-stat">
-
-                            <span>
-                                Annualised volatility
-                            </span>
-
-                            <strong id="annualVolatility">
-                                —
-                            </strong>
-
+                            <span>Annualised volatility</span>
+                            <strong id="annualVolatility">—</strong>
                         </div>
 
-
                         <div class="market-condition-stat">
-
-                            <span>
-                                Maximum drawdown
-                            </span>
-
-                            <strong id="maximumDrawdown">
-                                —
-                            </strong>
-
+                            <span>Maximum drawdown</span>
+                            <strong id="maximumDrawdown">—</strong>
                         </div>
 
-
                         <div class="market-condition-stat">
-
-                            <span>
-                                Momentum
-                            </span>
-
-                            <strong id="momentum">
-                                —
-                            </strong>
-
+                            <span>Momentum</span>
+                            <strong id="momentum">—</strong>
                         </div>
 
-
                         <div class="market-condition-stat">
-
-                            <span>
-                                Volume behaviour
-                            </span>
-
-                            <strong id="volumeBehaviour">
-                                —
-                            </strong>
-
+                            <span>Volume behaviour</span>
+                            <strong id="volumeBehaviour">—</strong>
                         </div>
-
 
                         <div class="market-condition-stat">
 
@@ -3785,15 +2789,11 @@ squeezing hundreds of observations into one narrow chart.
                             </span>
 
                             <strong>
-
                                 {{ latest_regime.confidence|floatformat:2 }}
-
                                 / 1.00
-
                             </strong>
 
                         </div>
-
 
                         <div class="market-condition-stat">
 
@@ -3802,39 +2802,7 @@ squeezing hundreds of observations into one narrow chart.
                             </span>
 
                             <strong>
-
                                 {{ latest_regime.volatility|floatformat:2 }}
-
-                            </strong>
-
-                        </div>
-
-
-                        <div class="market-condition-stat">
-
-                            <span>
-                                Trend strength
-                            </span>
-
-                            <strong>
-
-                                {{ latest_regime.trend_strength|floatformat:4 }}
-
-                            </strong>
-
-                        </div>
-
-
-                        <div class="market-condition-stat">
-
-                            <span>
-                                Analysis date
-                            </span>
-
-                            <strong>
-
-                                {{ latest_regime.date|date:"d M Y" }}
-
                             </strong>
 
                         </div>
@@ -3842,186 +2810,39 @@ squeezing hundreds of observations into one narrow chart.
                     </div>
 
                 </div>
-
-
-                <div class="market-condition-subheading">
-
-                    What does this mean?
-
-                </div>
-
-
-                <div class="market-condition-copy">
-
-
-                    {% if latest_regime.regime == "bull" or latest_regime.regime == "uptrend" %}
-
-                        During the analysed historical period,
-                        {{ selected_symbol }} showed an upward
-                        price structure.
-
-                        The current price, shorter moving average
-                        and longer moving average were consistent
-                        with the MarketPulse criteria for an
-                        Uptrend.
-
-
-                    {% elif latest_regime.regime == "bear" or latest_regime.regime == "downtrend" %}
-
-                        During the analysed historical period,
-                        {{ selected_symbol }} showed a downward
-                        price structure.
-
-                        The recent moving-average relationship was
-                        consistent with the MarketPulse criteria
-                        for a Downtrend.
-
-
-                    {% elif latest_regime.regime == "sideways" %}
-
-                        During the analysed historical period,
-                        {{ selected_symbol }} did not satisfy the
-                        stronger directional conditions required
-                        for an Uptrend or Downtrend.
-
-                        MarketPulse therefore classified the
-                        recent historical environment as Sideways.
-
-
-                    {% elif latest_regime.regime == "volatile" or latest_regime.regime == "high_volatility" %}
-
-                        Historical daily returns for
-                        {{ selected_symbol }} produced elevated
-                        annualised volatility.
-
-                        MarketPulse therefore classified the
-                        recent historical environment as
-                        High Volatility.
-
-
-                    {% else %}
-
-                        MarketPulse classified the recent
-                        historical market environment using
-                        stored price behaviour, moving averages,
-                        trend strength and historical volatility.
-
-                    {% endif %}
-
-                </div>
-
 
             {% else %}
 
-
                 <div class="market-condition-result-card">
 
-                    <div class="market-condition-result-header">
+                    <span class="market-condition-result-label">
+                        Analysis Status
+                    </span>
 
-                        <div>
-
-                            <span class="market-condition-result-label">
-
-                                Analysis Status
-
-                            </span>
-
-
-                            <span class="market-condition-result-name">
-
-                                {% if total_records >= 60 %}
-
-                                    Ready to Analyse
-
-                                {% else %}
-
-                                    Historical Refresh Required
-
-                                {% endif %}
-
-                            </span>
-
-                        </div>
-
-
-                        <span class="market-condition-result-icon">
-
-                            {% if total_records >= 60 %}
-
-                                <i class="fa-solid fa-chart-area text-primary"></i>
-
-                            {% else %}
-
-                                <i class="fa-solid fa-database text-warning"></i>
-
-                            {% endif %}
-
-                        </span>
-
-                    </div>
-
-
-                    <p class="market-condition-copy mb-0">
+                    <span class="market-condition-result-name">
 
                         {% if total_records >= 60 %}
-
-                            {{ selected_symbol }} has enough
-                            stored historical observations for
-                            the current Market Condition model.
-
-                            Run the analysis to calculate the
-                            classification, confidence,
-                            historical volatility and trend
-                            strength.
-
+                            Ready to Analyse
                         {% else %}
-
-                            {{ selected_symbol }} currently has
-                            {{ total_records }}
-                            stored historical observations.
-
-                            The classifier requires at least
-                            60 observations because it uses a
-                            60-period moving average.
-
-                            Use
-
-                            <strong>
-                                Refresh Alpaca Data & Analyse
-                            </strong>
-
-                            to allow the backend to obtain more
-                            recent historical bars before
-                            attempting the analysis.
-
+                            Historical Refresh Required
                         {% endif %}
 
-                    </p>
+                    </span>
 
                 </div>
 
             {% endif %}
 
 
-            <!-- ==============================================
-                 HOW ANALYSIS WORKS
-            =============================================== -->
-
             <details class="market-condition-details">
 
                 <summary>
-
-                    <i class="fa-solid fa-gears text-primary me-1"></i>
-
                     How does Market Condition work?
-
                 </summary>
-
 
                 <div class="market-condition-details-body">
 
                     <div class="market-condition-analysis-flow">
-
 
                         <div class="market-condition-analysis-step">
 
@@ -4032,20 +2853,13 @@ squeezing hundreds of observations into one narrow chart.
                             <div>
 
                                 <strong>
-                                    Check Historical Coverage
+                                    Check historical coverage
                                 </strong>
 
                                 <p>
-
-                                    MarketPulse checks how many
-                                    historical {{ selected_symbol }}
-                                    observations are available in
-                                    core.MarketData.
-
-                                    At least 60 observations are
-                                    required by the current
-                                    classification model.
-
+                                    MarketPulse checks the historical
+                                    observations available for
+                                    {{ selected_symbol }}.
                                 </p>
 
                             </div>
@@ -4062,17 +2876,13 @@ squeezing hundreds of observations into one narrow chart.
                             <div>
 
                                 <strong>
-                                    Refresh From Alpaca If Required
+                                    Refresh from Alpaca if required
                                 </strong>
 
                                 <p>
-
-                                    When historical coverage is
-                                    insufficient, the backend can
-                                    request additional recent daily
-                                    OHLCV bars from Alpaca and store
-                                    or update them in PostgreSQL.
-
+                                    Additional daily OHLCV bars can
+                                    be requested when coverage is
+                                    insufficient.
                                 </p>
 
                             </div>
@@ -4089,16 +2899,13 @@ squeezing hundreds of observations into one narrow chart.
                             <div>
 
                                 <strong>
-                                    Calculate Returns and Volatility
+                                    Analyse returns and volatility
                                 </strong>
 
                                 <p>
-
-                                    MarketPulse calculates historical
-                                    daily percentage returns and
-                                    annualises their variability to
-                                    estimate historical volatility.
-
+                                    Historical price changes are
+                                    evaluated to estimate return and
+                                    volatility behaviour.
                                 </p>
 
                             </div>
@@ -4115,18 +2922,14 @@ squeezing hundreds of observations into one narrow chart.
                             <div>
 
                                 <strong>
-                                    Compare Moving Averages
+                                    Compare moving averages
                                 </strong>
 
                                 <p>
-
-                                    The analytical engine calculates
-                                    a 20-period moving average and a
-                                    60-period moving average and uses
-                                    their relationship with the latest
-                                    stored closing price to evaluate
-                                    recent trend structure.
-
+                                    Twenty-period and sixty-period
+                                    moving averages are used to
+                                    evaluate historical trend
+                                    structure.
                                 </p>
 
                             </div>
@@ -4143,17 +2946,12 @@ squeezing hundreds of observations into one narrow chart.
                             <div>
 
                                 <strong>
-                                    Classify the Market Condition
+                                    Save classification
                                 </strong>
 
                                 <p>
-
-                                    The internal Market Regime
-                                    Analysis classifies the historical
-                                    environment as Uptrend, Downtrend,
-                                    Sideways or High Volatility and
-                                    saves the result in PostgreSQL.
-
+                                    The resulting MarketRegime is
+                                    saved to PostgreSQL.
                                 </p>
 
                             </div>
@@ -4162,81 +2960,20 @@ squeezing hundreds of observations into one narrow chart.
 
                     </div>
 
-
-                    <div class="market-condition-backend">
-
-                        <strong>
-                            Backend flow:
-                        </strong>
-
-                        <br>
-
-                        <code>Alpaca</code>
-
-                        →
-
-                        <code>
-                            data_management/services/alpaca.py
-                        </code>
-
-                        →
-
-                        <code>
-                            core.MarketData
-                        </code>
-
-                        →
-
-                        <code>
-                            data_management.views.market_condition()
-                        </code>
-
-                        →
-
-                        <code>
-                            identify_market_regime()
-                        </code>
-
-                        →
-
-                        <code>
-                            analysis_tools.models.MarketRegime
-                        </code>
-
-                        →
-
-                        PostgreSQL
-
-                        →
-
-                        Detailed Market Condition panel.
-
-                    </div>
-
                 </div>
 
             </details>
 
 
-            <!-- ==============================================
-                 MARKET CONDITION DEFINITIONS
-            =============================================== -->
-
             <details class="market-condition-details">
 
                 <summary>
-
-                    <i class="fa-solid fa-tags text-primary me-1"></i>
-
                     What do the market conditions mean?
-
                 </summary>
-
 
                 <div class="market-condition-details-body">
 
                     <div class="market-condition-classification-grid">
-
 
                         <div
                             class="
@@ -4247,34 +2984,13 @@ squeezing hundreds of observations into one narrow chart.
                             "
                         >
 
-                            <div class="market-condition-classification-heading">
-
-                                <strong>
-
-                                    <i class="fa-solid fa-arrow-trend-up text-success me-1"></i>
-
-                                    Uptrend
-
-                                </strong>
-
-
-                                {% if latest_regime.regime == "bull" or latest_regime.regime == "uptrend" %}
-
-                                    <span class="market-condition-current">
-                                        Current Result
-                                    </span>
-
-                                {% endif %}
-
-                            </div>
-
+                            <strong>
+                                Uptrend
+                            </strong>
 
                             <p>
-
-                                Prices and moving averages indicate
-                                a sustained upward historical
-                                structure.
-
+                                Historical prices show a sustained
+                                upward structure.
                             </p>
 
                         </div>
@@ -4289,34 +3005,13 @@ squeezing hundreds of observations into one narrow chart.
                             "
                         >
 
-                            <div class="market-condition-classification-heading">
-
-                                <strong>
-
-                                    <i class="fa-solid fa-arrow-trend-down text-danger me-1"></i>
-
-                                    Downtrend
-
-                                </strong>
-
-
-                                {% if latest_regime.regime == "bear" or latest_regime.regime == "downtrend" %}
-
-                                    <span class="market-condition-current">
-                                        Current Result
-                                    </span>
-
-                                {% endif %}
-
-                            </div>
-
+                            <strong>
+                                Downtrend
+                            </strong>
 
                             <p>
-
-                                Prices and moving averages indicate
-                                a sustained downward historical
-                                structure.
-
+                                Historical prices show a sustained
+                                downward structure.
                             </p>
 
                         </div>
@@ -4331,35 +3026,13 @@ squeezing hundreds of observations into one narrow chart.
                             "
                         >
 
-                            <div class="market-condition-classification-heading">
-
-                                <strong>
-
-                                    <i class="fa-solid fa-arrows-left-right text-primary me-1"></i>
-
-                                    Sideways
-
-                                </strong>
-
-
-                                {% if latest_regime.regime == "sideways" %}
-
-                                    <span class="market-condition-current">
-                                        Current Result
-                                    </span>
-
-                                {% endif %}
-
-                            </div>
-
+                            <strong>
+                                Sideways
+                            </strong>
 
                             <p>
-
-                                Recent historical prices do not
-                                satisfy the stronger directional
-                                criteria required for an Uptrend
-                                or Downtrend.
-
+                                Strong directional criteria are not
+                                satisfied.
                             </p>
 
                         </div>
@@ -4374,35 +3047,14 @@ squeezing hundreds of observations into one narrow chart.
                             "
                         >
 
-                            <div class="market-condition-classification-heading">
-
-                                <strong>
-
-                                    <i class="fa-solid fa-wave-square text-warning me-1"></i>
-
-                                    High Volatility
-
-                                </strong>
-
-
-                                {% if latest_regime.regime == "volatile" or latest_regime.regime == "high_volatility" %}
-
-                                    <span class="market-condition-current">
-                                        Current Result
-                                    </span>
-
-                                {% endif %}
-
-                            </div>
-
+                            <strong>
+                                High Volatility
+                            </strong>
 
                             <p>
-
-                                Historical daily price returns have
-                                varied sufficiently to exceed the
-                                high-volatility threshold used by
-                                the MarketPulse classifier.
-
+                                Historical returns exceed the
+                                volatility threshold used by the
+                                classifier.
                             </p>
 
                         </div>
@@ -4414,20 +3066,11 @@ squeezing hundreds of observations into one narrow chart.
             </details>
 
 
-            <!-- ==============================================
-                 DATA SOURCE / CALCULATION
-            =============================================== -->
-
             <details class="market-condition-details">
 
                 <summary>
-
-                    <i class="fa-solid fa-database text-primary me-1"></i>
-
                     Data source and calculation
-
                 </summary>
-
 
                 <div class="market-condition-details-body">
 
@@ -4435,7 +3078,7 @@ squeezing hundreds of observations into one narrow chart.
 
                         <p>
 
-                            <strong class="text-body">
+                            <strong>
                                 Provider:
                             </strong>
 
@@ -4443,7 +3086,7 @@ squeezing hundreds of observations into one narrow chart.
 
                             ·
 
-                            <strong class="text-body">
+                            <strong>
                                 Feed:
                             </strong>
 
@@ -4451,79 +3094,13 @@ squeezing hundreds of observations into one narrow chart.
 
                         </p>
 
-
-                        <p>
-
-                            Alpaca supplies historical market bars.
-
-                            MarketPulse normalises those observations
-                            and persists Open, High, Low, Close and
-                            Volume records in
-
-                            <code>
-                                core.MarketData
-                            </code>.
-
-                        </p>
-
-
-                        <p>
-
-                            Market Condition does not classify an
-                            asset from one live quote.
-
-                            It requires a sequence of historical
-                            observations because trend and volatility
-                            describe behaviour across time.
-
-                        </p>
-
-
-                        <p>
-
-                            The current analytical engine requires
-                            at least 60 observations because it
-                            calculates both a 20-period and
-                            60-period moving average.
-
-                        </p>
-
-
-                        <p>
-
-                            Daily return is calculated by comparing
-                            each closing price with the previous
-                            closing price.
-
-                        </p>
-
-
-                        <p>
-
-                            Historical volatility is calculated from
-                            the variation of those daily returns and
-                            annualised using the approximate number
-                            of trading sessions in one year.
-
-                        </p>
-
-
                         <p class="mb-0">
 
-                            The final classification is created by
-
-                            <code>
-                                identify_market_regime()
-                            </code>
-
-                            and persisted as a
-
-                            <code>
-                                MarketRegime
-                            </code>
-
-                            record so the result can be reused by
-                            other MarketPulse features.
+                            Alpaca supplies historical market bars.
+                            MarketPulse stores the normalised OHLCV
+                            observations in core.MarketData before
+                            the internal analytics engine performs
+                            Market Regime Analysis.
 
                         </p>
 
@@ -4533,40 +3110,22 @@ squeezing hundreds of observations into one narrow chart.
 
             </details>
 
-
-            <div class="market-condition-notice">
-
-                <i class="fa-solid fa-circle-info text-warning"></i>
-
-
-                <div>
-
-                    <strong>
-                        Historical analysis only.
-                    </strong>
-
-                    This classification describes behaviour
-                    detected in historical observations for
-                    {{ selected_symbol }}.
-
-                    It does not predict future prices,
-                    recommend a trade or constitute personalised
-                    financial, investment or trading advice.
-
-                </div>
-
-            </div>
-
         </aside>
 
     </div>
 
 
     <!-- ======================================================
-         4.3 USE THE DATASET
+         4.3 USE THIS DATASET
+
+         IMPORTANT CHANGE:
+         Selected-model information remains INSIDE this section.
     ======================================================= -->
 
-    <div class="dataset-use">
+    <section
+        id="use-dataset"
+        class="dataset-use"
+    >
 
         <h3>
             Use this dataset
@@ -4575,15 +3134,22 @@ squeezing hundreds of observations into one narrow chart.
 
         <p>
 
-            {{ selected_symbol }}
+            <strong>
+                {{ selected_symbol }}
+            </strong>
 
-            remains selected when you continue to a strategy
-            or quantitative-model workflow.
+            remains selected while you choose a strategy or
+            quantitative model.
 
         </p>
 
 
+        <!-- ==================================================
+             MODEL SELECTION FORM
+        =================================================== -->
+
         <form
+            id="modelSelectionForm"
             method="get"
             action="{% url 'data_management:import' %}"
         >
@@ -4629,7 +3195,6 @@ squeezing hundreds of observations into one narrow chart.
 
                                     <option
                                         value="{{ item.code }}"
-
                                         {% if selected_model and selected_model.code == item.code %}
                                             selected
                                         {% endif %}
@@ -4651,13 +3216,33 @@ squeezing hundreds of observations into one narrow chart.
 
 
                 <button
+                    id="modelSelectionButton"
                     type="submit"
                     class="data-primary-button"
                 >
 
-                    Select model
+                    <span id="modelSelectionButtonText">
 
-                    <i class="fa-solid fa-arrow-right"></i>
+                        {% if selected_model %}
+                            Model selected
+                        {% else %}
+                            Select model
+                        {% endif %}
+
+                    </span>
+
+
+                    <i
+                        id="modelSelectionButtonIcon"
+                        class="
+                            fa-solid
+                            {% if selected_model %}
+                                fa-check
+                            {% else %}
+                                fa-arrow-right
+                            {% endif %}
+                        "
+                    ></i>
 
                 </button>
 
@@ -4665,239 +3250,345 @@ squeezing hundreds of observations into one narrow chart.
 
         </form>
 
-    </div>
+
+        <!-- ==================================================
+             MODEL SELECTION STATUS
+        =================================================== -->
+
+        {% if selected_model %}
+
+            <div
+                class="
+                    model-selection-feedback
+                    {% if selected_model.implementation_status == 'ready' %}
+                        ready
+                    {% endif %}
+                "
+            >
+
+                <i class="fa-solid fa-circle-check"></i>
+
+                <div>
+
+                    <strong>
+                        {{ selected_model.name }}
+                    </strong>
+
+                    is selected for
+
+                    <strong>
+                        {{ selected_symbol }}
+                    </strong>.
 
 
-    <!-- ======================================================
-         4.4 SELECTED MODEL DETAILS
-    ======================================================= -->
+                    {% if selected_model.implementation_status == "ready" %}
 
-    {% if selected_model %}
+                        This model is marked as ready in the
+                        MarketPulse model library.
 
-        <details
-            class="workspace-details"
-            open
-        >
+                    {% elif selected_model.implementation_status == "experimental" %}
 
-            <summary>
+                        This model is currently marked as
+                        experimental.
 
-                Selected model ·
+                    {% else %}
 
-                {{ selected_model.name }}
+                        This model is currently catalogued in the
+                        model library.
 
-
-                {% if selected_model.implementation_status == "ready" %}
-
-                    <span class="model-status ready">
-                        Ready to run
-                    </span>
+                    {% endif %}
 
 
-                {% elif selected_model.implementation_status == "experimental" %}
+                    The model definition and parameters are shown
+                    below.
 
-                    <span class="model-status experimental">
-                        Experimental
-                    </span>
+                </div>
 
-
-                {% else %}
-
-                    <span class="model-status catalogued">
-                        Catalogued
-                    </span>
-
-                {% endif %}
-
-            </summary>
+            </div>
 
 
-            <div class="workspace-details-body">
+            <!-- ==============================================
+                 IMPORTANT UX / ARCHITECTURE MESSAGE
+            =============================================== -->
 
-                <div class="model-detail-grid">
+            <div class="model-selection-warning">
 
+                <i class="fa-solid fa-circle-info me-1"></i>
 
-                    <div class="model-detail-box">
+                <strong>
+                    Model selection is not model execution.
+                </strong>
 
-                        <h4>
-                            What does this model do?
-                        </h4>
+                This Data-page action loads the model definition
+                associated with {{ selected_symbol }}.
 
-                        <p>
+                A quantitative calculation should only be shown
+                after the corresponding model runner has actually
+                executed the selected model against the dataset.
 
-                            {% if selected_model.description %}
-
-                                {{ selected_model.description }}
-
-                            {% else %}
-
-                                No additional model description
-                                has been supplied.
-
-                            {% endif %}
-
-                        </p>
-
-                    </div>
+            </div>
 
 
-                    <div class="model-detail-box">
+            <!-- ==============================================
+                 SELECTED MODEL DETAILS
+                 NOW INSIDE "USE THIS DATASET"
+            =============================================== -->
 
-                        <h4>
-                            Why would I use it?
-                        </h4>
+            <details
+                id="selected-model-details"
+                class="workspace-details"
+                open
+            >
 
-                        <p>
+                <summary>
 
-                            {% if selected_model.purpose %}
+                    Selected model ·
 
-                                {{ selected_model.purpose }}
-
-                            {% else %}
-
-                                No additional purpose information
-                                has been supplied.
-
-                            {% endif %}
-
-                        </p>
-
-                    </div>
+                    {{ selected_model.name }}
 
 
-                    <div class="model-detail-box">
+                    {% if selected_model.implementation_status == "ready" %}
 
-                        <h4>
-                            Data required
-                        </h4>
+                        <span class="model-status ready">
+                            Ready to run
+                        </span>
 
 
-                        <div class="requirement-list">
+                    {% elif selected_model.implementation_status == "experimental" %}
 
-                            {% for requirement in selected_model.data_requirements %}
+                        <span class="model-status experimental">
+                            Experimental
+                        </span>
 
-                                <span class="requirement">
-                                    {{ requirement }}
-                                </span>
 
-                            {% empty %}
+                    {% else %}
 
-                                <span class="requirement">
-                                    No additional requirements
-                                </span>
+                        <span class="model-status catalogued">
+                            Catalogued
+                        </span>
 
-                            {% endfor %}
+                    {% endif %}
+
+                </summary>
+
+
+                <div class="workspace-details-body">
+
+                    <div class="model-detail-grid">
+
+
+                        <div class="model-detail-box">
+
+                            <h4>
+                                What does this model do?
+                            </h4>
+
+                            <p>
+
+                                {% if selected_model.description %}
+
+                                    {{ selected_model.description }}
+
+                                {% else %}
+
+                                    No additional model description
+                                    has been supplied.
+
+                                {% endif %}
+
+                            </p>
+
+                        </div>
+
+
+                        <div class="model-detail-box">
+
+                            <h4>
+                                Why would I use it?
+                            </h4>
+
+                            <p>
+
+                                {% if selected_model.purpose %}
+
+                                    {{ selected_model.purpose }}
+
+                                {% else %}
+
+                                    No additional purpose information
+                                    has been supplied.
+
+                                {% endif %}
+
+                            </p>
+
+                        </div>
+
+
+                        <div class="model-detail-box">
+
+                            <h4>
+                                Data required
+                            </h4>
+
+                            <div class="requirement-list">
+
+                                {% for requirement in selected_model.data_requirements %}
+
+                                    <span class="requirement">
+
+                                        {{ requirement }}
+
+                                    </span>
+
+                                {% empty %}
+
+                                    <span class="requirement">
+
+                                        No additional requirements
+
+                                    </span>
+
+                                {% endfor %}
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="model-detail-box">
+
+                            <h4>
+                                Expected output
+                            </h4>
+
+                            <p>
+
+                                {% if selected_model.output_type %}
+
+                                    {{ selected_model.output_type }}
+
+                                {% else %}
+
+                                    No output specification is
+                                    currently defined.
+
+                                {% endif %}
+
+                            </p>
 
                         </div>
 
                     </div>
 
 
-                    <div class="model-detail-box">
+                    <div
+                        class="model-detail-box"
+                        style="margin-top:.7rem;"
+                    >
 
                         <h4>
-                            Expected output
+                            Default model parameters
                         </h4>
 
-                        <p>
 
-                            {% if selected_model.output_type %}
+                        <div
+                            class="data-table-wrapper"
+                            style="max-height:220px;"
+                        >
 
-                                {{ selected_model.output_type }}
+                            <table class="data-table">
 
-                            {% else %}
+                                <thead>
 
-                                Output specification will be added
-                                when the execution engine is
-                                implemented.
+                                    <tr>
 
-                            {% endif %}
+                                        <th>
+                                            Parameter
+                                        </th>
 
-                        </p>
+                                        <th>
+                                            Default value
+                                        </th>
+
+                                    </tr>
+
+                                </thead>
+
+
+                                <tbody>
+
+                                    {% for key, value in selected_model.default_parameters.items %}
+
+                                        <tr>
+
+                                            <td>
+                                                {{ key }}
+                                            </td>
+
+                                            <td>
+                                                {{ value }}
+                                            </td>
+
+                                        </tr>
+
+                                    {% empty %}
+
+                                        <tr>
+
+                                            <td colspan="2">
+
+                                                No configurable default
+                                                parameters are currently
+                                                defined.
+
+                                            </td>
+
+                                        </tr>
+
+                                    {% endfor %}
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
 
                     </div>
 
                 </div>
 
-
-                <div
-                    class="model-detail-box"
-                    style="margin-top: .7rem;"
-                >
-
-                    <h4>
-                        Default model parameters
-                    </h4>
+            </details>
 
 
-                    <div
-                        class="data-table-wrapper"
-                        style="max-height: 220px;"
-                    >
-
-                        <table class="data-table">
-
-                            <thead>
-
-                                <tr>
-
-                                    <th>
-                                        Parameter
-                                    </th>
-
-                                    <th>
-                                        Default value
-                                    </th>
-
-                                </tr>
-
-                            </thead>
+        {% else %}
 
 
-                            <tbody>
+            <div class="model-selection-feedback">
 
-                                {% for key, value in selected_model.default_parameters.items %}
+                <i class="fa-solid fa-arrow-pointer"></i>
 
-                                    <tr>
+                <div>
 
-                                        <td>
-                                            {{ key }}
-                                        </td>
+                    Select a strategy or quantitative model above.
 
-                                        <td>
-                                            {{ value }}
-                                        </td>
+                    MarketPulse will keep
 
-                                    </tr>
+                    <strong>
+                        {{ selected_symbol }}
+                    </strong>
 
-                                {% empty %}
-
-                                    <tr>
-
-                                        <td colspan="2">
-
-                                            No configurable default
-                                            parameters are currently
-                                            defined.
-
-                                        </td>
-
-                                    </tr>
-
-                                {% endfor %}
-
-                            </tbody>
-
-                        </table>
-
-                    </div>
+                    selected and display the model definition
+                    directly in this section.
 
                 </div>
 
             </div>
 
-        </details>
 
-    {% endif %}
+        {% endif %}
+
+    </section>
 
 
 </section>
@@ -4913,7 +3604,7 @@ squeezing hundreds of observations into one narrow chart.
 
 
 <!-- ==========================================================
-     6. PRICE CHART + DISPLAY METRICS JAVASCRIPT
+     6. DATA WORKSPACE JAVASCRIPT
 =========================================================== -->
 
 <script>
@@ -4924,15 +3615,19 @@ document.addEventListener(
 
 
         /* =====================================================
-           6.1 SELECTED SYMBOL
+           SELECTED SYMBOL / MODEL
         ===================================================== */
 
         const selectedSymbol =
             "{{ selected_symbol|escapejs }}";
 
 
+        const selectedModelCode =
+            "{% if selected_model %}{{ selected_model.code|escapejs }}{% endif %}";
+
+
         /* =====================================================
-           6.2 STORED POSTGRESQL OBSERVATIONS
+           STORED OBSERVATIONS
         ===================================================== */
 
         const storedObservations = [
@@ -4984,7 +3679,229 @@ document.addEventListener(
 
 
         /* =====================================================
-           6.3 PAGE ELEMENTS
+           MODEL SELECTION ELEMENTS
+        ===================================================== */
+
+        const modelSelectionForm =
+            document.getElementById(
+                "modelSelectionForm"
+            );
+
+
+        const strategyModel =
+            document.getElementById(
+                "strategyModel"
+            );
+
+
+        const modelSelectionButton =
+            document.getElementById(
+                "modelSelectionButton"
+            );
+
+
+        const modelSelectionButtonText =
+            document.getElementById(
+                "modelSelectionButtonText"
+            );
+
+
+        const modelSelectionButtonIcon =
+            document.getElementById(
+                "modelSelectionButtonIcon"
+            );
+
+
+        /* =====================================================
+           MODEL BUTTON STATE
+        ===================================================== */
+
+        function updateModelSelectionButton() {
+
+            if (
+                !strategyModel
+                ||
+                !modelSelectionButton
+                ||
+                !modelSelectionButtonText
+            ) {
+
+                return;
+
+            }
+
+
+            const modelCode =
+                strategyModel.value;
+
+
+            if (!modelCode) {
+
+                modelSelectionButton.disabled =
+                    true;
+
+
+                modelSelectionButtonText.textContent =
+                    "Select a model";
+
+
+                if (modelSelectionButtonIcon) {
+
+                    modelSelectionButtonIcon.className =
+                        "fa-solid fa-arrow-right";
+
+                }
+
+
+                return;
+
+            }
+
+
+            modelSelectionButton.disabled =
+                false;
+
+
+            /*
+            Same model already loaded.
+            */
+
+            if (
+                selectedModelCode
+                &&
+                modelCode === selectedModelCode
+            ) {
+
+                modelSelectionButtonText.textContent =
+                    "Model selected";
+
+
+                if (modelSelectionButtonIcon) {
+
+                    modelSelectionButtonIcon.className =
+                        "fa-solid fa-check";
+
+                }
+
+
+                return;
+
+            }
+
+
+            /*
+            User has selected a different model.
+            */
+
+            modelSelectionButtonText.textContent =
+                "Review selected model";
+
+
+            if (modelSelectionButtonIcon) {
+
+                modelSelectionButtonIcon.className =
+                    "fa-solid fa-arrow-right";
+
+            }
+
+        }
+
+
+        if (strategyModel) {
+
+            strategyModel.addEventListener(
+                "change",
+                updateModelSelectionButton
+            );
+
+
+            updateModelSelectionButton();
+
+        }
+
+
+        /* =====================================================
+           KEEP MODEL SELECTION IN THE SAME PAGE SECTION
+        ===================================================== */
+
+        if (
+            modelSelectionForm
+            &&
+            strategyModel
+        ) {
+
+            modelSelectionForm.addEventListener(
+                "submit",
+                function (
+                    event
+                ) {
+
+                    if (
+                        !strategyModel.value
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    /*
+                    Stop the browser performing a normal GET
+                    submission that returns to the top.
+
+                    Instead build the same query parameters and
+                    explicitly append:
+
+                        #use-dataset
+                    */
+
+                    event.preventDefault();
+
+
+                    const targetUrl =
+                        new URL(
+                            modelSelectionForm.action,
+                            window.location.origin
+                        );
+
+
+                    const formData =
+                        new FormData(
+                            modelSelectionForm
+                        );
+
+
+                    formData.forEach(
+                        function (
+                            value,
+                            key
+                        ) {
+
+                            targetUrl.searchParams.set(
+                                key,
+                                value
+                            );
+
+                        }
+                    );
+
+
+                    targetUrl.hash =
+                        "use-dataset";
+
+
+                    window.location.assign(
+                        targetUrl.toString()
+                    );
+
+                }
+            );
+
+        }
+
+
+        /* =====================================================
+           CHART ELEMENTS
         ===================================================== */
 
         const canvas =
@@ -5062,7 +3979,7 @@ document.addEventListener(
 
 
         /* =====================================================
-           6.4 NORMALISE NUMERIC VALUES
+           NUMBER HELPERS
         ===================================================== */
 
         function normaliseNumber(
@@ -5088,25 +4005,16 @@ document.addEventListener(
                 );
 
 
-            if (
-                !Number.isFinite(
-                    parsed
-                )
-            ) {
-
-                return null;
-
-            }
-
-
-            return parsed;
+            return Number.isFinite(
+                parsed
+            )
+                ?
+                parsed
+                :
+                null;
 
         }
 
-
-        /* =====================================================
-           6.5 CURRENCY FORMATTER
-        ===================================================== */
 
         function formatMoney(
             value
@@ -5144,10 +4052,6 @@ document.addEventListener(
 
         }
 
-
-        /* =====================================================
-           6.6 NORMALISE CHART POINTS
-        ===================================================== */
 
         function normalisePoints(
             observations
@@ -5228,7 +4132,7 @@ document.addEventListener(
 
 
         /* =====================================================
-           6.7 DATE / TIME LABEL FORMATTER
+           CHART DATE FORMAT
         ===================================================== */
 
         function formatChartDate(
@@ -5242,39 +4146,25 @@ document.addEventListener(
                 point.date;
 
 
-            if (
-                !rawValue
-            ) {
+            if (!rawValue) {
 
                 return "";
 
             }
 
 
-            let parsedDate;
-
-
-            if (
+            const parsedDate =
                 point.timestamp
-            ) {
-
-                parsedDate =
-                    new Date(
-                        point.timestamp
-                    );
-
-            }
-
-            else {
-
-                parsedDate =
-                    new Date(
-                        point.date
-                        +
-                        "T12:00:00"
-                    );
-
-            }
+                ?
+                new Date(
+                    point.timestamp
+                )
+                :
+                new Date(
+                    point.date
+                    +
+                    "T12:00:00"
+                );
 
 
             if (
@@ -5337,7 +4227,7 @@ document.addEventListener(
 
 
         /* =====================================================
-           6.8 SOURCE BUTTON STATE
+           SOURCE CONTROLS
         ===================================================== */
 
         function updateSourceControls(
@@ -5356,21 +4246,17 @@ document.addEventListener(
                     "btn-primary"
                 );
 
-
                 storedChartButton.classList.add(
                     "btn-outline-primary"
                 );
-
 
                 alpacaChartButton.classList.remove(
                     "btn-outline-primary"
                 );
 
-
                 alpacaChartButton.classList.add(
                     "btn-primary"
                 );
-
 
                 alpacaChartPeriod.disabled =
                     false;
@@ -5383,21 +4269,17 @@ document.addEventListener(
                     "btn-primary"
                 );
 
-
                 alpacaChartButton.classList.add(
                     "btn-outline-primary"
                 );
-
 
                 storedChartButton.classList.remove(
                     "btn-outline-primary"
                 );
 
-
                 storedChartButton.classList.add(
                     "btn-primary"
                 );
-
 
                 alpacaChartPeriod.disabled =
                     true;
@@ -5408,13 +4290,7 @@ document.addEventListener(
 
 
         /* =====================================================
-           6.9 SET HORIZONTAL CHART WIDTH
-
-           More chart observations create a wider internal
-           timeline.
-
-           The outer chart-frame remains the same size and
-           provides the horizontal scrollbar.
+           CHART WIDTH
         ===================================================== */
 
         function updateScrollableChartWidth(
@@ -5475,25 +4351,14 @@ document.addEventListener(
             }
 
 
-            let calculatedWidth =
-                Math.max(
-                    minimumWidth,
-                    pointCount
-                    *
-                    pixelsPerPoint
-                );
-
-
-            /*
-            Prevent an extremely large DOM canvas.
-
-            2600px is sufficient to give a useful scrolling
-            timeline while remaining efficient.
-            */
-
-            calculatedWidth =
+            const calculatedWidth =
                 Math.min(
-                    calculatedWidth,
+                    Math.max(
+                        minimumWidth,
+                        pointCount
+                        *
+                        pixelsPerPoint
+                    ),
                     2600
                 );
 
@@ -5507,7 +4372,7 @@ document.addEventListener(
 
 
         /* =====================================================
-           6.10 RENDER NUMERICAL CHART
+           RENDER PRICE CHART
         ===================================================== */
 
         function renderPriceChart(
@@ -5555,11 +4420,7 @@ document.addEventListener(
                     (
                         '<i class="fa-solid fa-triangle-exclamation"></i>'
                         +
-                        "<span>No chart observations are available for "
-                        +
-                        selectedSymbol
-                        +
-                        ".</span>"
+                        "<span>No chart observations are available.</span>"
                     );
 
 
@@ -5571,14 +4432,6 @@ document.addEventListener(
             if (
                 typeof Chart === "undefined"
             ) {
-
-                chartStatus.innerHTML =
-                    (
-                        '<i class="fa-solid fa-triangle-exclamation"></i>'
-                        +
-                        "<span>The chart library could not be loaded.</span>"
-                    );
-
 
                 return;
 
@@ -5654,23 +4507,19 @@ document.addEventListener(
                         type:
                             "line",
 
-
                         data: {
 
                             labels:
                                 labels,
-
 
                             datasets: [
 
                                 {
 
                                     label:
-                                        (
-                                            selectedSymbol
-                                            +
-                                            " Close Price"
-                                        ),
+                                        selectedSymbol
+                                        +
+                                        " Close Price",
 
                                     data:
                                         closePrices,
@@ -5694,10 +4543,7 @@ document.addEventListener(
                                         0,
 
                                     pointHoverRadius:
-                                        4,
-
-                                    pointHitRadius:
-                                        10
+                                        4
 
                                 }
 
@@ -5743,20 +4589,6 @@ document.addEventListener(
 
                                     displayColors:
                                         false,
-
-                                    titleFont: {
-
-                                        size:
-                                            12
-
-                                    },
-
-                                    bodyFont: {
-
-                                        size:
-                                            12
-
-                                    },
 
 
                                     callbacks: {
@@ -5839,12 +4671,10 @@ document.addEventListener(
                                                 ) {
 
                                                     lines.push(
-                                                        (
-                                                            "Open: "
-                                                            +
-                                                            formatMoney(
-                                                                point.open
-                                                            )
+                                                        "Open: "
+                                                        +
+                                                        formatMoney(
+                                                            point.open
                                                         )
                                                     );
 
@@ -5856,12 +4686,10 @@ document.addEventListener(
                                                 ) {
 
                                                     lines.push(
-                                                        (
-                                                            "High: "
-                                                            +
-                                                            formatMoney(
-                                                                point.high
-                                                            )
+                                                        "High: "
+                                                        +
+                                                        formatMoney(
+                                                            point.high
                                                         )
                                                     );
 
@@ -5873,12 +4701,10 @@ document.addEventListener(
                                                 ) {
 
                                                     lines.push(
-                                                        (
-                                                            "Low: "
-                                                            +
-                                                            formatMoney(
-                                                                point.low
-                                                            )
+                                                        "Low: "
+                                                        +
+                                                        formatMoney(
+                                                            point.low
                                                         )
                                                     );
 
@@ -5890,14 +4716,12 @@ document.addEventListener(
                                                 ) {
 
                                                     lines.push(
-                                                        (
-                                                            "Volume: "
-                                                            +
-                                                            Math.round(
-                                                                point.volume
-                                                            )
-                                                            .toLocaleString()
+                                                        "Volume: "
+                                                        +
+                                                        Math.round(
+                                                            point.volume
                                                         )
+                                                        .toLocaleString()
                                                     );
 
                                                 }
@@ -5921,18 +4745,9 @@ document.addEventListener(
                                     grid: {
 
                                         color:
-                                            "rgba(147, 164, 184, .07)"
+                                            "rgba(147,164,184,.07)"
 
                                     },
-
-
-                                    border: {
-
-                                        color:
-                                            "#314258"
-
-                                    },
-
 
                                     ticks: {
 
@@ -5942,24 +4757,10 @@ document.addEventListener(
                                         maxTicksLimit:
                                             12,
 
-                                        autoSkip:
-                                            true,
-
                                         maxRotation:
-                                            0,
-
-                                        padding:
-                                            6,
-
-                                        font: {
-
-                                            size:
-                                                12
-
-                                        }
+                                            0
 
                                     },
-
 
                                     title: {
 
@@ -5973,9 +4774,13 @@ document.addEventListener(
                                                 "alpaca"
                                                 &&
                                                 (
-                                                    period === "1D"
+                                                    period
+                                                    ===
+                                                    "1D"
                                                     ||
-                                                    period === "5D"
+                                                    period
+                                                    ===
+                                                    "5D"
                                                 )
                                             )
                                             ?
@@ -5984,17 +4789,7 @@ document.addEventListener(
                                             "Date",
 
                                         color:
-                                            "#b7c6d6",
-
-                                        font: {
-
-                                            size:
-                                                12,
-
-                                            weight:
-                                                "600"
-
-                                        }
+                                            "#b7c6d6"
 
                                     }
 
@@ -6006,38 +4801,17 @@ document.addEventListener(
                                     beginAtZero:
                                         false,
 
-
                                     grid: {
 
                                         color:
-                                            "rgba(147, 164, 184, .12)"
+                                            "rgba(147,164,184,.12)"
 
                                     },
-
-
-                                    border: {
-
-                                        color:
-                                            "#314258"
-
-                                    },
-
 
                                     ticks: {
 
                                         color:
                                             "#b7c6d6",
-
-                                        padding:
-                                            6,
-
-                                        font: {
-
-                                            size:
-                                                12
-
-                                        },
-
 
                                         callback:
                                             function (
@@ -6050,19 +4824,12 @@ document.addEventListener(
                                                     Number(
                                                         value
                                                     )
-                                                    .toLocaleString(
-                                                        undefined,
-                                                        {
-                                                            maximumFractionDigits:
-                                                                2
-                                                        }
-                                                    )
+                                                    .toLocaleString()
                                                 );
 
                                             }
 
                                     },
-
 
                                     title: {
 
@@ -6073,17 +4840,7 @@ document.addEventListener(
                                             "Price (USD)",
 
                                         color:
-                                            "#b7c6d6",
-
-                                        font: {
-
-                                            size:
-                                                12,
-
-                                            weight:
-                                                "600"
-
-                                        }
+                                            "#b7c6d6"
 
                                     }
 
@@ -6113,18 +4870,9 @@ document.addEventListener(
                     +
                     sourceLabel
                     +
-                    " · Scroll horizontally to inspect additional observations."
-                    +
                     "</span>"
                 );
 
-
-            /*
-            Start on the newest observations.
-
-            The user can drag the scrollbar left to review
-            older observations.
-            */
 
             if (
                 chartScrollContainer
@@ -6145,7 +4893,7 @@ document.addEventListener(
 
 
         /* =====================================================
-           6.11 SHOW STORED DATA
+           STORED DATA
         ===================================================== */
 
         function showStoredData() {
@@ -6173,7 +4921,7 @@ document.addEventListener(
 
 
         /* =====================================================
-           6.12 FETCH CURRENT ALPACA MARKET DATA
+           ALPACA DATA
         ===================================================== */
 
         async function showAlpacaData() {
@@ -6196,25 +4944,11 @@ document.addEventListener(
                 alpacaChartPeriod.value;
 
 
-            chartSourceDescription.textContent =
-                (
-                    "Loading current Alpaca "
-                    +
-                    period
-                    +
-                    " market history..."
-                );
-
-
             chartStatus.innerHTML =
                 (
                     '<i class="fa-solid fa-spinner fa-spin"></i>'
                     +
-                    "<span>Loading Alpaca market data for "
-                    +
-                    selectedSymbol
-                    +
-                    "...</span>"
+                    "<span>Loading Alpaca data...</span>"
                 );
 
 
@@ -6227,7 +4961,6 @@ document.addEventListener(
 
 
             try {
-
 
                 const historyUrl =
                     (
@@ -6257,22 +4990,15 @@ document.addEventListener(
                     );
 
 
-                const requests =
-                    await Promise.allSettled(
+                const responses =
+                    await Promise.all(
                         [
 
                             fetch(
                                 historyUrl,
                                 {
                                     credentials:
-                                        "same-origin",
-
-                                    headers: {
-
-                                        "Accept":
-                                            "application/json"
-
-                                    }
+                                        "same-origin"
                                 }
                             ),
 
@@ -6280,14 +5006,7 @@ document.addEventListener(
                                 snapshotUrl,
                                 {
                                     credentials:
-                                        "same-origin",
-
-                                    headers: {
-
-                                        "Accept":
-                                            "application/json"
-
-                                    }
+                                        "same-origin"
                                 }
                             )
 
@@ -6295,47 +5014,13 @@ document.addEventListener(
                     );
 
 
-                if (
-                    requests[0].status
-                    !==
-                    "fulfilled"
-                ) {
-
-                    throw new Error(
-                        "Alpaca historical market data request failed."
-                    );
-
-                }
-
-
-                const historyResponse =
-                    requests[0].value;
-
-
-                let historyPayload =
-                    {};
-
-
-                try {
-
-                    historyPayload =
-                        await historyResponse.json();
-
-                }
-
-                catch (
-                    error
-                ) {
-
-                    throw new Error(
-                        "Alpaca returned an invalid history response."
-                    );
-
-                }
+                const historyPayload =
+                    await responses[0]
+                    .json();
 
 
                 if (
-                    !historyResponse.ok
+                    !responses[0].ok
                     ||
                     historyPayload.error
                 ) {
@@ -6343,30 +5028,18 @@ document.addEventListener(
                     throw new Error(
                         historyPayload.error
                         ||
-                        "Alpaca historical market data could not be loaded."
+                        "Alpaca history could not be loaded."
                     );
 
                 }
 
 
                 const alpacaPoints =
-                    (
-                        Array.isArray(
-                            historyPayload.points
-                        )
+                    Array.isArray(
+                        historyPayload.points
                     )
                     ?
                     historyPayload.points
-                    :
-                    (
-                        historyPayload.history
-                        &&
-                        Array.isArray(
-                            historyPayload.history.points
-                        )
-                    )
-                    ?
-                    historyPayload.history.points
                     :
                     [];
 
@@ -6376,142 +5049,60 @@ document.addEventListener(
                 ) {
 
                     throw new Error(
-                        (
-                            "Alpaca returned no "
-                            +
-                            period
-                            +
-                            " chart observations for "
-                            +
-                            selectedSymbol
-                            +
-                            "."
-                        )
+                        "Alpaca returned no chart observations."
                     );
 
                 }
 
 
-                let latestSnapshotPrice =
-                    null;
-
-
-                let snapshotFeed =
-                    null;
+                let snapshotPayload =
+                    {};
 
 
                 if (
-                    requests[1].status
-                    ===
-                    "fulfilled"
+                    responses[1].ok
                 ) {
 
-                    const snapshotResponse =
-                        requests[1].value;
-
-
-                    if (
-                        snapshotResponse.ok
-                    ) {
-
-                        try {
-
-                            const snapshotPayload =
-                                await snapshotResponse.json();
-
-
-                            const snapshot =
-                                snapshotPayload.snapshot
-                                ||
-                                {};
-
-
-                            latestSnapshotPrice =
-                                normaliseNumber(
-                                    snapshot.latest_price
-                                );
-
-
-                            snapshotFeed =
-                                snapshotPayload.feed
-                                ||
-                                snapshot.feed
-                                ||
-                                null;
-
-                        }
-
-                        catch (
-                            error
-                        ) {
-
-                            console.warn(
-                                "Alpaca snapshot could not be interpreted.",
-                                error
-                            );
-
-                        }
-
-                    }
+                    snapshotPayload =
+                        await responses[1]
+                        .json();
 
                 }
 
 
-                const normalisedAlpacaPoints =
-                    normalisePoints(
-                        alpacaPoints
+                const snapshot =
+                    snapshotPayload.snapshot
+                    ||
+                    {};
+
+
+                const latestSnapshotPrice =
+                    normaliseNumber(
+                        snapshot.latest_price
                     );
 
 
-                const lastAlpacaPoint =
-                    normalisedAlpacaPoints.length
-                    ?
-                    normalisedAlpacaPoints[
-                        normalisedAlpacaPoints.length - 1
-                    ]
-                    :
-                    null;
+                if (
+                    latestSnapshotPrice !== null
+                ) {
 
+                    chartLatestPrice.textContent =
+                        formatMoney(
+                            latestSnapshotPrice
+                        );
 
-                const displayLatestPrice =
-                    latestSnapshotPrice
-                    !==
-                    null
-                    ?
-                    latestSnapshotPrice
-                    :
-                    (
-                        lastAlpacaPoint
-                        ?
-                        lastAlpacaPoint.close
-                        :
-                        null
-                    );
-
-
-                chartLatestPrice.textContent =
-                    formatMoney(
-                        displayLatestPrice
-                    );
+                }
 
 
                 const feed =
                     String(
                         historyPayload.feed
                         ||
-                        snapshotFeed
+                        snapshot.feed
                         ||
                         "{{ market_data_feed|default:'IEX'|escapejs }}"
                     )
                     .toUpperCase();
-
-
-                const sourceLabel =
-                    (
-                        "Alpaca "
-                        +
-                        feed
-                    );
 
 
                 chartSourceDescription.textContent =
@@ -6528,7 +5119,7 @@ document.addEventListener(
 
                 renderPriceChart(
                     alpacaPoints,
-                    sourceLabel,
+                    "Alpaca " + feed,
                     period
                 );
 
@@ -6548,14 +5139,6 @@ document.addEventListener(
                 );
 
 
-                chartSourceDescription.textContent =
-                    (
-                        "Historical OHLCV observations stored "
-                        +
-                        "in MarketPulse PostgreSQL"
-                    );
-
-
                 renderPriceChart(
                     storedData,
                     "Stored Data",
@@ -6571,7 +5154,7 @@ document.addEventListener(
                         +
                         error.message
                         +
-                        " Stored data is being shown instead.</span>"
+                        ". Stored data is shown instead.</span>"
                     );
 
             }
@@ -6583,9 +5166,7 @@ document.addEventListener(
 
 
                 if (
-                    currentChartSource
-                    ===
-                    "alpaca"
+                    currentChartSource === "alpaca"
                 ) {
 
                     alpacaChartPeriod.disabled =
@@ -6599,7 +5180,7 @@ document.addEventListener(
 
 
         /* =====================================================
-           6.13 SOURCE BUTTON EVENTS
+           CHART EVENTS
         ===================================================== */
 
         if (
@@ -6635,9 +5216,7 @@ document.addEventListener(
                 function () {
 
                     if (
-                        currentChartSource
-                        ===
-                        "alpaca"
+                        currentChartSource === "alpaca"
                     ) {
 
                         showAlpacaData();
@@ -6650,20 +5229,11 @@ document.addEventListener(
         }
 
 
-        /* =====================================================
-           6.14 INITIAL CHART
-        ===================================================== */
-
         showStoredData();
 
 
         /* =====================================================
-           6.15 MARKET CONDITION DISPLAY METRICS
-
-           These calculations continue to use STORED data.
-
-           Current Alpaca chart mode is visual-only and does not
-           silently modify the saved MarketRegime calculation.
+           MARKET CONDITION DISPLAY METRICS
         ===================================================== */
 
         const data =
@@ -6674,7 +5244,6 @@ document.addEventListener(
             data.length >= 2
         ) {
 
-
             const returns =
                 [];
 
@@ -6684,7 +5253,6 @@ document.addEventListener(
                 index < data.length;
                 index += 1
             ) {
-
 
                 const previousClose =
                     data[
@@ -6746,11 +5314,7 @@ document.addEventListener(
                         value
                     ) {
 
-                        return (
-                            total
-                            +
-                            value
-                        );
+                        return total + value;
 
                     },
                     0
@@ -6839,9 +5403,7 @@ document.addEventListener(
 
 
                     if (
-                        drawdown
-                        <
-                        maximumDrawdown
+                        drawdown < maximumDrawdown
                     ) {
 
                         maximumDrawdown =
@@ -6914,7 +5476,6 @@ document.addEventListener(
                 volumes.length >= 10
             ) {
 
-
                 const segment =
                     Math.max(
                         1,
@@ -6926,94 +5487,83 @@ document.addEventListener(
                     );
 
 
-                const earlyVolumes =
+                const early =
                     volumes.slice(
                         0,
                         segment
                     );
 
 
-                const recentVolumes =
+                const recent =
                     volumes.slice(
                         -segment
                     );
 
 
                 const earlyAverage =
-                    earlyVolumes.reduce(
+                    early.reduce(
                         function (
                             total,
                             value
                         ) {
 
-                            return (
-                                total
-                                +
-                                value
-                            );
+                            return total + value;
 
                         },
                         0
                     )
                     /
-                    earlyVolumes.length;
+                    early.length;
 
 
                 const recentAverage =
-                    recentVolumes.reduce(
+                    recent.reduce(
                         function (
                             total,
                             value
                         ) {
 
-                            return (
-                                total
-                                +
-                                value
-                            );
+                            return total + value;
 
                         },
                         0
                     )
                     /
-                    recentVolumes.length;
+                    recent.length;
+
+
+                const ratio =
+                    earlyAverage > 0
+                    ?
+                    recentAverage
+                    /
+                    earlyAverage
+                    :
+                    1;
 
 
                 if (
-                    earlyAverage > 0
+                    ratio > 1.20
                 ) {
 
+                    volumeBehaviour =
+                        "Increasing";
 
-                    const ratio =
-                        recentAverage
-                        /
-                        earlyAverage;
+                }
 
+                else if (
+                    ratio < .80
+                ) {
 
-                    if (
-                        ratio > 1.20
-                    ) {
+                    volumeBehaviour =
+                        "Decreasing";
 
-                        volumeBehaviour =
-                            "Increasing";
+                }
 
-                    }
+                else {
 
-                    else if (
-                        ratio < .80
-                    ) {
-
-                        volumeBehaviour =
-                            "Decreasing";
-
-                    }
-
-                    else {
-
-                        volumeBehaviour =
-                            "Stable";
-
-                    }
+                    volumeBehaviour =
+                        "Stable";
 
                 }
 
@@ -7040,137 +5590,88 @@ document.addEventListener(
             }
 
 
-            const periodReturnElement =
-                document.getElementById(
-                    "periodReturn"
-                );
+            const values = {
 
-
-            const averageReturnElement =
-                document.getElementById(
-                    "averageReturn"
-                );
-
-
-            const annualVolatilityElement =
-                document.getElementById(
-                    "annualVolatility"
-                );
-
-
-            const maximumDrawdownElement =
-                document.getElementById(
-                    "maximumDrawdown"
-                );
-
-
-            const momentumElement =
-                document.getElementById(
-                    "momentum"
-                );
-
-
-            const volumeElement =
-                document.getElementById(
-                    "volumeBehaviour"
-                );
-
-
-            if (
-                periodReturnElement
-            ) {
-
-                periodReturnElement.textContent =
+                periodReturn:
                     percentage(
                         periodReturn
-                    );
+                    ),
 
-            }
-
-
-            if (
-                averageReturnElement
-            ) {
-
-                averageReturnElement.textContent =
+                averageReturn:
                     percentage(
                         averageReturn
-                    );
+                    ),
 
-            }
-
-
-            if (
-                annualVolatilityElement
-            ) {
-
-                annualVolatilityElement.textContent =
+                annualVolatility:
                     percentage(
                         annualVolatility
-                    );
+                    ),
 
-            }
-
-
-            if (
-                maximumDrawdownElement
-            ) {
-
-                maximumDrawdownElement.textContent =
+                maximumDrawdown:
                     percentage(
                         maximumDrawdown
-                    );
+                    ),
 
-            }
+                momentum:
+                    momentum,
 
+                volumeBehaviour:
+                    volumeBehaviour
 
-            if (
-                momentumElement
-            ) {
-
-                momentumElement.textContent =
-                    momentum;
-
-            }
+            };
 
 
-            if (
-                volumeElement
-            ) {
+            Object.keys(
+                values
+            )
+            .forEach(
+                function (
+                    id
+                ) {
 
-                volumeElement.textContent =
-                    volumeBehaviour;
+                    const element =
+                        document.getElementById(
+                            id
+                        );
 
-            }
+
+                    if (
+                        element
+                    ) {
+
+                        element.textContent =
+                            values[id];
+
+                    }
+
+                }
+            );
 
         }
 
 
         /* =====================================================
-           6.16 SCROLL TO MARKET CONDITION AFTER ANALYSIS
+           KEEP USER IN REQUESTED WORKSPACE SECTION
         ===================================================== */
 
         if (
             window.location.hash
-            ===
-            "#market-condition"
         ) {
 
-
-            const marketConditionPanel =
-                document.getElementById(
-                    "market-condition"
+            const requestedSection =
+                document.querySelector(
+                    window.location.hash
                 );
 
 
             if (
-                marketConditionPanel
+                requestedSection
             ) {
 
                 setTimeout(
                     function () {
 
-                        marketConditionPanel.scrollIntoView(
+                        requestedSection.scrollIntoView(
                             {
                                 behavior:
                                     "smooth",
@@ -7197,29 +5698,20 @@ document.addEventListener(
 {% elif selected_symbol %}
 
 
-<!-- ==========================================================
-     7. SELECTED SYMBOL HAS NO STORED DATA
-=========================================================== -->
-
 <div class="data-empty">
 
     <h3>
 
         No historical data found for
-
         {{ selected_symbol }}
 
     </h3>
 
-
     <p>
 
-        Import {{ selected_symbol }} from Alpaca above before
-        using Market Condition, strategy research, backtesting
-        or historical risk workflows.
-
-        The Market Condition classifier requires at least
-        60 stored historical observations.
+        Import {{ selected_symbol }} from Alpaca before using
+        Market Condition, strategy research, backtesting or
+        historical-risk workflows.
 
     </p>
 
@@ -7229,23 +5721,17 @@ document.addEventListener(
 {% else %}
 
 
-<!-- ==========================================================
-     8. EMPTY DATA STATE
-=========================================================== -->
-
 <div class="data-empty">
 
     <h3>
         Start by importing market data
     </h3>
 
-
     <p>
 
-        Historical Open, High, Low, Close and Volume
-        observations will then become available for
-        Market Condition analysis, strategy research,
-        backtesting and risk analysis.
+        Historical Open, High, Low, Close and Volume observations
+        will become available for Market Condition analysis,
+        strategy research, backtesting and risk analysis.
 
     </p>
 
@@ -7256,33 +5742,15 @@ document.addEventListener(
 
 
 <!-- ==========================================================
-     9. RECENT IMPORTS
+     RECENT IMPORTS
 =========================================================== -->
 
 {% if recent_imports %}
 
-
 <details class="recent-imports">
 
     <summary>
-
         Recent imports
-
-        <span
-            style="
-                color:
-                    var(--data-muted);
-                font-weight:
-                    400;
-                margin-left:
-                    .3rem;
-            "
-        >
-
-            · recently requested datasets
-
-        </span>
-
     </summary>
 
 
@@ -7355,44 +5823,17 @@ document.addEventListener(
                                         Completed
                                     </span>
 
-
                                 {% elif item.status == "failed" %}
 
-                                    <span
-                                        class="model-status catalogued"
-                                        style="
-                                            color:
-                                                #ffd4d8;
-
-                                            background:
-                                                rgba(
-                                                    220,
-                                                    107,
-                                                    117,
-                                                    .10
-                                                );
-
-                                            border-color:
-                                                rgba(
-                                                    220,
-                                                    107,
-                                                    117,
-                                                    .25
-                                                );
-                                        "
-                                    >
-
+                                    <span class="model-status catalogued">
                                         Failed
-
                                     </span>
-
 
                                 {% elif item.status == "processing" %}
 
                                     <span class="model-status experimental">
                                         Processing
                                     </span>
-
 
                                 {% else %}
 
@@ -7430,7 +5871,7 @@ document.addEventListener(
         <a
             href="{% url 'data_management:history' %}"
             class="data-history-button"
-            style="margin-top: .75rem;"
+            style="margin-top:.75rem;"
         >
 
             <i class="fa-solid fa-clock-rotate-left"></i>
@@ -7442,7 +5883,6 @@ document.addEventListener(
     </div>
 
 </details>
-
 
 {% endif %}
 
