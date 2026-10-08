@@ -26,6 +26,8 @@ Historical Backtest
 Strategy Robustness
     ↓
 Overfitting Analysis
+    ↓
+Stress Testing
 
 
 MODEL LIBRARY WORKFLOW:
@@ -69,11 +71,54 @@ Market Condition
 Market Regime Analysis
 
 
-Risk
+STRATEGY VALIDATION WORKFLOW:
+
+Strategies
     ↓
-Trade Risk Planning
+Historical Backtest
+    ↓
+Strategy Robustness
+    ↓
+analysis_tools.detect_overfitting()
+    ↓
+OverfittingTest
+
+
+STRATEGY STRESS WORKFLOW:
+
+Strategies
     ↓
 Stress Testing
+    ↓
+Select Strategy
+    ↓
+Select Historical Asset
+    ↓
+Select Severe Scenario
+    ↓
+analysis_tools.run_stress_test()
+    ↓
+StressTest
+
+
+IMPORTANT ARCHITECTURE:
+
+Strategy Robustness and Stress Testing are displayed and
+processed directly inside this Strategies workspace.
+
+The user does NOT navigate to a separate public Robustness
+or Stress Testing page.
+
+The visible browser workspace remains:
+
+    /strategy/
+
+The sections are identified by:
+
+    #strategyRobustnessSection
+    #stressTestingSection
+
+analysis_tools remains the internal analytics engine.
 
 
 PURPOSE:
@@ -86,6 +131,9 @@ The Strategies tab answers:
 
     "Does its behaviour remain reasonably stable when
      evaluated on different historical periods?"
+
+    "What could happen to the strategy under severe
+     hypothetical market conditions?"
 
 
 THEME:
@@ -263,7 +311,6 @@ Strategies | MarketPulse
             #dc6b75
         );
 
-
     width:
         100%;
 
@@ -306,6 +353,20 @@ Strategies | MarketPulse
 
     text-decoration:
         none;
+
+}
+
+
+/* ======================================================== */
+/* 1.1 SAME-PAGE SECTION SCROLL TARGETS                     */
+/* ======================================================== */
+
+#myStrategiesSection,
+#strategyRobustnessSection,
+#stressTestingSection {
+
+    scroll-margin-top:
+        90px;
 
 }
 
@@ -483,6 +544,16 @@ Strategies | MarketPulse
 }
 
 
+.strategy-eyebrow-danger {
+
+    color:
+        var(
+            --strategy-danger
+        );
+
+}
+
+
 .strategy-section-header {
 
     display:
@@ -580,6 +651,8 @@ Strategies | MarketPulse
         auto
         minmax(0, 1fr)
         auto
+        minmax(0, 1fr)
+        auto
         minmax(0, 1fr);
 
     align-items:
@@ -662,6 +735,16 @@ Strategies | MarketPulse
 }
 
 
+.strategy-flow-number-danger {
+
+    background:
+        var(
+            --strategy-danger
+        );
+
+}
+
+
 .strategy-flow-icon {
 
     display:
@@ -706,6 +789,30 @@ Strategies | MarketPulse
 
     font-size:
         .8125rem;
+
+}
+
+
+.strategy-flow-icon-danger {
+
+    color:
+        #ef9aa2;
+
+    background:
+        rgba(
+            220,
+            107,
+            117,
+            .11
+        );
+
+    border-color:
+        rgba(
+            220,
+            107,
+            117,
+            .22
+        );
 
 }
 
@@ -2255,7 +2362,7 @@ Strategies | MarketPulse
 
     grid-template-columns:
         repeat(
-            2,
+            3,
             minmax(
                 0,
                 1fr
@@ -2378,7 +2485,216 @@ Strategies | MarketPulse
 
 
 /* ======================================================== */
-/* 15. RELATED TOOLS                                        */
+/* 15. SAME-PAGE ANALYTICS                                  */
+/* ======================================================== */
+
+.strategy-analysis-form {
+
+    min-width:
+        0;
+
+}
+
+
+.strategy-analysis-form .form-label {
+
+    margin-bottom:
+        .3rem;
+
+    color:
+        #d7e0eb;
+
+    font-size:
+        .75rem;
+
+    font-weight:
+        700;
+
+}
+
+
+.strategy-result-panel {
+
+    min-width:
+        0;
+
+    margin-top:
+        .9rem;
+
+    padding:
+        .8rem;
+
+    background:
+        var(
+            --strategy-panel-dark
+        );
+
+    border:
+        1px solid
+        var(
+            --strategy-border-soft
+        );
+
+    border-radius:
+        8px;
+
+}
+
+
+.strategy-result-grid {
+
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(
+            4,
+            minmax(
+                0,
+                1fr
+            )
+        );
+
+    gap:
+        .5rem;
+
+    width:
+        100%;
+
+    min-width:
+        0;
+
+}
+
+
+.strategy-result-stat {
+
+    min-width:
+        0;
+
+    padding:
+        .65rem;
+
+    background:
+        var(
+            --strategy-panel-soft
+        );
+
+    border:
+        1px solid
+        var(
+            --strategy-border-soft
+        );
+
+    border-radius:
+        6px;
+
+}
+
+
+.strategy-result-stat span {
+
+    display:
+        block;
+
+    margin-bottom:
+        .15rem;
+
+    color:
+        var(
+            --strategy-muted
+        );
+
+    font-size:
+        .7rem;
+
+    text-transform:
+        uppercase;
+
+    overflow-wrap:
+        anywhere;
+
+}
+
+
+.strategy-result-stat strong {
+
+    display:
+        block;
+
+    color:
+        var(
+            --strategy-text
+        );
+
+    font-size:
+        .875rem;
+
+    overflow-wrap:
+        anywhere;
+
+}
+
+
+.strategy-result-note {
+
+    margin-top:
+        .7rem;
+
+    padding:
+        .65rem;
+
+    color:
+        var(
+            --strategy-muted
+        );
+
+    background:
+        var(
+            --strategy-panel-soft
+        );
+
+    border:
+        1px solid
+        var(
+            --strategy-border-soft
+        );
+
+    border-radius:
+        6px;
+
+    font-size:
+        .8125rem;
+
+    line-height:
+        1.5;
+
+    overflow-wrap:
+        anywhere;
+
+}
+
+
+.strategy-status-success {
+
+    color:
+        #a8f3d0
+        !important;
+
+}
+
+
+.strategy-status-danger {
+
+    color:
+        #ef9aa2
+        !important;
+
+}
+
+
+/* ======================================================== */
+/* 16. RELATED TOOLS                                        */
 /* ======================================================== */
 
 .related-tools-grid {
@@ -2387,12 +2703,9 @@ Strategies | MarketPulse
         grid;
 
     grid-template-columns:
-        repeat(
-            2,
-            minmax(
-                0,
-                1fr
-            )
+        minmax(
+            0,
+            1fr
         );
 
     gap:
@@ -2474,7 +2787,7 @@ Strategies | MarketPulse
 
 
 /* ======================================================== */
-/* 16. BOOTSTRAP COMPONENT ADJUSTMENTS                      */
+/* 17. BOOTSTRAP COMPONENT ADJUSTMENTS                      */
 /* ======================================================== */
 
 .strategy-workspace .btn {
@@ -2573,6 +2886,40 @@ Strategies | MarketPulse
 
     border-color:
         #667b92;
+
+}
+
+
+.strategy-workspace .btn-outline-danger {
+
+    color:
+        #ef9aa2;
+
+    border-color:
+        rgba(
+            220,
+            107,
+            117,
+            .65
+        );
+
+}
+
+
+.strategy-workspace .btn-outline-danger:hover {
+
+    color:
+        #ffffff;
+
+    background:
+        var(
+            --strategy-danger
+        );
+
+    border-color:
+        var(
+            --strategy-danger
+        );
 
 }
 
@@ -2857,7 +3204,7 @@ Strategies | MarketPulse
 
 
 /* ======================================================== */
-/* 17. RESPONSIVE — TABLET / SMALL DESKTOP                  */
+/* 18. RESPONSIVE — TABLET / SMALL DESKTOP                  */
 /* ======================================================== */
 
 @media (
@@ -2894,11 +3241,25 @@ Strategies | MarketPulse
 
     }
 
+
+    .validation-grid {
+
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+    }
+
 }
 
 
 /* ======================================================== */
-/* 18. RESPONSIVE — TABLET                                  */
+/* 19. RESPONSIVE — TABLET                                  */
 /* ======================================================== */
 
 @media (
@@ -2920,7 +3281,8 @@ Strategies | MarketPulse
     }
 
 
-    .my-strategy-metrics {
+    .my-strategy-metrics,
+    .strategy-result-grid {
 
         grid-template-columns:
             repeat(
@@ -2971,7 +3333,7 @@ Strategies | MarketPulse
 
 
 /* ======================================================== */
-/* 19. RESPONSIVE — PHONE                                   */
+/* 20. RESPONSIVE — PHONE                                   */
 /* ======================================================== */
 
 @media (
@@ -3031,7 +3393,8 @@ Strategies | MarketPulse
     .strategy-filter-grid,
     .validation-grid,
     .related-tools-grid,
-    .strategy-model-detail-content {
+    .strategy-model-detail-content,
+    .strategy-result-grid {
 
         grid-template-columns:
             minmax(
@@ -3244,7 +3607,7 @@ Strategies | MarketPulse
 
 
 /* ======================================================== */
-/* 20. RESPONSIVE — VERY SMALL PHONE                        */
+/* 21. RESPONSIVE — VERY SMALL PHONE                        */
 /* ======================================================== */
 
 @media (
@@ -3369,7 +3732,8 @@ Strategies | MarketPulse
     }
 
 
-    .my-strategy-metrics {
+    .my-strategy-metrics,
+    .strategy-result-grid {
 
         grid-template-columns:
             minmax(
@@ -3392,17 +3756,8 @@ Strategies | MarketPulse
 
 
 /* ======================================================== */
-/* 21. DASHBOARD-SCALE TYPOGRAPHY SAFETY                    */
+/* 22. DASHBOARD-SCALE TYPOGRAPHY SAFETY                    */
 /* ======================================================== */
-
-/*
-This final section deliberately sits after the responsive
-rules so that old tiny typography cannot return at smaller
-screen widths.
-
-The Dashboard relies mostly on Bootstrap's normal readable
-type scale. Strategies now follows the same approach.
-*/
 
 .strategy-workspace {
 
@@ -3415,10 +3770,6 @@ type scale. Strategies now follows the same approach.
 }
 
 
-/* -------------------------------------------------------- */
-/* Main page text                                           */
-/* -------------------------------------------------------- */
-
 .strategy-workspace p,
 .strategy-page-subtitle,
 .strategy-section-header p,
@@ -3427,7 +3778,8 @@ type scale. Strategies now follows the same approach.
 .my-strategy-description,
 .validation-box p,
 .related-tool p,
-.strategy-compare-copy {
+.strategy-compare-copy,
+.strategy-result-note {
 
     font-size:
         .8125rem;
@@ -3438,10 +3790,6 @@ type scale. Strategies now follows the same approach.
 }
 
 
-/* -------------------------------------------------------- */
-/* Supporting text                                          */
-/* -------------------------------------------------------- */
-
 .strategy-workspace small,
 .strategy-workspace .small,
 .strategy-library-hint,
@@ -3449,17 +3797,14 @@ type scale. Strategies now follows the same approach.
 .strategy-category-count,
 .strategy-detail-label,
 .strategy-parameter-list span,
-.my-strategy-metric span {
+.my-strategy-metric span,
+.strategy-result-stat span {
 
     font-size:
         .75rem;
 
 }
 
-
-/* -------------------------------------------------------- */
-/* Section labels                                           */
-/* -------------------------------------------------------- */
 
 .strategy-eyebrow {
 
@@ -3468,10 +3813,6 @@ type scale. Strategies now follows the same approach.
 
 }
 
-
-/* -------------------------------------------------------- */
-/* Page and section headings                                */
-/* -------------------------------------------------------- */
 
 .strategy-page-title {
 
@@ -3500,10 +3841,6 @@ type scale. Strategies now follows the same approach.
 }
 
 
-/* -------------------------------------------------------- */
-/* Workflow                                                 */
-/* -------------------------------------------------------- */
-
 .strategy-flow-copy strong {
 
     font-size:
@@ -3529,10 +3866,6 @@ type scale. Strategies now follows the same approach.
 }
 
 
-/* -------------------------------------------------------- */
-/* Accordion                                                */
-/* -------------------------------------------------------- */
-
 .strategy-category-button {
 
     font-size:
@@ -3550,11 +3883,8 @@ type scale. Strategies now follows the same approach.
 }
 
 
-/* -------------------------------------------------------- */
-/* Forms                                                    */
-/* -------------------------------------------------------- */
-
-.strategy-filter-grid label {
+.strategy-filter-grid label,
+.strategy-analysis-form .form-label {
 
     font-size:
         .75rem;
@@ -3571,10 +3901,6 @@ type scale. Strategies now follows the same approach.
 }
 
 
-/* -------------------------------------------------------- */
-/* Buttons                                                  */
-/* -------------------------------------------------------- */
-
 .strategy-workspace .btn,
 .strategy-workspace .btn-sm {
 
@@ -3583,10 +3909,6 @@ type scale. Strategies now follows the same approach.
 
 }
 
-
-/* -------------------------------------------------------- */
-/* Badges                                                   */
-/* -------------------------------------------------------- */
 
 .strategy-workspace .badge,
 .strategy-model-title-row .badge {
@@ -3597,10 +3919,6 @@ type scale. Strategies now follows the same approach.
 }
 
 
-/* -------------------------------------------------------- */
-/* Tables                                                   */
-/* -------------------------------------------------------- */
-
 .strategy-comparison-table th,
 .strategy-comparison-table td {
 
@@ -3610,10 +3928,6 @@ type scale. Strategies now follows the same approach.
 }
 
 
-/* -------------------------------------------------------- */
-/* Metrics                                                  */
-/* -------------------------------------------------------- */
-
 .my-strategy-metric span {
 
     font-size:
@@ -3622,17 +3936,14 @@ type scale. Strategies now follows the same approach.
 }
 
 
-.my-strategy-metric strong {
+.my-strategy-metric strong,
+.strategy-result-stat strong {
 
     font-size:
         .875rem;
 
 }
 
-
-/* -------------------------------------------------------- */
-/* Validation                                               */
-/* -------------------------------------------------------- */
 
 .validation-question {
 
@@ -3641,10 +3952,6 @@ type scale. Strategies now follows the same approach.
 
 }
 
-
-/* -------------------------------------------------------- */
-/* Empty states / alerts                                    */
-/* -------------------------------------------------------- */
 
 .strategy-no-results,
 .strategy-workspace .alert {
@@ -3685,8 +3992,9 @@ type scale. Strategies now follows the same approach.
         <p class="strategy-page-subtitle">
 
             Explore quantitative approaches, create your own
-            strategies and investigate whether historical
-            performance remains reasonably robust.
+            strategies, test historical performance, investigate
+            robustness and evaluate severe hypothetical
+            market scenarios.
 
         </p>
 
@@ -3754,9 +4062,7 @@ type scale. Strategies now follows the same approach.
 
 
             <span class="strategy-flow-number">
-
                 1
-
             </span>
 
 
@@ -3771,16 +4077,12 @@ type scale. Strategies now follows the same approach.
 
 
                 <strong>
-
                     Choose a Model
-
                 </strong>
 
 
                 <span>
-
                     Explore a quantitative approach.
-
                 </span>
 
 
@@ -3803,9 +4105,7 @@ type scale. Strategies now follows the same approach.
 
 
             <span class="strategy-flow-number">
-
                 2
-
             </span>
 
 
@@ -3820,16 +4120,12 @@ type scale. Strategies now follows the same approach.
 
 
                 <strong>
-
                     Build a Strategy
-
                 </strong>
 
 
                 <span>
-
                     Define trading rules and parameters.
-
                 </span>
 
 
@@ -3852,9 +4148,7 @@ type scale. Strategies now follows the same approach.
 
 
             <span class="strategy-flow-number">
-
                 3
-
             </span>
 
 
@@ -3869,16 +4163,12 @@ type scale. Strategies now follows the same approach.
 
 
                 <strong>
-
                     Backtest
-
                 </strong>
 
 
                 <span>
-
                     Measure historical behaviour.
-
                 </span>
 
 
@@ -3901,9 +4191,7 @@ type scale. Strategies now follows the same approach.
 
 
             <span class="strategy-flow-number">
-
                 4
-
             </span>
 
 
@@ -3918,16 +4206,65 @@ type scale. Strategies now follows the same approach.
 
 
                 <strong>
-
                     Check Robustness
-
                 </strong>
 
 
                 <span>
-
                     Investigate possible overfitting.
+                </span>
 
+
+            </div>
+
+
+        </div>
+
+
+        <i
+            class="
+                fa-solid
+                fa-chevron-right
+                strategy-flow-arrow
+            "
+        ></i>
+
+
+        <div class="strategy-flow-step">
+
+
+            <span
+                class="
+                    strategy-flow-number
+                    strategy-flow-number-danger
+                "
+            >
+                5
+            </span>
+
+
+            <span
+                class="
+                    strategy-flow-icon
+                    strategy-flow-icon-danger
+                "
+            >
+
+                <i class="fa-solid fa-triangle-exclamation"></i>
+
+            </span>
+
+
+            <div class="strategy-flow-copy">
+
+
+                <strong>
+                    Stress Test
+                </strong>
+
+
+                <span>
+                    Explore severe market scenarios.
                 </span>
 
 
@@ -3957,16 +4294,12 @@ type scale. Strategies now follows the same approach.
 
 
             <div class="strategy-eyebrow">
-
                 Find an Approach
-
             </div>
 
 
             <h2>
-
                 Search the Model Library
-
             </h2>
 
 
@@ -3991,9 +4324,7 @@ type scale. Strategies now follows the same approach.
 
 
             <label for="modelSearch">
-
                 Search
-
             </label>
 
 
@@ -4021,9 +4352,7 @@ type scale. Strategies now follows the same approach.
 
 
             <label for="categoryFilter">
-
                 Category
-
             </label>
 
 
@@ -4034,9 +4363,7 @@ type scale. Strategies now follows the same approach.
 
 
                 <option value="">
-
                     All Categories
-
                 </option>
 
 
@@ -4063,9 +4390,7 @@ type scale. Strategies now follows the same approach.
 
 
             <label for="statusFilter">
-
                 Implementation
-
             </label>
 
 
@@ -4076,30 +4401,22 @@ type scale. Strategies now follows the same approach.
 
 
                 <option value="">
-
                     All Statuses
-
                 </option>
 
 
                 <option value="ready">
-
                     Ready to Run
-
                 </option>
 
 
                 <option value="experimental">
-
                     Experimental
-
                 </option>
 
 
                 <option value="catalogued">
-
                     Catalogued
-
                 </option>
 
 
@@ -4149,16 +4466,12 @@ type scale. Strategies now follows the same approach.
 
 
             <div class="strategy-eyebrow">
-
                 Quantitative Research Library
-
             </div>
 
 
             <h2>
-
                 Strategy & Model Library
-
             </h2>
 
 
@@ -4450,16 +4763,12 @@ type scale. Strategies now follows the same approach.
 
                                                         {% if item.purpose %}
 
-
                                                             {{ item.purpose }}
-
 
                                                         {% else %}
 
-
                                                             No additional purpose
                                                             information has been supplied.
-
 
                                                         {% endif %}
 
@@ -4534,16 +4843,12 @@ type scale. Strategies now follows the same approach.
 
                                                         {% if item.output_type %}
 
-
                                                             {{ item.output_type }}
-
 
                                                         {% else %}
 
-
                                                             Output information
                                                             has not yet been configured.
-
 
                                                         {% endif %}
 
@@ -4576,9 +4881,7 @@ type scale. Strategies now follows the same approach.
                                                                 <span>
 
                                                                     <strong>
-
                                                                         {{ key }}
-
                                                                     </strong>
 
                                                                     =
@@ -4674,16 +4977,12 @@ type scale. Strategies now follows the same approach.
 
 
                 <strong>
-
                     Compare Models
-
                 </strong>
 
 
                 <span id="compareCounter">
-
                     Select 2–4 models
-
                 </span>
 
 
@@ -4743,16 +5042,12 @@ type scale. Strategies now follows the same approach.
 
 
             <div class="strategy-eyebrow">
-
                 Research Comparison
-
             </div>
 
 
             <h2>
-
                 Model Comparison
-
             </h2>
 
 
@@ -4791,9 +5086,7 @@ type scale. Strategies now follows the same approach.
 
 
                     <th style="min-width: 160px;">
-
                         Model
-
                     </th>
 
 
@@ -4817,9 +5110,7 @@ type scale. Strategies now follows the same approach.
 
 
                     <th>
-
                         Category
-
                     </th>
 
 
@@ -4843,9 +5134,7 @@ type scale. Strategies now follows the same approach.
 
 
                     <th>
-
                         Purpose
-
                     </th>
 
 
@@ -4869,9 +5158,7 @@ type scale. Strategies now follows the same approach.
 
 
                     <th>
-
                         Data Required
-
                     </th>
 
 
@@ -4900,9 +5187,7 @@ type scale. Strategies now follows the same approach.
 
                             {% empty %}
 
-
                                 —
-
 
                             {% endfor %}
 
@@ -4920,9 +5205,7 @@ type scale. Strategies now follows the same approach.
 
 
                     <th>
-
                         Default Parameters
-
                     </th>
 
 
@@ -4946,9 +5229,7 @@ type scale. Strategies now follows the same approach.
 
 
                     <th>
-
                         Expected Output
-
                     </th>
 
 
@@ -4972,9 +5253,7 @@ type scale. Strategies now follows the same approach.
 
 
                     <th>
-
                         Implementation
-
                     </th>
 
 
@@ -4998,9 +5277,7 @@ type scale. Strategies now follows the same approach.
 
 
                     <th>
-
                         Research Action
-
                     </th>
 
 
@@ -5061,16 +5338,12 @@ type scale. Strategies now follows the same approach.
 
 
             <div class="strategy-eyebrow">
-
                 My Research
-
             </div>
 
 
             <h2>
-
                 My Strategies
-
             </h2>
 
 
@@ -5186,11 +5459,31 @@ type scale. Strategies now follows the same approach.
                                     btn
                                     btn-sm
                                     btn-outline-secondary
+                                    same-page-strategy-action
                                 "
-                                href="{% url 'strategy_builder:robustness' %}?strategy={{ row.strategy.id }}"
+                                href="#strategyRobustnessSection"
+                                data-strategy-id="{{ row.strategy.id }}"
+                                data-target-select="robustnessStrategy"
                             >
 
                                 Check Robustness
+
+                            </a>
+
+
+                            <a
+                                class="
+                                    btn
+                                    btn-sm
+                                    btn-outline-danger
+                                    same-page-strategy-action
+                                "
+                                href="#stressTestingSection"
+                                data-strategy-id="{{ row.strategy.id }}"
+                                data-target-select="stressStrategy"
+                            >
+
+                                Stress Test
 
                             </a>
 
@@ -5267,9 +5560,7 @@ type scale. Strategies now follows the same approach.
                                     <div class="my-strategy-metric">
 
                                         <span>
-
                                             Return
-
                                         </span>
 
                                         <strong>
@@ -5284,9 +5575,7 @@ type scale. Strategies now follows the same approach.
                                     <div class="my-strategy-metric">
 
                                         <span>
-
                                             Sharpe Ratio
-
                                         </span>
 
                                         <strong>
@@ -5301,9 +5590,7 @@ type scale. Strategies now follows the same approach.
                                     <div class="my-strategy-metric">
 
                                         <span>
-
                                             Maximum Drawdown
-
                                         </span>
 
                                         <strong>
@@ -5318,9 +5605,7 @@ type scale. Strategies now follows the same approach.
                                     <div class="my-strategy-metric">
 
                                         <span>
-
                                             Backtests
-
                                         </span>
 
                                         <strong>
@@ -5435,11 +5720,31 @@ type scale. Strategies now follows the same approach.
                                     btn
                                     btn-sm
                                     btn-outline-secondary
+                                    same-page-strategy-action
                                 "
-                                href="{% url 'strategy_builder:robustness' %}?strategy={{ s.id }}"
+                                href="#strategyRobustnessSection"
+                                data-strategy-id="{{ s.id }}"
+                                data-target-select="robustnessStrategy"
                             >
 
                                 Check Robustness
+
+                            </a>
+
+
+                            <a
+                                class="
+                                    btn
+                                    btn-sm
+                                    btn-outline-danger
+                                    same-page-strategy-action
+                                "
+                                href="#stressTestingSection"
+                                data-strategy-id="{{ s.id }}"
+                                data-target-select="stressStrategy"
+                            >
+
+                                Stress Test
 
                             </a>
 
@@ -5544,7 +5849,8 @@ type scale. Strategies now follows the same approach.
             <div class="small text-muted mb-3">
 
                 Create a strategy first. You can then
-                backtest it and investigate its robustness.
+                backtest it, investigate its robustness
+                and run stress scenarios.
 
             </div>
 
@@ -5597,9 +5903,9 @@ type scale. Strategies now follows the same approach.
 
             <p>
 
-                Backtesting and robustness testing answer
-                different questions, so MarketPulse keeps
-                the two stages separate.
+                Backtesting, robustness testing and stress
+                testing answer different questions while
+                remaining inside the same Strategies workspace.
 
             </p>
 
@@ -5612,6 +5918,10 @@ type scale. Strategies now follows the same approach.
 
     <div class="validation-grid">
 
+
+        <!-- ================================================== -->
+        <!-- HISTORICAL BACKTEST                                -->
+        <!-- ================================================== -->
 
         <div class="validation-box">
 
@@ -5633,9 +5943,7 @@ type scale. Strategies now follows the same approach.
             <div class="validation-question">
 
                 <strong>
-
                     Question:
-
                 </strong>
 
                 How did the strategy behave on historical data?
@@ -5664,6 +5972,10 @@ type scale. Strategies now follows the same approach.
         </div>
 
 
+        <!-- ================================================== -->
+        <!-- STRATEGY ROBUSTNESS                                -->
+        <!-- ================================================== -->
+
         <div class="validation-box">
 
 
@@ -5684,9 +5996,7 @@ type scale. Strategies now follows the same approach.
             <div class="validation-question">
 
                 <strong>
-
                     Question:
-
                 </strong>
 
                 Does the strategy continue to behave
@@ -5705,11 +6015,66 @@ type scale. Strategies now follows the same approach.
 
 
             <a
-                href="{% url 'strategy_builder:robustness' %}"
+                href="#strategyRobustnessSection"
                 class="btn btn-sm btn-primary"
             >
 
                 Check Robustness
+
+            </a>
+
+
+        </div>
+
+
+        <!-- ================================================== -->
+        <!-- STRESS TEST                                        -->
+        <!-- ================================================== -->
+
+        <div class="validation-box">
+
+
+            <div class="strategy-eyebrow strategy-eyebrow-danger">
+
+                Severe Scenario Test
+
+            </div>
+
+
+            <h3>
+
+                Stress Testing
+
+            </h3>
+
+
+            <div class="validation-question">
+
+                <strong>
+                    Question:
+                </strong>
+
+                What could happen if market conditions become
+                substantially worse than expected?
+
+            </div>
+
+
+            <p class="mt-3">
+
+                Apply severe hypothetical conditions such as
+                a market decline, volatility spike, liquidity
+                shock or market regime change.
+
+            </p>
+
+
+            <a
+                href="#stressTestingSection"
+                class="btn btn-sm btn-outline-danger"
+            >
+
+                Run Stress Test
 
             </a>
 
@@ -5724,7 +6089,1164 @@ type scale. Strategies now follows the same approach.
 
 
 <!-- ====================================================== -->
-<!-- 8. RELATED MARKETPULSE TOOLS                           -->
+<!-- 8. STRATEGY ROBUSTNESS - SAME STRATEGIES PAGE          -->
+<!-- ====================================================== -->
+
+<section
+    class="strategy-panel"
+    id="strategyRobustnessSection"
+>
+
+
+    <div class="strategy-section-header">
+
+
+        <div>
+
+
+            <div class="strategy-eyebrow">
+
+                Strategy Validation
+
+            </div>
+
+
+            <h2>
+
+                Strategy Robustness
+
+            </h2>
+
+
+            <p>
+
+                Investigate whether historical strategy
+                performance remains reasonably stable when
+                MarketPulse compares in-sample and
+                out-of-sample behaviour.
+
+            </p>
+
+
+        </div>
+
+
+    </div>
+
+
+    {% if strategies %}
+
+
+        {% if available_symbols %}
+
+
+            <form
+                method="post"
+                action="{% url 'strategy_builder:list' %}#strategyRobustnessSection"
+                class="strategy-analysis-form"
+            >
+
+                {% csrf_token %}
+
+
+                <input
+                    type="hidden"
+                    name="action"
+                    value="robustness"
+                >
+
+
+                <div class="row g-3">
+
+
+                    <div class="col-12 col-lg-5">
+
+
+                        <label
+                            for="robustnessStrategy"
+                            class="form-label"
+                        >
+
+                            Strategy
+
+                        </label>
+
+
+                        <select
+                            id="robustnessStrategy"
+                            name="strategy"
+                            class="form-select"
+                            required
+                        >
+
+
+                            <option value="">
+
+                                Select a strategy...
+
+                            </option>
+
+
+                            {% for strategy in strategies %}
+
+
+                                <option
+                                    value="{{ strategy.id }}"
+                                    {% if selected_validation_strategy == strategy.id|stringformat:"s" %}
+                                        selected
+                                    {% endif %}
+                                >
+
+                                    {{ strategy.name }}
+
+                                </option>
+
+
+                            {% endfor %}
+
+
+                        </select>
+
+
+                    </div>
+
+
+                    <div class="col-12 col-lg-5">
+
+
+                        <label
+                            for="robustnessSymbol"
+                            class="form-label"
+                        >
+
+                            Historical Asset
+
+                        </label>
+
+
+                        <select
+                            id="robustnessSymbol"
+                            name="symbol"
+                            class="form-select"
+                            required
+                        >
+
+
+                            <option value="">
+
+                                Select historical data...
+
+                            </option>
+
+
+                            {% for symbol in available_symbols %}
+
+
+                                <option
+                                    value="{{ symbol }}"
+                                    {% if selected_validation_symbol == symbol %}
+                                        selected
+                                    {% endif %}
+                                >
+
+                                    {{ symbol }}
+
+                                </option>
+
+
+                            {% endfor %}
+
+
+                        </select>
+
+
+                    </div>
+
+
+                    <div
+                        class="
+                            col-12
+                            col-lg-2
+                            d-flex
+                            align-items-end
+                        "
+                    >
+
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary w-100"
+                        >
+
+                            <i class="fa-solid fa-shield-halved me-1"></i>
+
+                            Check Robustness
+
+                        </button>
+
+
+                    </div>
+
+
+                </div>
+
+
+                <div class="small text-muted mt-2">
+
+                    Strategy Robustness requires stored
+                    historical MarketPulse data and at least
+                    the minimum number of observations required
+                    by the backend analysis.
+
+                </div>
+
+
+            </form>
+
+
+        {% else %}
+
+
+            <div class="alert border mb-0">
+
+
+                <div class="fw-semibold mb-1">
+
+                    Historical data is required
+
+                </div>
+
+
+                <div class="small text-muted mb-3">
+
+                    Import historical market data before
+                    running Strategy Robustness.
+
+                </div>
+
+
+                <a
+                    href="{% url 'data_management:import' %}"
+                    class="btn btn-sm btn-outline-primary"
+                >
+
+                    Open Data
+
+                </a>
+
+
+            </div>
+
+
+        {% endif %}
+
+
+    {% else %}
+
+
+        <div class="alert border mb-0">
+
+
+            <div class="fw-semibold mb-1">
+
+                Create a strategy first
+
+            </div>
+
+
+            <div class="small text-muted mb-3">
+
+                Strategy Robustness analyses one of your
+                saved MarketPulse strategies.
+
+            </div>
+
+
+            <a
+                href="{% url 'strategy_builder:create' %}"
+                class="btn btn-sm btn-primary"
+            >
+
+                Create Strategy
+
+            </a>
+
+
+        </div>
+
+
+    {% endif %}
+
+
+    {% if latest_user_robustness_test %}
+
+
+        <div class="strategy-result-panel">
+
+
+            <div class="strategy-section-header mb-2">
+
+
+                <div>
+
+
+                    <div class="strategy-eyebrow">
+
+                        Latest Robustness Result
+
+                    </div>
+
+
+                    <h2>
+
+                        Historical Stability Summary
+
+                    </h2>
+
+
+                </div>
+
+
+                {% if latest_user_robustness_test.is_overfitted %}
+
+
+                    <span class="badge bg-warning">
+
+                        Possible Overfitting
+
+                    </span>
+
+
+                {% else %}
+
+
+                    <span class="badge bg-success">
+
+                        Lower Overfitting Risk
+
+                    </span>
+
+
+                {% endif %}
+
+
+            </div>
+
+
+            <div class="strategy-result-grid">
+
+
+                <div class="strategy-result-stat">
+
+
+                    <span>
+                        Asset
+                    </span>
+
+
+                    <strong>
+
+                        {{ latest_user_robustness_test.symbol }}
+
+                    </strong>
+
+
+                </div>
+
+
+                <div class="strategy-result-stat">
+
+
+                    <span>
+                        In-Sample Return
+                    </span>
+
+
+                    <strong>
+
+                        {{ latest_user_robustness_test.in_sample_return|floatformat:4 }}
+
+                    </strong>
+
+
+                </div>
+
+
+                <div class="strategy-result-stat">
+
+
+                    <span>
+                        Out-of-Sample Return
+                    </span>
+
+
+                    <strong>
+
+                        {{ latest_user_robustness_test.out_sample_return|floatformat:4 }}
+
+                    </strong>
+
+
+                </div>
+
+
+                <div class="strategy-result-stat">
+
+
+                    <span>
+                        Overfitting Score
+                    </span>
+
+
+                    <strong>
+
+                        {{ latest_user_robustness_test.overfitting_score|floatformat:4 }}
+
+                    </strong>
+
+
+                </div>
+
+
+            </div>
+
+
+            {% if latest_user_robustness_label %}
+
+
+                <div class="strategy-result-note">
+
+                    <strong class="d-block text-light mb-1">
+
+                        {{ latest_user_robustness_label }}
+
+                    </strong>
+
+
+                    {% if latest_user_robustness_explanation %}
+
+                        {{ latest_user_robustness_explanation }}
+
+                    {% endif %}
+
+                </div>
+
+
+            {% elif latest_user_robustness_test.recommendations %}
+
+
+                <div class="strategy-result-note">
+
+                    <strong class="d-block text-light mb-1">
+
+                        Interpretation / Recommendations
+
+                    </strong>
+
+                    {{ latest_user_robustness_test.recommendations|linebreaksbr }}
+
+                </div>
+
+
+            {% endif %}
+
+
+        </div>
+
+
+    {% endif %}
+
+
+</section>
+
+
+<!-- ====================================================== -->
+<!-- 9. STRESS TESTING - SAME STRATEGIES PAGE               -->
+<!-- ====================================================== -->
+
+<section
+    class="strategy-panel"
+    id="stressTestingSection"
+>
+
+
+    <div class="strategy-section-header">
+
+
+        <div>
+
+
+            <div class="strategy-eyebrow strategy-eyebrow-danger">
+
+                Strategy Risk
+
+            </div>
+
+
+            <h2>
+
+                Stress Testing
+
+            </h2>
+
+
+            <p>
+
+                Test one of your strategies against severe
+                hypothetical market conditions without leaving
+                the Strategies workspace.
+
+            </p>
+
+
+        </div>
+
+
+    </div>
+
+
+    {% if strategies %}
+
+
+        {% if available_symbols %}
+
+
+            <form
+                method="post"
+                action="{% url 'strategy_builder:list' %}#stressTestingSection"
+                class="strategy-analysis-form"
+            >
+
+                {% csrf_token %}
+
+
+                <input
+                    type="hidden"
+                    name="action"
+                    value="stress_test"
+                >
+
+
+                <div class="row g-3">
+
+
+                    <div class="col-12 col-xl-4">
+
+
+                        <label
+                            for="stressStrategy"
+                            class="form-label"
+                        >
+
+                            Strategy
+
+                        </label>
+
+
+                        <select
+                            id="stressStrategy"
+                            name="strategy"
+                            class="form-select"
+                            required
+                        >
+
+
+                            <option value="">
+
+                                Select a strategy...
+
+                            </option>
+
+
+                            {% for strategy in strategies %}
+
+
+                                <option
+                                    value="{{ strategy.id }}"
+                                    {% if selected_validation_strategy == strategy.id|stringformat:"s" %}
+                                        selected
+                                    {% endif %}
+                                >
+
+                                    {{ strategy.name }}
+
+                                </option>
+
+
+                            {% endfor %}
+
+
+                        </select>
+
+
+                    </div>
+
+
+                    <div class="col-12 col-xl-3">
+
+
+                        <label
+                            for="stressSymbol"
+                            class="form-label"
+                        >
+
+                            Historical Asset
+
+                        </label>
+
+
+                        <select
+                            id="stressSymbol"
+                            name="symbol"
+                            class="form-select"
+                            required
+                        >
+
+
+                            <option value="">
+
+                                Select historical data...
+
+                            </option>
+
+
+                            {% for symbol in available_symbols %}
+
+
+                                <option
+                                    value="{{ symbol }}"
+                                    {% if selected_validation_symbol == symbol %}
+                                        selected
+                                    {% endif %}
+                                >
+
+                                    {{ symbol }}
+
+                                </option>
+
+
+                            {% endfor %}
+
+
+                        </select>
+
+
+                    </div>
+
+
+                    <div class="col-12 col-xl-3">
+
+
+                        <label
+                            for="stressScenario"
+                            class="form-label"
+                        >
+
+                            Stress Scenario
+
+                        </label>
+
+
+                        <select
+                            id="stressScenario"
+                            name="scenario"
+                            class="form-select"
+                            required
+                        >
+
+
+                            <option
+                                value="crash"
+                                {% if selected_stress_scenario == "crash" %}
+                                    selected
+                                {% endif %}
+                            >
+
+                                Severe Market Decline
+
+                            </option>
+
+
+                            <option
+                                value="volatility_spike"
+                                {% if selected_stress_scenario == "volatility_spike" %}
+                                    selected
+                                {% endif %}
+                            >
+
+                                Volatility Spike
+
+                            </option>
+
+
+                            <option
+                                value="liquidity_crisis"
+                                {% if selected_stress_scenario == "liquidity_crisis" %}
+                                    selected
+                                {% endif %}
+                            >
+
+                                Liquidity Shock
+
+                            </option>
+
+
+                            <option
+                                value="regime_change"
+                                {% if selected_stress_scenario == "regime_change" %}
+                                    selected
+                                {% endif %}
+                            >
+
+                                Market Condition Change
+
+                            </option>
+
+
+                        </select>
+
+
+                    </div>
+
+
+                    <div
+                        class="
+                            col-12
+                            col-xl-2
+                            d-flex
+                            align-items-end
+                        "
+                    >
+
+
+                        <button
+                            type="submit"
+                            class="btn btn-outline-danger w-100"
+                        >
+
+                            <i
+                                class="
+                                    fa-solid
+                                    fa-triangle-exclamation
+                                    me-1
+                                "
+                            ></i>
+
+                            Run Stress Test
+
+                        </button>
+
+
+                    </div>
+
+
+                </div>
+
+
+                <div class="small text-muted mt-2">
+
+                    Stress Testing uses stored historical
+                    MarketPulse data and applies a predefined
+                    severe hypothetical scenario through the
+                    internal analytics engine.
+
+                </div>
+
+
+            </form>
+
+
+            <div class="row g-3 mt-1">
+
+
+                <div class="col-12 col-md-6 col-xl-3">
+
+
+                    <div class="validation-box h-100">
+
+
+                        <div class="strategy-eyebrow strategy-eyebrow-danger">
+
+                            Scenario
+
+                        </div>
+
+
+                        <h3>
+
+                            Severe Market Decline
+
+                        </h3>
+
+
+                        <p class="mb-0">
+
+                            Applies a substantial downward
+                            price shock during the later part
+                            of the historical dataset.
+
+                        </p>
+
+
+                    </div>
+
+
+                </div>
+
+
+                <div class="col-12 col-md-6 col-xl-3">
+
+
+                    <div class="validation-box h-100">
+
+
+                        <div class="strategy-eyebrow strategy-eyebrow-danger">
+
+                            Scenario
+
+                        </div>
+
+
+                        <h3>
+
+                            Volatility Spike
+
+                        </h3>
+
+
+                        <p class="mb-0">
+
+                            Simulates a period where historical
+                            price movement becomes substantially
+                            more volatile.
+
+                        </p>
+
+
+                    </div>
+
+
+                </div>
+
+
+                <div class="col-12 col-md-6 col-xl-3">
+
+
+                    <div class="validation-box h-100">
+
+
+                        <div class="strategy-eyebrow strategy-eyebrow-danger">
+
+                            Scenario
+
+                        </div>
+
+
+                        <h3>
+
+                            Liquidity Shock
+
+                        </h3>
+
+
+                        <p class="mb-0">
+
+                            Simulates reduced market activity
+                            and difficult liquidity conditions
+                            during part of the dataset.
+
+                        </p>
+
+
+                    </div>
+
+
+                </div>
+
+
+                <div class="col-12 col-md-6 col-xl-3">
+
+
+                    <div class="validation-box h-100">
+
+
+                        <div class="strategy-eyebrow strategy-eyebrow-danger">
+
+                            Scenario
+
+                        </div>
+
+
+                        <h3>
+
+                            Market Condition Change
+
+                        </h3>
+
+
+                        <p class="mb-0">
+
+                            Investigates behaviour after a
+                            simulated change in the underlying
+                            market trend or regime.
+
+                        </p>
+
+
+                    </div>
+
+
+                </div>
+
+
+            </div>
+
+
+        {% else %}
+
+
+            <div class="alert border mb-0">
+
+
+                <div class="fw-semibold mb-1">
+
+                    Historical data is required
+
+                </div>
+
+
+                <div class="small text-muted mb-3">
+
+                    Import historical market data before
+                    running a strategy stress test.
+
+                </div>
+
+
+                <a
+                    href="{% url 'data_management:import' %}"
+                    class="btn btn-sm btn-outline-primary"
+                >
+
+                    Open Data
+
+                </a>
+
+
+            </div>
+
+
+        {% endif %}
+
+
+    {% else %}
+
+
+        <div class="alert border mb-0">
+
+
+            <div class="fw-semibold mb-1">
+
+                Create a strategy first
+
+            </div>
+
+
+            <div class="small text-muted mb-3">
+
+                Stress Testing requires one of your saved
+                MarketPulse strategies.
+
+            </div>
+
+
+            <a
+                href="{% url 'strategy_builder:create' %}"
+                class="btn btn-sm btn-primary"
+            >
+
+                Create Strategy
+
+            </a>
+
+
+        </div>
+
+
+    {% endif %}
+
+
+    {% if latest_strategy_stress_test %}
+
+
+        <div class="strategy-result-panel">
+
+
+            <div class="strategy-section-header mb-2">
+
+
+                <div>
+
+
+                    <div class="strategy-eyebrow strategy-eyebrow-danger">
+
+                        Latest Stress Result
+
+                    </div>
+
+
+                    <h2>
+
+                        Severe Scenario Summary
+
+                    </h2>
+
+
+                </div>
+
+
+                {% if latest_strategy_stress_test.passed_test %}
+
+
+                    <span class="badge bg-success">
+
+                        Passed Stress Test
+
+                    </span>
+
+
+                {% else %}
+
+
+                    <span
+                        class="
+                            badge
+                            border
+                            strategy-status-danger
+                        "
+                    >
+
+                        Failed Stress Test
+
+                    </span>
+
+
+                {% endif %}
+
+
+            </div>
+
+
+            <div class="strategy-result-grid">
+
+
+                <div class="strategy-result-stat">
+
+
+                    <span>
+                        Scenario
+                    </span>
+
+
+                    <strong>
+
+                        {{ latest_strategy_stress_test.get_test_type_display }}
+
+                    </strong>
+
+
+                </div>
+
+
+                <div class="strategy-result-stat">
+
+
+                    <span>
+                        Maximum Drawdown
+                    </span>
+
+
+                    <strong>
+
+                        {{ latest_strategy_stress_test.max_drawdown|floatformat:4 }}
+
+                    </strong>
+
+
+                </div>
+
+
+                <div class="strategy-result-stat">
+
+
+                    <span>
+                        Recovery Time
+                    </span>
+
+
+                    <strong>
+
+                        {{ latest_strategy_stress_test.recovery_time }}
+
+                        day{{ latest_strategy_stress_test.recovery_time|pluralize }}
+
+                    </strong>
+
+
+                </div>
+
+
+                <div class="strategy-result-stat">
+
+
+                    <span>
+                        Robustness Score
+                    </span>
+
+
+                    <strong>
+
+                        {{ latest_strategy_stress_test.robustness_score|floatformat:4 }}
+
+                    </strong>
+
+
+                </div>
+
+
+            </div>
+
+
+            {% if latest_strategy_stress_test.notes %}
+
+
+                <div class="strategy-result-note">
+
+                    <strong class="d-block text-light mb-1">
+
+                        Stress Test Notes
+
+                    </strong>
+
+                    {{ latest_strategy_stress_test.notes|linebreaksbr }}
+
+                </div>
+
+
+            {% endif %}
+
+
+        </div>
+
+
+    {% endif %}
+
+
+</section>
+
+
+<!-- ====================================================== -->
+<!-- 10. RELATED MARKETPULSE TOOLS                          -->
 <!-- ====================================================== -->
 
 <section class="strategy-panel">
@@ -5752,9 +7274,10 @@ type scale. Strategies now follows the same approach.
 
             <p>
 
-                Market Condition and Stress Testing remain
-                available in the sections where they are
-                most relevant.
+                Market Condition remains available through
+                the Data workspace. Strategy Robustness and
+                Stress Testing are already available directly
+                on this Strategies page.
 
             </p>
 
@@ -5807,44 +7330,6 @@ type scale. Strategies now follows the same approach.
         </div>
 
 
-        <div class="related-tool">
-
-
-            <div class="strategy-eyebrow">
-
-                Risk
-
-            </div>
-
-
-            <h3>
-
-                Stress Testing
-
-            </h3>
-
-
-            <p>
-
-                Explore what could happen if market conditions
-                become substantially worse than expected.
-
-            </p>
-
-
-            <a
-                href="{% url 'risk_management:stress_test' %}"
-                class="btn btn-sm btn-outline-danger"
-            >
-
-                Open Stress Test
-
-            </a>
-
-
-        </div>
-
-
     </div>
 
 
@@ -5852,7 +7337,7 @@ type scale. Strategies now follows the same approach.
 
 
 <!-- ====================================================== -->
-<!-- 9. LIBRARY INTERACTION JAVASCRIPT                      -->
+<!-- 11. LIBRARY + SAME-PAGE INTERACTION JAVASCRIPT         -->
 <!-- ====================================================== -->
 
 <script>
@@ -5861,6 +7346,10 @@ document.addEventListener(
     "DOMContentLoaded",
     function () {
 
+
+        /* ================================================== */
+        /* 11.1 ELEMENT REFERENCES                            */
+        /* ================================================== */
 
         const searchInput =
             document.getElementById(
@@ -5927,6 +7416,16 @@ document.addEventListener(
                 "noModelResults"
             );
 
+
+        const samePageStrategyActions =
+            document.querySelectorAll(
+                ".same-page-strategy-action"
+            );
+
+
+        /* ================================================== */
+        /* 11.2 FILTER MODEL LIBRARY                          */
+        /* ================================================== */
 
         function filterModels() {
 
@@ -6082,6 +7581,10 @@ document.addEventListener(
         }
 
 
+        /* ================================================== */
+        /* 11.3 MODEL COMPARISON STATE                        */
+        /* ================================================== */
+
         function updateCompareState() {
 
 
@@ -6180,6 +7683,10 @@ document.addEventListener(
         }
 
 
+        /* ================================================== */
+        /* 11.4 SEARCH                                        */
+        /* ================================================== */
+
         if (searchInput) {
 
 
@@ -6191,6 +7698,10 @@ document.addEventListener(
 
         }
 
+
+        /* ================================================== */
+        /* 11.5 CATEGORY FILTER                               */
+        /* ================================================== */
 
         if (categoryFilter) {
 
@@ -6204,6 +7715,10 @@ document.addEventListener(
         }
 
 
+        /* ================================================== */
+        /* 11.6 IMPLEMENTATION STATUS FILTER                  */
+        /* ================================================== */
+
         if (statusFilter) {
 
 
@@ -6216,6 +7731,10 @@ document.addEventListener(
         }
 
 
+        /* ================================================== */
+        /* 11.7 CLEAR FILTERS                                 */
+        /* ================================================== */
+
         if (clearFilters) {
 
 
@@ -6226,21 +7745,24 @@ document.addEventListener(
 
                     if (searchInput) {
 
-                        searchInput.value = "";
+                        searchInput.value =
+                            "";
 
                     }
 
 
                     if (categoryFilter) {
 
-                        categoryFilter.value = "";
+                        categoryFilter.value =
+                            "";
 
                     }
 
 
                     if (statusFilter) {
 
-                        statusFilter.value = "";
+                        statusFilter.value =
+                            "";
 
                     }
 
@@ -6255,6 +7777,10 @@ document.addEventListener(
         }
 
 
+        /* ================================================== */
+        /* 11.8 MODEL COMPARISON CHECKBOXES                   */
+        /* ================================================== */
+
         compareCheckboxes.forEach(
             function (checkbox) {
 
@@ -6268,6 +7794,108 @@ document.addEventListener(
             }
         );
 
+
+        /* ================================================== */
+        /* 11.9 SAME-PAGE STRATEGY ACTIONS                    */
+        /*                                                    */
+        /* Clicking Check Robustness or Stress Test from a    */
+        /* strategy card:                                     */
+        /*                                                    */
+        /* 1. does NOT navigate to another Django page        */
+        /* 2. selects the clicked strategy                    */
+        /* 3. scrolls to the relevant section                 */
+        /* ================================================== */
+
+        samePageStrategyActions.forEach(
+            function (link) {
+
+
+                link.addEventListener(
+                    "click",
+                    function () {
+
+
+                        const strategyId =
+                            link.dataset.strategyId
+                            ||
+                            "";
+
+
+                        const targetSelectId =
+                            link.dataset.targetSelect
+                            ||
+                            "";
+
+
+                        if (
+                            !strategyId
+                            ||
+                            !targetSelectId
+                        ) {
+
+                            return;
+
+                        }
+
+
+                        const targetSelect =
+                            document.getElementById(
+                                targetSelectId
+                            );
+
+
+                        if (targetSelect) {
+
+                            targetSelect.value =
+                                strategyId;
+
+                        }
+
+
+                        /*
+                         * Keep both same-page strategy selectors
+                         * aligned where possible.
+                         */
+
+                        const robustnessSelect =
+                            document.getElementById(
+                                "robustnessStrategy"
+                            );
+
+
+                        const stressSelect =
+                            document.getElementById(
+                                "stressStrategy"
+                            );
+
+
+                        if (robustnessSelect) {
+
+                            robustnessSelect.value =
+                                strategyId;
+
+                        }
+
+
+                        if (stressSelect) {
+
+                            stressSelect.value =
+                                strategyId;
+
+                        }
+
+
+                    }
+                );
+
+
+            }
+        );
+
+
+        /* ================================================== */
+        /* 11.10 INITIAL STATE                                */
+        /* ================================================== */
 
         filterModels();
 

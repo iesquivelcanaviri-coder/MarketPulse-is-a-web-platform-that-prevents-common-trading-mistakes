@@ -42,6 +42,8 @@ backtest_results()
 
 Strategy Robustness
         ↓
+Strategies Tab
+        ↓
 User Strategy
         ↓
 Historical MarketData
@@ -50,7 +52,24 @@ analysis_tools.detect_overfitting()
         ↓
 OverfittingTest
         ↓
-Strategy Robustness Results
+Result displayed inside /strategy/
+
+
+Stress Testing
+        ↓
+Strategies Tab
+        ↓
+User Strategy
+        ↓
+Historical MarketData
+        ↓
+Predefined severe market scenario
+        ↓
+analysis_tools.run_stress_test()
+        ↓
+StressTest
+        ↓
+Result displayed inside /strategy/
 
 
 Add New Library Model
@@ -73,25 +92,45 @@ with:
 - Backtesting
 - Historical performance metrics
 - Strategy robustness / overfitting analysis
+- Stress testing
 - Future strategy/model execution
+
 
 IMPORTANT ARCHITECTURE:
 
-The old public "Analysis" section is being removed.
+The old public "Analysis" section is removed from the
+user-facing navigation.
 
 analysis_tools remains inside the project as an INTERNAL
 analytics engine.
 
 The user now accesses:
 
-Strategy Robustness
+Strategy & Model Research
     through the Strategies tab
+
+Historical Backtesting
+    through the Strategies tab
+
+Strategy Robustness
+    directly inside the Strategies page
+
+Stress Testing
+    directly inside the Strategies page
 
 Market Condition
     through the Data tab
 
-Stress Testing
-    through the Risk tab
+
+IMPORTANT:
+
+Strategy Robustness and Stress Testing DO NOT require
+separate user-facing pages.
+
+Their calculations remain separated in the backend,
+but their forms and latest results are displayed inside:
+
+    /strategy/
 
 ============================================================
 """
@@ -101,53 +140,28 @@ Stress Testing
 # 1. DJANGO IMPORTS
 # ============================================================
 
-# Django messages are used to show success and error
-# notifications after actions such as creating a strategy,
-# adding a library model, running a backtest or checking
-# strategy robustness.
 from django.contrib import messages
 
-
-# login_required prevents unauthenticated users from accessing
-# the Strategy Builder and strategy research functionality.
 from django.contrib.auth.decorators import login_required
 
-
-# Min and Max allow MarketPulse to identify the first and
-# latest historical dates available for a selected symbol.
-#
-# This is more reliable than assuming that every imported
-# dataset contains exactly the last one or two calendar years.
 from django.db.models import (
     Max,
     Min,
 )
 
-
-# get_object_or_404 safely retrieves a database object and
-# automatically returns a 404 page if the object does not exist.
-#
-# redirect sends the user to another named Django URL.
-#
-# render combines a Django template with context data.
 from django.shortcuts import (
     get_object_or_404,
     redirect,
     render,
 )
 
+from django.urls import reverse
+
 
 # ============================================================
 # 2. CORE MODEL IMPORTS
 # ============================================================
 
-# Strategy stores strategies created by MarketPulse users.
-#
-# Backtest stores the historical results of running one of
-# those strategies against market data.
-#
-# MarketData stores historical OHLCV observations imported
-# through the Data section.
 from core.models import (
     Backtest,
     MarketData,
@@ -159,22 +173,25 @@ from core.models import (
 # 3. INTERNAL ANALYTICS ENGINE IMPORTS
 # ============================================================
 
-# analysis_tools is no longer intended to have its own
-# user-facing navigation tab.
+# analysis_tools remains an internal analytics layer.
 #
-# Instead it acts as an internal analytics layer.
+# detect_overfitting()
+#     powers Strategy Robustness.
 #
-# detect_overfitting() is used here because Strategy
-# Robustness belongs naturally inside the Strategies section.
+# run_stress_test()
+#     powers Strategy Stress Testing.
 from analysis_tools.analyzers import (
     detect_overfitting,
+    run_stress_test,
 )
 
 
-# OverfittingTest stores the results produced by the
-# robustness / overfitting analysis.
+# OverfittingTest stores Strategy Robustness results.
+#
+# StressTest stores Strategy Stress Testing results.
 from analysis_tools.models import (
     OverfittingTest,
+    StressTest,
 )
 
 
@@ -182,15 +199,6 @@ from analysis_tools.models import (
 # 4. STRATEGY BUILDER FORM IMPORTS
 # ============================================================
 
-# StrategyCreateForm:
-#     Creates a custom user strategy.
-#
-# BacktestForm:
-#     Collects the settings required to run a backtest.
-#
-# StrategyLibraryItemForm:
-#     Allows additional models or strategies to be added to
-#     the MarketPulse Strategy & Model Library.
 from .forms import (
     BacktestForm,
     StrategyCreateForm,
@@ -202,17 +210,6 @@ from .forms import (
 # 5. STRATEGY BUILDER MODEL IMPORTS
 # ============================================================
 
-# StrategyLibraryItem stores the metadata for the built-in
-# quantitative models such as:
-#
-# - GBM
-# - ARIMA
-# - GARCH
-# - Random Forest
-# - Fama-French
-# - Markowitz
-# - Black-Scholes
-# - Monte Carlo
 from .models import StrategyLibraryItem
 
 
@@ -220,13 +217,129 @@ from .models import StrategyLibraryItem
 # 6. BACKTESTING ENGINE IMPORT
 # ============================================================
 
-# run_backtest() contains the historical simulation logic
-# used by MarketPulse custom strategies.
 from .backtesting import run_backtest
 
 
 # ============================================================
-# 7. STRATEGY & MODEL RESEARCH WORKSPACE
+# 7. INTERNAL VIEW HELPERS
+# ============================================================
+
+def _strategy_workspace_url(
+    anchor=None,
+):
+    """
+    Return the main Strategies workspace URL.
+
+    Optional anchor examples:
+
+        strategyRobustnessSection
+        stressTestingSection
+        myStrategiesSection
+    """
+
+    url = reverse(
+        "strategy_builder:list"
+    )
+
+    if anchor:
+
+        return (
+            f"{url}#{anchor}"
+        )
+
+    return url
+
+
+def _get_available_historical_symbols():
+    """
+    Return all symbols currently available in core.MarketData.
+
+    Both Strategy Robustness and Stress Testing depend on
+    stored historical data rather than only live Alpaca data.
+    """
+
+    return list(
+        MarketData.objects
+        .order_by(
+            "symbol"
+        )
+        .values_list(
+            "symbol",
+            flat=True,
+        )
+        .distinct()
+    )
+
+
+def _robustness_interpretation(
+    test,
+):
+    """
+    Convert the technical OverfittingTest result into
+    user-friendly language.
+
+    Returns:
+
+        label,
+        explanation
+    """
+
+    if not test:
+
+        return (
+            None,
+            None,
+        )
+
+
+    score = float(
+        test.overfitting_score
+    )
+
+
+    if (
+        test.is_overfitted
+        and score >= 0.50
+    ):
+
+        return (
+            "High Overfitting Risk",
+            (
+                "Performance weakened substantially when "
+                "MarketPulse moved from the in-sample period "
+                "to the out-of-sample period. The historical "
+                "result may depend too heavily on the data "
+                "used during strategy development."
+            ),
+        )
+
+
+    if test.is_overfitted:
+
+        return (
+            "Moderate Overfitting Risk",
+            (
+                "The strategy showed a meaningful reduction "
+                "in performance on the out-of-sample period. "
+                "Additional testing across other data periods "
+                "and market conditions would be useful."
+            ),
+        )
+
+
+    return (
+        "Low Overfitting Risk",
+        (
+            "The simplified robustness check did not identify "
+            "a large deterioration between the in-sample and "
+            "out-of-sample periods. This does not guarantee "
+            "future performance."
+        ),
+    )
+
+
+# ============================================================
+# 8. STRATEGY & MODEL RESEARCH WORKSPACE
 # ============================================================
 
 @login_required
@@ -240,46 +353,36 @@ def strategy_list(request):
 
         /strategy/
 
-    Framework mapping:
 
-    StrategyLibraryItem
-            ↓
-    Quantitative model library
-            ↓
-    Search / filter / compare
-            ↓
-    Data tab / Future Model Runner
+    The Strategies page now combines:
 
+    1. Strategy & Model Library
 
-    User
-        ↓
-    core.Strategy
-        ↓
-    Backtest
-        ↓
-    Historical performance summary
-        ↓
-    Strategy Robustness
-        ↓
-    Overfitting Analysis
+    2. Model Search and Filtering
+
+    3. Model Comparison
+
+    4. User-Created Strategies
+
+    5. Historical Backtesting
+
+    6. Strategy Robustness
+
+    7. Stress Testing
 
 
-    This page combines:
+    IMPORTANT:
 
-    1. STRATEGY / MODEL LIBRARY
+    Strategy Robustness and Stress Testing are processed
+    directly by this view.
 
-    2. USER-CREATED STRATEGIES
-
-    3. BACKTEST PERFORMANCE
-
-    4. STRATEGY ROBUSTNESS
-
+    They no longer require users to leave the Strategies page.
     ============================================================
     """
 
 
     # ========================================================
-    # 7.1 LOAD THE COMPLETE ACTIVE MODEL LIBRARY
+    # 8.1 LOAD THE COMPLETE ACTIVE MODEL LIBRARY
     # ========================================================
 
     library_items = (
@@ -296,7 +399,7 @@ def strategy_list(request):
 
 
     # ========================================================
-    # 7.2 BUILD CATEGORY SUMMARY CARDS
+    # 8.2 BUILD CATEGORY SUMMARY CARDS
     # ========================================================
 
     category_cards = []
@@ -331,7 +434,7 @@ def strategy_list(request):
 
 
     # ========================================================
-    # 7.3 LIBRARY SUMMARY STATISTICS
+    # 8.3 LIBRARY SUMMARY STATISTICS
     # ========================================================
 
     total_library_models = (
@@ -367,7 +470,7 @@ def strategy_list(request):
 
 
     # ========================================================
-    # 7.4 MODEL COMPARISON
+    # 8.4 MODEL COMPARISON
     # ========================================================
 
     requested_compare_codes = (
@@ -377,8 +480,7 @@ def strategy_list(request):
     )
 
 
-    # Remove duplicate selections while keeping the order
-    # chosen by the user.
+    # Remove duplicate selections while preserving order.
     requested_compare_codes = list(
         dict.fromkeys(
             requested_compare_codes
@@ -390,7 +492,7 @@ def strategy_list(request):
 
 
     # ========================================================
-    # 7.5 LIMIT COMPARISON TO FOUR MODELS
+    # 8.5 LIMIT COMPARISON TO FOUR MODELS
     # ========================================================
 
     if len(requested_compare_codes) > 4:
@@ -407,7 +509,7 @@ def strategy_list(request):
 
 
     # ========================================================
-    # 7.6 RETRIEVE SELECTED COMPARISON MODELS
+    # 8.6 RETRIEVE SELECTED COMPARISON MODELS
     # ========================================================
 
     compare_queryset = (
@@ -449,7 +551,7 @@ def strategy_list(request):
 
 
     # ========================================================
-    # 7.7 LOAD USER-CREATED STRATEGIES
+    # 8.7 LOAD USER-CREATED STRATEGIES
     # ========================================================
 
     my_strategies = (
@@ -467,7 +569,470 @@ def strategy_list(request):
 
 
     # ========================================================
-    # 7.8 PREPARE STRATEGY PERFORMANCE + ROBUSTNESS SUMMARY
+    # 8.8 AVAILABLE HISTORICAL MARKET DATA
+    # ========================================================
+
+    available_symbols = (
+        _get_available_historical_symbols()
+    )
+
+
+    # ========================================================
+    # 8.9 PRESERVE SAME-PAGE VALIDATION SELECTIONS
+    # ========================================================
+
+    # A strategy can be supplied by:
+    #
+    # POST:
+    #     when a form is submitted
+    #
+    # GET:
+    #     when a "Check Robustness" or Stress Test link
+    #     pre-selects a specific strategy.
+    selected_validation_strategy = (
+        request.POST.get(
+            "strategy"
+        )
+        or
+        request.GET.get(
+            "strategy"
+        )
+        or
+        ""
+    )
+
+
+    selected_validation_symbol = (
+        request.POST.get(
+            "symbol"
+        )
+        or
+        request.GET.get(
+            "symbol"
+        )
+        or
+        ""
+    ).strip().upper()
+
+
+    selected_stress_scenario = (
+        request.POST.get(
+            "scenario"
+        )
+        or
+        "crash"
+    )
+
+
+    # ========================================================
+    # 8.10 PROCESS SAME-PAGE STRATEGY ACTION
+    # ========================================================
+
+    if request.method == "POST":
+
+        action = (
+            request.POST.get(
+                "action",
+                "",
+            )
+        )
+
+
+        # ====================================================
+        # 8.10.1 STRATEGY ROBUSTNESS
+        # ====================================================
+
+        if action == "robustness":
+
+
+            # ------------------------------------------------
+            # Require strategy
+            # ------------------------------------------------
+
+            if not selected_validation_strategy:
+
+                messages.error(
+                    request,
+                    "Select a strategy to test.",
+                )
+
+
+            # ------------------------------------------------
+            # Require historical asset
+            # ------------------------------------------------
+
+            elif not selected_validation_symbol:
+
+                messages.error(
+                    request,
+                    "Select a historical asset to test.",
+                )
+
+
+            else:
+
+                strategy = get_object_or_404(
+                    Strategy,
+                    pk=selected_validation_strategy,
+                    user=request.user,
+                )
+
+
+                # =============================================
+                # HISTORICAL DATA FOR SELECTED SYMBOL
+                # =============================================
+
+                market_queryset = (
+                    MarketData.objects
+                    .filter(
+                        symbol=selected_validation_symbol
+                    )
+                    .order_by(
+                        "date"
+                    )
+                )
+
+
+                observation_count = (
+                    market_queryset.count()
+                )
+
+
+                # =============================================
+                # MINIMUM DATA REQUIREMENT
+                # =============================================
+
+                if observation_count < 60:
+
+                    messages.error(
+                        request,
+                        (
+                            f"{selected_validation_symbol} currently "
+                            f"has {observation_count} historical "
+                            f"observations. MarketPulse requires at "
+                            f"least 60 observations for this "
+                            f"Strategy Robustness check."
+                        ),
+                    )
+
+
+                else:
+
+                    # =========================================
+                    # DETERMINE AVAILABLE DATE RANGE
+                    # =========================================
+
+                    date_range = (
+                        market_queryset.aggregate(
+                            first_date=Min(
+                                "date"
+                            ),
+                            last_date=Max(
+                                "date"
+                            ),
+                        )
+                    )
+
+
+                    first_date = (
+                        date_range[
+                            "first_date"
+                        ]
+                    )
+
+
+                    last_date = (
+                        date_range[
+                            "last_date"
+                        ]
+                    )
+
+
+                    if (
+                        first_date is None
+                        or
+                        last_date is None
+                        or
+                        first_date >= last_date
+                    ):
+
+                        messages.error(
+                            request,
+                            (
+                                "MarketPulse could not determine "
+                                "a valid historical period for "
+                                f"{selected_validation_symbol}."
+                            ),
+                        )
+
+
+                    else:
+
+                        # =====================================
+                        # ROBUSTNESS TEST PERIOD
+                        # =====================================
+
+                        # detect_overfitting() performs its own
+                        # internal in-sample/out-of-sample split.
+                        test_periods = [
+                            (
+                                first_date,
+                                last_date,
+                            )
+                        ]
+
+
+                        # =====================================
+                        # RUN INTERNAL ANALYTICS ENGINE
+                        # =====================================
+
+                        try:
+
+                            tests = (
+                                detect_overfitting(
+                                    strategy,
+                                    selected_validation_symbol,
+                                    test_periods,
+                                )
+                            )
+
+
+                            if tests:
+
+                                messages.success(
+                                    request,
+                                    (
+                                        "Strategy Robustness check "
+                                        f"completed for "
+                                        f"{strategy.name} on "
+                                        f"{selected_validation_symbol}."
+                                    ),
+                                )
+
+
+                                return redirect(
+                                    _strategy_workspace_url(
+                                        "strategyRobustnessSection"
+                                    )
+                                )
+
+
+                            messages.error(
+                                request,
+                                (
+                                    "MarketPulse could not produce "
+                                    "a Strategy Robustness result."
+                                ),
+                            )
+
+
+                        except Exception as error:
+
+                            messages.error(
+                                request,
+                                (
+                                    "Strategy Robustness analysis "
+                                    "could not be completed: "
+                                    f"{error}"
+                                ),
+                            )
+
+
+        # ====================================================
+        # 8.10.2 STRESS TESTING
+        # ====================================================
+
+        elif action == "stress_test":
+
+
+            # ------------------------------------------------
+            # Require strategy
+            # ------------------------------------------------
+
+            if not selected_validation_strategy:
+
+                messages.error(
+                    request,
+                    "Select a strategy first.",
+                )
+
+
+            # ------------------------------------------------
+            # Require asset
+            # ------------------------------------------------
+
+            elif not selected_validation_symbol:
+
+                messages.error(
+                    request,
+                    "Select an asset first.",
+                )
+
+
+            else:
+
+                strategy = get_object_or_404(
+                    Strategy,
+                    pk=selected_validation_strategy,
+                    user=request.user,
+                )
+
+
+                # =============================================
+                # USER-FRIENDLY STRESS SCENARIOS
+                # =============================================
+
+                scenarios = {
+
+
+                    # -----------------------------------------
+                    # Severe market decline
+                    # -----------------------------------------
+
+                    "crash": {
+
+                        "crash_start":
+                            0.70,
+
+                        "crash_magnitude":
+                            0.20,
+
+                    },
+
+
+                    # -----------------------------------------
+                    # Volatility spike
+                    # -----------------------------------------
+
+                    "volatility_spike": {
+
+                        "spike_start":
+                            0.50,
+
+                        "spike_duration":
+                            0.10,
+
+                        "spike_magnitude":
+                            3.0,
+
+                    },
+
+
+                    # -----------------------------------------
+                    # Liquidity shock
+                    # -----------------------------------------
+
+                    "liquidity_crisis": {
+
+                        "crisis_start":
+                            0.60,
+
+                        "crisis_duration":
+                            0.20,
+
+                        "volume_reduction":
+                            0.70,
+
+                    },
+
+
+                    # -----------------------------------------
+                    # Market condition change
+                    # -----------------------------------------
+
+                    "regime_change": {
+
+                        "change_point":
+                            0.50,
+
+                        "new_trend":
+                            -0.01,
+
+                    },
+
+                }
+
+
+                parameters = (
+                    scenarios.get(
+                        selected_stress_scenario
+                    )
+                )
+
+
+                # =============================================
+                # VALIDATE SCENARIO
+                # =============================================
+
+                if parameters is None:
+
+                    messages.error(
+                        request,
+                        "Choose a valid stress scenario.",
+                    )
+
+
+                else:
+
+                    # =========================================
+                    # RUN INTERNAL STRESS TEST ENGINE
+                    # =========================================
+
+                    try:
+
+                        stress_result = (
+                            run_stress_test(
+                                strategy,
+                                selected_validation_symbol,
+                                selected_stress_scenario,
+                                parameters,
+                            )
+                        )
+
+
+                        if stress_result:
+
+                            messages.success(
+                                request,
+                                (
+                                    "Stress test completed "
+                                    f"for {strategy.name} on "
+                                    f"{selected_validation_symbol}."
+                                ),
+                            )
+
+
+                            return redirect(
+                                _strategy_workspace_url(
+                                    "stressTestingSection"
+                                )
+                            )
+
+
+                        messages.error(
+                            request,
+                            (
+                                "MarketPulse could not complete "
+                                "the stress test. Make sure the "
+                                "selected asset has sufficient "
+                                "historical data."
+                            ),
+                        )
+
+
+                    except Exception as error:
+
+                        messages.error(
+                            request,
+                            (
+                                "Stress testing could not be "
+                                f"completed: {error}"
+                            ),
+                        )
+
+
+    # ========================================================
+    # 8.11 PREPARE STRATEGY PERFORMANCE + ROBUSTNESS SUMMARY
     # ========================================================
 
     my_strategy_rows = []
@@ -503,14 +1068,13 @@ def strategy_list(request):
         # Latest Strategy Robustness result
         # ----------------------------------------------------
 
-        # OverfittingTest currently stores strategy_name rather
-        # than a ForeignKey to Strategy.
-        #
-        # Therefore MarketPulse matches by:
+        # Current MarketPulse OverfittingTest storage uses:
         #
         # user
         # +
-        # strategy name
+        # strategy_name
+        #
+        # rather than requiring a Strategy foreign key here.
         latest_robustness_test = (
             OverfittingTest.objects
             .filter(
@@ -525,42 +1089,19 @@ def strategy_list(request):
 
 
         # ----------------------------------------------------
-        # Convert technical result to clear user-facing label
+        # Convert result into user-facing label
         # ----------------------------------------------------
 
-        robustness_label = None
-
-
-        if latest_robustness_test:
-
-            score = float(
-                latest_robustness_test.overfitting_score
-            )
-
-
-            if latest_robustness_test.is_overfitted:
-
-                if score >= 0.50:
-
-                    robustness_label = (
-                        "High Overfitting Risk"
-                    )
-
-                else:
-
-                    robustness_label = (
-                        "Moderate Overfitting Risk"
-                    )
-
-            else:
-
-                robustness_label = (
-                    "Low Overfitting Risk"
-                )
+        (
+            robustness_label,
+            robustness_explanation,
+        ) = _robustness_interpretation(
+            latest_robustness_test
+        )
 
 
         # ----------------------------------------------------
-        # Add prepared row to template
+        # Add prepared row
         # ----------------------------------------------------
 
         my_strategy_rows.append(
@@ -579,12 +1120,15 @@ def strategy_list(request):
 
                 "robustness_label":
                     robustness_label,
+
+                "robustness_explanation":
+                    robustness_explanation,
             }
         )
 
 
     # ========================================================
-    # 7.9 USER ROBUSTNESS SUMMARY
+    # 8.12 USER ROBUSTNESS SUMMARY
     # ========================================================
 
     robustness_test_count = (
@@ -608,11 +1152,45 @@ def strategy_list(request):
     )
 
 
+    (
+        latest_user_robustness_label,
+        latest_user_robustness_explanation,
+    ) = _robustness_interpretation(
+        latest_user_robustness_test
+    )
+
+
     # ========================================================
-    # 7.10 BUILD TEMPLATE CONTEXT
+    # 8.13 USER STRESS TEST SUMMARY
+    # ========================================================
+
+    stress_test_count = (
+        StressTest.objects
+        .filter(
+            user=request.user
+        )
+        .count()
+    )
+
+
+    latest_strategy_stress_test = (
+        StressTest.objects
+        .filter(
+            user=request.user
+        )
+        .order_by(
+            "-created_at"
+        )
+        .first()
+    )
+
+
+    # ========================================================
+    # 8.14 BUILD TEMPLATE CONTEXT
     # ========================================================
 
     context = {
+
 
         # ----------------------------------------------------
         # Strategy library
@@ -673,6 +1251,33 @@ def strategy_list(request):
 
 
         # ----------------------------------------------------
+        # Historical assets
+        # ----------------------------------------------------
+
+        "available_symbols":
+            available_symbols,
+
+        # Compatibility name if another template still
+        # expects "symbols".
+        "symbols":
+            available_symbols,
+
+
+        # ----------------------------------------------------
+        # Current validation selections
+        # ----------------------------------------------------
+
+        "selected_validation_strategy":
+            selected_validation_strategy,
+
+        "selected_validation_symbol":
+            selected_validation_symbol,
+
+        "selected_stress_scenario":
+            selected_stress_scenario,
+
+
+        # ----------------------------------------------------
         # Strategy robustness
         # ----------------------------------------------------
 
@@ -681,6 +1286,23 @@ def strategy_list(request):
 
         "latest_user_robustness_test":
             latest_user_robustness_test,
+
+        "latest_user_robustness_label":
+            latest_user_robustness_label,
+
+        "latest_user_robustness_explanation":
+            latest_user_robustness_explanation,
+
+
+        # ----------------------------------------------------
+        # Stress testing
+        # ----------------------------------------------------
+
+        "stress_test_count":
+            stress_test_count,
+
+        "latest_strategy_stress_test":
+            latest_strategy_stress_test,
 
 
         # ----------------------------------------------------
@@ -697,11 +1319,12 @@ def strategy_list(request):
 
         "page_title":
             "Strategy & Model Research",
+
     }
 
 
     # ========================================================
-    # 7.11 DISPLAY STRATEGY RESEARCH PAGE
+    # 8.15 DISPLAY STRATEGIES WORKSPACE
     # ========================================================
 
     return render(
@@ -712,541 +1335,97 @@ def strategy_list(request):
 
 
 # ============================================================
-# 8. STRATEGY ROBUSTNESS / OVERFITTING ANALYSIS
+# 9. LEGACY STRATEGY ROBUSTNESS ROUTE
 # ============================================================
 
 @login_required
 def strategy_robustness(request):
     """
     ============================================================
-    STRATEGY ROBUSTNESS
+    LEGACY STRATEGY ROBUSTNESS ROUTE
     ============================================================
 
-    URL:
+    Previous URL:
 
         /strategy/robustness/
 
-    User-facing question:
+    Strategy Robustness now lives directly inside:
 
-        "Does this strategy still behave reasonably when
-         tested on historical data it was not evaluated on?"
+        /strategy/#strategyRobustnessSection
 
-    Technical method:
+    This view is retained so existing links or bookmarks
+    do not cause a 404.
 
-        Overfitting Analysis
-
-
-    Framework mapping:
-
-    User Strategy
-        ↓
-    Historical MarketData
-        ↓
-    Full historical period
-        ↓
-    70% In-Sample
-        ↓
-    30% Out-of-Sample
-        ↓
-    detect_overfitting()
-        ↓
-    OverfittingTest
-        ↓
-    Strategy Robustness Result
-
-
-    IMPORTANT:
-
-    The technical analysis remains inside:
-
-        analysis_tools/analyzers.py
-
-    But the USER accesses it through:
-
-        Strategies → Strategy Robustness
-
+    It no longer renders a separate robustness template.
     ============================================================
     """
 
 
-    # ========================================================
-    # 8.1 LOAD USER STRATEGIES
-    # ========================================================
-
-    strategies = (
-        Strategy.objects
-        .filter(
-            user=request.user
+    strategy_id = (
+        request.GET.get(
+            "strategy"
         )
-        .order_by(
-            "name"
-        )
+        or
+        ""
     )
 
 
-    # ========================================================
-    # 8.2 LOAD AVAILABLE HISTORICAL SYMBOLS
-    # ========================================================
-
-    # Strategy robustness requires historical observations.
-    #
-    # Therefore this dropdown intentionally uses MarketData,
-    # not Alpaca's live asset universe.
-    symbols = list(
-        MarketData.objects
-        .order_by(
-            "symbol"
-        )
-        .values_list(
-            "symbol",
-            flat=True,
-        )
-        .distinct()
+    base_url = reverse(
+        "strategy_builder:list"
     )
 
 
-    # ========================================================
-    # 8.3 PRESERVE USER SELECTIONS
-    # ========================================================
+    if strategy_id:
 
-    selected_strategy_id = (
-        request.POST.get(
-            "strategy",
-            "",
+        return redirect(
+            (
+                f"{base_url}"
+                f"?strategy={strategy_id}"
+                "#strategyRobustnessSection"
+            )
         )
-    )
 
 
-    selected_symbol = (
-        request.POST.get(
-            "symbol",
-            "",
+    return redirect(
+        (
+            f"{base_url}"
+            "#strategyRobustnessSection"
         )
-        .strip()
-        .upper()
-    )
-
-
-    # ========================================================
-    # 8.4 PROCESS ROBUSTNESS REQUEST
-    # ========================================================
-
-    if request.method == "POST":
-
-
-        # ----------------------------------------------------
-        # Require a strategy
-        # ----------------------------------------------------
-
-        if not selected_strategy_id:
-
-            messages.error(
-                request,
-                "Select a strategy to test.",
-            )
-
-
-        # ----------------------------------------------------
-        # Require an asset
-        # ----------------------------------------------------
-
-        elif not selected_symbol:
-
-            messages.error(
-                request,
-                "Select a historical asset to test.",
-            )
-
-
-        else:
-
-            # ------------------------------------------------
-            # Retrieve user's strategy securely
-            # ------------------------------------------------
-
-            strategy = get_object_or_404(
-                Strategy,
-                pk=selected_strategy_id,
-                user=request.user,
-            )
-
-
-            # =================================================
-            # 8.5 FIND AVAILABLE HISTORICAL DATA
-            # =================================================
-
-            market_queryset = (
-                MarketData.objects
-                .filter(
-                    symbol=selected_symbol
-                )
-                .order_by(
-                    "date"
-                )
-            )
-
-
-            observation_count = (
-                market_queryset.count()
-            )
-
-
-            # ------------------------------------------------
-            # Minimum observations
-            # ------------------------------------------------
-
-            if observation_count < 60:
-
-                messages.error(
-                    request,
-                    (
-                        f"{selected_symbol} currently has "
-                        f"{observation_count} historical "
-                        f"observations. MarketPulse requires "
-                        f"at least 60 observations for this "
-                        f"Strategy Robustness check."
-                    ),
-                )
-
-
-            else:
-
-                # =============================================
-                # 8.6 DETERMINE TRUE DATA RANGE
-                # =============================================
-
-                date_range = (
-                    market_queryset.aggregate(
-                        first_date=Min(
-                            "date"
-                        ),
-                        last_date=Max(
-                            "date"
-                        ),
-                    )
-                )
-
-
-                first_date = (
-                    date_range[
-                        "first_date"
-                    ]
-                )
-
-
-                last_date = (
-                    date_range[
-                        "last_date"
-                    ]
-                )
-
-
-                if (
-                    first_date is None
-                    or
-                    last_date is None
-                    or
-                    first_date >= last_date
-                ):
-
-                    messages.error(
-                        request,
-                        (
-                            "MarketPulse could not determine "
-                            "a valid historical period for "
-                            f"{selected_symbol}."
-                        ),
-                    )
-
-
-                else:
-
-                    # =========================================
-                    # 8.7 DEFINE ROBUSTNESS TEST PERIOD
-                    # =========================================
-
-                    # detect_overfitting() already performs
-                    # its own internal:
-                    #
-                    # 70% in-sample
-                    # 30% out-of-sample
-                    #
-                    # split.
-                    #
-                    # Therefore the view supplies the full
-                    # historical period as one test period.
-                    #
-                    # This avoids arbitrary hard-coded dates
-                    # and makes the feature work with whatever
-                    # dataset the user has actually imported.
-                    test_periods = [
-                        (
-                            first_date,
-                            last_date,
-                        )
-                    ]
-
-
-                    # =========================================
-                    # 8.8 RUN INTERNAL ANALYTICS ENGINE
-                    # =========================================
-
-                    try:
-
-                        tests = (
-                            detect_overfitting(
-                                strategy,
-                                selected_symbol,
-                                test_periods,
-                            )
-                        )
-
-
-                        if tests:
-
-                            messages.success(
-                                request,
-                                (
-                                    "Strategy Robustness "
-                                    f"check completed for "
-                                    f"{strategy.name} on "
-                                    f"{selected_symbol}."
-                                ),
-                            )
-
-
-                            return redirect(
-                                "strategy_builder:robustness_results"
-                            )
-
-
-                        messages.error(
-                            request,
-                            (
-                                "MarketPulse could not produce "
-                                "a Strategy Robustness result."
-                            ),
-                        )
-
-
-                    except Exception as error:
-
-                        messages.error(
-                            request,
-                            (
-                                "Strategy Robustness analysis "
-                                f"could not be completed: {error}"
-                            ),
-                        )
-
-
-    # ========================================================
-    # 8.9 LATEST RESULT FOR THIS USER
-    # ========================================================
-
-    latest_test = (
-        OverfittingTest.objects
-        .filter(
-            user=request.user
-        )
-        .order_by(
-            "-created_at"
-        )
-        .first()
-    )
-
-
-    # ========================================================
-    # 8.10 DISPLAY ROBUSTNESS PAGE
-    # ========================================================
-
-    context = {
-
-        "strategies":
-            strategies,
-
-        "symbols":
-            symbols,
-
-        "selected_strategy_id":
-            selected_strategy_id,
-
-        "selected_symbol":
-            selected_symbol,
-
-        "latest_test":
-            latest_test,
-
-        "page_title":
-            "Strategy Robustness",
-    }
-
-
-    return render(
-        request,
-        "strategy_builder/robustness.html",
-        context,
     )
 
 
 # ============================================================
-# 9. STRATEGY ROBUSTNESS RESULTS
+# 10. LEGACY STRATEGY ROBUSTNESS RESULTS ROUTE
 # ============================================================
 
 @login_required
 def strategy_robustness_results(request):
     """
     ============================================================
-    STRATEGY ROBUSTNESS RESULTS
+    LEGACY STRATEGY ROBUSTNESS RESULTS ROUTE
     ============================================================
 
-    URL:
+    Previous URL:
 
         /strategy/robustness/results/
 
-    Displays results from:
+    Robustness results are now displayed directly inside
+    the Strategies workspace.
 
-        analysis_tools.OverfittingTest
-
-    but keeps the functionality inside the user-facing
-    Strategies section.
+    Existing links therefore redirect to the relevant
+    section of /strategy/.
     ============================================================
     """
 
-
-    # ========================================================
-    # 9.1 LOAD ONLY CURRENT USER'S TESTS
-    # ========================================================
-
-    tests = (
-        OverfittingTest.objects
-        .filter(
-            user=request.user
+    return redirect(
+        _strategy_workspace_url(
+            "strategyRobustnessSection"
         )
-        .order_by(
-            "-created_at"
-        )
-    )
-
-
-    # ========================================================
-    # 9.2 LATEST RESULT
-    # ========================================================
-
-    latest_test = (
-        tests.first()
-    )
-
-
-    # ========================================================
-    # 9.3 CREATE EASY-TO-UNDERSTAND INTERPRETATION
-    # ========================================================
-
-    robustness_label = None
-
-    robustness_explanation = None
-
-
-    if latest_test:
-
-        score = float(
-            latest_test.overfitting_score
-        )
-
-
-        # ----------------------------------------------------
-        # High risk
-        # ----------------------------------------------------
-
-        if (
-            latest_test.is_overfitted
-            and score >= 0.50
-        ):
-
-            robustness_label = (
-                "High Overfitting Risk"
-            )
-
-
-            robustness_explanation = (
-                "Performance weakened substantially when "
-                "MarketPulse moved from the in-sample period "
-                "to the out-of-sample period. The historical "
-                "result may depend too heavily on the data "
-                "used during strategy development."
-            )
-
-
-        # ----------------------------------------------------
-        # Moderate risk
-        # ----------------------------------------------------
-
-        elif latest_test.is_overfitted:
-
-            robustness_label = (
-                "Moderate Overfitting Risk"
-            )
-
-
-            robustness_explanation = (
-                "The strategy showed a meaningful reduction "
-                "in performance on the out-of-sample period. "
-                "Additional testing across other data periods "
-                "and market conditions would be useful."
-            )
-
-
-        # ----------------------------------------------------
-        # Lower risk
-        # ----------------------------------------------------
-
-        else:
-
-            robustness_label = (
-                "Low Overfitting Risk"
-            )
-
-
-            robustness_explanation = (
-                "The simplified robustness check did not "
-                "identify a large deterioration between the "
-                "in-sample and out-of-sample periods. This "
-                "does not guarantee future performance."
-            )
-
-
-    # ========================================================
-    # 9.4 DISPLAY RESULTS
-    # ========================================================
-
-    context = {
-
-        "tests":
-            tests,
-
-        "latest_test":
-            latest_test,
-
-        "robustness_label":
-            robustness_label,
-
-        "robustness_explanation":
-            robustness_explanation,
-
-        "page_title":
-            "Strategy Robustness Results",
-    }
-
-
-    return render(
-        request,
-        "strategy_builder/robustness_results.html",
-        context,
     )
 
 
 # ============================================================
-# 10. CREATE CUSTOM STRATEGY
+# 11. CREATE CUSTOM STRATEGY
 # ============================================================
 
 @login_required
@@ -1260,6 +1439,7 @@ def strategy_create(request):
 
         /strategy/create/
 
+
     Framework mapping:
 
     User
@@ -1272,14 +1452,15 @@ def strategy_create(request):
         ↓
     Backtest
 
-    Once the strategy is successfully created, MarketPulse
-    sends the user directly to the backtesting page.
+
+    Once successfully created, MarketPulse sends the user
+    directly to the backtesting page.
     ============================================================
     """
 
 
     # ========================================================
-    # 10.1 BUILD STRATEGY FORM
+    # 11.1 BUILD STRATEGY FORM
     # ========================================================
 
     form = StrategyCreateForm(
@@ -1288,7 +1469,7 @@ def strategy_create(request):
 
 
     # ========================================================
-    # 10.2 PROCESS SUBMITTED FORM
+    # 11.2 PROCESS SUBMITTED FORM
     # ========================================================
 
     if (
@@ -1314,7 +1495,7 @@ def strategy_create(request):
 
 
     # ========================================================
-    # 10.3 DISPLAY STRATEGY CREATION FORM
+    # 11.3 DISPLAY STRATEGY CREATION FORM
     # ========================================================
 
     context = {
@@ -1324,6 +1505,7 @@ def strategy_create(request):
 
         "page_title":
             "Create Strategy",
+
     }
 
 
@@ -1335,7 +1517,7 @@ def strategy_create(request):
 
 
 # ============================================================
-# 11. ADD STRATEGY / MODEL TO LIBRARY
+# 12. ADD STRATEGY / MODEL TO LIBRARY
 # ============================================================
 
 @login_required
@@ -1348,6 +1530,7 @@ def library_item_create(request):
     URL:
 
         /strategy/library/add/
+
 
     Framework mapping:
 
@@ -1366,14 +1549,14 @@ def library_item_create(request):
 
         implementation_status = "catalogued"
 
-    because merely adding metadata does not mean the numerical
-    model has actually been implemented.
+    because adding metadata does not mean the numerical
+    implementation is complete.
     ============================================================
     """
 
 
     # ========================================================
-    # 11.1 PROCESS POST REQUEST
+    # 12.1 PROCESS POST REQUEST
     # ========================================================
 
     if request.method == "POST":
@@ -1432,7 +1615,7 @@ def library_item_create(request):
 
 
     # ========================================================
-    # 11.2 GET REQUEST
+    # 12.2 GET REQUEST
     # ========================================================
 
     else:
@@ -1441,7 +1624,7 @@ def library_item_create(request):
 
 
     # ========================================================
-    # 11.3 DISPLAY ADD MODEL FORM
+    # 12.3 DISPLAY ADD MODEL FORM
     # ========================================================
 
     context = {
@@ -1451,6 +1634,7 @@ def library_item_create(request):
 
         "page_title":
             "Add Strategy or Model",
+
     }
 
 
@@ -1462,7 +1646,7 @@ def library_item_create(request):
 
 
 # ============================================================
-# 12. BACKTEST STRATEGY
+# 13. BACKTEST STRATEGY
 # ============================================================
 
 @login_required
@@ -1478,6 +1662,7 @@ def backtest_strategy(
     URL example:
 
         /strategy/5/backtest/
+
 
     Framework mapping:
 
@@ -1499,7 +1684,7 @@ def backtest_strategy(
 
 
     # ========================================================
-    # 12.1 RETRIEVE USER'S STRATEGY
+    # 13.1 RETRIEVE USER'S STRATEGY
     # ========================================================
 
     strategy = get_object_or_404(
@@ -1510,7 +1695,7 @@ def backtest_strategy(
 
 
     # ========================================================
-    # 12.2 BUILD BACKTEST FORM
+    # 13.2 BUILD BACKTEST FORM
     # ========================================================
 
     form = BacktestForm(
@@ -1519,7 +1704,7 @@ def backtest_strategy(
 
 
     # ========================================================
-    # 12.3 PROCESS BACKTEST REQUEST
+    # 13.3 PROCESS BACKTEST REQUEST
     # ========================================================
 
     if (
@@ -1532,6 +1717,15 @@ def backtest_strategy(
             backtest = run_backtest(
                 strategy,
                 **form.cleaned_data,
+            )
+
+
+            messages.success(
+                request,
+                (
+                    f"Backtest completed for "
+                    f"{strategy.name}."
+                ),
             )
 
 
@@ -1550,7 +1744,7 @@ def backtest_strategy(
 
 
     # ========================================================
-    # 12.4 DISPLAY BACKTEST FORM
+    # 13.4 DISPLAY BACKTEST FORM
     # ========================================================
 
     context = {
@@ -1563,6 +1757,7 @@ def backtest_strategy(
 
         "page_title":
             f"Backtest {strategy.name}",
+
     }
 
 
@@ -1574,7 +1769,7 @@ def backtest_strategy(
 
 
 # ============================================================
-# 13. BACKTEST RESULTS
+# 14. BACKTEST RESULTS
 # ============================================================
 
 @login_required
@@ -1597,6 +1792,7 @@ def backtest_results(
         ↓
     backtest_results.html
 
+
     Results may include:
 
     - Total return
@@ -1610,7 +1806,7 @@ def backtest_results(
 
 
     # ========================================================
-    # 13.1 RETRIEVE BACKTEST
+    # 14.1 RETRIEVE BACKTEST
     # ========================================================
 
     backtest = get_object_or_404(
@@ -1621,7 +1817,7 @@ def backtest_results(
 
 
     # ========================================================
-    # 13.2 RETRIEVE SIMULATED TRADES
+    # 14.2 RETRIEVE SIMULATED TRADES
     # ========================================================
 
     trades = (
@@ -1634,7 +1830,7 @@ def backtest_results(
 
 
     # ========================================================
-    # 13.3 BUILD RESULTS CONTEXT
+    # 14.3 BUILD RESULTS CONTEXT
     # ========================================================
 
     context = {
@@ -1647,11 +1843,12 @@ def backtest_results(
 
         "page_title":
             "Backtest Results",
+
     }
 
 
     # ========================================================
-    # 13.4 DISPLAY RESULTS
+    # 14.4 DISPLAY RESULTS
     # ========================================================
 
     return render(
