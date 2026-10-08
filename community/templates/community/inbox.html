@@ -1,185 +1,2190 @@
 {% extends 'base.html' %}
 
+
 {% block title %}
-Inbox | MarketPulse
+Messages | MarketPulse
+{% endblock %}
+
+
+{% block extra_css %}
+
+<style>
+
+/* ============================================================
+   MARKETPULSE - CONVERSATION INBOX
+   ============================================================
+
+   FRAMEWORK MAPPING:
+
+   Browser
+       ↓
+   community/urls.py
+       ↓
+   community/views.py
+       ↓
+   Conversation + PrivateMessage
+       ↓
+   Django ORM
+       ↓
+   PostgreSQL / Neon
+       ↓
+   community/templates/community/inbox.html
+
+
+   PURPOSE:
+
+   This page replaces the original email-style messaging:
+
+       Received Messages
+       Sent Messages
+
+   with a modern conversation-based messaging workspace.
+
+
+   DESKTOP:
+
+   Conversations                  Conversation workspace
+   ┌─────────────────────┬──────────────────────────────────┐
+   │ Search              │                                  │
+   │                     │                                  │
+   │ User2               │    Select a conversation         │
+   │ Latest message      │                                  │
+   │                     │                                  │
+   │ User3               │                                  │
+   │ Latest message      │                                  │
+   └─────────────────────┴──────────────────────────────────┘
+
+
+   MOBILE:
+
+   Conversations
+       ↓
+   Search
+       ↓
+   User2
+   User3
+   User4
+       ↓
+   Tap conversation
+       ↓
+   Dedicated conversation thread
+
+
+   EXPECTED VIEW CONTEXT:
+
+       conversations
+
+
+   Each Conversation object should also be prepared by
+   community/views.py with:
+
+       conversation.other_user
+       conversation.last_message
+       conversation.unread_count
+
+
+   URL DEPENDENCIES:
+
+       community:new_conversation
+       community:conversation_detail
+
+
+   RESPONSIVE DESIGN:
+
+   Bootstrap provides:
+
+   - responsive columns
+   - spacing
+   - buttons
+   - badges
+   - flex utilities
+   - typography
+
+   This stylesheet handles only messaging-specific layout.
+
+============================================================ */
+
+
+/* ============================================================
+   1. MAIN WORKSPACE
+============================================================ */
+
+.messaging-workspace {
+
+    width:
+        100%;
+
+    max-width:
+        1480px;
+
+    min-width:
+        0;
+
+    margin:
+        0 auto;
+}
+
+
+/* ============================================================
+   2. PAGE HEADER
+============================================================ */
+
+.messaging-header {
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
+    flex-wrap:
+        wrap;
+
+    gap:
+        1rem;
+
+    margin-bottom:
+        1.25rem;
+}
+
+
+.messaging-header-copy {
+
+    min-width:
+        0;
+}
+
+
+.messaging-eyebrow {
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        .4rem;
+
+    margin-bottom:
+        .3rem;
+
+    color:
+        var(
+            --mp-primary,
+            #4f86b6
+        );
+
+    font-size:
+        .68rem;
+
+    font-weight:
+        700;
+
+    letter-spacing:
+        .05em;
+
+    text-transform:
+        uppercase;
+}
+
+
+.messaging-title {
+
+    margin:
+        0 0 .25rem;
+
+    color:
+        var(
+            --mp-text,
+            #f1f5f9
+        );
+
+    font-size:
+        clamp(
+            1.5rem,
+            2vw,
+            1.9rem
+        );
+
+    font-weight:
+        700;
+}
+
+
+.messaging-subtitle {
+
+    max-width:
+        720px;
+
+    margin:
+        0;
+
+    color:
+        var(
+            --mp-muted,
+            #93a4b8
+        );
+
+    font-size:
+        .88rem;
+
+    line-height:
+        1.5;
+}
+
+
+/* ============================================================
+   3. MAIN MESSAGING SHELL
+============================================================ */
+
+.messaging-shell {
+
+    width:
+        100%;
+
+    min-width:
+        0;
+
+    overflow:
+        hidden;
+
+    background:
+        var(
+            --mp-panel,
+            #152235
+        );
+
+    border:
+        1px solid
+        var(
+            --mp-border,
+            #314258
+        );
+
+    border-radius:
+        12px;
+
+    box-shadow:
+        0 8px 24px
+        rgba(
+            0,
+            0,
+            0,
+            .10
+        );
+}
+
+
+.messaging-shell > .row {
+
+    min-height:
+        650px;
+}
+
+
+/* ============================================================
+   4. CONVERSATION SIDEBAR
+============================================================ */
+
+.conversation-sidebar {
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    height:
+        100%;
+
+    min-width:
+        0;
+
+    background:
+        var(
+            --mp-panel,
+            #152235
+        );
+
+    border-right:
+        1px solid
+        var(
+            --mp-border,
+            #314258
+        );
+}
+
+
+/* ============================================================
+   5. SIDEBAR HEADER
+============================================================ */
+
+.conversation-sidebar-header {
+
+    padding:
+        1rem;
+
+    background:
+        var(
+            --mp-panel-soft,
+            #18283a
+        );
+
+    border-bottom:
+        1px solid
+        var(
+            --mp-border,
+            #314258
+        );
+}
+
+
+.conversation-sidebar-heading {
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
+    gap:
+        .75rem;
+
+    min-width:
+        0;
+}
+
+
+.conversation-sidebar-heading-copy {
+
+    min-width:
+        0;
+}
+
+
+.conversation-sidebar-title {
+
+    margin:
+        0;
+
+    color:
+        var(
+            --mp-text,
+            #f1f5f9
+        );
+
+    font-size:
+        .95rem;
+
+    font-weight:
+        700;
+}
+
+
+.conversation-sidebar-subtitle {
+
+    margin:
+        .15rem 0 0;
+
+    color:
+        var(
+            --mp-muted,
+            #93a4b8
+        );
+
+    font-size:
+        .72rem;
+}
+
+
+/* ============================================================
+   6. CONVERSATION SEARCH
+============================================================ */
+
+.conversation-search {
+
+    margin-top:
+        .85rem;
+}
+
+
+.conversation-search-box {
+
+    position:
+        relative;
+}
+
+
+.conversation-search-icon {
+
+    position:
+        absolute;
+
+    top:
+        50%;
+
+    left:
+        .75rem;
+
+    z-index:
+        2;
+
+    color:
+        var(
+            --mp-muted,
+            #93a4b8
+        );
+
+    transform:
+        translateY(
+            -50%
+        );
+
+    pointer-events:
+        none;
+}
+
+
+.conversation-search-input {
+
+    padding-left:
+        2.15rem;
+
+    font-size:
+        .8rem;
+}
+
+
+/* ============================================================
+   7. CONVERSATION LIST
+============================================================ */
+
+.conversation-list {
+
+    flex:
+        1 1 auto;
+
+    min-width:
+        0;
+
+    max-height:
+        590px;
+
+    overflow-x:
+        hidden;
+
+    overflow-y:
+        auto;
+}
+
+
+/* ============================================================
+   8. CONVERSATION ITEM
+============================================================ */
+
+.conversation-item {
+
+    display:
+        block;
+
+    width:
+        100%;
+
+    min-width:
+        0;
+
+    padding:
+        .9rem 1rem;
+
+    color:
+        inherit;
+
+    background:
+        transparent;
+
+    border-bottom:
+        1px solid
+        var(
+            --mp-border-soft,
+            #26374b
+        );
+
+    text-decoration:
+        none;
+
+    transition:
+        background-color .15s ease,
+        border-color .15s ease;
+}
+
+
+.conversation-item:last-child {
+
+    border-bottom:
+        0;
+}
+
+
+.conversation-item:hover,
+.conversation-item:focus {
+
+    color:
+        inherit;
+
+    background:
+        var(
+            --mp-panel-soft,
+            #18283a
+        );
+
+    outline:
+        none;
+}
+
+
+.conversation-item:focus-visible {
+
+    box-shadow:
+        inset
+        0
+        0
+        0
+        2px
+        var(
+            --mp-primary,
+            #4f86b6
+        );
+}
+
+
+.conversation-row {
+
+    display:
+        flex;
+
+    align-items:
+        flex-start;
+
+    gap:
+        .75rem;
+
+    min-width:
+        0;
+}
+
+
+/* ============================================================
+   9. USER AVATAR
+============================================================ */
+
+.conversation-avatar {
+
+    display:
+        inline-flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    flex:
+        0 0 auto;
+
+    width:
+        44px;
+
+    height:
+        44px;
+
+    color:
+        #b7d4ea;
+
+    background:
+        rgba(
+            79,
+            134,
+            182,
+            .14
+        );
+
+    border:
+        1px solid
+        rgba(
+            79,
+            134,
+            182,
+            .30
+        );
+
+    border-radius:
+        50%;
+
+    font-size:
+        .85rem;
+
+    font-weight:
+        700;
+}
+
+
+/* ============================================================
+   10. CONVERSATION CONTENT
+============================================================ */
+
+.conversation-content {
+
+    flex:
+        1 1 auto;
+
+    min-width:
+        0;
+}
+
+
+.conversation-topline {
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
+    gap:
+        .75rem;
+
+    min-width:
+        0;
+}
+
+
+.conversation-user {
+
+    min-width:
+        0;
+
+    overflow:
+        hidden;
+
+    color:
+        var(
+            --mp-text,
+            #f1f5f9
+        );
+
+    font-size:
+        .86rem;
+
+    font-weight:
+        700;
+
+    text-overflow:
+        ellipsis;
+
+    white-space:
+        nowrap;
+}
+
+
+.conversation-time {
+
+    flex:
+        0 0 auto;
+
+    color:
+        var(
+            --mp-muted,
+            #93a4b8
+        );
+
+    font-size:
+        .63rem;
+
+    white-space:
+        nowrap;
+}
+
+
+.conversation-preview {
+
+    min-width:
+        0;
+
+    overflow:
+        hidden;
+
+    margin-top:
+        .22rem;
+
+    color:
+        var(
+            --mp-muted,
+            #93a4b8
+        );
+
+    font-size:
+        .75rem;
+
+    line-height:
+        1.35;
+
+    text-overflow:
+        ellipsis;
+
+    white-space:
+        nowrap;
+}
+
+
+.conversation-meta {
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
+    gap:
+        .5rem;
+
+    min-width:
+        0;
+
+    margin-top:
+        .35rem;
+}
+
+
+.conversation-sender {
+
+    min-width:
+        0;
+
+    overflow:
+        hidden;
+
+    color:
+        #7890a8;
+
+    font-size:
+        .65rem;
+
+    text-overflow:
+        ellipsis;
+
+    white-space:
+        nowrap;
+}
+
+
+/* ============================================================
+   11. UNREAD STATE
+============================================================ */
+
+.conversation-item-unread {
+
+    background:
+        rgba(
+            79,
+            134,
+            182,
+            .07
+        );
+
+    border-left:
+        3px solid
+        var(
+            --mp-primary,
+            #4f86b6
+        );
+}
+
+
+.conversation-item-unread .conversation-user {
+
+    color:
+        #ffffff;
+}
+
+
+.conversation-item-unread .conversation-preview {
+
+    color:
+        #d6e1eb;
+}
+
+
+.unread-indicator {
+
+    display:
+        inline-flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    flex:
+        0 0 auto;
+
+    min-width:
+        20px;
+
+    height:
+        20px;
+
+    padding:
+        0 .35rem;
+
+    color:
+        #ffffff;
+
+    background:
+        var(
+            --mp-primary,
+            #4f86b6
+        );
+
+    border-radius:
+        999px;
+
+    font-size:
+        .61rem;
+
+    font-weight:
+        700;
+}
+
+
+/* ============================================================
+   12. EMPTY CONVERSATION STATE
+============================================================ */
+
+.conversation-empty {
+
+    padding:
+        3rem 1.25rem;
+
+    text-align:
+        center;
+}
+
+
+.conversation-empty-icon {
+
+    display:
+        inline-flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    width:
+        58px;
+
+    height:
+        58px;
+
+    margin-bottom:
+        1rem;
+
+    color:
+        #8ba8c0;
+
+    background:
+        var(
+            --mp-panel-dark,
+            #101a28
+        );
+
+    border:
+        1px solid
+        var(
+            --mp-border,
+            #314258
+        );
+
+    border-radius:
+        50%;
+
+    font-size:
+        1.25rem;
+}
+
+
+/* ============================================================
+   13. SEARCH EMPTY STATE
+============================================================ */
+
+.conversation-search-empty {
+
+    display:
+        none;
+
+    padding:
+        2rem 1rem;
+
+    color:
+        var(
+            --mp-muted,
+            #93a4b8
+        );
+
+    text-align:
+        center;
+
+    font-size:
+        .8rem;
+}
+
+
+/* ============================================================
+   14. DESKTOP CHAT PREVIEW
+============================================================ */
+
+.message-preview-panel {
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    width:
+        100%;
+
+    min-width:
+        0;
+
+    min-height:
+        650px;
+
+    padding:
+        2rem;
+
+    background:
+        var(
+            --mp-panel-dark,
+            #101a28
+        );
+}
+
+
+.message-preview-empty {
+
+    width:
+        100%;
+
+    max-width:
+        470px;
+
+    text-align:
+        center;
+}
+
+
+.message-preview-icon {
+
+    display:
+        inline-flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    width:
+        76px;
+
+    height:
+        76px;
+
+    margin-bottom:
+        1.25rem;
+
+    color:
+        #94b7d3;
+
+    background:
+        rgba(
+            79,
+            134,
+            182,
+            .11
+        );
+
+    border:
+        1px solid
+        rgba(
+            79,
+            134,
+            182,
+            .25
+        );
+
+    border-radius:
+        20px;
+
+    font-size:
+        1.6rem;
+}
+
+
+.message-preview-empty h2 {
+
+    margin-bottom:
+        .5rem;
+
+    color:
+        var(
+            --mp-text,
+            #f1f5f9
+        );
+
+    font-size:
+        1.15rem;
+
+    font-weight:
+        700;
+}
+
+
+.message-preview-empty p {
+
+    margin-bottom:
+        1.25rem;
+
+    color:
+        var(
+            --mp-muted,
+            #93a4b8
+        );
+
+    font-size:
+        .84rem;
+
+    line-height:
+        1.55;
+}
+
+
+/* ============================================================
+   15. CHAT FEATURE HINTS
+============================================================ */
+
+.message-preview-features {
+
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(
+            3,
+            minmax(
+                0,
+                1fr
+            )
+        );
+
+    gap:
+        .6rem;
+
+    margin:
+        1.5rem 0;
+}
+
+
+.message-preview-feature {
+
+    min-width:
+        0;
+
+    padding:
+        .75rem .5rem;
+
+    color:
+        var(
+            --mp-muted,
+            #93a4b8
+        );
+
+    background:
+        rgba(
+            255,
+            255,
+            255,
+            .018
+        );
+
+    border:
+        1px solid
+        var(
+            --mp-border-soft,
+            #26374b
+        );
+
+    border-radius:
+        8px;
+
+    font-size:
+        .68rem;
+
+    line-height:
+        1.4;
+}
+
+
+.message-preview-feature i {
+
+    display:
+        block;
+
+    margin-bottom:
+        .4rem;
+
+    color:
+        var(
+            --mp-primary,
+            #4f86b6
+        );
+
+    font-size:
+        .9rem;
+}
+
+
+/* ============================================================
+   16. PRIVACY / EDUCATIONAL NOTE
+============================================================ */
+
+.messaging-privacy-note {
+
+    padding:
+        .85rem 1rem;
+
+    background:
+        rgba(
+            255,
+            255,
+            255,
+            .015
+        );
+
+    border:
+        1px solid
+        var(
+            --mp-border-soft,
+            #26374b
+        );
+
+    border-radius:
+        8px;
+
+    line-height:
+        1.5;
+}
+
+
+/* ============================================================
+   17. TABLET
+============================================================ */
+
+@media (
+    max-width:
+    991.98px
+) {
+
+    .message-preview-features {
+
+        grid-template-columns:
+            1fr;
+    }
+
+}
+
+
+/* ============================================================
+   18. MOBILE
+============================================================ */
+
+@media (
+    max-width:
+    767.98px
+) {
+
+    .messaging-shell > .row {
+
+        min-height:
+            0;
+    }
+
+
+    .conversation-sidebar {
+
+        border-right:
+            0;
+    }
+
+
+    .conversation-list {
+
+        max-height:
+            none;
+    }
+
+
+    .message-preview-panel {
+
+        display:
+            none;
+    }
+
+
+    .messaging-header {
+
+        align-items:
+            stretch;
+    }
+
+
+    .messaging-header-copy {
+
+        width:
+            100%;
+    }
+
+
+    .messaging-header .btn {
+
+        width:
+            100%;
+    }
+
+}
+
+
+/* ============================================================
+   19. SMALL PHONE
+============================================================ */
+
+@media (
+    max-width:
+    575.98px
+) {
+
+    .conversation-sidebar-header {
+
+        padding:
+            .85rem .75rem;
+    }
+
+
+    .conversation-item {
+
+        padding:
+            .85rem .75rem;
+    }
+
+
+    .conversation-avatar {
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        font-size:
+            .78rem;
+    }
+
+
+    .conversation-time {
+
+        font-size:
+            .59rem;
+    }
+
+
+    .conversation-preview {
+
+        font-size:
+            .72rem;
+    }
+
+
+    .messaging-privacy-note {
+
+        padding:
+            .75rem;
+    }
+
+}
+
+</style>
+
 {% endblock %}
 
 
 {% block content %}
 
-<div class="container py-4">
+
+<div class="messaging-workspace">
 
 
     <!-- ====================================================
-         INBOX HEADER
+         1. PAGE HEADER
     ===================================================== -->
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <header class="messaging-header">
 
-        <div>
 
-            <h1 class="h3 mb-1">
-                Inbox
+        <div class="messaging-header-copy">
+
+
+            <div class="messaging-eyebrow">
+
+                <i
+                    class="fa-regular fa-comments"
+                    aria-hidden="true"
+                ></i>
+
+                Private Messaging
+
+            </div>
+
+
+            <h1 class="messaging-title">
+
+                Messages
+
             </h1>
 
-            <p class="text-muted mb-0">
 
-                Send private messages to other
-                MarketPulse users.
+            <p class="messaging-subtitle">
+
+                View your private conversations and continue
+                discussions with other MarketPulse users.
 
             </p>
+
 
         </div>
 
 
         <a
-            href="{% url 'community:compose_message' %}"
-            class="btn btn-primary">
+            href="{% url 'community:new_conversation' %}"
+            class="
+                btn
+                btn-primary
+                align-self-md-center
+            "
+        >
 
-            New Message
+            <i
+                class="fa-solid fa-plus me-2"
+                aria-hidden="true"
+            ></i>
+
+            New Conversation
 
         </a>
 
-    </div>
+
+    </header>
 
 
     <!-- ====================================================
-         RECEIVED MESSAGES
+         2. CONVERSATION WORKSPACE
     ===================================================== -->
 
-    <div class="card shadow-sm mb-4">
-
-        <div class="card-header bg-white">
-
-            <h5 class="mb-0">
-                Received Messages
-            </h5>
-
-        </div>
+    <div class="messaging-shell">
 
 
-        <div class="list-group list-group-flush">
+        <div class="row g-0">
 
-            {% for message in received_messages %}
 
-                <a
-                    href="{% url 'community:message_detail' message.pk %}"
-                    class="list-group-item list-group-item-action">
+            <!-- =============================================
+                 LEFT SIDE - CONVERSATIONS
+            ============================================== -->
 
-                    <div class="d-flex justify-content-between">
+            <div
+                class="
+                    col-12
+                    col-md-5
+                    col-lg-4
+                    col-xl-3
+                "
+            >
 
-                        <div>
 
-                            {% if not message.is_read %}
+                <aside class="conversation-sidebar">
 
-                                <strong>
-                                    {{ message.sender.username }}
-                                </strong>
 
-                            {% else %}
+                    <!-- =====================================
+                         SIDEBAR HEADER
+                    ====================================== -->
 
-                                {{ message.sender.username }}
+                    <div class="conversation-sidebar-header">
+
+
+                        <div class="conversation-sidebar-heading">
+
+
+                            <div class="conversation-sidebar-heading-copy">
+
+
+                                <h2 class="conversation-sidebar-title">
+
+                                    Conversations
+
+                                </h2>
+
+
+                                <p class="conversation-sidebar-subtitle">
+
+                                    Your private MarketPulse chats
+
+                                </p>
+
+
+                            </div>
+
+
+                            {% if conversations %}
+
+                                <span
+                                    class="
+                                        badge
+                                        bg-primary-subtle
+                                        text-primary-emphasis
+                                        border
+                                        border-primary-subtle
+                                    "
+                                    title="Number of conversations"
+                                >
+
+                                    {{ conversations|length }}
+
+                                </span>
 
                             {% endif %}
+
 
                         </div>
 
 
-                        <small class="text-muted">
+                        <!-- ================================
+                             CONVERSATION SEARCH
+                        ================================= -->
 
-                            {{ message.created_at|date:"d M Y H:i" }}
+                        {% if conversations %}
 
-                        </small>
-
-                    </div>
+                            <div class="conversation-search">
 
 
-                    <div>
+                                <div class="conversation-search-box">
 
-                        {{ message.subject }}
 
-                        {% if not message.is_read %}
+                                    <i
+                                        class="
+                                            fa-solid
+                                            fa-magnifying-glass
+                                            conversation-search-icon
+                                        "
+                                        aria-hidden="true"
+                                    ></i>
 
-                            <span class="badge bg-primary ms-2">
-                                New
-                            </span>
+
+                                    <input
+                                        type="search"
+                                        id="conversationSearch"
+                                        class="
+                                            form-control
+                                            form-control-sm
+                                            conversation-search-input
+                                        "
+                                        placeholder="Search conversations..."
+                                        aria-label="Search conversations"
+                                        autocomplete="off"
+                                    >
+
+
+                                </div>
+
+
+                            </div>
 
                         {% endif %}
 
+
                     </div>
 
-                </a>
+
+                    <!-- =====================================
+                         CONVERSATION LIST
+                    ====================================== -->
+
+                    <div
+                        id="conversationList"
+                        class="conversation-list"
+                    >
 
 
-            {% empty %}
+                        {% for conversation in conversations %}
 
-                <div class="p-4 text-muted">
 
-                    You currently have no messages.
+                            <a
+                                href="{% url 'community:conversation_detail' conversation.pk %}"
+                                class="
+                                    conversation-item
+                                    {% if conversation.unread_count %}
+                                        conversation-item-unread
+                                    {% endif %}
+                                "
+                                data-conversation-search="{% if conversation.other_user %}{{ conversation.other_user.username|lower }}{% endif %} {% if conversation.last_message %}{{ conversation.last_message.body|lower }}{% endif %}"
+                                aria-label="
+                                    Open conversation with
+                                    {% if conversation.other_user %}
+                                        {{ conversation.other_user.username }}
+                                    {% else %}
+                                        MarketPulse user
+                                    {% endif %}
+                                "
+                            >
 
-                </div>
 
-            {% endfor %}
+                                <div class="conversation-row">
+
+
+                                    <!-- =====================
+                                         USER AVATAR
+                                    ====================== -->
+
+                                    <div
+                                        class="conversation-avatar"
+                                        aria-hidden="true"
+                                    >
+
+
+                                        {% if conversation.other_user %}
+
+                                            {{ conversation.other_user.username|slice:":1"|upper }}
+
+                                        {% else %}
+
+                                            <i class="fa-solid fa-user"></i>
+
+                                        {% endif %}
+
+
+                                    </div>
+
+
+                                    <!-- =====================
+                                         CONVERSATION DETAILS
+                                    ====================== -->
+
+                                    <div class="conversation-content">
+
+
+                                        <!-- =================
+                                             USER + TIME
+                                        ================== -->
+
+                                        <div class="conversation-topline">
+
+
+                                            <div class="conversation-user">
+
+
+                                                {% if conversation.other_user %}
+
+                                                    {{ conversation.other_user.username }}
+
+                                                {% else %}
+
+                                                    Conversation
+
+                                                {% endif %}
+
+
+                                            </div>
+
+
+                                            {% if conversation.last_message %}
+
+                                                <time
+                                                    class="conversation-time"
+                                                    datetime="{{ conversation.last_message.created_at|date:'c' }}"
+                                                    title="{{ conversation.last_message.created_at|date:'d M Y H:i' }}"
+                                                >
+
+                                                    {{ conversation.last_message.created_at|timesince }}
+                                                    ago
+
+                                                </time>
+
+                                            {% endif %}
+
+
+                                        </div>
+
+
+                                        <!-- =================
+                                             LAST MESSAGE
+                                        ================== -->
+
+                                        {% if conversation.last_message %}
+
+
+                                            <div class="conversation-preview">
+
+                                                {{ conversation.last_message.body|truncatechars:85 }}
+
+                                            </div>
+
+
+                                            <!-- =============
+                                                 MESSAGE META
+                                            ============== -->
+
+                                            <div class="conversation-meta">
+
+
+                                                <span class="conversation-sender">
+
+
+                                                    {% if conversation.last_message.sender == request.user %}
+
+                                                        <i
+                                                            class="
+                                                                fa-solid
+                                                                fa-reply
+                                                                me-1
+                                                            "
+                                                            aria-hidden="true"
+                                                        ></i>
+
+                                                        You
+
+                                                    {% else %}
+
+                                                        {{ conversation.last_message.sender.username }}
+
+                                                    {% endif %}
+
+
+                                                </span>
+
+
+                                                {% if conversation.unread_count %}
+
+                                                    <span
+                                                        class="unread-indicator"
+                                                        title="{{ conversation.unread_count }} unread message{% if conversation.unread_count != 1 %}s{% endif %}"
+                                                    >
+
+                                                        {{ conversation.unread_count }}
+
+                                                    </span>
+
+                                                {% endif %}
+
+
+                                            </div>
+
+
+                                        {% else %}
+
+
+                                            <div class="conversation-preview">
+
+                                                No messages yet.
+
+                                            </div>
+
+
+                                        {% endif %}
+
+
+                                    </div>
+
+
+                                </div>
+
+
+                            </a>
+
+
+                        {% empty %}
+
+
+                            <!-- ==============================
+                                 EMPTY INBOX
+                            =============================== -->
+
+                            <div class="conversation-empty">
+
+
+                                <div class="conversation-empty-icon">
+
+                                    <i
+                                        class="fa-regular fa-comments"
+                                        aria-hidden="true"
+                                    ></i>
+
+                                </div>
+
+
+                                <h3 class="h6 mb-2">
+
+                                    No Conversations Yet
+
+                                </h3>
+
+
+                                <p class="text-secondary small mb-3">
+
+                                    Start a private conversation
+                                    with another registered
+                                    MarketPulse user.
+
+                                </p>
+
+
+                                <a
+                                    href="{% url 'community:new_conversation' %}"
+                                    class="btn btn-sm btn-primary"
+                                >
+
+                                    <i
+                                        class="fa-solid fa-plus me-1"
+                                        aria-hidden="true"
+                                    ></i>
+
+                                    Start Conversation
+
+                                </a>
+
+
+                            </div>
+
+
+                        {% endfor %}
+
+
+                        <!-- ==============================
+                             SEARCH EMPTY STATE
+                        =============================== -->
+
+                        <div
+                            id="conversationSearchEmpty"
+                            class="conversation-search-empty"
+                        >
+
+                            <i
+                                class="
+                                    fa-solid
+                                    fa-magnifying-glass
+                                    d-block
+                                    mb-2
+                                "
+                                aria-hidden="true"
+                            ></i>
+
+                            No conversations match your search.
+
+                        </div>
+
+
+                    </div>
+
+
+                </aside>
+
+
+            </div>
+
+
+            <!-- =============================================
+                 RIGHT SIDE - DESKTOP WORKSPACE
+            ============================================== -->
+
+            <div
+                class="
+                    col-md-7
+                    col-lg-8
+                    col-xl-9
+                    d-none
+                    d-md-block
+                "
+            >
+
+
+                <section class="message-preview-panel">
+
+
+                    <div class="message-preview-empty">
+
+
+                        <div class="message-preview-icon">
+
+                            <i
+                                class="fa-regular fa-comments"
+                                aria-hidden="true"
+                            ></i>
+
+                        </div>
+
+
+                        {% if conversations %}
+
+
+                            <h2>
+
+                                Select a Conversation
+
+                            </h2>
+
+
+                            <p>
+
+                                Choose a conversation from the
+                                left to view the complete message
+                                history and continue chatting.
+
+                            </p>
+
+
+                            <div class="message-preview-features">
+
+
+                                <div class="message-preview-feature">
+
+                                    <i
+                                        class="fa-solid fa-comments"
+                                        aria-hidden="true"
+                                    ></i>
+
+                                    Complete message history
+
+                                </div>
+
+
+                                <div class="message-preview-feature">
+
+                                    <i
+                                        class="fa-solid fa-reply"
+                                        aria-hidden="true"
+                                    ></i>
+
+                                    Continue the conversation
+
+                                </div>
+
+
+                                <div class="message-preview-feature">
+
+                                    <i
+                                        class="fa-solid fa-lock"
+                                        aria-hidden="true"
+                                    ></i>
+
+                                    Participant-only access
+
+                                </div>
+
+
+                            </div>
+
+
+                        {% else %}
+
+
+                            <h2>
+
+                                Start Your First Conversation
+
+                            </h2>
+
+
+                            <p>
+
+                                Private MarketPulse conversations
+                                will appear here after you start
+                                messaging another registered user.
+
+                            </p>
+
+
+                        {% endif %}
+
+
+                        <a
+                            href="{% url 'community:new_conversation' %}"
+                            class="btn btn-outline-primary"
+                        >
+
+                            <i
+                                class="fa-solid fa-pen me-2"
+                                aria-hidden="true"
+                            ></i>
+
+                            Start a New Conversation
+
+                        </a>
+
+
+                    </div>
+
+
+                </section>
+
+
+            </div>
+
 
         </div>
+
 
     </div>
 
 
     <!-- ====================================================
-         SENT MESSAGES
+         3. PRIVACY / EDUCATIONAL NOTE
     ===================================================== -->
 
-    <div class="card shadow-sm">
-
-        <div class="card-header bg-white">
-
-            <h5 class="mb-0">
-                Sent Messages
-            </h5>
-
-        </div>
-
-
-        <div class="list-group list-group-flush">
-
-            {% for message in sent_messages %}
-
-                <div class="list-group-item">
-
-                    <strong>
-                        To:
-                        {{ message.recipient.username }}
-                    </strong>
-
-                    <div>
-                        {{ message.subject }}
-                    </div>
-
-                    <small class="text-muted">
-
-                        {{ message.created_at|date:"d M Y H:i" }}
-
-                    </small>
-
-                </div>
+    <div
+        class="
+            messaging-privacy-note
+            d-flex
+            align-items-start
+            gap-2
+            mt-3
+            small
+            text-secondary
+        "
+    >
 
 
-            {% empty %}
+        <i
+            class="
+                fa-solid
+                fa-lock
+                text-primary
+                mt-1
+            "
+            aria-hidden="true"
+        ></i>
 
-                <div class="p-4 text-muted">
 
-                    You have not sent any messages yet.
+        <p class="mb-0">
 
-                </div>
+            <strong class="text-body">
+                Private messaging:
+            </strong>
 
-            {% endfor %}
+            Conversations are available only to their
+            participants.
 
-        </div>
+            MarketPulse messaging is intended for
+            communication and educational discussion.
+
+            Messages should not be interpreted as
+            personalised financial, investment or trading
+            advice.
+
+        </p>
+
 
     </div>
 
 
 </div>
+
+
+{% endblock %}
+
+
+{% block extra_js %}
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+
+        /* ====================================================
+           CONVERSATION SEARCH
+           ====================================================
+
+           This is a browser-side search.
+
+           Browser
+               ↓
+           JavaScript
+               ↓
+           Existing rendered conversation rows
+
+           It does NOT:
+
+           - query PostgreSQL
+           - call Django
+           - call the REST API
+           - reload the page
+
+           Searchable values:
+
+           - username
+           - latest message body
+        ===================================================== */
+
+
+        const searchInput =
+            document.getElementById(
+                "conversationSearch"
+            );
+
+
+        const searchEmpty =
+            document.getElementById(
+                "conversationSearchEmpty"
+            );
+
+
+        const conversationItems =
+            Array.from(
+                document.querySelectorAll(
+                    ".conversation-item"
+                )
+            );
+
+
+        /* ----------------------------------------------------
+           No conversations or search field
+        ----------------------------------------------------- */
+
+        if (
+            !searchInput
+            ||
+            conversationItems.length === 0
+        ) {
+
+            return;
+
+        }
+
+
+        /* ====================================================
+           FILTER CONVERSATIONS
+        ===================================================== */
+
+        searchInput.addEventListener(
+            "input",
+            function () {
+
+
+                const query =
+                    searchInput.value
+                        .trim()
+                        .toLowerCase();
+
+
+                let visibleCount =
+                    0;
+
+
+                conversationItems.forEach(
+                    function (item) {
+
+
+                        const searchableText =
+                            (
+                                item.dataset.conversationSearch
+                                ||
+                                ""
+                            )
+                            .trim()
+                            .toLowerCase();
+
+
+                        const isVisible =
+                            (
+                                query === ""
+                                ||
+                                searchableText.includes(
+                                    query
+                                )
+                            );
+
+
+                        item.classList.toggle(
+                            "d-none",
+                            !isVisible
+                        );
+
+
+                        if (isVisible) {
+
+                            visibleCount +=
+                                1;
+
+                        }
+
+
+                    }
+                );
+
+
+                /* --------------------------------------------
+                   SHOW / HIDE SEARCH EMPTY MESSAGE
+                --------------------------------------------- */
+
+                if (searchEmpty) {
+
+                    searchEmpty.style.display =
+                        (
+                            query !== ""
+                            &&
+                            visibleCount === 0
+                        )
+                            ?
+                            "block"
+                            :
+                            "none";
+
+                }
+
+
+            }
+        );
+
+
+    }
+);
+
+</script>
 
 {% endblock %}

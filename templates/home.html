@@ -2,49 +2,71 @@
 
 <!-- ========================================================
      HOME TEMPLATE
+=========================================================
 
-     Framework mapping:
+FRAMEWORK MAPPING:
 
-     core/views.py
-            ↓
-     home()
-            ↓
-     templates/home.html
-
-
-     PURPOSE:
-
-     This is the public MarketPulse landing page.
-
-     The page is intentionally concise.
-
-     Detailed application functionality belongs inside the
-     relevant MarketPulse pages rather than being repeated
-     several times on the homepage.
+core/views.py
+        ↓
+home()
+        ↓
+templates/home.html
+        ↓
+base.html
 
 
-     FINAL PAGE STRUCTURE:
+PURPOSE:
 
-     1. Hero
-     2. Quick Access
-     3. Community Pulse + Inbox
-     4. About MarketPulse + Educational Notice
+MarketPulse public landing page and authenticated-user
+overview.
+
+The homepage provides a concise entry point into:
+
+1. Dashboard
+2. Market Data
+3. Strategies
+4. Risk Management
+5. Community
+6. Private Conversations
 
 
-     COMMUNITY DATA:
+PRIVATE MESSAGING ARCHITECTURE:
 
-     community/models.py
-            ↓
-     CommunityPost
-     PrivateMessage
-            ↓
-     core/views.py
-            ↓
-     recent_posts
-     recent_messages
-     unread_messages
-            ↓
-     templates/home.html
+community/models.py
+        ↓
+Conversation
+        ↓
+PrivateMessage
+        ↓
+core/views.py
+        ↓
+recent_messages
+unread_messages
+        ↓
+templates/home.html
+        ↓
+community:conversation_detail
+        ↓
+community/views.py
+        ↓
+Shared split-screen Inbox workspace
+
+
+IMPORTANT TRANSITION NOTE:
+
+Older PrivateMessage records may temporarily have:
+
+    conversation = NULL
+
+because they were created before Conversation was added.
+
+For those historical messages, this template retains a
+fallback to:
+
+    community:message_detail
+
+New messages open directly inside the conversation-based
+messaging workspace.
 
 ========================================================= -->
 
@@ -72,7 +94,14 @@ MarketPulse | Trading Decision Support
 
         <div class="col-lg-7">
 
-            <div class="h-100 d-flex flex-column justify-content-center">
+            <div
+                class="
+                    h-100
+                    d-flex
+                    flex-column
+                    justify-content-center
+                "
+            >
 
                 <span
                     class="
@@ -91,10 +120,6 @@ MarketPulse | Trading Decision Support
                 </span>
 
 
-                <!-- ------------------------------------------------
-                     MAIN MESSAGE
-                ------------------------------------------------- -->
-
                 <h1 class="display-4 fw-bold mb-3">
 
                     Research markets.<br>
@@ -106,15 +131,12 @@ MarketPulse | Trading Decision Support
 
                 <p class="lead text-secondary mb-4">
 
-                    A trading decision-support platform for market
-                    research, strategy testing and risk management.
+                    A trading decision-support platform for
+                    market research, strategy testing and
+                    risk management.
 
                 </p>
 
-
-                <!-- =================================================
-                     PRIMARY ACTION
-                ================================================== -->
 
                 <div>
 
@@ -125,7 +147,13 @@ MarketPulse | Trading Decision Support
                             href="{% url 'dashboard' %}"
                         >
 
-                            <i class="fa-solid fa-gauge-high me-2"></i>
+                            <i
+                                class="
+                                    fa-solid
+                                    fa-gauge-high
+                                    me-2
+                                "
+                            ></i>
 
                             Open Dashboard
 
@@ -138,7 +166,13 @@ MarketPulse | Trading Decision Support
                             href="{% url 'accounts:register' %}"
                         >
 
-                            <i class="fa-solid fa-user-plus me-2"></i>
+                            <i
+                                class="
+                                    fa-solid
+                                    fa-user-plus
+                                    me-2
+                                "
+                            ></i>
 
                             Get Started
 
@@ -172,9 +206,9 @@ MarketPulse | Trading Decision Support
                 <div class="card-body p-4">
 
 
-                    <!-- -----------------------------------------
+                    <!-- =====================================
                          STACK HEADER
-                    ------------------------------------------ -->
+                    ====================================== -->
 
                     <div
                         class="
@@ -199,7 +233,12 @@ MarketPulse | Trading Decision Support
                             "
                         >
 
-                            <i class="fa-solid fa-layer-group"></i>
+                            <i
+                                class="
+                                    fa-solid
+                                    fa-layer-group
+                                "
+                            ></i>
 
                         </span>
 
@@ -223,12 +262,14 @@ MarketPulse | Trading Decision Support
                     </div>
 
 
-                    <!-- -----------------------------------------
+                    <!-- =====================================
                          STACK ITEMS
-                    ------------------------------------------ -->
+                    ====================================== -->
 
                     <div class="vstack gap-3 small">
 
+
+                        <!-- BACKEND -->
 
                         <div>
 
@@ -256,6 +297,8 @@ MarketPulse | Trading Decision Support
                         </div>
 
 
+                        <!-- FRONTEND -->
+
                         <div>
 
                             <div class="fw-semibold mb-1">
@@ -281,6 +324,8 @@ MarketPulse | Trading Decision Support
 
                         </div>
 
+
+                        <!-- MARKET DATA -->
 
                         <div>
 
@@ -308,6 +353,8 @@ MarketPulse | Trading Decision Support
                         </div>
 
 
+                        <!-- ANALYTICS -->
+
                         <div>
 
                             <div class="fw-semibold mb-1">
@@ -334,6 +381,8 @@ MarketPulse | Trading Decision Support
                         </div>
 
 
+                        <!-- SECURITY -->
+
                         <div>
 
                             <div class="fw-semibold mb-1">
@@ -353,7 +402,8 @@ MarketPulse | Trading Decision Support
 
                             <div class="text-secondary">
 
-                                Django Authentication + Email Service
+                                Django Authentication +
+                                Email Service
 
                             </div>
 
@@ -411,7 +461,12 @@ MarketPulse | Trading Decision Support
                             "
                         >
 
-                            <i class="fa-solid fa-gauge-high"></i>
+                            <i
+                                class="
+                                    fa-solid
+                                    fa-gauge-high
+                                "
+                            ></i>
 
                         </span>
 
@@ -471,7 +526,12 @@ MarketPulse | Trading Decision Support
                             "
                         >
 
-                            <i class="fa-solid fa-database"></i>
+                            <i
+                                class="
+                                    fa-solid
+                                    fa-database
+                                "
+                            ></i>
 
                         </span>
 
@@ -531,7 +591,12 @@ MarketPulse | Trading Decision Support
                             "
                         >
 
-                            <i class="fa-solid fa-chart-line"></i>
+                            <i
+                                class="
+                                    fa-solid
+                                    fa-chart-line
+                                "
+                            ></i>
 
                         </span>
 
@@ -591,7 +656,12 @@ MarketPulse | Trading Decision Support
                             "
                         >
 
-                            <i class="fa-solid fa-shield-halved"></i>
+                            <i
+                                class="
+                                    fa-solid
+                                    fa-shield-halved
+                                "
+                            ></i>
 
                         </span>
 
@@ -640,9 +710,9 @@ MarketPulse | Trading Decision Support
         <div class="card shadow-sm h-100">
 
 
-            <!-- =================================================
+            <!-- =============================================
                  COMMUNITY HEADER
-            ================================================== -->
+            ============================================== -->
 
             <div
                 class="
@@ -667,8 +737,8 @@ MarketPulse | Trading Decision Support
 
                     <small class="text-secondary">
 
-                        Latest market observations and discussions
-                        shared by MarketPulse users.
+                        Latest market observations and
+                        discussions shared by MarketPulse users.
 
                     </small>
 
@@ -689,9 +759,9 @@ MarketPulse | Trading Decision Support
             </div>
 
 
-            <!-- =================================================
+            <!-- =============================================
                  COMMUNITY CONTENT
-            ================================================== -->
+            ============================================== -->
 
             <div class="card-body">
 
@@ -699,16 +769,12 @@ MarketPulse | Trading Decision Support
                 {% for post in recent_posts %}
 
 
-                    <!-- =========================================
-                         SINGLE COMMUNITY POST
-                    ========================================== -->
-
                     <div class="border-bottom pb-3 mb-3">
 
 
-                        <!-- -------------------------------------
+                        <!-- =================================
                              AUTHOR / TYPE / TIME
-                        -------------------------------------- -->
+                        ================================== -->
 
                         <div
                             class="
@@ -748,16 +814,17 @@ MarketPulse | Trading Decision Support
 
                             <small class="text-secondary">
 
-                                {{ post.created_at|timesince }} ago
+                                {{ post.created_at|timesince }}
+                                ago
 
                             </small>
 
                         </div>
 
 
-                        <!-- -------------------------------------
+                        <!-- =================================
                              OPTIONAL TICKER
-                        -------------------------------------- -->
+                        ================================== -->
 
                         {% if post.ticker %}
 
@@ -774,9 +841,9 @@ MarketPulse | Trading Decision Support
                         {% endif %}
 
 
-                        <!-- -------------------------------------
-                             POST CONTENT
-                        -------------------------------------- -->
+                        <!-- =================================
+                             CONTENT
+                        ================================== -->
 
                         <p class="mt-3 mb-0">
 
@@ -787,11 +854,12 @@ MarketPulse | Trading Decision Support
                     </div>
 
 
-                <!-- ============================================
-                     EMPTY COMMUNITY
-                ============================================= -->
-
                 {% empty %}
+
+
+                    <!-- =====================================
+                         EMPTY COMMUNITY
+                    ====================================== -->
 
                     <div class="text-center py-4">
 
@@ -833,12 +901,13 @@ MarketPulse | Trading Decision Support
 
                     </div>
 
+
                 {% endfor %}
 
 
-                <!-- ============================================
+                <!-- =========================================
                      COMMUNITY ACTIONS
-                ============================================= -->
+                ========================================== -->
 
                 {% if recent_posts %}
 
@@ -867,6 +936,7 @@ MarketPulse | Trading Decision Support
 
                 {% endif %}
 
+
             </div>
 
         </div>
@@ -875,7 +945,7 @@ MarketPulse | Trading Decision Support
 
 
     <!-- ====================================================
-         INBOX
+         PRIVATE MESSAGES
     ===================================================== -->
 
     <div class="col-lg-4">
@@ -883,9 +953,9 @@ MarketPulse | Trading Decision Support
         <div class="card shadow-sm h-100">
 
 
-            <!-- =================================================
-                 INBOX HEADER
-            ================================================== -->
+            <!-- =============================================
+                 MESSAGE HEADER
+            ============================================== -->
 
             <div
                 class="
@@ -893,14 +963,19 @@ MarketPulse | Trading Decision Support
                     d-flex
                     justify-content-between
                     align-items-center
+                    gap-2
                 "
             >
 
-                <h5 class="mb-0">
+                <div>
 
-                    Inbox
+                    <h5 class="mb-0">
 
-                </h5>
+                        Messages
+
+                    </h5>
+
+                </div>
 
 
                 {% if unread_messages %}
@@ -931,43 +1006,156 @@ MarketPulse | Trading Decision Support
             </div>
 
 
-            <!-- =================================================
-                 INBOX CONTENT
-            ================================================== -->
+            <!-- =============================================
+                 MESSAGE CONTENT
+            ============================================== -->
 
             <div class="card-body">
 
 
-                <!-- -----------------------------------------
+                <!-- =========================================
                      RECENT PRIVATE MESSAGES
-                ------------------------------------------ -->
+                ========================================== -->
 
                 {% for message in recent_messages %}
 
+
+                    <!-- =====================================
+                         MESSAGE LINK
+                         
+                         New messages:
+                         open conversation thread directly.
+
+                         Legacy messages with conversation=NULL:
+                         use message_detail compatibility view.
+                    ====================================== -->
+
                     <a
-                        href="{% url 'community:message_detail' message.pk %}"
+                        href="
+                            {% if message.conversation_id %}
+                                {% url 'community:conversation_detail' message.conversation_id %}
+                            {% else %}
+                                {% url 'community:message_detail' message.pk %}
+                            {% endif %}
+                        "
                         class="text-decoration-none text-reset"
                     >
 
                         <div class="border-bottom pb-3 mb-3">
 
 
+                            <!-- =============================
+                                 USER / UNREAD
+                            ============================== -->
+
                             <div
                                 class="
                                     d-flex
                                     justify-content-between
+                                    align-items-start
                                     gap-2
                                 "
                             >
 
-                                <strong>
+                                <div
+                                    class="
+                                        d-flex
+                                        align-items-center
+                                        gap-2
+                                        min-w-0
+                                    "
+                                >
 
-                                    {{ message.sender.username }}
+                                    <span
+                                        class="
+                                            d-inline-flex
+                                            align-items-center
+                                            justify-content-center
+                                            rounded-circle
+                                            bg-primary-subtle
+                                            text-primary-emphasis
+                                            border
+                                            border-primary-subtle
+                                            flex-shrink-0
+                                        "
+                                        style="
+                                            width: 32px;
+                                            height: 32px;
+                                        "
+                                    >
 
-                                </strong>
+                                        {% if message.sender == request.user %}
+
+                                            {% if message.recipient %}
+
+                                                {{ message.recipient.username|slice:":1"|upper }}
+
+                                            {% else %}
+
+                                                <i class="fa-solid fa-user"></i>
+
+                                            {% endif %}
+
+                                        {% else %}
+
+                                            {{ message.sender.username|slice:":1"|upper }}
+
+                                        {% endif %}
+
+                                    </span>
 
 
-                                {% if not message.is_read %}
+                                    <div class="min-w-0">
+
+
+                                        <strong class="d-block">
+
+
+                                            {% if message.sender == request.user %}
+
+                                                {% if message.recipient %}
+
+                                                    {{ message.recipient.username }}
+
+                                                {% else %}
+
+                                                    Conversation
+
+                                                {% endif %}
+
+                                            {% else %}
+
+                                                {{ message.sender.username }}
+
+                                            {% endif %}
+
+
+                                        </strong>
+
+
+                                        <small class="text-secondary">
+
+
+                                            {% if message.sender == request.user %}
+
+                                                You sent a message
+
+                                            {% else %}
+
+                                                Private conversation
+
+                                            {% endif %}
+
+
+                                        </small>
+
+
+                                    </div>
+
+                                </div>
+
+
+                                {% if message.recipient == request.user and not message.is_read %}
 
                                     <span class="badge bg-primary">
 
@@ -980,36 +1168,47 @@ MarketPulse | Trading Decision Support
                             </div>
 
 
-                            <div class="mt-1">
+                            <!-- =============================
+                                 MESSAGE PREVIEW
+                            ============================== -->
 
-                                {{ message.subject|truncatechars:55 }}
+                            <div class="mt-2">
+
+                                {{ message.body|truncatechars:75 }}
 
                             </div>
 
 
+                            <!-- =============================
+                                 TIME
+                            ============================== -->
+
                             <small class="text-secondary">
 
-                                {{ message.created_at|timesince }} ago
+                                {{ message.created_at|timesince }}
+                                ago
 
                             </small>
+
 
                         </div>
 
                     </a>
 
 
-                <!-- =========================================
-                     EMPTY INBOX
-                ========================================== -->
-
                 {% empty %}
+
+
+                    <!-- =====================================
+                         EMPTY MESSAGE STATE
+                    ====================================== -->
 
                     <div class="text-center py-3">
 
                         <i
                             class="
                                 fa-regular
-                                fa-envelope
+                                fa-comments
                                 fs-3
                                 text-secondary
                                 mb-3
@@ -1019,25 +1218,26 @@ MarketPulse | Trading Decision Support
 
                         <h6>
 
-                            Your Inbox is Empty
+                            No Conversations Yet
 
                         </h6>
 
 
                         <p class="text-secondary">
 
-                            Messages from other MarketPulse
-                            users will appear here.
+                            Private conversations with other
+                            MarketPulse users will appear here.
 
                         </p>
 
                     </div>
 
+
                 {% endfor %}
 
 
                 <!-- =========================================
-                     INBOX ACTIONS
+                     MESSAGE ACTIONS
                 ========================================== -->
 
                 <div class="d-grid gap-2 mt-3">
@@ -1047,21 +1247,26 @@ MarketPulse | Trading Decision Support
                         class="btn btn-outline-primary"
                     >
 
-                        Open Inbox
+                        <i class="fa-regular fa-comments me-1"></i>
+
+                        Open Messages
 
                     </a>
 
 
                     <a
-                        href="{% url 'community:compose_message' %}"
+                        href="{% url 'community:new_conversation' %}"
                         class="btn btn-primary"
                     >
 
-                        New Message
+                        <i class="fa-solid fa-plus me-1"></i>
+
+                        New Conversation
 
                     </a>
 
                 </div>
+
 
             </div>
 
@@ -1131,7 +1336,13 @@ MarketPulse | Trading Decision Support
                     "
                 >
 
-                    <small class="text-secondary d-block mb-2">
+                    <small
+                        class="
+                            text-secondary
+                            d-block
+                            mb-2
+                        "
+                    >
 
                         Main Purpose
 
@@ -1182,20 +1393,23 @@ MarketPulse | Trading Decision Support
             <p class="mb-0">
 
                 <strong class="text-body">
+
                     Educational Notice:
+
                 </strong>
 
                 MarketPulse is designed for educational and
                 decision-support purposes.
 
-                Market information, backtesting results, strategy
-                analysis, risk calculations and user-generated
-                content do not constitute personalised financial,
-                investment or trading advice.
+                Market information, backtesting results,
+                strategy analysis, risk calculations and
+                user-generated content do not constitute
+                personalised financial, investment or trading
+                advice.
 
-                Users remain responsible for conducting their own
-                research and evaluating risk before making financial
-                decisions.
+                Users remain responsible for conducting their
+                own research and evaluating risk before making
+                financial decisions.
 
             </p>
 
@@ -1204,4 +1418,6 @@ MarketPulse | Trading Decision Support
     </div>
 
 </div>
+
+
 {% endblock %}

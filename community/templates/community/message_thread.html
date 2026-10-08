@@ -1,0 +1,1663 @@
+{% extends "base.html" %}
+
+
+{% comment %}
+============================================================
+MARKETPULSE - PRIVATE MESSAGE CONVERSATION
+============================================================
+
+PURPOSE:
+
+This template displays one complete private conversation
+between the authenticated MarketPulse user and another user.
+
+It replaces the older email-style individual-message view
+with a modern threaded conversation interface.
+
+
+FRAMEWORK MAPPING:
+
+Browser
+    ↓
+community/urls.py
+    ↓
+conversation_detail(request, pk)
+    ↓
+Conversation model
+    ↓
+PrivateMessage model
+    ↓
+PostgreSQL
+    ↓
+message_thread.html
+
+
+VIEW CONTEXT EXPECTED:
+
+conversation
+    The Conversation object being displayed.
+
+conversation_messages
+    All PrivateMessage records belonging to this conversation,
+    ordered from oldest to newest.
+
+other_user
+    The other participant in the conversation.
+
+reply_form
+    MessageReplyForm containing the body field.
+
+
+SECURITY:
+
+The view must verify that request.user belongs to the
+conversation before rendering this template.
+
+The template itself must never be relied upon for
+authorisation.
+
+============================================================
+{% endcomment %}
+
+
+{% block title %}
+Chat with {{ other_user.username }} | MarketPulse
+{% endblock %}
+
+
+{% block extra_css %}
+
+<style>
+
+    /* ==================================================== */
+    /* 1. MESSAGING WORKSPACE                               */
+    /* ==================================================== */
+
+    .message-thread-workspace {
+
+        width:
+            100%;
+
+        max-width:
+            1180px;
+
+        margin:
+            0 auto;
+    }
+
+
+    /* ==================================================== */
+    /* 2. THREAD SHELL                                      */
+    /* ==================================================== */
+
+    .message-thread-card {
+
+        overflow:
+            hidden;
+
+        background:
+            var(
+                --mp-panel,
+                #152235
+            );
+
+        border:
+            1px solid
+            var(
+                --mp-border,
+                #314258
+            );
+
+        border-radius:
+            12px;
+
+        box-shadow:
+            0 12px 30px
+            rgba(
+                0,
+                0,
+                0,
+                .16
+            );
+    }
+
+
+    /* ==================================================== */
+    /* 3. THREAD HEADER                                     */
+    /* ==================================================== */
+
+    .message-thread-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            1rem;
+
+        padding:
+            1rem 1.1rem;
+
+        background:
+            var(
+                --mp-panel-soft,
+                #18283a
+            );
+
+        border-bottom:
+            1px solid
+            var(
+                --mp-border,
+                #314258
+            );
+    }
+
+
+    .message-thread-user {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            .8rem;
+
+        min-width:
+            0;
+    }
+
+
+    .message-thread-avatar {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        flex:
+            0 0 auto;
+
+        width:
+            44px;
+
+        height:
+            44px;
+
+        color:
+            #9bc4e4;
+
+        background:
+            rgba(
+                79,
+                134,
+                182,
+                .15
+            );
+
+        border:
+            1px solid
+            rgba(
+                79,
+                134,
+                182,
+                .35
+            );
+
+        border-radius:
+            50%;
+
+        font-size:
+            1rem;
+    }
+
+
+    .message-thread-user-copy {
+
+        min-width:
+            0;
+    }
+
+
+    .message-thread-user-copy h1 {
+
+        margin:
+            0;
+
+        overflow:
+            hidden;
+
+        color:
+            var(
+                --mp-text,
+                #f1f5f9
+            );
+
+        font-size:
+            1rem;
+
+        font-weight:
+            700;
+
+        text-overflow:
+            ellipsis;
+
+        white-space:
+            nowrap;
+    }
+
+
+    .message-thread-user-copy p {
+
+        margin:
+            .15rem 0 0;
+
+        color:
+            var(
+                --mp-muted,
+                #93a4b8
+            );
+
+        font-size:
+            .75rem;
+    }
+
+
+    .message-thread-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            .5rem;
+
+        flex:
+            0 0 auto;
+    }
+
+
+    /* ==================================================== */
+    /* 4. CONVERSATION AREA                                 */
+    /* ==================================================== */
+
+    .message-thread-body {
+
+        min-height:
+            460px;
+
+        max-height:
+            min(
+                68vh,
+                760px
+            );
+
+        overflow-y:
+            auto;
+
+        overflow-x:
+            hidden;
+
+        padding:
+            1.25rem;
+
+        background:
+            var(
+                --mp-panel-dark,
+                #101a28
+            );
+
+        scroll-behavior:
+            smooth;
+    }
+
+
+    /* ==================================================== */
+    /* 5. EMPTY CONVERSATION                                */
+    /* ==================================================== */
+
+    .message-thread-empty {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-height:
+            400px;
+
+        text-align:
+            center;
+    }
+
+
+    .message-thread-empty-icon {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            58px;
+
+        height:
+            58px;
+
+        margin-bottom:
+            1rem;
+
+        color:
+            #8ab4d7;
+
+        background:
+            rgba(
+                79,
+                134,
+                182,
+                .12
+            );
+
+        border:
+            1px solid
+            rgba(
+                79,
+                134,
+                182,
+                .25
+            );
+
+        border-radius:
+            50%;
+
+        font-size:
+            1.25rem;
+    }
+
+
+    /* ==================================================== */
+    /* 6. MESSAGE ROW                                       */
+    /* ==================================================== */
+
+    .chat-message {
+
+        display:
+            flex;
+
+        width:
+            100%;
+
+        margin-bottom:
+            1rem;
+    }
+
+
+    .chat-message:last-child {
+
+        margin-bottom:
+            0;
+    }
+
+
+    .chat-message-incoming {
+
+        justify-content:
+            flex-start;
+    }
+
+
+    .chat-message-outgoing {
+
+        justify-content:
+            flex-end;
+    }
+
+
+    /* ==================================================== */
+    /* 7. MESSAGE GROUP                                     */
+    /* ==================================================== */
+
+    .chat-message-group {
+
+        display:
+            flex;
+
+        align-items:
+            flex-end;
+
+        gap:
+            .55rem;
+
+        min-width:
+            0;
+
+        max-width:
+            78%;
+    }
+
+
+    .chat-message-outgoing
+    .chat-message-group {
+
+        flex-direction:
+            row-reverse;
+    }
+
+
+    /* ==================================================== */
+    /* 8. SMALL MESSAGE AVATAR                              */
+    /* ==================================================== */
+
+    .chat-avatar {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        flex:
+            0 0 auto;
+
+        width:
+            30px;
+
+        height:
+            30px;
+
+        color:
+            #a9cce7;
+
+        background:
+            var(
+                --mp-panel-soft,
+                #18283a
+            );
+
+        border:
+            1px solid
+            var(
+                --mp-border,
+                #314258
+            );
+
+        border-radius:
+            50%;
+
+        font-size:
+            .72rem;
+    }
+
+
+    .chat-message-outgoing
+    .chat-avatar {
+
+        color:
+            #ffffff;
+
+        background:
+            #345f84;
+
+        border-color:
+            #4f86b6;
+    }
+
+
+    /* ==================================================== */
+    /* 9. MESSAGE CONTENT                                   */
+    /* ==================================================== */
+
+    .chat-content {
+
+        min-width:
+            0;
+    }
+
+
+    .chat-message-outgoing
+    .chat-content {
+
+        text-align:
+            right;
+    }
+
+
+    .chat-author {
+
+        margin-bottom:
+            .25rem;
+
+        color:
+            var(
+                --mp-muted,
+                #93a4b8
+            );
+
+        font-size:
+            .68rem;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ==================================================== */
+    /* 10. CHAT BUBBLE                                      */
+    /* ==================================================== */
+
+    .chat-bubble {
+
+        display:
+            inline-block;
+
+        max-width:
+            100%;
+
+        padding:
+            .7rem .85rem;
+
+        text-align:
+            left;
+
+        overflow-wrap:
+            anywhere;
+
+        word-break:
+            break-word;
+
+        border-radius:
+            14px;
+
+        font-size:
+            .88rem;
+
+        line-height:
+            1.5;
+    }
+
+
+    .chat-message-incoming
+    .chat-bubble {
+
+        color:
+            var(
+                --mp-text,
+                #f1f5f9
+            );
+
+        background:
+            var(
+                --mp-panel-soft,
+                #18283a
+            );
+
+        border:
+            1px solid
+            var(
+                --mp-border,
+                #314258
+            );
+
+        border-bottom-left-radius:
+            4px;
+    }
+
+
+    .chat-message-outgoing
+    .chat-bubble {
+
+        color:
+            #ffffff;
+
+        background:
+            #294d6c;
+
+        border:
+            1px solid
+            #4f86b6;
+
+        border-bottom-right-radius:
+            4px;
+    }
+
+
+    /* ==================================================== */
+    /* 11. MESSAGE TIME                                     */
+    /* ==================================================== */
+
+    .chat-time {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            .3rem;
+
+        margin-top:
+            .3rem;
+
+        color:
+            var(
+                --mp-muted,
+                #93a4b8
+            );
+
+        font-size:
+            .64rem;
+    }
+
+
+    .chat-message-outgoing
+    .chat-time {
+
+        justify-content:
+            flex-end;
+    }
+
+
+    /* ==================================================== */
+    /* 12. COMPOSER                                         */
+    /* ==================================================== */
+
+    .message-composer {
+
+        padding:
+            1rem;
+
+        background:
+            var(
+                --mp-panel,
+                #152235
+            );
+
+        border-top:
+            1px solid
+            var(
+                --mp-border,
+                #314258
+            );
+    }
+
+
+    .message-composer-inner {
+
+        display:
+            flex;
+
+        align-items:
+            flex-end;
+
+        gap:
+            .75rem;
+    }
+
+
+    .message-composer-field {
+
+        flex:
+            1 1 auto;
+
+        min-width:
+            0;
+    }
+
+
+    .message-composer
+    textarea {
+
+        width:
+            100%;
+
+        min-height:
+            48px;
+
+        max-height:
+            150px;
+
+        resize:
+            vertical;
+
+        color:
+            var(
+                --mp-text,
+                #f1f5f9
+            );
+
+        background:
+            var(
+                --mp-panel-dark,
+                #101a28
+            );
+
+        border-color:
+            var(
+                --mp-border,
+                #314258
+            );
+
+        border-radius:
+            8px;
+    }
+
+
+    .message-composer
+    textarea:focus {
+
+        color:
+            var(
+                --mp-text,
+                #f1f5f9
+            );
+
+        background:
+            var(
+                --mp-panel-dark,
+                #101a28
+            );
+
+        border-color:
+            var(
+                --mp-primary,
+                #4f86b6
+            );
+
+        box-shadow:
+            0 0 0 .2rem
+            rgba(
+                79,
+                134,
+                182,
+                .15
+            );
+    }
+
+
+    .message-send-button {
+
+        min-width:
+            96px;
+
+        min-height:
+            48px;
+    }
+
+
+    .message-composer-help {
+
+        margin-top:
+            .45rem;
+
+        color:
+            var(
+                --mp-muted,
+                #93a4b8
+            );
+
+        font-size:
+            .66rem;
+    }
+
+
+    /* ==================================================== */
+    /* 13. FORM ERRORS                                      */
+    /* ==================================================== */
+
+    .message-form-errors {
+
+        margin-bottom:
+            .75rem;
+    }
+
+
+    .message-form-errors ul {
+
+        margin-bottom:
+            0;
+    }
+
+
+    /* ==================================================== */
+    /* 14. RESPONSIVE                                       */
+    /* ==================================================== */
+
+    @media (
+        max-width:
+        767.98px
+    ) {
+
+        .message-thread-workspace {
+
+            max-width:
+                none;
+        }
+
+
+        .message-thread-header {
+
+            align-items:
+                flex-start;
+
+            padding:
+                .9rem;
+        }
+
+
+        .message-thread-body {
+
+            min-height:
+                420px;
+
+            max-height:
+                62vh;
+
+            padding:
+                1rem .8rem;
+        }
+
+
+        .chat-message-group {
+
+            max-width:
+                88%;
+        }
+
+
+        .message-composer {
+
+            padding:
+                .8rem;
+        }
+
+    }
+
+
+    @media (
+        max-width:
+        575.98px
+    ) {
+
+        .message-thread-header {
+
+            flex-direction:
+                column;
+
+            gap:
+                .8rem;
+        }
+
+
+        .message-thread-actions {
+
+            width:
+                100%;
+        }
+
+
+        .message-thread-actions
+        .btn {
+
+            flex:
+                1 1 auto;
+        }
+
+
+        .message-thread-body {
+
+            min-height:
+                380px;
+
+            max-height:
+                58vh;
+
+            padding:
+                .85rem .65rem;
+        }
+
+
+        .chat-message-group {
+
+            max-width:
+                94%;
+        }
+
+
+        .chat-avatar {
+
+            width:
+                27px;
+
+            height:
+                27px;
+        }
+
+
+        .chat-bubble {
+
+            padding:
+                .65rem .75rem;
+
+            font-size:
+                .84rem;
+        }
+
+
+        .message-composer-inner {
+
+            align-items:
+                stretch;
+
+            flex-direction:
+                column;
+        }
+
+
+        .message-send-button {
+
+            width:
+                100%;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+
+<div class="message-thread-workspace">
+
+
+    <!-- ==================================================== -->
+    <!-- 1. BREADCRUMB / BACK NAVIGATION                     -->
+    <!-- ==================================================== -->
+
+    <div class="mb-3">
+
+        <a
+            href="{% url 'community:inbox' %}"
+            class="
+                btn
+                btn-sm
+                btn-outline-primary
+            "
+        >
+
+            <i
+                class="
+                    fa-solid
+                    fa-arrow-left
+                    me-1
+                "
+                aria-hidden="true"
+            ></i>
+
+            Messages
+
+        </a>
+
+    </div>
+
+
+    <!-- ==================================================== -->
+    <!-- 2. CONVERSATION SHELL                               -->
+    <!-- ==================================================== -->
+
+    <section class="message-thread-card">
+
+
+        <!-- ================================================= -->
+        <!-- THREAD HEADER                                     -->
+        <!-- ================================================= -->
+
+        <header class="message-thread-header">
+
+
+            <div class="message-thread-user">
+
+
+                <!-- ----------------------------------------- -->
+                <!-- USER AVATAR                               -->
+                <!-- ----------------------------------------- -->
+
+                <span
+                    class="message-thread-avatar"
+                    aria-hidden="true"
+                >
+
+                    <i class="fa-solid fa-user"></i>
+
+                </span>
+
+
+                <!-- ----------------------------------------- -->
+                <!-- USER DETAILS                              -->
+                <!-- ----------------------------------------- -->
+
+                <div class="message-thread-user-copy">
+
+                    <h1>
+
+                        {{ other_user.username }}
+
+                    </h1>
+
+                    <p>
+
+                        Private MarketPulse conversation
+
+                    </p>
+
+                </div>
+
+
+            </div>
+
+
+            <!-- --------------------------------------------- -->
+            <!-- HEADER ACTIONS                                -->
+            <!-- --------------------------------------------- -->
+
+            <div class="message-thread-actions">
+
+
+                <a
+                    href="{% url 'community:inbox' %}"
+                    class="
+                        btn
+                        btn-sm
+                        btn-outline-secondary
+                    "
+                >
+
+                    <i
+                        class="
+                            fa-solid
+                            fa-inbox
+                            me-1
+                        "
+                        aria-hidden="true"
+                    ></i>
+
+                    Inbox
+
+                </a>
+
+
+                <a
+                    href="{% url 'community:new_conversation' %}"
+                    class="
+                        btn
+                        btn-sm
+                        btn-primary
+                    "
+                >
+
+                    <i
+                        class="
+                            fa-solid
+                            fa-pen-to-square
+                            me-1
+                        "
+                        aria-hidden="true"
+                    ></i>
+
+                    New Chat
+
+                </a>
+
+
+            </div>
+
+
+        </header>
+
+
+        <!-- ================================================= -->
+        <!-- 3. MESSAGE HISTORY                                -->
+        <!-- ================================================= -->
+
+        <div
+            id="messageThreadBody"
+            class="message-thread-body"
+            aria-live="polite"
+        >
+
+
+            {% for message in conversation_messages %}
+
+
+                {% if message.sender == request.user %}
+
+
+                    <!-- ===================================== -->
+                    <!-- OUTGOING MESSAGE                      -->
+                    <!-- ===================================== -->
+
+                    <article
+                        class="
+                            chat-message
+                            chat-message-outgoing
+                        "
+                    >
+
+
+                        <div class="chat-message-group">
+
+
+                            <!-- -------------------------------- -->
+                            <!-- CURRENT USER AVATAR              -->
+                            <!-- -------------------------------- -->
+
+                            <span
+                                class="chat-avatar"
+                                aria-hidden="true"
+                            >
+
+                                <i class="fa-solid fa-user"></i>
+
+                            </span>
+
+
+                            <!-- -------------------------------- -->
+                            <!-- MESSAGE                          -->
+                            <!-- -------------------------------- -->
+
+                            <div class="chat-content">
+
+
+                                <div class="chat-author">
+
+                                    You
+
+                                </div>
+
+
+                                <div class="chat-bubble">
+
+                                    {{ message.body|linebreaksbr }}
+
+                                </div>
+
+
+                                <div class="chat-time">
+
+
+                                    <span>
+
+                                        {{ message.created_at|date:"d M Y, H:i" }}
+
+                                    </span>
+
+
+                                    {% if message.is_read %}
+
+                                        <span
+                                            title="Read"
+                                            aria-label="Read"
+                                        >
+
+                                            <i
+                                                class="
+                                                    fa-solid
+                                                    fa-check-double
+                                                "
+                                                aria-hidden="true"
+                                            ></i>
+
+                                        </span>
+
+                                    {% else %}
+
+                                        <span
+                                            title="Sent"
+                                            aria-label="Sent"
+                                        >
+
+                                            <i
+                                                class="
+                                                    fa-solid
+                                                    fa-check
+                                                "
+                                                aria-hidden="true"
+                                            ></i>
+
+                                        </span>
+
+                                    {% endif %}
+
+
+                                </div>
+
+
+                            </div>
+
+
+                        </div>
+
+
+                    </article>
+
+
+                {% else %}
+
+
+                    <!-- ===================================== -->
+                    <!-- INCOMING MESSAGE                      -->
+                    <!-- ===================================== -->
+
+                    <article
+                        class="
+                            chat-message
+                            chat-message-incoming
+                        "
+                    >
+
+
+                        <div class="chat-message-group">
+
+
+                            <!-- -------------------------------- -->
+                            <!-- OTHER USER AVATAR                -->
+                            <!-- -------------------------------- -->
+
+                            <span
+                                class="chat-avatar"
+                                aria-hidden="true"
+                            >
+
+                                <i class="fa-solid fa-user"></i>
+
+                            </span>
+
+
+                            <!-- -------------------------------- -->
+                            <!-- MESSAGE                          -->
+                            <!-- -------------------------------- -->
+
+                            <div class="chat-content">
+
+
+                                <div class="chat-author">
+
+                                    {{ message.sender.username }}
+
+                                </div>
+
+
+                                <div class="chat-bubble">
+
+                                    {{ message.body|linebreaksbr }}
+
+                                </div>
+
+
+                                <div class="chat-time">
+
+                                    {{ message.created_at|date:"d M Y, H:i" }}
+
+                                </div>
+
+
+                            </div>
+
+
+                        </div>
+
+
+                    </article>
+
+
+                {% endif %}
+
+
+            {% empty %}
+
+
+                <!-- ========================================= -->
+                <!-- EMPTY CONVERSATION                        -->
+                <!-- ========================================= -->
+
+                <div class="message-thread-empty">
+
+
+                    <div>
+
+
+                        <div class="message-thread-empty-icon">
+
+                            <i
+                                class="
+                                    fa-regular
+                                    fa-comments
+                                "
+                                aria-hidden="true"
+                            ></i>
+
+                        </div>
+
+
+                        <h2 class="h5 mb-2">
+
+                            Start the Conversation
+
+                        </h2>
+
+
+                        <p class="text-secondary mb-0">
+
+                            Send the first message to
+                            {{ other_user.username }}.
+
+                        </p>
+
+
+                    </div>
+
+
+                </div>
+
+
+            {% endfor %}
+
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- 4. REPLY COMPOSER                                 -->
+        <!-- ================================================= -->
+
+        <div class="message-composer">
+
+
+            <form
+                method="post"
+                id="messageReplyForm"
+            >
+
+                {% csrf_token %}
+
+
+                <!-- ========================================= -->
+                <!-- FORM ERRORS                               -->
+                <!-- ========================================= -->
+
+                {% if reply_form.non_field_errors %}
+
+                    <div
+                        class="
+                            alert
+                            alert-danger
+                            message-form-errors
+                        "
+                    >
+
+                        {{ reply_form.non_field_errors }}
+
+                    </div>
+
+                {% endif %}
+
+
+                {% if reply_form.body.errors %}
+
+                    <div
+                        class="
+                            alert
+                            alert-danger
+                            message-form-errors
+                        "
+                    >
+
+                        {{ reply_form.body.errors }}
+
+                    </div>
+
+                {% endif %}
+
+
+                <!-- ========================================= -->
+                <!-- COMPOSER ROW                              -->
+                <!-- ========================================= -->
+
+                <div class="message-composer-inner">
+
+
+                    <div class="message-composer-field">
+
+
+                        <label
+                            for="{{ reply_form.body.id_for_label }}"
+                            class="visually-hidden"
+                        >
+
+                            Message
+
+                        </label>
+
+
+                        {{ reply_form.body }}
+
+
+                    </div>
+
+
+                    <button
+                        type="submit"
+                        class="
+                            btn
+                            btn-primary
+                            message-send-button
+                        "
+                    >
+
+                        <i
+                            class="
+                                fa-solid
+                                fa-paper-plane
+                                me-1
+                            "
+                            aria-hidden="true"
+                        ></i>
+
+                        Send
+
+                    </button>
+
+
+                </div>
+
+
+                <div class="message-composer-help">
+
+                    Private conversation between you and
+                    {{ other_user.username }}.
+
+                    Press Ctrl + Enter or Command + Enter
+                    to send.
+
+                </div>
+
+
+            </form>
+
+
+        </div>
+
+
+    </section>
+
+
+    <!-- ==================================================== -->
+    <!-- 5. EDUCATIONAL / PRIVACY NOTE                        -->
+    <!-- ==================================================== -->
+
+    <div
+        class="
+            d-flex
+            align-items-start
+            gap-2
+            small
+            text-secondary
+            mt-3
+        "
+    >
+
+        <i
+            class="
+                fa-solid
+                fa-lock
+                mt-1
+            "
+            aria-hidden="true"
+        ></i>
+
+
+        <p class="mb-0">
+
+            Messages are visible only to participants in this
+            private MarketPulse conversation.
+
+            Market-related discussions are for educational
+            purposes and should not be interpreted as
+            personalised investment advice.
+
+        </p>
+
+
+    </div>
+
+
+</div>
+
+
+{% endblock %}
+
+
+{% block extra_js %}
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+
+        /* ==================================================== */
+        /* 1. SCROLL TO LATEST MESSAGE                          */
+        /* ==================================================== */
+
+        const messageThreadBody =
+            document.getElementById(
+                "messageThreadBody"
+            );
+
+
+        if (messageThreadBody) {
+
+            messageThreadBody.scrollTop =
+                messageThreadBody.scrollHeight;
+
+        }
+
+
+        /* ==================================================== */
+        /* 2. KEYBOARD SEND                                     */
+        /* ==================================================== */
+
+        const replyForm =
+            document.getElementById(
+                "messageReplyForm"
+            );
+
+
+        const messageField =
+            document.getElementById(
+                "{{ reply_form.body.id_for_label }}"
+            );
+
+
+        if (
+            replyForm
+            &&
+            messageField
+        ) {
+
+            messageField.addEventListener(
+                "keydown",
+                function (event) {
+
+
+                    const shortcutPressed =
+                        (
+                            event.ctrlKey
+                            ||
+                            event.metaKey
+                        )
+                        &&
+                        event.key === "Enter";
+
+
+                    if (!shortcutPressed) {
+
+                        return;
+
+                    }
+
+
+                    event.preventDefault();
+
+
+                    if (
+                        messageField.value.trim()
+                    ) {
+
+                        replyForm.requestSubmit();
+
+                    }
+
+
+                }
+            );
+
+        }
+
+
+    }
+);
+
+</script>
+
+{% endblock %}
