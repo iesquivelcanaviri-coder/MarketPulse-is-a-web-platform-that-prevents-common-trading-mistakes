@@ -113,6 +113,24 @@ All colours inherit from the shared MarketPulse theme tokens:
 --mp-danger
 
 
+TYPOGRAPHY:
+
+The Strategy workspace uses the same general readable scale
+as the Dashboard.
+
+Normal body / control text:
+    approximately Bootstrap's readable 13px–14px scale
+
+Supporting metadata:
+    approximately 12px
+
+Section headings:
+    approximately 14px–16px
+
+Page heading:
+    approximately 24px
+
+
 RESPONSIVE ARCHITECTURE:
 
 Large Desktop
@@ -266,6 +284,12 @@ Strategies | MarketPulse
             --strategy-text
         );
 
+    font-size:
+        .875rem;
+
+    line-height:
+        1.5;
+
 }
 
 
@@ -327,7 +351,7 @@ Strategies | MarketPulse
 .strategy-page-title {
 
     margin:
-        0 0 .2rem;
+        0 0 .25rem;
 
     color:
         var(
@@ -335,11 +359,10 @@ Strategies | MarketPulse
         );
 
     font-size:
-        clamp(
-            1.55rem,
-            3vw,
-            1.65rem
-        );
+        1.5rem;
+
+    line-height:
+        1.2;
 
     font-weight:
         700;
@@ -367,10 +390,10 @@ Strategies | MarketPulse
         );
 
     font-size:
-        .72rem;
+        .875rem;
 
     line-height:
-        1.45;
+        1.5;
 
     overflow-wrap:
         anywhere;
@@ -446,13 +469,13 @@ Strategies | MarketPulse
         );
 
     font-size:
-        .52rem;
+        .75rem;
 
     font-weight:
         800;
 
     letter-spacing:
-        .06em;
+        .055em;
 
     text-transform:
         uppercase;
@@ -497,7 +520,7 @@ Strategies | MarketPulse
 .strategy-section-header h2 {
 
     margin:
-        0 0 .15rem;
+        0 0 .2rem;
 
     color:
         var(
@@ -505,7 +528,7 @@ Strategies | MarketPulse
         );
 
     font-size:
-        .82rem;
+        1rem;
 
     font-weight:
         750;
@@ -530,10 +553,10 @@ Strategies | MarketPulse
         );
 
     font-size:
-        .58rem;
+        .8125rem;
 
     line-height:
-        1.45;
+        1.5;
 
     overflow-wrap:
         anywhere;
@@ -614,10 +637,10 @@ Strategies | MarketPulse
         0 0 auto;
 
     width:
-        23px;
+        26px;
 
     height:
-        23px;
+        26px;
 
     color:
         #ffffff;
@@ -631,7 +654,7 @@ Strategies | MarketPulse
         50%;
 
     font-size:
-        .58rem;
+        .75rem;
 
     font-weight:
         800;
@@ -654,10 +677,10 @@ Strategies | MarketPulse
         0 0 auto;
 
     width:
-        31px;
+        34px;
 
     height:
-        31px;
+        34px;
 
     color:
         var(
@@ -680,6 +703,9 @@ Strategies | MarketPulse
 
     border-radius:
         7px;
+
+    font-size:
+        .8125rem;
 
 }
 
@@ -706,7 +732,7 @@ Strategies | MarketPulse
         );
 
     font-size:
-        .63rem;
+        .8125rem;
 
     overflow-wrap:
         anywhere;
@@ -725,10 +751,10 @@ Strategies | MarketPulse
         );
 
     font-size:
-        .52rem;
+        .75rem;
 
     line-height:
-        1.3;
+        1.4;
 
     overflow-wrap:
         anywhere;
@@ -742,7 +768,7 @@ Strategies | MarketPulse
         #667b92;
 
     font-size:
-        .58rem;
+        .75rem;
 
 }
 
@@ -787,6 +813,9 @@ Strategies | MarketPulse
 
 .strategy-filter-grid label {
 
+    display:
+        block;
+
     margin-bottom:
         .25rem;
 
@@ -794,7 +823,7 @@ Strategies | MarketPulse
         #d7e0eb;
 
     font-size:
-        .56rem;
+        .75rem;
 
     font-weight:
         700;
@@ -830,7 +859,7 @@ Strategies | MarketPulse
         );
 
     font-size:
-        .62rem;
+        .8125rem;
 
     transform:
         translateY(-50%);
@@ -887,7 +916,7 @@ Strategies | MarketPulse
         );
 
     font-size:
-        .55rem;
+        .75rem;
 
     overflow-wrap:
         anywhere;
@@ -967,7 +996,7 @@ Strategies | MarketPulse
         0;
 
     padding:
-        .7rem .8rem;
+        .75rem .8rem;
 
     color:
         var(
@@ -982,7 +1011,7 @@ Strategies | MarketPulse
         !important;
 
     font-size:
-        .64rem;
+        .8125rem;
 
     font-weight:
         700;
@@ -1061,10 +1090,10 @@ Strategies | MarketPulse
         0 0 auto;
 
     width:
-        25px;
+        28px;
 
     height:
-        25px;
+        28px;
 
     color:
         #dceaf6;
@@ -1087,7 +1116,7 @@ Strategies | MarketPulse
         6px;
 
     font-size:
-        .55rem;
+        .75rem;
 
 }
 
@@ -1120,7 +1149,7 @@ Strategies | MarketPulse
         );
 
     font-size:
-        .52rem;
+        .75rem;
 
     font-weight:
         600;
@@ -1157,7 +1186,7 @@ Strategies | MarketPulse
         0;
 
     padding:
-        .75rem 0;
+        .8rem 0;
 
     border-top:
         1px solid
@@ -1274,7 +1303,7 @@ Strategies | MarketPulse
         );
 
     font-size:
-        .72rem;
+        .875rem;
 
     font-weight:
         720;
@@ -1291,7 +1320,7 @@ Strategies | MarketPulse
         0 0 auto;
 
     font-size:
-        .48rem;
+        .7rem;
 
 }
 
@@ -1310,10 +1339,10 @@ Strategies | MarketPulse
         );
 
     font-size:
-        .56rem;
+        .8125rem;
 
     line-height:
-        1.45;
+        1.5;
 
     overflow-wrap:
         anywhere;
@@ -1380,7 +1409,7 @@ Strategies | MarketPulse
         pointer;
 
     padding:
-        .45rem .6rem;
+        .55rem .65rem;
 
     color:
         #d6e1eb;
@@ -1403,7 +1432,7 @@ Strategies | MarketPulse
         none;
 
     font-size:
-        .54rem;
+        .8125rem;
 
     font-weight:
         650;
@@ -1482,7 +1511,7 @@ Strategies | MarketPulse
         .5rem;
 
     padding:
-        .7rem;
+        .75rem;
 
     background:
         var(
@@ -1521,7 +1550,7 @@ Strategies | MarketPulse
         #dce5ef;
 
     font-size:
-        .51rem;
+        .75rem;
 
     font-weight:
         750;
@@ -1546,10 +1575,10 @@ Strategies | MarketPulse
         );
 
     font-size:
-        .55rem;
+        .8125rem;
 
     line-height:
-        1.45;
+        1.5;
 
     overflow-wrap:
         anywhere;
@@ -1580,7 +1609,7 @@ Strategies | MarketPulse
         100%;
 
     padding:
-        .22rem .34rem;
+        .25rem .4rem;
 
     color:
         #dce5ef;
@@ -1598,7 +1627,7 @@ Strategies | MarketPulse
         5px;
 
     font-size:
-        .51rem;
+        .75rem;
 
     overflow-wrap:
         anywhere;
@@ -1643,7 +1672,7 @@ Strategies | MarketPulse
         1rem;
 
     padding:
-        .7rem .8rem;
+        .75rem .8rem;
 
     color:
         var(
@@ -1693,7 +1722,7 @@ Strategies | MarketPulse
         );
 
     font-size:
-        .57rem;
+        .8125rem;
 
     overflow-wrap:
         anywhere;
@@ -1715,7 +1744,7 @@ Strategies | MarketPulse
         );
 
     font-size:
-        .62rem;
+        .875rem;
 
 }
 
@@ -1761,7 +1790,7 @@ Strategies | MarketPulse
         center;
 
     font-size:
-        .6rem;
+        .8125rem;
 
     overflow-wrap:
         anywhere;
@@ -1818,7 +1847,7 @@ Strategies | MarketPulse
 .strategy-comparison-table td {
 
     padding:
-        .6rem;
+        .65rem;
 
     color:
         var(
@@ -1834,7 +1863,10 @@ Strategies | MarketPulse
         );
 
     font-size:
-        .58rem;
+        .8125rem;
+
+    line-height:
+        1.45;
 
     vertical-align:
         top;
@@ -1934,7 +1966,7 @@ Strategies | MarketPulse
         0;
 
     padding:
-        .7rem .8rem;
+        .75rem .8rem;
 
 }
 
@@ -1981,7 +2013,7 @@ Strategies | MarketPulse
         );
 
     font-size:
-        .72rem;
+        .875rem;
 
     font-weight:
         720;
@@ -1995,7 +2027,7 @@ Strategies | MarketPulse
 .my-strategy-description {
 
     margin:
-        .15rem 0 0;
+        .2rem 0 0;
 
     color:
         var(
@@ -2003,7 +2035,10 @@ Strategies | MarketPulse
         );
 
     font-size:
-        .55rem;
+        .8125rem;
+
+    line-height:
+        1.45;
 
     overflow-wrap:
         anywhere;
@@ -2048,7 +2083,7 @@ Strategies | MarketPulse
         pointer;
 
     padding:
-        .5rem .8rem;
+        .6rem .8rem;
 
     color:
         #d7e0eb;
@@ -2062,7 +2097,7 @@ Strategies | MarketPulse
         none;
 
     font-size:
-        .54rem;
+        .8125rem;
 
     font-weight:
         650;
@@ -2088,6 +2123,9 @@ Strategies | MarketPulse
 
     padding:
         .75rem .8rem;
+
+    font-size:
+        .8125rem;
 
 }
 
@@ -2143,7 +2181,7 @@ Strategies | MarketPulse
         0;
 
     padding:
-        .55rem;
+        .6rem;
 
     background:
         var(
@@ -2173,7 +2211,7 @@ Strategies | MarketPulse
         );
 
     font-size:
-        .49rem;
+        .7rem;
 
     text-transform:
         uppercase;
@@ -2198,7 +2236,7 @@ Strategies | MarketPulse
         );
 
     font-size:
-        .65rem;
+        .875rem;
 
     overflow-wrap:
         anywhere;
@@ -2272,7 +2310,7 @@ Strategies | MarketPulse
         );
 
     font-size:
-        .72rem;
+        .9rem;
 
     font-weight:
         720;
@@ -2291,10 +2329,10 @@ Strategies | MarketPulse
         );
 
     font-size:
-        .56rem;
+        .8125rem;
 
     line-height:
-        1.45;
+        1.5;
 
     overflow-wrap:
         anywhere;
@@ -2308,7 +2346,7 @@ Strategies | MarketPulse
         0;
 
     padding:
-        .55rem;
+        .6rem;
 
     color:
         #d7e0eb;
@@ -2328,7 +2366,10 @@ Strategies | MarketPulse
         6px;
 
     font-size:
-        .55rem;
+        .8125rem;
+
+    line-height:
+        1.45;
 
     overflow-wrap:
         anywhere;
@@ -2372,7 +2413,7 @@ Strategies | MarketPulse
         0;
 
     padding:
-        .75rem;
+        .8rem;
 
     background:
         var(
@@ -2402,7 +2443,7 @@ Strategies | MarketPulse
         );
 
     font-size:
-        .7rem;
+        .9rem;
 
     overflow-wrap:
         anywhere;
@@ -2421,10 +2462,10 @@ Strategies | MarketPulse
         );
 
     font-size:
-        .55rem;
+        .8125rem;
 
     line-height:
-        1.45;
+        1.5;
 
     overflow-wrap:
         anywhere;
@@ -2445,7 +2486,7 @@ Strategies | MarketPulse
         6px;
 
     font-size:
-        .58rem;
+        .8125rem;
 
     font-weight:
         650;
@@ -2549,7 +2590,7 @@ Strategies | MarketPulse
         0;
 
     min-height:
-        34px;
+        38px;
 
     color:
         var(
@@ -2566,7 +2607,7 @@ Strategies | MarketPulse
         6px;
 
     font-size:
-        .58rem;
+        .8125rem;
 
 }
 
@@ -2664,6 +2705,9 @@ Strategies | MarketPulse
             --strategy-border
         );
 
+    font-size:
+        .8125rem;
+
     overflow-wrap:
         anywhere;
 
@@ -2690,6 +2734,17 @@ Strategies | MarketPulse
             182,
             .3
         );
+
+}
+
+
+.strategy-workspace .badge {
+
+    font-size:
+        .7rem;
+
+    line-height:
+        1.2;
 
 }
 
@@ -3200,7 +3255,7 @@ Strategies | MarketPulse
     .strategy-page-title {
 
         font-size:
-            1.45rem;
+            1.4rem;
 
     }
 
@@ -3208,7 +3263,7 @@ Strategies | MarketPulse
     .strategy-page-subtitle {
 
         font-size:
-            .68rem;
+            .8125rem;
 
     }
 
@@ -3261,14 +3316,6 @@ Strategies | MarketPulse
 
         padding:
             .65rem;
-
-    }
-
-
-    .strategy-category-count {
-
-        font-size:
-            .48rem;
 
     }
 
@@ -3340,6 +3387,270 @@ Strategies | MarketPulse
             .5rem;
 
     }
+
+}
+
+
+/* ======================================================== */
+/* 21. DASHBOARD-SCALE TYPOGRAPHY SAFETY                    */
+/* ======================================================== */
+
+/*
+This final section deliberately sits after the responsive
+rules so that old tiny typography cannot return at smaller
+screen widths.
+
+The Dashboard relies mostly on Bootstrap's normal readable
+type scale. Strategies now follows the same approach.
+*/
+
+.strategy-workspace {
+
+    font-size:
+        .875rem;
+
+    line-height:
+        1.5;
+
+}
+
+
+/* -------------------------------------------------------- */
+/* Main page text                                           */
+/* -------------------------------------------------------- */
+
+.strategy-workspace p,
+.strategy-page-subtitle,
+.strategy-section-header p,
+.strategy-model-summary,
+.strategy-detail-block p,
+.my-strategy-description,
+.validation-box p,
+.related-tool p,
+.strategy-compare-copy {
+
+    font-size:
+        .8125rem;
+
+    line-height:
+        1.5;
+
+}
+
+
+/* -------------------------------------------------------- */
+/* Supporting text                                          */
+/* -------------------------------------------------------- */
+
+.strategy-workspace small,
+.strategy-workspace .small,
+.strategy-library-hint,
+.strategy-flow-copy span,
+.strategy-category-count,
+.strategy-detail-label,
+.strategy-parameter-list span,
+.my-strategy-metric span {
+
+    font-size:
+        .75rem;
+
+}
+
+
+/* -------------------------------------------------------- */
+/* Section labels                                           */
+/* -------------------------------------------------------- */
+
+.strategy-eyebrow {
+
+    font-size:
+        .75rem;
+
+}
+
+
+/* -------------------------------------------------------- */
+/* Page and section headings                                */
+/* -------------------------------------------------------- */
+
+.strategy-page-title {
+
+    font-size:
+        1.5rem;
+
+}
+
+
+.strategy-section-header h2 {
+
+    font-size:
+        1rem;
+
+}
+
+
+.strategy-model-title-row h3,
+.my-strategy-name h3,
+.validation-box h3,
+.related-tool h3 {
+
+    font-size:
+        .9rem;
+
+}
+
+
+/* -------------------------------------------------------- */
+/* Workflow                                                 */
+/* -------------------------------------------------------- */
+
+.strategy-flow-copy strong {
+
+    font-size:
+        .8125rem;
+
+}
+
+
+.strategy-flow-copy span {
+
+    font-size:
+        .75rem;
+
+}
+
+
+.strategy-flow-number,
+.strategy-category-number {
+
+    font-size:
+        .75rem;
+
+}
+
+
+/* -------------------------------------------------------- */
+/* Accordion                                                */
+/* -------------------------------------------------------- */
+
+.strategy-category-button {
+
+    font-size:
+        .8125rem;
+
+}
+
+
+.strategy-model-details summary,
+.my-strategy-details summary {
+
+    font-size:
+        .8125rem;
+
+}
+
+
+/* -------------------------------------------------------- */
+/* Forms                                                    */
+/* -------------------------------------------------------- */
+
+.strategy-filter-grid label {
+
+    font-size:
+        .75rem;
+
+}
+
+
+.strategy-workspace .form-control,
+.strategy-workspace .form-select {
+
+    font-size:
+        .8125rem;
+
+}
+
+
+/* -------------------------------------------------------- */
+/* Buttons                                                  */
+/* -------------------------------------------------------- */
+
+.strategy-workspace .btn,
+.strategy-workspace .btn-sm {
+
+    font-size:
+        .8125rem;
+
+}
+
+
+/* -------------------------------------------------------- */
+/* Badges                                                   */
+/* -------------------------------------------------------- */
+
+.strategy-workspace .badge,
+.strategy-model-title-row .badge {
+
+    font-size:
+        .7rem;
+
+}
+
+
+/* -------------------------------------------------------- */
+/* Tables                                                   */
+/* -------------------------------------------------------- */
+
+.strategy-comparison-table th,
+.strategy-comparison-table td {
+
+    font-size:
+        .8125rem;
+
+}
+
+
+/* -------------------------------------------------------- */
+/* Metrics                                                  */
+/* -------------------------------------------------------- */
+
+.my-strategy-metric span {
+
+    font-size:
+        .7rem;
+
+}
+
+
+.my-strategy-metric strong {
+
+    font-size:
+        .875rem;
+
+}
+
+
+/* -------------------------------------------------------- */
+/* Validation                                               */
+/* -------------------------------------------------------- */
+
+.validation-question {
+
+    font-size:
+        .8125rem;
+
+}
+
+
+/* -------------------------------------------------------- */
+/* Empty states / alerts                                    */
+/* -------------------------------------------------------- */
+
+.strategy-no-results,
+.strategy-workspace .alert {
+
+    font-size:
+        .8125rem;
 
 }
 

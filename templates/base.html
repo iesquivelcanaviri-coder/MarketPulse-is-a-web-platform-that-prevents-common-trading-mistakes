@@ -34,6 +34,18 @@
 {# - Shared navigation colours                              #}
 {# - Shared typography                                      #}
 {#                                                          #}
+{# USER-FACING APPLICATION SECTIONS:                        #}
+{#                                                          #}
+{# Home                                                     #}
+{# Dashboard                                                #}
+{# Data                                                     #}
+{# Strategies                                               #}
+{#                                                          #}
+{# Risk remains a separate Django application internally,   #}
+{# but is no longer shown as a separate main navigation     #}
+{# tab. Risk functionality belongs to the Strategies        #}
+{# research workflow from the user's perspective.           #}
+{#                                                          #}
 {# RESPONSIVE FOUNDATION:                                   #}
 {#                                                          #}
 {# base.html also provides a small responsive safety layer  #}
@@ -135,6 +147,7 @@
     {#                                                      #}
     {# - final MarketPulse dark-theme protection            #}
     {# - shared Bootstrap component colouring               #}
+    {# - readable Strategies typography                     #}
     {# - responsive overflow protection                     #}
     {# - safe table scrolling                               #}
     {# - safe canvas/image sizing                           #}
@@ -148,33 +161,47 @@
         :root,
         [data-bs-theme="dark"] {
 
-            --mp-bg: #0c1420;
+            --mp-bg:
+                #0c1420;
 
-            --mp-nav: #111c2b;
+            --mp-nav:
+                #111c2b;
 
-            --mp-panel: #152235;
+            --mp-panel:
+                #152235;
 
-            --mp-panel-soft: #18283a;
+            --mp-panel-soft:
+                #18283a;
 
-            --mp-panel-dark: #101a28;
+            --mp-panel-dark:
+                #101a28;
 
-            --mp-border: #314258;
+            --mp-border:
+                #314258;
 
-            --mp-border-soft: #26374b;
+            --mp-border-soft:
+                #26374b;
 
-            --mp-text: #f1f5f9;
+            --mp-text:
+                #f1f5f9;
 
-            --mp-muted: #93a4b8;
+            --mp-muted:
+                #93a4b8;
 
-            --mp-primary: #4f86b6;
+            --mp-primary:
+                #4f86b6;
 
-            --mp-primary-hover: #6095c2;
+            --mp-primary-hover:
+                #6095c2;
 
-            --mp-success: #32c98b;
+            --mp-success:
+                #32c98b;
 
-            --mp-warning: #d3a854;
+            --mp-warning:
+                #d3a854;
 
-            --mp-danger: #dc6b75;
+            --mp-danger:
+                #dc6b75;
 
 
             /* ----------------------------------------------- */
@@ -271,8 +298,8 @@
 
 
         /* ---------------------------------------------------- */
-        /* Prevent Bootstrap containers from creating a light    */
-        /* page canvas.                                          */
+        /* Prevent Bootstrap containers from creating a light   */
+        /* page canvas.                                         */
         /* ---------------------------------------------------- */
 
         .marketpulse-main > .container,
@@ -431,6 +458,295 @@
 
             color:
                 var(--mp-text)
+                !important;
+        }
+
+
+        /* ==================================================== */
+        /* STRATEGIES — DASHBOARD-SCALE TYPOGRAPHY              */
+        /* ==================================================== */
+        /*
+        The Strategy page originally contains many local font
+        declarations around .5rem to .7rem.
+
+        Because this block appears AFTER the page-specific CSS,
+        these rules normalise the visible Strategy workspace to
+        approximately the same readable scale as the Dashboard.
+
+        The layout and JavaScript selectors are not changed.
+        */
+
+        .strategy-workspace {
+
+            font-size:
+                .875rem;
+
+            line-height:
+                1.5;
+        }
+
+
+        /* ---------------------------------------------------- */
+        /* Strategy page heading                                */
+        /* ---------------------------------------------------- */
+
+        .strategy-workspace .strategy-page-title {
+
+            font-size:
+                1.5rem
+                !important;
+
+            line-height:
+                1.2;
+
+            font-weight:
+                700;
+        }
+
+
+        .strategy-workspace .strategy-page-subtitle {
+
+            font-size:
+                .875rem
+                !important;
+
+            line-height:
+                1.5;
+        }
+
+
+        /* ---------------------------------------------------- */
+        /* Section headings                                     */
+        /* ---------------------------------------------------- */
+
+        .strategy-workspace .strategy-section-header h2 {
+
+            font-size:
+                1.05rem
+                !important;
+
+            line-height:
+                1.3;
+        }
+
+
+        .strategy-workspace h3 {
+
+            font-size:
+                .95rem;
+        }
+
+
+        .strategy-workspace h4 {
+
+            font-size:
+                .9rem;
+        }
+
+
+        /* ---------------------------------------------------- */
+        /* Normal descriptive copy                              */
+        /* ---------------------------------------------------- */
+
+        .strategy-workspace p,
+        .strategy-workspace .strategy-section-header p,
+        .strategy-workspace .related-tool p,
+        .strategy-workspace .validation-box p {
+
+            font-size:
+                .8125rem
+                !important;
+
+            line-height:
+                1.5;
+        }
+
+
+        /* ---------------------------------------------------- */
+        /* Small uppercase category / section labels            */
+        /* ---------------------------------------------------- */
+
+        .strategy-workspace .strategy-eyebrow {
+
+            font-size:
+                .75rem
+                !important;
+
+            line-height:
+                1.3;
+        }
+
+
+        /* ---------------------------------------------------- */
+        /* Research workflow                                    */
+        /* ---------------------------------------------------- */
+
+        .strategy-workspace .strategy-flow-copy strong {
+
+            font-size:
+                .8125rem
+                !important;
+        }
+
+
+        .strategy-workspace .strategy-flow-copy span {
+
+            font-size:
+                .75rem
+                !important;
+
+            line-height:
+                1.4;
+        }
+
+
+        /* ---------------------------------------------------- */
+        /* Categories and model library                         */
+        /* ---------------------------------------------------- */
+
+        .strategy-workspace .strategy-category-name,
+        .strategy-workspace .strategy-category-name strong,
+        .strategy-workspace .strategy-model-name,
+        .strategy-workspace .strategy-model-title {
+
+            font-size:
+                .8125rem
+                !important;
+        }
+
+
+        .strategy-workspace .strategy-model-row,
+        .strategy-workspace .strategy-model-row p,
+        .strategy-workspace .strategy-model-summary {
+
+            font-size:
+                .8125rem
+                !important;
+
+            line-height:
+                1.45;
+        }
+
+
+        /* ---------------------------------------------------- */
+        /* Forms                                                */
+        /* ---------------------------------------------------- */
+
+        .strategy-workspace label {
+
+            font-size:
+                .75rem
+                !important;
+        }
+
+
+        .strategy-workspace input,
+        .strategy-workspace select,
+        .strategy-workspace textarea,
+        .strategy-workspace .form-control,
+        .strategy-workspace .form-select {
+
+            font-size:
+                .8125rem
+                !important;
+        }
+
+
+        /* ---------------------------------------------------- */
+        /* Buttons                                              */
+        /* ---------------------------------------------------- */
+
+        .strategy-workspace .btn,
+        .strategy-workspace button {
+
+            font-size:
+                .8125rem
+                !important;
+        }
+
+
+        /* ---------------------------------------------------- */
+        /* Accordions / details                                 */
+        /* ---------------------------------------------------- */
+
+        .strategy-workspace summary,
+        .strategy-workspace .my-strategy-details summary {
+
+            font-size:
+                .8125rem
+                !important;
+
+            line-height:
+                1.4;
+        }
+
+
+        /* ---------------------------------------------------- */
+        /* Supporting / muted metadata                          */
+        /* ---------------------------------------------------- */
+
+        .strategy-workspace small,
+        .strategy-workspace .small,
+        .strategy-workspace .form-text,
+        .strategy-workspace .text-muted {
+
+            font-size:
+                .75rem
+                !important;
+        }
+
+
+        /* ---------------------------------------------------- */
+        /* Metrics                                              */
+        /* ---------------------------------------------------- */
+
+        .strategy-workspace .my-strategy-metric span {
+
+            font-size:
+                .7rem
+                !important;
+        }
+
+
+        .strategy-workspace .my-strategy-metric strong {
+
+            font-size:
+                .875rem
+                !important;
+        }
+
+
+        /* ---------------------------------------------------- */
+        /* Validation                                           */
+        /* ---------------------------------------------------- */
+
+        .strategy-workspace .validation-question {
+
+            font-size:
+                .8125rem
+                !important;
+
+            line-height:
+                1.45;
+        }
+
+
+        /* ---------------------------------------------------- */
+        /* Related / integrated research tools                  */
+        /* ---------------------------------------------------- */
+
+        .strategy-workspace .related-tool h3 {
+
+            font-size:
+                .95rem
+                !important;
+        }
+
+
+        .strategy-workspace .related-tool p {
+
+            font-size:
+                .8125rem
                 !important;
         }
 
@@ -885,22 +1201,6 @@
         /* ==================================================== */
         /* SHARED RESPONSIVE SAFETY                              */
         /* ==================================================== */
-        /*
-        These rules provide a safe responsive foundation for
-        every MarketPulse page.
-
-        They do NOT replace page-specific Bootstrap/grid
-        breakpoints.
-
-        Their purpose is to prevent individual child components
-        from forcing the complete application wider than the
-        browser viewport.
-        */
-
-
-        /* ---------------------------------------------------- */
-        /* Main content must always fit inside the viewport      */
-        /* ---------------------------------------------------- */
 
         #main-content,
         .marketpulse-main {
@@ -919,10 +1219,6 @@
         }
 
 
-        /* ---------------------------------------------------- */
-        /* Direct child workspaces must be allowed to shrink     */
-        /* ---------------------------------------------------- */
-
         .marketpulse-main > * {
 
             min-width:
@@ -932,10 +1228,6 @@
                 100%;
         }
 
-
-        /* ---------------------------------------------------- */
-        /* Bootstrap rows and columns must be shrinkable         */
-        /* ---------------------------------------------------- */
 
         .marketpulse-main .row,
         .marketpulse-main [class*="col-"],
@@ -964,15 +1256,6 @@
                 auto;
         }
 
-
-        /*
-        Canvas elements are commonly used by MarketPulse charts.
-
-        Width is restricted to the available parent space.
-
-        Height is deliberately NOT forced to auto because chart
-        libraries frequently manage canvas height themselves.
-        */
 
         .marketpulse-main canvas {
 
@@ -1004,13 +1287,6 @@
         }
 
 
-        /*
-        Financial tables may legitimately be wider than a phone.
-
-        The table wrapper should scroll horizontally rather than
-        causing the complete page to overflow.
-        */
-
         .marketpulse-main .table-responsive > .table {
 
             margin-bottom:
@@ -1033,7 +1309,7 @@
 
 
         /* ---------------------------------------------------- */
-        /* Long text must not force horizontal overflow          */
+        /* Long text must not force horizontal overflow         */
         /* ---------------------------------------------------- */
 
         .marketpulse-main p,
@@ -1055,14 +1331,6 @@
 
         @media (max-width: 767.98px) {
 
-            /*
-            Bootstrap already changes the navbar at this
-            breakpoint.
-
-            These rules only reduce application-content spacing
-            slightly on smaller devices.
-            */
-
             .marketpulse-main {
 
                 padding-left:
@@ -1083,11 +1351,6 @@
             }
 
 
-            /*
-            Allow action groups built with flexbox to wrap instead
-            of forcing the browser viewport wider.
-            */
-
             .marketpulse-main .d-flex {
 
                 min-width:
@@ -1095,19 +1358,41 @@
             }
 
 
-            /*
-            Buttons may wrap text on narrow phones.
-
-            This is particularly useful for longer actions such as:
-            - Run Strategy Robustness
-            - Send Password Reset Link
-            - Calculate Position Size
-            */
-
             .marketpulse-main .btn {
 
                 white-space:
                     normal;
+            }
+
+
+            /* ----------------------------------------------- */
+            /* Strategy typography remains readable on mobile */
+            /* ----------------------------------------------- */
+
+            .strategy-workspace .strategy-page-title {
+
+                font-size:
+                    1.35rem
+                    !important;
+            }
+
+
+            .strategy-workspace .strategy-page-subtitle {
+
+                font-size:
+                    .8125rem
+                    !important;
+            }
+
+
+            .strategy-workspace p,
+            .strategy-workspace .strategy-section-header p,
+            .strategy-workspace .related-tool p,
+            .strategy-workspace .validation-box p {
+
+                font-size:
+                    .8125rem
+                    !important;
             }
 
         }
@@ -1130,11 +1415,6 @@
                     !important;
             }
 
-
-            /*
-            Prevent unusually long headings from overflowing
-            narrow phone screens.
-            */
 
             .marketpulse-main h1,
             .marketpulse-main h2,
@@ -1350,15 +1630,22 @@
 
 
                         {# ------------------------------------- #}
-                        {# STRATEGIES                            #}
+                        {# STRATEGIES + RISK WORKFLOW            #}
                         {# ------------------------------------- #}
+                        {#                                       #}
+                        {# Risk is deliberately no longer a      #}
+                        {# separate top-level navigation item.    #}
+                        {#                                       #}
+                        {# Both strategy_builder and              #}
+                        {# risk_management belong visually to     #}
+                        {# the Strategies application area.       #}
 
                         <li class="nav-item">
 
                             <a
                                 class="
                                     nav-link
-                                    {% if request.resolver_match.namespace == 'strategy_builder' %}
+                                    {% if request.resolver_match.namespace == 'strategy_builder' or request.resolver_match.namespace == 'risk_management' %}
                                         active
                                         fw-semibold
                                     {% endif %}
@@ -1372,35 +1659,6 @@
                                 ></i>
 
                                 Strategies
-
-                            </a>
-
-                        </li>
-
-
-                        {# ------------------------------------- #}
-                        {# RISK                                  #}
-                        {# ------------------------------------- #}
-
-                        <li class="nav-item">
-
-                            <a
-                                class="
-                                    nav-link
-                                    {% if request.resolver_match.namespace == 'risk_management' %}
-                                        active
-                                        fw-semibold
-                                    {% endif %}
-                                "
-                                href="{% url 'risk_management:calculator' %}"
-                            >
-
-                                <i
-                                    class="fa-solid fa-shield-halved me-1"
-                                    aria-hidden="true"
-                                ></i>
-
-                                Risk
 
                             </a>
 
