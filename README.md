@@ -2,280 +2,179 @@
 
 ## Project Overview
 
-**MarketPulse** is an educational full-stack financial analysis application designed to bring several important parts of a trading-research workflow into one integrated web platform.
+**MarketPulse** is an educational full-stack financial-analysis platform developed as part of a **Full Stack Software Development** project. It connects market-data retrieval, historical-data storage, quantitative model research, custom strategy creation, historical backtesting, risk planning, community messaging, REST APIs, and optional analytical services in one Django-based application.
 
-The project was developed as part of my **Full Stack Software Development** studies.
+MarketPulse is designed for research and learning. It does **not** place live trades, manage real money, or provide investment advice.
 
-The purpose of MarketPulse is not to automatically trade money or provide investment advice. Instead, it provides an educational environment where a user can:
-
-- inspect financial market data;
-- understand  market conditions;
-- research quantitative trading models;
-- create and test strategies;
-- examine historical strategy behaviour;
-- calculate trade and portfolio risk;
-- explore severe hypothetical market scenarios.
-
-The application combines a Django web application, PostgreSQL database, external market-data APIs, client-side JavaScript, Bootstrap, REST APIs and optional analytical services such as MATLAB.
-
-> **Important:** All backtests, strategy results, risk calculations, regime classifications and stress tests are educational simulations. They are not investment advice and do not guarantee future performance.
-
+> **Educational disclaimer:** Market prices can be delayed or unavailable. Backtests, model descriptions, market-condition classifications, risk calculations, robustness analysis and stress tests are simplified educational simulations. Historical results do not guarantee future performance.
 
 ---
 
-# 1. Background and Motivation
+## 1. Problem and Motivation
 
-Financial markets produce a large amount of information.
+Financial research is often fragmented across websites, spreadsheets, charting tools, notebooks and scripts. MarketPulse was created to demonstrate how those activities can be coordinated by one full-stack application.
 
-A person researching a possible trading strategy may need to use several different tools just to answer relatively simple questions:
+The application is organised around questions such as:
 
-- What is happening in the market now?
-- What historical data do I have?
-- Is the market currently bullish, bearish or moving sideways?
-- Which type of strategy could I investigate?
-- How did that strategy behave historically?
-- Is the historical performance stable or possibly overfitted?
-- How much capital would be exposed if the trade moved against me?
-- What could happen under a severe hypothetical market scenario?
+- What market information is available now?
+- What historical OHLCV data has been stored?
+- What market condition does the stored history suggest?
+- Which quantitative model should be researched?
+- How can a custom strategy be defined and saved?
+- How did the saved strategy behave historically?
+- How much capital is exposed under a defined risk budget?
+- How can hypothetical adverse conditions be explored?
 
-These questions are related, but they are often answered using separate tools, spreadsheets, websites or scripts.
-That fragmentation was the main problem I wanted MarketPulse to address.
-
-The goal was to create one application where market data, strategy research and risk analysis are connected through a clear user workflow.
-
+The objective is not to predict markets. The objective is to demonstrate a structured software workflow for financial research.
 
 ---
 
-# 2. Core Problem Being Solved
+## 2. Current User Workflow
 
-MarketPulse addresses three main problems.
-
-
-## 2.1 Fragmented Financial Analysis
-
-Market research, historical data analysis, strategy testing and risk planning are often carried out separately.
-
-MarketPulse brings these activities into a single application:
-
-```text
-Market Data
-    ↓
-Market Condition
-    ↓
-Strategy Research
-    ↓
-Backtesting
-    ↓
-Robustness Analysis
-    ↓
-Risk Planning
-    ↓
-Stress Testing
-```
-
-
-## 2.2 Difficulty Understanding Trading Risk
-
-A trading strategy can appear profitable historically while still exposing a user to significant risk.
-
-MarketPulse therefore treats risk as a separate and important part of the workflow.
-
-The application allows a user to define:
-
-```text
-Trading Capital
-    +
-Maximum Risk Percentage
-    ↓
-Maximum Planned Loss
-```
-
-and then combine this with:
-
-```text
-Entry Price
-    +
-Stop-Loss
-    ↓
-Risk per Unit
-```
-
-to calculate:
-
-```text
-Maximum Planned Loss
-    ÷
-Risk per Unit
-    ↓
-Risk-Constrained Position Size
-```
-
-
-## 2.3 Misleading Historical Performance
-
-A strategy can perform well historically simply because it was tuned too closely to one period of data.
-
-MarketPulse therefore includes robustness and overfitting checks across different historical periods.
-
-The aim is not to prove that a strategy will work in the future.
-
-The aim is to encourage the user to question historical results rather than accepting one successful backtest at face value.
-
-
----
-
-# 3. Project Goal
-
-The main goal of MarketPulse is to create a **full-stack educational decision-support platform** that demonstrates how financial data can move through a modern web application.
-
-The project connects:
-
-```text
-Browser
-    ↓
-Django Templates / JavaScript
-    ↓
-Django Views
-    ↓
-Application Services
-    ↓
-PostgreSQL / Neon
-    ↓
-External Market Data
-    ↓
-Analytical Engines
-    ↓
-Results returned to the user
-```
-
-The project demonstrates both software-development skills and understanding of application architecture.
-
-
----
-
-# 4. Main User Workflow
-
-The main MarketPulse navigation is intentionally organised around a research workflow.
+The main Django application is organised around the following areas:
 
 ```text
 Home
-    ↓
+  ↓
 Dashboard
-    ↓
+  ↓
 Data
-    ↓
+  ↓
 Strategies
-    ↓
+  ↓
 Risk
+
+Supporting areas:
+Accounts / Profile
+Community / Private Messaging
+REST API
 ```
 
-Each section has a different responsibility.
+### Home
 
+The Home page introduces the application and surfaces entry points into the main research areas. It also includes community/inbox information for authenticated users.
 
-## Home
+### Dashboard
 
-The Home page introduces MarketPulse and provides access to the main parts of the application.
+The Dashboard is the current-market workspace. It includes:
 
+- Alpaca asset search;
+- current stock/ETF snapshot information;
+- historical chart requests;
+- candlestick charts;
+- line charts;
+- Heikin-Ashi calculations;
+- volume display;
+- configurable alerts and alert rules.
 
-## Dashboard
+The dashboard deliberately routes external market-data requests through Django so Alpaca credentials remain server-side.
 
-The Dashboard provides a live market workspace.
+Two chart selections are intentionally not implemented with the current equity feed:
 
-It allows the user to:
+- **Volume Profile** requires a dedicated calculation that is not currently enabled;
+- **Futures Curve** requires futures contracts across expiries, which the current stock/ETF data source does not provide.
 
-- search financial assets;
-- load current market information;
-- inspect historical market behaviour;
-- view professional financial charts;
-- manage configurable alerts.
+### Data
 
-The dashboard communicates with MarketPulse's Django API rather than exposing external API credentials directly to the browser.
-
-
-## Data
-
-The Data section is responsible for historical market information.
-
-It provides:
-
-- market-data import;
-- stored historical datasets;
-- dataset inspection;
-- market-condition analysis;
-- market-regime classification.
-
-The conceptual data flow is:
+The Data workspace handles historical market-data import and reuse.
 
 ```text
-Alpaca Market Data
-        ↓
+User request
+    ↓
 data_management
-        ↓
-Django
-        ↓
+    ↓
+Alpaca service
+    ↓
+validated OHLCV observations
+    ↓
 core.MarketData
-        ↓
-PostgreSQL / Neon
-        ↓
-MarketPulse analysis workflows
+    ↓
+PostgreSQL / SQLite
+    ↓
+Data / Strategies / Risk / Analysis
 ```
 
+The current Data UI combines:
 
-## Strategies
+- Alpaca historical-data import;
+- stored dataset selection;
+- OHLCV review;
+- market-condition analysis;
+- strategy/model catalogue selection for research context.
 
-The Strategies section is the research area of MarketPulse.
+Selecting a model in the Data workspace does **not** automatically execute the quantitative model. The model library is primarily metadata describing purpose, parameters, data requirements and implementation status.
 
-It allows the user to:
+### Strategies
 
-- browse quantitative strategy models;
-- inspect model requirements;
-- create custom strategies;
-- use stored market data;
-- perform historical backtests;
-- investigate strategy robustness;
-- examine possible overfitting.
-
-The main question answered by this section is:
-
-> **Which quantitative approach do I want to research, and how has it behaved historically?**
-
-
-## Risk
-
-The Risk section focuses on capital exposure rather than market prediction.
-
-The workflow is:
+The current Strategies workflow is:
 
 ```text
-1. Choose Market
-        ↓
-2. Set Risk Budget
-        ↓
-3. Define Trade
-        ↓
-4. Review Risk Plan
-        ↓
-5. Stress Test
+Open /strategy/
+    ↓
+Browse Strategy & Model Library
+    ↓
+Search / Filter / Compare
+    ↓
+Inspect Model Details
+    ↓
+My Strategies
+    ↓
+Create Strategy inline on the same page
+    ↓
+Save Strategy + Strategy Rules
+    ↓
+Run Historical Backtest
+    ↓
+Review Backtest Results
 ```
 
-The Risk workspace combines current market information, historical risk information and user-defined assumptions to calculate a hypothetical risk-controlled position.
+Strategy creation now happens inside **My Strategies** on the main `/strategy/` page. The legacy `/strategy/create/` route is retained only as a compatibility redirect back to the Strategies workspace.
 
+The visible Strategies page no longer needs separate **Strategy Robustness** or **Stress Testing** panels. Robustness/overfitting and stress-test calculations remain in the backend analytical architecture where they can be reused without duplicating the main user workflow.
+
+### Risk
+
+The main Risk calculator is implemented as a separate authenticated workspace.
+
+```text
+Choose Market
+    ↓
+Set Trading Capital and Risk Budget
+    ↓
+Define Entry / Stop / Direction / Target
+    ↓
+Calculate Risk Plan
+    ↓
+Review Historical Context
+```
+
+Core calculations include maximum planned loss, risk per unit, position size and percentage-based stop loss.
+
+The project also contains backend routes/views for strategy stress testing. During the latest code audit, the two templates expected by those active routes were missing from the supplied ZIP. This is documented as a known issue in `PROJECT_AUDIT.md` and `TESTING.md`; the README therefore does not claim that the Risk stress-test UI is currently complete.
+
+### Community
+
+The current project contains a `community` Django app that was missing from older README versions. It supports:
+
+- community feed posts;
+- private inbox;
+- new conversations;
+- conversation threads;
+- compatibility routes from the older message architecture.
 
 ---
 
-# 5. Technology Stack
+## 3. Technology Stack
 
-MarketPulse uses a combination of backend, frontend, database, external API and deployment technologies.
+### Backend
 
-
-## Backend
-
-- Python
-- Django 5.2
+- Python 3.13 deployment target
+- Django 5.2.17
 - Django REST Framework
+- Django ORM
+- Gunicorn
 
-
-## Frontend
+### Frontend
 
 - Django Templates
 - Bootstrap 5
@@ -283,352 +182,251 @@ MarketPulse uses a combination of backend, frontend, database, external API and 
 - CSS
 - JavaScript
 - Font Awesome
+- TradingView Lightweight Charts on the Django Dashboard
 
+### Additional Frontend
 
-## Database
+- React 18
+- Vite 6
+- Chart.js / `react-chartjs-2`
 
-- PostgreSQL
-- Neon PostgreSQL
-- SQLite local fallback
+### Database
 
+- PostgreSQL / Neon for production
+- SQLite fallback for local development
 
-## Market Data
+### External / Optional Services
 
 - Alpaca Market Data API
+- Brevo email through Django Anymail
+- MATLAB bridge, optional
+- Celery + Redis, optional
 
+### Deployment
 
-## Charts and Visualisation
-
-- Lightweight Charts
-- Chart.js where required
-
-
-## Additional Frontend
-
-- React
-- Vite
-
-
-## Optional Processing
-
-- Celery
-- Redis
-- MATLAB
-
-
-## Deployment
-
-- Render
-- Gunicorn
-- WhiteNoise
-
+- Render native Python Blueprint configuration
+- WhiteNoise static-file serving
+- Gunicorn WSGI server
+- Dockerfile retained as an alternative deployment path
 
 ---
 
-# 6. Application Architecture
+## 4. High-Level Architecture
 
-MarketPulse follows Django's Model-View-Template architecture together with service and API layers.
-
-A simplified framework map is:
+MarketPulse follows Django's Model-View-Template architecture, with additional service, API and analysis layers.
 
 ```text
 Browser
     ↓
-Django URL
+Django URL Router
     ↓
 Django View
     ↓
-Model / Service / Analysis Layer
+Forms / Models / Services / Analysis
     ↓
-PostgreSQL / External API / MATLAB
+Django ORM / External API / Optional MATLAB
     ↓
-Django View
-    ↓
-Template
+Template or JSON Response
     ↓
 Browser
 ```
 
-For client-side API requests:
+For JavaScript / React requests:
 
 ```text
-Browser JavaScript
-        ↓
-MarketPulse Django REST API
-        ↓
-Django View / Service
-        ↓
-Alpaca Market Data API
-        ↓
-Django
-        ↓
+Browser / React
+    ↓
+/api/
+    ↓
+Django REST Framework
+    ↓
+Model or Server-side Service
+    ↓
+PostgreSQL / Alpaca / Optional MATLAB
+    ↓
 JSON Response
-        ↓
-JavaScript
-        ↓
-User Interface
 ```
 
-This means external credentials remain on the server rather than being exposed to the client.
-
+This design keeps API credentials and database access on the server.
 
 ---
 
-# 7. Django Project Structure
-
-The project is divided into Django applications according to responsibility.
-
-A simplified structure is:
+## 5. Project Structure
 
 ```text
-MarketPulse
+MarketPulse/
 │
-├── accounts/
-│
-├── core/
-│
-├── data_management/
-│
-├── strategy_builder/
-│
-├── risk_management/
-│
-├── analysis_tools/
-│
-├── marketpulse/
-│
-├── templates/
-│
-├── static/
-│
-├── matlab/
-│
-├── frontend/
-│
+├── accounts/            # custom user, registration, profile, auth support
+├── analysis_tools/      # reusable analytical models/functions
+├── api/                 # Django REST Framework endpoints
+├── community/           # feed, inbox and private conversations
+├── core/                # shared models, home, dashboard, alerts, MATLAB bridge
+├── data_management/     # Alpaca import, stored datasets, market condition
+├── frontend/            # separate React/Vite API client
+├── marketpulse/         # Django project settings, root URLs, WSGI/ASGI/Celery
+├── matlab/              # optional MATLAB bridge functions
+├── risk_management/     # risk forms, calculations, risk views
+├── static/              # shared Django CSS and JavaScript source
+├── strategy_builder/    # model library, strategy creation and backtesting
+├── templates/           # project-level Django templates
+├── build.sh             # Render build script
+├── Dockerfile           # alternative container deployment
+├── Procfile             # alternate Gunicorn process declaration
+├── render.yaml          # active Render Blueprint definition
+├── requirements.txt
 └── manage.py
 ```
 
-
 ---
 
-# 8. Responsibility of Each Django Application
+## 6. Django Application Responsibilities
 
+### `accounts`
 
-## `accounts`
+Handles the custom user model and account workflows.
 
-Handles user-related functionality.
-
-Responsibilities include:
+Current responsibilities include:
 
 - registration;
 - login;
 - logout;
+- profile editing;
 - password reset;
-- password change;
-- user profile;
-- user risk preferences.
+- password-change routes.
 
-Conceptually:
+The password-reset templates are present. The latest audit found that the custom `password_change.html` and `password_change_done.html` templates referenced by active routes are missing from the supplied ZIP. That workflow must be fixed/retested before being marked complete.
 
-```text
-User
-    ↓
-accounts/views.py
-    ↓
-accounts/forms.py
-    ↓
-accounts/models.py
-    ↓
-PostgreSQL
-```
+### `core`
 
+Contains shared application models and central pages, including:
 
-## `core`
+- `MarketData`;
+- `Strategy`;
+- `Backtest` and related trades;
+- alerts / alert rules;
+- Home and Dashboard views;
+- optional MATLAB bridge support.
 
-Contains shared application models and functionality used across multiple sections.
+### `data_management`
 
-This includes shared financial data and common functionality.
-
-For example:
+Coordinates historical market-data import and dataset presentation.
 
 ```text
-Data Import
+DataImportForm
     ↓
-core.MarketData
+data_management/views.py
     ↓
-PostgreSQL
+data_management/services/alpaca.py
     ↓
-Strategies / Risk / Analysis
-```
-
-This allows one stored historical dataset to be reused by multiple application areas rather than repeatedly downloading or duplicating data.
-
-
-## `data_management`
-
-Responsible for acquiring, storing and presenting historical market data.
-
-Typical flow:
-
-```text
-User selects asset
-        ↓
-data_management view
-        ↓
-Market data service
-        ↓
 Alpaca
-        ↓
-Data validation
-        ↓
+    ↓
+data_management/utils.py
+    ↓
 core.MarketData
-        ↓
-PostgreSQL
 ```
 
-The stored data can then be used by strategy and risk calculations.
+Management command `seed_marketpulse` creates/updates supporting seed data and makes Alpaca the active source.
 
+### `strategy_builder`
 
-## `strategy_builder`
+Contains:
 
-Responsible for quantitative strategy research.
+- strategy/model library metadata;
+- inline custom strategy creation;
+- strategy rules;
+- historical backtesting;
+- backtest result display;
+- optional scheduled strategy monitoring task.
 
-The user can:
+`seed_strategy_library` defines **37 catalogue entries across seven model categories**. Catalogue presence does not mean every model has an implemented execution engine; `implementation_status` distinguishes catalogue metadata from ready/experimental implementations.
 
-```text
-Open Strategies
-        ↓
-Browse Model Library
-        ↓
-Inspect Model
-        ↓
-Create / Select Strategy
-        ↓
-Choose Stored Market Data
-        ↓
-Backtest
-        ↓
-Review Results
-        ↓
-Robustness Analysis
-```
+### `risk_management`
 
+Contains:
 
-## `risk_management`
+- risk form validation;
+- position-size calculations;
+- stop-loss calculations;
+- historical market context;
+- stress-test backend routes/views.
 
-Responsible for trade and portfolio-risk planning.
+### `analysis_tools`
 
-It combines:
+Contains reusable analytical functions and stored analytical results for concepts such as:
 
-```text
-User Risk Settings
-        +
-Current Market Information
-        +
-Historical Market Information
-        +
-Trade Assumptions
-        ↓
-Risk Calculation
-        ↓
-Position Size
-        ↓
-Stop-Loss
-        ↓
-Risk / Reward
-        ↓
-Stress Testing
-```
+- market regime classification;
+- overfitting/robustness analysis;
+- stress testing.
 
+`analysis_tools` is installed as a Django application, but its URL configuration is **not currently included by the root URL router**. In the current architecture, its analyzers/models are primarily an internal service layer used by other applications. The old standalone analysis pages are therefore considered legacy/optional UI until intentionally re-enabled.
 
-## `analysis_tools`
+### `community`
 
-Contains analytical functionality that can be reused by other Django applications.
+Handles:
 
-Rather than making Analysis a completely separate user workflow, analytical functions can support other sections.
+- feed posts;
+- private conversations;
+- inbox display;
+- message threads;
+- compatibility routes for the older message flow.
 
-For example:
+### `api`
 
-```text
-Data
-    ↓
-Market Condition
-    ↓
-Market Regime Analysis
-```
+Provides REST/JSON endpoints for:
 
-and:
-
-```text
-Strategies
-    ↓
-Robustness
-    ↓
-Overfitting Analysis
-```
-
-This keeps analytical logic separated from page presentation.
-
+- health checks;
+- Dashboard market overview;
+- stored market data;
+- risk position-size calculation;
+- optional MATLAB risk calculation;
+- Alpaca asset search;
+- Alpaca asset detail;
+- Alpaca stock snapshots;
+- Alpaca historical bars;
+- user-scoped Strategy CRUD;
+- user-scoped Backtest read access.
 
 ---
 
-# 9. Market Data Architecture
+## 7. Market Data Architecture
 
-MarketPulse separates external market data from the browser.
-
-The browser does not communicate directly with Alpaca using private credentials.
-
-Instead:
+The browser never receives private Alpaca credentials.
 
 ```text
 Browser
     ↓
-MarketPulse API Endpoint
+Django / DRF endpoint
     ↓
-Django
+data_management.services.alpaca
     ↓
-Alpaca Service
+Alpaca API
     ↓
-Alpaca Market Data API
+Normalised server response
     ↓
-Django
-    ↓
-JSON
-    ↓
-Browser
+Browser / Database
 ```
 
-This architecture improves security because API credentials remain on the backend.
+The exact environment-variable names used by the current source are:
 
+```env
+ALPACA_API_KEY_ID=
+ALPACA_API_SECRET_KEY=
+ALPACA_TRADING_BASE_URL=https://paper-api.alpaca.markets
+ALPACA_DATA_BASE_URL=https://data.alpaca.markets
+ALPACA_DATA_FEED=iex
+```
+
+Older documentation using `ALPACA_API_KEY` or `ALPACA_SECRET_KEY` should not be used for this version of the project.
+
+`requirements.txt` still contains `yfinance`, but no active project source file in the supplied ZIP imports or calls it. The current MarketPulse data-service implementation is Alpaca-based.
 
 ---
 
-# 10. Current Market Data vs Historical Market Data
+## 8. Historical Market Data
 
-MarketPulse distinguishes between current market information and historical stored information.
+Stored OHLCV observations are represented through shared market-data models and can be reused by several workflows.
 
-
-## Current Market Information
-
-Current information can be requested from Alpaca.
-
-Examples include:
-
-- latest trade;
-- bid and ask;
-- daily open;
-- daily high;
-- daily low;
-- volume;
-- previous close;
-- asset information.
-
-
-## Historical Market Information
-
-Historical observations can be stored in MarketPulse's database.
-
-Typical stored fields include:
+Typical data:
 
 ```text
 Symbol
@@ -640,135 +438,119 @@ Close
 Volume
 ```
 
-These observations can then be reused for:
+Stored history supports:
 
+- dataset inspection;
+- charts;
 - market-condition analysis;
 - backtesting;
-- volatility calculations;
-- drawdown calculations;
-- Average True Range;
-- risk analysis;
-- robustness checks.
+- volatility context;
+- drawdown context;
+- risk calculations;
+- analytical validation.
 
-This makes historical analysis more reproducible because calculations can use a stored dataset.
-
+This central storage reduces repeated external downloads and keeps analysis reproducible against a known dataset.
 
 ---
 
-# 11. Market Condition Analysis
+## 9. Market Condition Analysis
 
-MarketPulse includes market-condition analysis to help describe historical market behaviour.
-
-Possible classifications include:
+Market condition is calculated from stored historical observations. The current analytical layer can describe regimes such as:
 
 ```text
 Bull
 Bear
 Sideways
-High Volatility
+Volatile / High Volatility
 ```
 
-The purpose is not to predict the next market movement.
-
-Instead, the regime gives additional context for strategy research.
-
-Conceptually:
-
-```text
-Stored Historical Prices
-        ↓
-Analysis
-        ↓
-Trend / Volatility Measures
-        ↓
-Market Regime
-        ↓
-User Research Context
-```
-
+The purpose is descriptive research context, not a prediction of future price direction.
 
 ---
 
-# 12. Strategy and Model Research
+## 10. Strategy & Model Library
 
-The strategy library uses progressive disclosure.
-
-Instead of showing every technical detail at once, the workflow is:
+The Strategy library uses progressive disclosure:
 
 ```text
-Model Category
+Category
     ↓
-Model Summary
+Compact Model Summary
     ↓
 More Details
     ↓
-Data Requirements
+Purpose / Data Requirements / Parameters / Output
     ↓
-Parameters
-    ↓
-Historical Testing
+Compare with other models
 ```
 
-This makes the strategy library easier to navigate while still allowing detailed inspection.
+The current seed command contains seven categories:
 
+1. trend-following;
+2. mean-reversion;
+3. momentum / oscillators;
+4. factor models;
+5. portfolio optimisation;
+6. derivatives pricing;
+7. simulation / Monte Carlo.
 
----
-
-# 13. Backtesting
-
-Backtesting is used to examine how a strategy would have behaved on historical data.
-
-The project treats backtesting as a simulation rather than a prediction.
-
-The implementation can account for realistic assumptions including:
-
-- transaction costs;
-- slippage;
-- execution timing;
-- market-session constraints;
-- overnight price gaps;
-- position sizing;
-- historical data limitations.
-
-Backtest results are stored and can be compared with later robustness analysis.
-
+The library is a research catalogue. A model can exist as metadata without being numerically executable in the current application.
 
 ---
 
-# 14. Overfitting and Robustness
+## 11. Custom Strategy Creation
 
-A major issue with historical trading research is overfitting.
-
-A strategy may perform strongly during one specific historical period but fail when evaluated elsewhere.
-
-MarketPulse therefore supports testing across different windows or periods.
-
-Conceptually:
+Custom strategy creation is intentionally integrated into the main Strategies page.
 
 ```text
-Strategy
+/strategy/
     ↓
-Historical Window A
-Historical Window B
-Historical Window C
+My Strategies
     ↓
-Compare Performance
+Create First Strategy / New Strategy
     ↓
-Stability / Overfitting Indicators
+StrategyCreateForm
+    ↓
+POST action=create_strategy
+    ↓
+Validation
+    ↓
+Strategy + StrategyRule records
+    ↓
+Redirect to /strategy/#myStrategiesSection
 ```
 
-The purpose is to help the user ask:
-
-> Is this strategy's performance reasonably stable, or does it depend too heavily on one specific historical sample?
-
+This avoids duplicate creation pages and keeps the workflow in one place.
 
 ---
 
-# 15. Risk Management Framework
+## 12. Historical Backtesting
 
-The Risk module begins with the amount a user is willing to lose rather than with the amount they want to buy.
+Backtesting is a simulation over stored historical data.
 
-The core calculation follows:
+```text
+Saved Strategy
+    ↓
+BacktestForm
+    ↓
+run_backtest()
+    ↓
+Backtest
+    ↓
+BacktestTrade records
+    ↓
+Results page
+```
+
+The code contains assumptions relating to risk and execution settings such as commission, slippage, position sizing and trading-rule parameters.
+
+Backtesting should be treated as historical simulation, not prediction.
+
+---
+
+## 13. Risk Management
+
+The basic risk framework starts with a loss budget.
 
 ```text
 Trading Capital × Risk Percentage
@@ -784,310 +566,161 @@ Then:
 Risk per Unit
 ```
 
-Finally:
+Then:
 
 ```text
-Maximum Planned Loss
-        ÷
-Risk per Unit
+Maximum Planned Loss ÷ Risk per Unit
         ↓
 Risk-Constrained Position Size
 ```
 
-Available capital can also limit the final position size.
-
-This provides a structured way to demonstrate risk-aware position sizing.
-
+The calculator tests in the project validate position sizing and stop-loss arithmetic with several example values.
 
 ---
 
-# 16. Historical Risk Metrics
+## 14. Stress Testing and Robustness
 
-Stored historical market data can also provide additional risk context.
+MarketPulse contains internal analytical functions for:
 
-MarketPulse can derive measures such as:
-
-- Average True Range;
-- annualised volatility;
-- historical maximum drawdown;
-- recent high;
-- recent low;
-- latest stored close.
-
-These metrics give context to the user's hypothetical trade assumptions.
-
-
----
-
-# 17. Stress Testing
-
-A historical backtest only describes behaviour under historical conditions.
-
-Risk can also be examined using hypothetical severe scenarios.
-
-MarketPulse supports stress-testing concepts such as:
-
-- market crashes;
+- crash scenarios;
 - volatility spikes;
-- liquidity problems;
-- regime changes.
+- liquidity crises;
+- regime changes;
+- overfitting / robustness checks.
 
-The aim is educational:
+These remain backend analytical capabilities rather than mandatory visible panels in the current Strategies page.
 
-```text
-Current Risk Plan
-        ↓
-Severe Hypothetical Scenario
-        ↓
-Recalculate / Estimate Exposure
-        ↓
-Review Potential Consequences
-```
-
-Stress testing does not predict that such an event will occur.
-
+**Audit status:** Risk stress-test routes are active, but their expected templates are missing from the supplied ZIP. Those pages should be treated as incomplete until the templates are restored or the routes are redesigned.
 
 ---
 
-# 18. Database Architecture
+## 15. Community and Messaging
 
-The production database is PostgreSQL.
-
-MarketPulse uses a `DATABASE_URL` environment variable so the same Django application can connect to different environments.
-
-
-## Production
+The community application adds social functionality to the financial-research project.
 
 ```text
-Django
+Authenticated User
     ↓
-DATABASE_URL
+Community Feed
     ↓
-Neon PostgreSQL
+Posts
+
+Authenticated User
+    ↓
+Inbox
+    ↓
+Conversation
+    ↓
+Private Messages
 ```
 
-
-## Local Development
-
-For easier classroom demonstrations, SQLite can be used when `DATABASE_URL` is blank.
-
-```text
-DATABASE_URL supplied
-        ↓
-PostgreSQL
-
-DATABASE_URL blank
-        ↓
-SQLite
-```
-
-The SQLite database is therefore a local-development fallback.
-
-The intended production architecture remains PostgreSQL / Neon.
-
+Conversation lookups enforce participant membership so users cannot simply change a URL ID to view another user's private thread.
 
 ---
 
-# 19. Authentication
+## 16. Authentication and Email
 
-MarketPulse includes a complete Django authentication workflow.
+MarketPulse uses Django authentication with a custom user model:
 
-Implemented account features include:
+```python
+AUTH_USER_MODEL = "accounts.User"
+```
+
+Implemented account architecture includes:
 
 - registration;
 - login;
 - logout;
-- profile editing;
-- password reset;
-- password change.
+- profiles;
+- password-reset token flow;
+- password-change routes.
 
-Protected application pages use Django authentication controls such as:
+Email is configured through **Django Anymail with Brevo** when `BREVO_API_KEY` is present. Without a Brevo key, the project falls back to Django's console email backend for local development.
 
-```python
-@login_required
+Relevant settings include:
+
+```env
+BREVO_API_KEY=
+DEFAULT_FROM_EMAIL=
 ```
 
-This prevents unauthenticated users from accessing protected application functionality.
-
+No real credentials should be committed to source control.
 
 ---
 
-# 20. Password Reset and Email
+## 17. REST API
 
-Password-reset functionality uses Django's authentication framework together with an external email service.
-
-The general flow is:
+The current API prefix is:
 
 ```text
-User requests password reset
-        ↓
-Django generates secure reset token
-        ↓
-Email service
-        ↓
-User receives reset link
-        ↓
-Django validates token
-        ↓
-User creates new password
+/api/
 ```
 
-Email credentials and service configuration are stored in environment variables rather than hard-coded in the source code.
+Important routes include:
 
+```text
+/api/health/
+/api/dashboard/market-overview/
+/api/market/latest/
+/api/risk/position-size/
+/api/matlab/risk/
+/api/alpaca/assets/search/
+/api/alpaca/assets/<symbol>/
+/api/alpaca/stocks/<symbol>/snapshot/
+/api/alpaca/stocks/<symbol>/history/
+/api/strategies/
+/api/backtests/
+```
+
+Permissions are deliberately mixed according to endpoint purpose. Some utility endpoints are public while Dashboard/Alpaca/user-owned resource endpoints require authentication. Strategy and Backtest ViewSets are restricted to authenticated users and scoped to the current user.
 
 ---
 
-# 21. Front-End Architecture
+## 18. React / Vite Client
 
-The main Django interface uses:
+`frontend/` is a separate React client demonstrating that the Django API can be consumed independently from Django templates.
 
-- Bootstrap 5;
-- Django templates;
-- JavaScript;
-- shared MarketPulse CSS.
+The current React components include:
 
-The shared structure is:
+- `Status` → `/api/health/`;
+- `Market` → `/api/market/latest/` and Chart.js;
+- `Risk` → `/api/risk/position-size/`.
 
-```text
-Bootstrap 5
-    ↓
-templates/base.html
-    ↓
-static/css/styles.css
-    ↓
-Shared MarketPulse Theme
-    ↓
-Home
-Dashboard
-Data
-Strategies
-Risk
-Accounts
+The API base is configurable with:
+
+```env
+VITE_API_BASE=
 ```
 
-Bootstrap is responsible for most layout and responsive behaviour.
+and otherwise defaults locally to:
 
-Custom CSS is used mainly for:
-
-- MarketPulse colours;
-- application-specific workspaces;
-- specialist financial components;
-- charts and visual refinements.
-
+```text
+http://127.0.0.1:8000/api
+```
 
 ---
 
-# 22. Responsive Design
+## 19. MATLAB Integration
 
-MarketPulse is designed to work across different screen sizes.
-
-The application uses Bootstrap breakpoints and responsive grids.
-
-A typical layout changes from:
-
-```text
-Large Desktop
--------------------------------
-Main Workspace | Side Panel
-```
-
-to:
-
-```text
-Tablet
--------------------------------
-Main Workspace
-Side Panel
-```
-
-and then:
-
-```text
-Phone
--------------------------------
-Single-column content
-```
-
-Tables that cannot reasonably fit on small screens use horizontal scrolling inside their own container rather than forcing the entire page wider.
-
-
----
-
-# 23. React / Vite Frontend
-
-The project also contains a separate React/Vite frontend.
-
-This demonstrates that MarketPulse's REST API can be consumed independently from Django templates.
-
-The architecture is:
-
-```text
-React
-    ↓
-HTTP / JSON
-    ↓
-Django REST Framework
-    ↓
-Django Application
-    ↓
-Database / Services
-```
-
-The Django application remains the main backend.
-
-
----
-
-# 24. Django REST Framework
-
-Django REST Framework exposes selected MarketPulse data and functionality as JSON.
-
-This allows different clients to communicate with the same backend.
-
-For example:
-
-```text
-Django Template + JavaScript
-            ↓
-        REST API
-            ↑
-React Frontend
-```
-
-This separation makes the backend reusable.
-
-
----
-
-# 25. MATLAB Integration
-
-MarketPulse also contains an optional MATLAB analytical layer.
-
-MATLAB is not responsible for running the website.
-
-Django remains the main application framework.
-
-The integration works as:
+MATLAB is optional.
 
 ```text
 Django
     ↓
 core/matlab_bridge.py
     ↓
-JSON input
-    ↓
-MATLAB
+JSON-compatible payload
     ↓
 matlab/marketpulse_bridge.m
     ↓
-Specialist MATLAB Function
+MATLAB function
     ↓
-JSON output
+Result
     ↓
 Django
 ```
 
-The MATLAB dispatcher currently supports analytical operations such as:
+The dispatcher supports analytical operation families including:
 
 ```text
 risk
@@ -1095,900 +728,460 @@ analysis
 regime
 ```
 
-The `matlab/README.md` file contains the detailed MATLAB integration documentation.
+Configuration:
 
-
-## Why MATLAB Is Optional
-
-The core Django application should still operate when MATLAB is unavailable.
-
-Therefore:
-
-```text
-MATLAB_ENABLED=True
-        ↓
-MATLAB integration available
-
+```env
 MATLAB_ENABLED=False
-        ↓
-Django continues without MATLAB
+MATLAB_COMMAND=matlab
 ```
 
-This keeps the architecture modular and avoids tightly coupling the website to MATLAB.
-
+The core Django application is designed to continue operating when MATLAB is disabled.
 
 ---
 
-# 26. Background Tasks
+## 20. Celery and Redis
 
-MarketPulse includes optional Celery and Redis support for work that may be better performed outside the normal request/response cycle.
+Celery is optional and controlled by project configuration.
 
-Conceptually:
+```env
+USE_CELERY=False
+CELERY_BROKER_URL=redis://localhost:6379/0
+```
+
+The project contains background-task code, including scheduled strategy monitoring. A separate Celery worker is only needed when Celery-backed execution is enabled.
+
+---
+
+## 21. Database Architecture
+
+### Production
 
 ```text
-Django Request
+Django
     ↓
-Create Background Task
+DATABASE_URL
     ↓
-Celery
-    ↓
-Redis
-    ↓
-Worker
-    ↓
-Process Task
+PostgreSQL / Neon
 ```
 
-The integration remains optional so that the core application can still run without a Celery worker during normal local development.
+### Local fallback
 
+When `DATABASE_URL` is empty:
+
+```text
+Django
+    ↓
+SQLite
+    ↓
+db.sqlite3 generated locally
+```
+
+The audited distribution intentionally does **not** include a local `db.sqlite3` file. Local databases can contain account/session/development records and should be regenerated with migrations and seed commands.
 
 ---
 
-# 27. Security Design
+## 22. Security Design
 
-Several security principles are applied throughout the application.
+Current security-related design includes:
 
+- secrets read from environment variables;
+- server-side Alpaca credentials;
+- Django CSRF protection for forms;
+- Django authentication for protected views;
+- user ownership filters on user-specific resources;
+- secure session/CSRF cookies when `DEBUG=False`;
+- `X_FRAME_OPTIONS = "DENY"`;
+- content-type sniffing protection;
+- password validators;
+- production `ALLOWED_HOSTS` configuration;
+- controlled CORS origins for the React client.
 
-## Environment Variables
-
-Sensitive information is not intended to be committed to GitHub.
-
-Examples include:
+Sensitive values should include at least:
 
 ```text
 SECRET_KEY
 DATABASE_URL
-ALPACA_API_KEY
-ALPACA_SECRET_KEY
-EMAIL credentials
+ALPACA_API_KEY_ID
+ALPACA_API_SECRET_KEY
+BREVO_API_KEY
 ```
-
-These values belong in environment variables.
-
-
-## API Credentials
-
-External market-data credentials remain on the server.
-
-The browser communicates with Django, and Django communicates with the external provider.
-
-
-## CSRF Protection
-
-Django forms use:
-
-```django
-{% csrf_token %}
-```
-
-to protect POST requests.
-
-
-## Authentication
-
-Protected areas require authenticated users.
-
 
 ---
 
-# 28. Deployment Architecture
+## 23. Responsive Design
 
-MarketPulse is designed for deployment on Render.
+The Django interface uses Bootstrap responsive utilities plus custom CSS. Multi-column workspaces progressively collapse for smaller screens, and wide tables should scroll within their own container instead of forcing page-level horizontal overflow.
 
-The production flow is approximately:
+Responsive behaviour should be included in manual testing because visual layout cannot be completely verified by backend unit tests.
+
+---
+
+## 24. Deployment
+
+The active Render Blueprint uses Render's **native Python runtime**, not Docker:
 
 ```text
-GitHub
+render.yaml
     ↓
-Render
+./build.sh
     ↓
-build.sh
-    ↓
-Install Python dependencies
+pip install -r requirements.txt
     ↓
 collectstatic
     ↓
-Database migrations
+migrate
     ↓
-Gunicorn
-    ↓
-Django Application
+gunicorn marketpulse.wsgi:application
 ```
 
-WhiteNoise is used to serve collected static files.
+`Dockerfile` and `Procfile` are retained as valid alternative deployment artefacts, but they are redundant when the application is deployed strictly through the current `render.yaml` native-Python Blueprint.
 
+### Render Variables
 
-## Production Database
+The Blueprint directly declares/configures:
 
 ```text
-Render
-    ↓
+PYTHON_VERSION
+DEBUG
+SECRET_KEY
 DATABASE_URL
-    ↓
-Neon PostgreSQL
+ALLOWED_HOSTS
 ```
 
+Application integrations also require environment variables to be added in Render when used, for example:
+
+```text
+ALPACA_API_KEY_ID
+ALPACA_API_SECRET_KEY
+BREVO_API_KEY
+DEFAULT_FROM_EMAIL
+CORS_ALLOWED_ORIGINS
+MATLAB_ENABLED
+MATLAB_COMMAND
+USE_CELERY
+CELERY_BROKER_URL
+```
 
 ---
 
-# 29. Static Files
+## 25. Local Setup
 
-Source static files live in:
-
-```text
-static/
-```
-
-During deployment Django collects them into:
-
-```text
-staticfiles/
-```
-
-The generated `staticfiles/` directory is not the source of the styles.
-
-Changes should therefore be made in files such as:
-
-```text
-static/css/styles.css
-static/js/app.js
-```
-
-and then processed through Django's static-file system.
-
-
----
-
-# 30. Development Journey
-
-MarketPulse evolved considerably during development.
-
-The project did not begin with every integration and workflow already defined.
-
-The development process involved progressively connecting separate parts of the application.
-
-
-## Initial Application Structure
-
-The first stage established:
-
-- Django project configuration;
-- user accounts;
-- database models;
-- page routing;
-- templates;
-- basic financial workflows.
-
-
-## Database Development
-
-The project then moved towards PostgreSQL / Neon for persistent production data while retaining SQLite as a convenient local-development fallback.
-
-
-## Market Data Integration
-
-A major development milestone was connecting MarketPulse to external financial-market information.
-
-The current architecture uses Alpaca market data through Django services and API endpoints.
-
-This allowed market information to become reusable across:
-
-```text
-Dashboard
-Data
-Risk
-```
-
-rather than creating unrelated market-data implementations in each page.
-
-
-## Strategy Research
-
-The strategy section developed into a model-research and backtesting workspace.
-
-The challenge was not only performing calculations but presenting complex information without overwhelming the user.
-
-This led to the use of progressive disclosure:
-
-```text
-Category
-    ↓
-Summary
-    ↓
-Details
-    ↓
-Testing
-```
-
-
-## Risk Integration
-
-The Risk section was developed to connect market information with risk-controlled trade assumptions.
-
-Instead of simply displaying a calculator, the interface was organised into a user workflow:
-
-```text
-Choose Market
-    ↓
-Set Risk Budget
-    ↓
-Define Trade
-    ↓
-Review Plan
-    ↓
-Stress Test
-```
-
-
-## Authentication and Password Reset
-
-Authentication functionality was another important development area.
-
-Registration, login, profile management and password reset required coordination between Django's authentication system, forms, routes, templates and email configuration.
-
-
-## User Interface Consistency
-
-As different sections developed independently, they initially had different visual styles and responsive behaviour.
-
-The interface was later standardised around:
-
-```text
-Bootstrap 5
-    ↓
-base.html
-    ↓
-Shared MarketPulse Theme
-```
-
-The Data, Strategies, Risk, Dashboard, Home and Account sections now share the same overall dark application identity.
-
-
-## Responsive Design
-
-The larger research workspaces initially used desktop-oriented layouts.
-
-These were progressively refactored to use:
-
-- Bootstrap responsive columns;
-- flexible grids;
-- mobile breakpoints;
-- shrinkable grid items;
-- responsive tables;
-- single-column phone layouts.
-
-This allows the same application to operate on both large monitors and mobile devices.
-
-
----
-
-# 31. Key Development Challenges
-
-The project involved several challenges that helped shape the final architecture.
-
-
-## Challenge: Connecting Multiple Technologies
-
-MarketPulse combines Django, PostgreSQL, JavaScript, Bootstrap, external APIs, React and optional MATLAB processing.
-
-The solution was to keep each technology responsible for a specific layer rather than mixing responsibilities.
-
-
-## Challenge: External Market Data
-
-External financial data should not expose private credentials in frontend JavaScript.
-
-The solution was:
-
-```text
-Browser
-    ↓
-Django API
-    ↓
-Server-side Alpaca Service
-    ↓
-Alpaca
-```
-
-rather than:
-
-```text
-Browser
-    ↓
-Private Alpaca credentials
-```
-
-which would be insecure.
-
-
-## Challenge: Reusing Historical Data
-
-Different sections need access to the same market history.
-
-The solution was to store data centrally using Django models and PostgreSQL so that Data, Strategies and Risk can operate on the same historical information.
-
-
-## Challenge: Keeping Analytical Logic Separate
-
-Market calculations can become difficult to maintain when placed directly inside templates or views.
-
-The project therefore separates responsibilities between:
-
-```text
-Views
-Models
-Forms
-Services
-Analysis Tools
-Templates
-JavaScript
-```
-
-so individual parts can be maintained independently.
-
-
-## Challenge: Responsive Financial Workspaces
-
-Financial interfaces often contain large grids, tables and statistics that look good on a large desktop but can overflow smaller screens.
-
-The solution was to combine Bootstrap responsiveness with carefully controlled custom layouts.
-
-Large multi-column components progressively collapse to fewer columns and eventually one column on phones.
-
-
-## Challenge: Optional External Components
-
-MATLAB, Celery and Redis may not be installed in every development or deployment environment.
-
-These components were designed as optional integrations so they do not prevent the main Django application from operating.
-
-
----
-
-# 32. Current Implemented Features
-
-MarketPulse currently includes:
-
-- user registration;
-- login and logout;
-- editable user profile;
-- password reset and password change;
-- PostgreSQL / Neon database support;
-- SQLite local-development fallback;
-- Alpaca market-data integration;
-- live asset search;
-- current market snapshots;
-- stored historical OHLCV data;
-- market-condition analysis;
-- bull / bear / sideways regime analysis;
-- strategy and model library;
-- custom strategy creation;
-- historical strategy backtesting;
-- transaction-cost and execution assumptions;
-- risk-controlled position sizing;
-- stop-loss calculations;
-- risk / reward calculations;
-- volatility-related risk context;
-- robustness testing;
-- overfitting analysis;
-- stress-testing workflows;
-- Django REST Framework APIs;
-- responsive Bootstrap interface;
-- separate React / Vite frontend;
-- optional Celery / Redis support;
-- optional MATLAB analytical bridge;
-- Render deployment configuration;
-- Gunicorn production server;
-- WhiteNoise static-file handling.
-
-
----
-
-# 33. Local Setup on macOS
-
-Create and activate a virtual environment:
+### Create a virtual environment
 
 ```bash
 python3.13 -m venv .venv
 source .venv/bin/activate
 ```
 
-Upgrade pip:
+### Install dependencies
 
 ```bash
 python -m pip install --upgrade pip
-```
-
-Install dependencies:
-
-```bash
 python -m pip install -r requirements.txt
 ```
 
-Create the local environment file:
+### Create `.env`
 
-```bash
-cp .env.example .env
-```
+Create a local `.env` file. Do not commit it.
 
-Do not commit real secrets to GitHub.
-
-
----
-
-# 34. Environment Configuration
-
-Typical environment variables include:
+Minimal development example:
 
 ```env
-SECRET_KEY=your-secret-key
+SECRET_KEY=replace-with-local-development-key
 DEBUG=True
-
 DATABASE_URL=
 
-ALPACA_API_KEY=
-ALPACA_SECRET_KEY=
+ALPACA_API_KEY_ID=
+ALPACA_API_SECRET_KEY=
+
+BREVO_API_KEY=
+DEFAULT_FROM_EMAIL=
 
 MATLAB_ENABLED=False
-MATLAB_COMMAND=matlab
+USE_CELERY=False
 ```
 
-Additional email, Render, Redis or deployment variables may also be required depending on which optional services are enabled.
-
-
----
-
-# 35. Local Database Fallback
-
-For convenient classroom testing, MarketPulse can use SQLite when `DATABASE_URL` is blank.
-
-```text
-DATABASE_URL blank
-        ↓
-SQLite
-```
-
-When a PostgreSQL connection is supplied:
-
-```text
-DATABASE_URL supplied
-        ↓
-PostgreSQL / Neon
-```
-
-This means the production architecture remains PostgreSQL while local demonstrations can run without requiring an external database connection.
-
-
----
-
-# 36. Django Setup
-
-Run Django's system check:
+### Database setup
 
 ```bash
-python manage.py check
-```
-
-Apply migrations:
-
-```bash
-python manage.py makemigrations
 python manage.py migrate
 ```
 
-Seed development data where required:
+Seed MarketPulse support data:
 
 ```bash
 python manage.py seed_marketpulse
 ```
 
-Create an administrator:
+Seed the strategy/model catalogue:
+
+```bash
+python manage.py seed_strategy_library
+```
+
+Create an administrator if required:
 
 ```bash
 python manage.py createsuperuser
 ```
 
-Start the development server:
+### Start Django
 
 ```bash
 python manage.py runserver
 ```
 
-Then open:
+or, if port 8000 is already occupied:
 
-```text
-http://127.0.0.1:8000/
+```bash
+python manage.py runserver 8001
 ```
-
 
 ---
 
-# 37. React Frontend
-
-The React / Vite frontend is located in:
-
-```text
-frontend/
-```
-
-Install dependencies:
+## 26. React Development
 
 ```bash
 cd frontend
 npm install
-```
-
-Start Vite:
-
-```bash
 npm run dev
 ```
 
-The development frontend is normally available at:
+Default Vite development URL:
 
 ```text
 http://localhost:5173/
 ```
 
-
 ---
 
-# 38. MATLAB
+## 27. Static Files
 
-MATLAB integration is optional.
-
-To enable it locally:
-
-```env
-MATLAB_ENABLED=True
-MATLAB_COMMAND=matlab
-```
-
-The MATLAB executable must be available to the environment running Django.
-
-The communication path is:
-
-```text
-Django
-    ↓
-core/matlab_bridge.py
-    ↓
-matlab/marketpulse_bridge.m
-    ↓
-MATLAB analytical function
-```
-
-For detailed MATLAB documentation, see:
-
-```text
-matlab/README.md
-```
-
-
----
-
-# 39. Tests
-
-Run the Django test suite with:
-
-```bash
-python manage.py test
-```
-
-Before deployment, the project should also pass:
-
-```bash
-python manage.py check
-```
-
-
----
-
-# 40. Production Static Files
-
-To test static-file collection locally:
-
-```bash
-python manage.py collectstatic --noinput
-```
-
-The generated files are placed in:
-
-```text
-staticfiles/
-```
-
-Source files should continue to be edited under:
+Source files live under:
 
 ```text
 static/
 ```
 
+Production collection:
 
----
-
-# 41. Overall Framework Interaction
-
-The complete project can be summarised as:
-
-```text
-                         USER
-                           │
-                           ▼
-                    Web Browser
-                           │
-             ┌─────────────┴─────────────┐
-             │                           │
-             ▼                           ▼
-     Django Templates               React / Vite
-     Bootstrap + JS                     │
-             │                           │
-             └─────────────┬─────────────┘
-                           ▼
-                 Django URL Routing
-                           │
-                           ▼
-                     Django Views
-                           │
-          ┌────────────────┼────────────────┐
-          │                │                │
-          ▼                ▼                ▼
-       Forms            Services       REST API
-          │                │                │
-          │                ▼                │
-          │          Alpaca Market Data     │
-          │                                 │
-          └──────────────┬──────────────────┘
-                         ▼
-                    Django Models
-                         │
-                         ▼
-                  PostgreSQL / Neon
-                         │
-              ┌──────────┴───────────┐
-              │                      │
-              ▼                      ▼
-        Analysis Tools        MATLAB Bridge
-                                     │
-                                     ▼
-                                   JSON
-                                     │
-                                     ▼
-                                   MATLAB
-                                     │
-                                     ▼
-                                   Result
-                                     │
-                                     ▼
-                                   Django
-                                     │
-                                     ▼
-                                    User
+```bash
+python manage.py collectstatic --noinput
 ```
 
-This architecture allows each technology to have a clearly defined responsibility.
-
+Generated `staticfiles/` content should not be edited or committed as application source.
 
 ---
 
-# 42. Separation of Concerns
+## 28. Testing
 
-A major design principle in MarketPulse is separation of concerns.
+Testing is an explicit course requirement. The supplied assignment requires automated testing using Python `unittest`; Django's `TestCase` and `SimpleTestCase` build on Python's unittest framework.
 
-```text
-Templates
-    → presentation
+The supplied ZIP currently contains **13 automated test methods** across:
 
-Bootstrap / CSS
-    → layout and visual design
+- accounts;
+- core;
+- data management;
+- strategy builder;
+- risk management;
+- analysis tools;
+- API health.
 
-JavaScript
-    → browser interaction
+Run all Django tests with:
 
-Views
-    → request handling and workflow control
-
-Forms
-    → validation and user input
-
-Models
-    → persisted application data
-
-Services
-    → external systems such as Alpaca
-
-Analysis Tools
-    → reusable analytical logic
-
-REST API
-    → JSON communication
-
-PostgreSQL
-    → persistent storage
-
-MATLAB
-    → optional numerical analysis
+```bash
+python manage.py test --verbosity=2
 ```
 
-This structure reduces duplication and makes the project easier to understand, test and maintain.
+Run Django's system check with:
 
+```bash
+python manage.py check
+```
+
+### Important audit note
+
+During this ZIP inspection, every Python source file successfully compiled with Python's `compileall`. The complete Django test suite and `manage.py check` could **not** be executed in the inspection environment because Django was not installed there and external package installation was unavailable. Therefore this README does **not** claim that the current suite passes.
+
+Testing should be documented using both:
+
+1. **automated tests** for repeatable logic, form validation, models, routes, permissions and APIs;
+2. **manual feature testing** for browser workflows, JavaScript behaviour, responsive design, external-service behaviour and production deployment.
+
+The complete test inventory, manual test matrix, result-recording format and recommended additional automated tests are documented in:
+
+```text
+TESTING.md
+```
+
+Do not mark a test as PASS until it has actually been run and observed.
 
 ---
 
-# 43. Educational Purpose
+## 29. Current Automated Test Inventory
 
-MarketPulse is an educational project.
+| App | Current automated coverage |
+|---|---|
+| `accounts` | custom user registration |
+| `core` | Strategy `rule_config` persistence |
+| `data_management` | invalid date range, valid date range, lowercase ticker input |
+| `strategy_builder` | invalid fast/slow period validation |
+| `risk_management` | two position-size examples and three stop-loss examples |
+| `analysis_tools` | market-regime analysis test |
+| `api` | health endpoint |
 
-Its purpose is to demonstrate:
+This is a useful base, but it is not complete end-to-end coverage. The highest-priority additions are authentication/authorization, inline strategy creation, user ownership, backtest views, API permissions and mocked external-service behaviour.
 
-- full-stack software-development principles;
-- Django framework architecture;
-- relational database integration;
-- frontend and backend communication;
-- external API integration;
-- financial-data processing;
+---
+
+## 30. Known Issues Found by the ZIP Audit
+
+The detailed audit is in `PROJECT_AUDIT.md`. The most important current blockers are:
+
+- `accounts/password_change.html` is referenced by an active route but missing;
+- `accounts/password_change_done.html` is referenced by an active route but missing;
+- `risk_management/stress_test.html` is referenced by an active route but missing;
+- `risk_management/stress_test_results.html` is referenced by an active route but missing.
+
+These should be fixed before the project is described as fully functional in production.
+
+The audit also identified obsolete/generated files and removed them from the cleaned copy, including bytecode caches, local SQLite databases, an obvious backup view file, a timestamped backup-template directory and several templates no longer rendered by active routes.
+
+---
+
+## 31. Repository Cleanup
+
+The cleaned project copy removes generated or clearly obsolete artefacts while preserving migrations, tests, active templates, deployment configuration and optional integrations.
+
+High-confidence removed items include:
+
+```text
+__pycache__/
+*.pyc
+local db.sqlite3 files
+risk_management/views_WRONG_BACKUP.py
+analysis_tools/templates 19-32-13-515/
+strategy_builder/templates/strategy_builder/create.html
+strategy_builder/templates/strategy_builder/robustness.html
+data_management/templates/data_management/market_condition.html
+risk_management/templates/risk_management/dashboard.html
+community/templates/community/message_detail.html
+```
+
+`db.sqlite3` and `db.sqlite3.*` are now included in `.gitignore` for the audited copy.
+
+Files such as `analysis_tools/views.py`, `analysis_tools/urls.py`, the project-level `templates/analysis_tools/`, `Dockerfile` and `Procfile` were **not** automatically deleted because they can still serve intentional legacy/optional workflows. Their status is explained in the audit.
+
+---
+
+## 32. Development Challenges and Learning
+
+Important development challenges included:
+
+### External API security
+
+The solution was to proxy external market-data requests through Django instead of embedding provider credentials in browser code.
+
+### Reusing historical data
+
+The solution was central storage through shared Django models rather than separate datasets for every application area.
+
+### Managing complex research workflows
+
+The Strategies workspace was simplified using progressive disclosure and same-page custom strategy creation.
+
+### Authentication and email
+
+Password-reset behaviour required Django token views, templates, email configuration and provider credentials to work together correctly.
+
+### Responsive financial interfaces
+
+Large charts, tables and model libraries required responsive layout rules beyond a desktop-only design.
+
+### Optional integrations
+
+MATLAB and Celery/Redis were kept optional so the core Django application can still run without them.
+
+### Testing and verification
+
+The project now separates automated tests from manual browser/deployment testing and documents both instead of treating a single `python manage.py test` command as proof that every UI feature works.
+
+---
+
+## 33. Educational Purpose
+
+MarketPulse demonstrates:
+
+- front-end development;
+- backend development;
+- Django Model-View-Template architecture;
+- relational database design;
+- form validation;
+- authentication and authorization;
+- API integration;
 - REST API design;
-- responsive interface design;
-- modular analytical services;
-- deployment configuration.
+- browser JavaScript;
+- React API consumption;
+- external service isolation;
+- automated testing;
+- manual functional testing;
+- responsive design;
+- production deployment;
+- separation of concerns.
 
-The financial functionality provides a realistic domain through which these software-development concepts can be demonstrated.
-
-
----
-
-# 44. Disclaimer
-
-MarketPulse is intended for educational and research purposes only.
-
-Market data can be delayed, incomplete or unavailable.
-
-Historical performance does not guarantee future performance.
-
-Backtesting, regime classification, position sizing, risk calculations and stress testing are simplified analytical simulations.
-
-Nothing in MarketPulse should be interpreted as financial, trading or investment advice.
-
+The financial domain provides a realistic context for applying these full-stack concepts.
 
 ---
 
-# 45. Additional Documentation
-
-For a more detailed map of file interactions, see:
-
-```text
-FRAMEWORK_MAP.md
-```
-
-For MATLAB-specific documentation, see:
-
-```text
-matlab/README.md
-```
-
-These documents complement this main README:
+## 34. Documentation
 
 ```text
 README.md
-    → overall project, purpose, architecture and setup
+    → project overview, architecture, setup and current status
 
-FRAMEWORK_MAP.md
-    → detailed application file interaction map
+TESTING.md
+    → automated tests, manual test matrix and test evidence plan
 
-matlab/README.md
-    → MATLAB-specific architecture and integration
+PROJECT_AUDIT.md
+    → detailed ZIP inspection, cleanup decisions and known issues
 ```
-
 
 ---
 
-# 46. Project Summary
+## 35. Project Summary
 
-MarketPulse began as an idea to create a clearer way of connecting market information, strategy research and risk analysis.
-
-It evolved into a modular full-stack application where:
+MarketPulse demonstrates how a full-stack application can coordinate several responsibilities while keeping them separated internally:
 
 ```text
-Data
-    informs
-Strategy Research
-
-Strategy Research
-    informs
-Historical Testing
-
-Historical Testing
-    informs
-Robustness Analysis
-
 Market Data
     informs
+Market Condition
+
+Market Data
+    supports
+Strategy Research
+
+Strategy Research
+    creates
+Saved Strategies
+
+Saved Strategies
+    support
+Historical Backtesting
+
+Market Data
+    supports
 Risk Planning
 
-Risk Planning
-    informs
-Stress Testing
+Django APIs
+    support
+Django JavaScript + React
+
+Shared Models / Services / Analysis
+    support
+multiple user workflows
 ```
 
-The project demonstrates how different software technologies can work together while maintaining clear responsibilities.
+Django coordinates the main application. PostgreSQL / Neon provides persistent production storage. Alpaca supplies external market information through a server-side service layer. Bootstrap and JavaScript provide the main web interface. Django REST Framework provides reusable APIs. React demonstrates a separate API consumer. Brevo supports email when configured. MATLAB and Celery/Redis remain optional analytical/background-processing extensions. Render supplies the production hosting configuration.
 
-At its centre, Django coordinates the application.
-
-PostgreSQL stores persistent data.
-
-Alpaca supplies external market information.
-
-Bootstrap and JavaScript provide the interactive user interface.
-
-Django REST Framework provides reusable APIs.
-
-React demonstrates an alternative API consumer.
-
-MATLAB provides an optional analytical engine.
-
-Render provides the production deployment environment.
-
-The result is a single educational platform designed to help a user move logically from **market information**, to **strategy investigation**, to **risk awareness**.
-```
-
-A few important improvements here compared with your original README:
-
-Your original said:
-
-```text
-Historical OHLCV import through yfinance.
-```
-
-I would **not keep that as the main current architecture statement** if your current application is now using Alpaca, because you have spent a substantial part of the project moving the live/current market-data flow to Alpaca. The README above therefore describes Alpaca as the current market-data integration.
-
-It also makes a very important architectural distinction for your lecturer:
-
-```text
-Browser
-→ Django
-→ Alpaca
-```
-
-rather than the browser contacting Alpaca directly. That demonstrates that you understand **why the service/API layer exists**, not just that you managed to make an API call.
-
-The same is true for MATLAB:
-
-```text
-Django
-→ Python bridge
-→ JSON
-→ MATLAB
-→ JSON
-→ Django
-```
-
-and for stored market data:
-
-```text
-Data Management
-→ core.MarketData
-→ PostgreSQL
-→ reused by Strategies and Risk
-```
-
-That is the kind of explanation that shows you understand the **framework as a connected system**, rather than seeing every Django app as an isolated folder.
+The project is therefore a practical demonstration of **full-stack architecture, integration, testing, security and deployment** in a financial-research context.
