@@ -1,1955 +1,717 @@
-<!doctype html>
+<!doctype html> {# I declare an HTML5 document. #}
+{% load django_bootstrap5 static %} {# I load Django's Bootstrap and static-file template tags. #}
+
+{% comment %}
+============================================================
+MARKETPULSE — SHARED BASE TEMPLATE
+============================================================
+Purpose:
+I define the shared layout used by child page templates.
+
+Framework interaction:
+Django routes a request to a view.
+The view renders a page template that extends base.html.
+The child fills title, content, extra_css and extra_js blocks.
+
+Bootstrap provides layout and reusable components.
+static/css/styles.css provides the shared project stylesheet.
+The inline CSS below adds theme and responsive overrides.
+Font Awesome provides icons.
+static/js/app.js supplies shared browser behaviour.
+
+Concepts:
+Template inheritance, blocks, variables, conditions, loops,
+Boolean operators, filters, named URLs and static-file lookup.
+HTML provides structure; CSS provides presentation.
+
+Home is always shown in navigation.
+Authenticated users also see Dashboard, Data and Strategies.
+Risk remains an internal app and shares Strategies highlighting.
+
+These responsive rules reduce overflow.
+They do not guarantee every child layout will fit perfectly.
+
+Django comments are removed during rendering.
+CSS comments explain stylesheet rules without executing.
+============================================================
+{% endcomment %}
+
+<html lang="en" data-bs-theme="dark"> {# I identify the language and select Bootstrap's dark theme. #}
 
 {# ======================================================== #}
-{# MARKETPULSE — SHARED BASE TEMPLATE                       #}
+{# 1. DOCUMENT HEAD — METADATA AND SHARED STYLES             #}
 {# ======================================================== #}
-{#                                                          #}
-{# SHARED FRONT-END ARCHITECTURE:                           #}
-{#                                                          #}
-{# Django URL                                               #}
-{#      ↓                                                   #}
-{# Django View                                              #}
-{#      ↓                                                   #}
-{# Page Template                                            #}
-{#      ↓                                                   #}
-{# base.html                                                #}
-{#      ↓                                                   #}
-{# Bootstrap 5 + static/css/styles.css                      #}
-{#                                                          #}
-{# Bootstrap provides:                                      #}
-{# - Responsive grid                                        #}
-{# - Navigation                                             #}
-{# - Cards                                                  #}
-{# - Buttons                                                #}
-{# - Forms                                                  #}
-{# - Tables                                                 #}
-{# - Alerts                                                 #}
-{# - Modals                                                 #}
-{# - Utility classes                                        #}
-{#                                                          #}
-{# styles.css provides:                                     #}
-{# - MarketPulse dark theme                                 #}
-{# - Shared colours                                         #}
-{# - Shared panel styling                                   #}
-{# - Shared navigation colours                              #}
-{# - Shared typography                                      #}
-{#                                                          #}
-{# USER-FACING APPLICATION SECTIONS:                        #}
-{#                                                          #}
-{# Home                                                     #}
-{# Dashboard                                                #}
-{# Data                                                     #}
-{# Strategies                                               #}
-{#                                                          #}
-{# Risk remains a separate Django application internally,   #}
-{# but is no longer shown as a separate main navigation     #}
-{# tab. Risk functionality belongs to the Strategies        #}
-{# research workflow from the user's perspective.           #}
-{#                                                          #}
-{# RESPONSIVE FOUNDATION:                                   #}
-{#                                                          #}
-{# base.html also provides a small responsive safety layer  #}
-{# so child templates cannot accidentally force the whole   #}
-{# application wider than the browser viewport.             #}
-{#                                                          #}
-{# Page-specific layouts such as Data, Strategies and Risk  #}
-{# still define their own component breakpoints.            #}
-{# ======================================================== #}
-
-
-{% load django_bootstrap5 static %}
-
-
-<html
-    lang="en"
-    data-bs-theme="dark"
->
-
-
-{# ======================================================== #}
-{# 1. DOCUMENT HEAD                                         #}
-{# ======================================================== #}
-
-<head>
-
-    <meta charset="utf-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1"
-    >
-
-    <meta
-        name="color-scheme"
-        content="dark"
-    >
-
-
-    {# ---------------------------------------------------- #}
-    {# PAGE TITLE                                           #}
-    {# ---------------------------------------------------- #}
-
-    <title>
-        {% block title %}
-            MarketPulse
-        {% endblock %}
-    </title>
-
-
-    {# ---------------------------------------------------- #}
-    {# BOOTSTRAP 5 CSS                                      #}
-    {# ---------------------------------------------------- #}
-
-    {% bootstrap_css %}
-
-
-    {# ---------------------------------------------------- #}
-    {# FONT AWESOME                                         #}
-    {# ---------------------------------------------------- #}
-
-    <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-    >
-
-
-    {# ---------------------------------------------------- #}
-    {# GLOBAL MARKETPULSE THEME                             #}
-    {# ---------------------------------------------------- #}
-
-    <link
-        rel="stylesheet"
-        href="{% static 'css/styles.css' %}"
-    >
-
-
-    {# ---------------------------------------------------- #}
-    {# OPTIONAL PAGE-SPECIFIC CSS                           #}
-    {# ---------------------------------------------------- #}
-    {#                                                      #}
-    {# Existing specialised pages can still provide their   #}
-    {# own component CSS here.                              #}
-
-    {% block extra_css %}
-    {% endblock %}
-
-
-    {# ---------------------------------------------------- #}
-    {# FINAL MARKETPULSE THEME + RESPONSIVE GUARD           #}
-    {# ---------------------------------------------------- #}
-    {#                                                      #}
-    {# IMPORTANT:                                           #}
-    {#                                                      #}
-    {# This small shared layer is intentionally placed      #}
-    {# AFTER page-specific CSS.                             #}
-    {#                                                      #}
-    {# It provides:                                         #}
-    {#                                                      #}
-    {# - final MarketPulse dark-theme protection            #}
-    {# - shared Bootstrap component colouring               #}
-    {# - readable Strategies typography                     #}
-    {# - responsive overflow protection                     #}
-    {# - safe table scrolling                               #}
-    {# - safe canvas/image sizing                           #}
-
-    <style>
-
-        /* ==================================================== */
-        /* MARKETPULSE SHARED COLOUR TOKENS                      */
-        /* ==================================================== */
-
-        :root,
-        [data-bs-theme="dark"] {
-
-            --mp-bg:
-                #0c1420;
-
-            --mp-nav:
-                #111c2b;
-
-            --mp-panel:
-                #152235;
-
-            --mp-panel-soft:
-                #18283a;
-
-            --mp-panel-dark:
-                #101a28;
-
-            --mp-border:
-                #314258;
-
-            --mp-border-soft:
-                #26374b;
-
-            --mp-text:
-                #f1f5f9;
-
-            --mp-muted:
-                #93a4b8;
-
-            --mp-primary:
-                #4f86b6;
-
-            --mp-primary-hover:
-                #6095c2;
-
-            --mp-success:
-                #32c98b;
-
-            --mp-warning:
-                #d3a854;
-
-            --mp-danger:
-                #dc6b75;
-
-
-            /* ----------------------------------------------- */
-            /* Bootstrap colour mapping                        */
-            /* ----------------------------------------------- */
-
-            --bs-body-bg:
-                var(--mp-bg);
-
-            --bs-body-color:
-                var(--mp-text);
-
-            --bs-emphasis-color:
-                var(--mp-text);
-
-            --bs-secondary-color:
-                var(--mp-muted);
-
-            --bs-tertiary-color:
-                var(--mp-muted);
-
-            --bs-border-color:
-                var(--mp-border);
-
-            --bs-border-color-translucent:
-                rgba(49, 66, 88, .65);
-
-            --bs-primary:
-                var(--mp-primary);
-
-            --bs-primary-rgb:
-                79, 134, 182;
-
-            --bs-success:
-                var(--mp-success);
-
-            --bs-warning:
-                var(--mp-warning);
-
-            --bs-danger:
-                var(--mp-danger);
-        }
-
-
-        /* ==================================================== */
-        /* APPLICATION PAGE CANVAS                              */
-        /* ==================================================== */
-
-        html {
-
-            min-height:
-                100%;
-
-            background-color:
-                var(--mp-bg)
-                !important;
-        }
-
-
-        body,
-        body.marketpulse-body {
-
-            min-height:
-                100vh;
-
-            margin:
-                0;
-
-            color:
-                var(--mp-text)
-                !important;
-
-            background:
-                var(--mp-bg)
-                !important;
-        }
-
-
-        /* ---------------------------------------------------- */
-        /* Main Django application area                         */
-        /* ---------------------------------------------------- */
-
-        #main-content,
-        .marketpulse-main {
-
-            color:
-                var(--mp-text)
-                !important;
-
-            background:
-                var(--mp-bg)
-                !important;
-        }
-
-
-        /* ---------------------------------------------------- */
-        /* Prevent Bootstrap containers from creating a light   */
-        /* page canvas.                                         */
-        /* ---------------------------------------------------- */
-
-        .marketpulse-main > .container,
-        .marketpulse-main > .container-fluid {
-
-            background-color:
-                transparent
-                !important;
-        }
-
-
-        /* ==================================================== */
-        /* NAVIGATION                                            */
-        /* ==================================================== */
-
-        .marketpulse-navbar,
-        .marketpulse-navbar.bg-primary {
-
-            background:
-                var(--mp-nav)
-                !important;
-
-            border-bottom:
-                1px solid
-                var(--mp-border-soft);
-        }
-
-
-        .marketpulse-navbar .navbar-brand {
-
-            color:
-                var(--mp-text)
-                !important;
-        }
-
-
-        .marketpulse-navbar .nav-link {
-
-            color:
-                var(--mp-muted)
-                !important;
-        }
-
-
-        .marketpulse-navbar .nav-link:hover,
-        .marketpulse-navbar .nav-link:focus {
-
-            color:
-                var(--mp-text)
-                !important;
-        }
-
-
-        .marketpulse-navbar .nav-link.active {
-
-            color:
-                #ffffff
-                !important;
-        }
-
-
-        /* ==================================================== */
-        /* BOOTSTRAP CARDS                                       */
-        /* ==================================================== */
-
-        .card {
-
-            color:
-                var(--mp-text);
-
-            background-color:
-                var(--mp-panel);
-
-            border-color:
-                var(--mp-border);
-        }
-
-
-        .card-header,
-        .card-footer {
-
-            color:
-                var(--mp-text);
-
-            background-color:
-                var(--mp-panel-soft);
-
-            border-color:
-                var(--mp-border);
-        }
-
-
-        /* ---------------------------------------------------- */
-        /* Remove old explicit light Bootstrap backgrounds      */
-        /* ---------------------------------------------------- */
-
-        .card-header.bg-white,
-        .card-footer.bg-white {
-
-            background-color:
-                var(--mp-panel-soft)
-                !important;
-        }
-
-
-        .bg-white {
-
-            background-color:
-                var(--mp-panel)
-                !important;
-        }
-
-
-        .bg-light {
-
-            color:
-                var(--mp-text)
-                !important;
-
-            background-color:
-                var(--mp-panel-soft)
-                !important;
-        }
-
-
-        /* ==================================================== */
-        /* TYPOGRAPHY                                            */
-        /* ==================================================== */
-
-        body,
-        h1,
-        h2,
-        h3,
-        h4,
-        h5,
-        h6,
-        label,
-        legend,
-        strong {
-
-            color:
-                var(--mp-text);
-        }
-
-
-        .text-muted,
-        .text-secondary {
-
-            color:
-                var(--mp-muted)
-                !important;
-        }
-
-
-        .text-dark {
-
-            color:
-                var(--mp-text)
-                !important;
-        }
-
-
-        /* ==================================================== */
-        /* STRATEGIES — DASHBOARD-SCALE TYPOGRAPHY              */
-        /* ==================================================== */
-        /*
-        The Strategy page originally contains many local font
-        declarations around .5rem to .7rem.
-
-        Because this block appears AFTER the page-specific CSS,
-        these rules normalise the visible Strategy workspace to
-        approximately the same readable scale as the Dashboard.
-
-        The layout and JavaScript selectors are not changed.
-        */
-
-        .strategy-workspace {
-
-            font-size:
-                .875rem;
-
-            line-height:
-                1.5;
-        }
-
-
-        /* ---------------------------------------------------- */
-        /* Strategy page heading                                */
-        /* ---------------------------------------------------- */
-
-        .strategy-workspace .strategy-page-title {
-
-            font-size:
-                1.5rem
-                !important;
-
-            line-height:
-                1.2;
-
-            font-weight:
-                700;
-        }
-
-
-        .strategy-workspace .strategy-page-subtitle {
-
-            font-size:
-                .875rem
-                !important;
-
-            line-height:
-                1.5;
-        }
-
-
-        /* ---------------------------------------------------- */
-        /* Section headings                                     */
-        /* ---------------------------------------------------- */
-
-        .strategy-workspace .strategy-section-header h2 {
-
-            font-size:
-                1.05rem
-                !important;
-
-            line-height:
-                1.3;
-        }
-
-
-        .strategy-workspace h3 {
-
-            font-size:
-                .95rem;
-        }
-
-
-        .strategy-workspace h4 {
-
-            font-size:
-                .9rem;
-        }
-
-
-        /* ---------------------------------------------------- */
-        /* Normal descriptive copy                              */
-        /* ---------------------------------------------------- */
-
+<head> {# I begin document metadata and stylesheet loading. #}
+    <meta charset="utf-8"> {# I select UTF-8 character encoding. #}
+    <meta name="viewport" content="width=device-width, initial-scale=1"> {# I make responsive sizing follow the device viewport. #}
+    <meta name="color-scheme" content="dark"> {# I tell the browser this page supports a dark colour scheme. #}
+    <title> {# I begin the browser-page title. #}
+        {% block title %} {# Child templates can replace this default title. #}
+            MarketPulse{# I provide the fallback title. #}
+        {% endblock %} {# I close the title block. #}
+    </title> {# I close the title element. #}
+    {% bootstrap_css %} {# I render the stylesheet links supplied by django-bootstrap5. #}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"> {# I load the specified Font Awesome stylesheet. #}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}"> {# Django resolves the URL for my shared stylesheet. #}
+    {% block extra_css %} {# I provide a place for child-page CSS. #}
+    {% endblock %} {# I close the optional CSS block. #}
+
+    {# This stylesheet follows extra_css; the cascade also considers importance and specificity. #}
+    <style> /* I begin shared inline CSS. */
+
+        /* ================================================= */
+        /* 1.1 SHARED TOKENS — CSS CUSTOM PROPERTIES           */
+        /* ================================================= */
+        :root, [data-bs-theme="dark"] { /* I target the root and elements explicitly using the dark theme. */
+            --mp-bg: #0c1420; /* I define the page-background token. */
+            --mp-nav: #111c2b; /* I define navigation and footer colour. */
+            --mp-panel: #152235; /* I define the main panel colour. */
+            --mp-panel-soft: #18283a; /* I define a softer panel colour. */
+            --mp-panel-dark: #101a28; /* I define a darker panel colour. */
+            --mp-border: #314258; /* I define the standard border colour. */
+            --mp-border-soft: #26374b; /* I define the subtle border colour. */
+            --mp-text: #f1f5f9; /* I define the main text colour. */
+            --mp-muted: #93a4b8; /* I define supporting text colour. */
+            --mp-primary: #4f86b6; /* I define the main accent colour. */
+            --mp-primary-hover: #6095c2; /* I define the hover accent colour. */
+            --mp-success: #32c98b; /* I define the success colour. */
+            --mp-warning: #d3a854; /* I define the warning colour. */
+            --mp-danger: #dc6b75; /* I define the danger colour. */
+            --bs-body-bg: var(--mp-bg); /* var() maps my token to Bootstrap's body background. */
+            --bs-body-color: var(--mp-text); /* I map Bootstrap body text to my theme. */
+            --bs-emphasis-color: var(--mp-text); /* I map emphasised text colour. */
+            --bs-secondary-color: var(--mp-muted); /* I map secondary text colour. */
+            --bs-tertiary-color: var(--mp-muted); /* I map tertiary text colour. */
+            --bs-border-color: var(--mp-border); /* I map standard border colour. */
+            --bs-border-color-translucent: rgba(49, 66, 88, .65); /* RGBA adds transparency to this border colour. */
+            --bs-primary: var(--mp-primary); /* I map the primary colour token. */
+            --bs-primary-rgb: 79, 134, 182; /* I supply RGB channels used by Bootstrap utilities. */
+            --bs-success: var(--mp-success); /* I map the success token. */
+            --bs-warning: var(--mp-warning); /* I map the warning token. */
+            --bs-danger: var(--mp-danger); /* I map the danger token. */
+        } /* I close token definitions. */
+
+        /* ================================================= */
+        /* 1.2 PAGE CANVAS                                    */
+        /* ================================================= */
+        html { /* I target the document's root element. */
+            min-height: 100%; /* I request at least the containing height. */
+            background-color: var(--mp-bg) !important; /* I prioritise the dark page background. */
+        } /* I close the root rule. */
+        body, body.marketpulse-body { /* Grouped selectors style the page body. */
+            min-height: 100vh; /* vh measures viewport height. */
+            margin: 0; /* I remove default outer spacing. */
+            color: var(--mp-text) !important; /* I prioritise themed text colour. */
+            background: var(--mp-bg) !important; /* I prioritise the dark background. */
+        } /* I close the body rule. */
+        #main-content, .marketpulse-main { /* I target main content by ID or class. */
+            color: var(--mp-text) !important; /* I keep main text readable. */
+            background: var(--mp-bg) !important; /* I keep the main canvas dark. */
+        } /* I close the main-canvas rule. */
+        .marketpulse-main > .container, .marketpulse-main > .container-fluid { /* The child combinator targets direct container children. */
+            background-color: transparent !important; /* I let the main background show through. */
+        } /* I close the container rule. */
+
+        /* ================================================= */
+        /* 1.3 NAVIGATION                                    */
+        /* ================================================= */
+        .marketpulse-navbar, .marketpulse-navbar.bg-primary { /* I target my navbar, including its Bootstrap background class. */
+            background: var(--mp-nav) !important; /* I override its background with the navigation token. */
+            border-bottom: 1px solid var(--mp-border-soft); /* I add a subtle lower border. */
+        } /* I close the navbar rule. */
+        .marketpulse-navbar .navbar-brand { /* A descendant selector targets the brand inside my navbar. */
+            color: var(--mp-text) !important; /* I keep the brand readable. */
+        } /* I close the brand rule. */
+        .marketpulse-navbar .nav-link { /* I target navigation links. */
+            color: var(--mp-muted) !important; /* I use muted colour by default. */
+        } /* I close the link rule. */
+        .marketpulse-navbar .nav-link:hover, .marketpulse-navbar .nav-link:focus { /* Pseudo-classes represent pointer hover and focus. */
+            color: var(--mp-text) !important; /* I highlight interactive links. */
+        } /* I close the interaction rule. */
+        .marketpulse-navbar .nav-link.active { /* I target links that also have the active class. */
+            color: #ffffff !important; /* I highlight the current application area. */
+        } /* I close the active-link rule. */
+
+        /* ================================================= */
+        /* 1.4 CARDS AND BACKGROUND UTILITIES                  */
+        /* ================================================= */
+        .card { /* I style Bootstrap cards globally. */
+            color: var(--mp-text); /* I set card text colour. */
+            background-color: var(--mp-panel); /* I set the card background. */
+            border-color: var(--mp-border); /* I set its border colour. */
+        } /* I close the card rule. */
+        .card-header, .card-footer { /* I group card header and footer selectors. */
+            color: var(--mp-text); /* I set their text colour. */
+            background-color: var(--mp-panel-soft); /* I give them a distinct panel shade. */
+            border-color: var(--mp-border); /* I set their borders. */
+        } /* I close the header/footer rule. */
+        .card-header.bg-white, .card-footer.bg-white { /* I target card sections with the old white utility. */
+            background-color: var(--mp-panel-soft) !important; /* I retain the dark theme. */
+        } /* I close the override. */
+        .bg-white { /* I target the white-background utility globally. */
+            background-color: var(--mp-panel) !important; /* I replace its background with a dark panel. */
+        } /* I close the utility override. */
+        .bg-light { /* I target the light-background utility. */
+            color: var(--mp-text) !important; /* I use light text. */
+            background-color: var(--mp-panel-soft) !important; /* I use a dark panel background. */
+        } /* I close the light-utility override. */
+
+        /* ================================================= */
+        /* 1.5 SHARED TYPOGRAPHY                              */
+        /* ================================================= */
+        body, h1, h2, h3, h4, h5, h6, label, legend, strong { /* I group common text elements. */
+            color: var(--mp-text); /* I apply the shared text colour. */
+        } /* I close the text rule. */
+        .text-muted, .text-secondary { /* I target supporting-text utilities. */
+            color: var(--mp-muted) !important; /* I apply the shared muted colour. */
+        } /* I close the muted rule. */
+        .text-dark { /* I target the old dark-text utility. */
+            color: var(--mp-text) !important; /* I keep it readable on dark panels. */
+        } /* I close the override. */
+
+        /* ================================================= */
+        /* 1.6 STRATEGY TYPOGRAPHY — SCOPED SELECTORS          */
+        /* These rules affect descendants of the workspace.  */
+        /* rem units are relative to the root font size.      */
+        /* ================================================= */
+        .strategy-workspace { /* I target the strategy workspace wrapper. */
+            font-size: .875rem; /* I set its base font size. */
+            line-height: 1.5; /* I use a unitless line-height multiplier. */
+        } /* I close the workspace rule. */
+        .strategy-workspace .strategy-page-title { /* I target its page title. */
+            font-size: 1.5rem !important; /* I prioritise the heading size. */
+            line-height: 1.2; /* I keep heading lines compact. */
+            font-weight: 700; /* I use bold text. */
+        } /* I close the title rule. */
+        .strategy-workspace .strategy-page-subtitle { /* I target its subtitle. */
+            font-size: .875rem !important; /* I prioritise the subtitle size. */
+            line-height: 1.5; /* I keep it readable. */
+        } /* I close the subtitle rule. */
+        .strategy-workspace .strategy-section-header h2 { /* I target section headings. */
+            font-size: 1.05rem !important; /* I set their size. */
+            line-height: 1.3; /* I set heading spacing. */
+        } /* I close the section-heading rule. */
+        .strategy-workspace h3 { /* I target third-level headings. */
+            font-size: .95rem; /* I set their size. */
+        } /* I close the h3 rule. */
+        .strategy-workspace h4 { /* I target fourth-level headings. */
+            font-size: .9rem; /* I set their size. */
+        } /* I close the h4 rule. */
         .strategy-workspace p,
         .strategy-workspace .strategy-section-header p,
         .strategy-workspace .related-tool p,
-        .strategy-workspace .validation-box p {
-
-            font-size:
-                .8125rem
-                !important;
-
-            line-height:
-                1.5;
-        }
-
-
-        /* ---------------------------------------------------- */
-        /* Small uppercase category / section labels            */
-        /* ---------------------------------------------------- */
-
-        .strategy-workspace .strategy-eyebrow {
-
-            font-size:
-                .75rem
-                !important;
-
-            line-height:
-                1.3;
-        }
-
-
-        /* ---------------------------------------------------- */
-        /* Research workflow                                    */
-        /* ---------------------------------------------------- */
-
-        .strategy-workspace .strategy-flow-copy strong {
-
-            font-size:
-                .8125rem
-                !important;
-        }
-
-
-        .strategy-workspace .strategy-flow-copy span {
-
-            font-size:
-                .75rem
-                !important;
-
-            line-height:
-                1.4;
-        }
-
-
-        /* ---------------------------------------------------- */
-        /* Categories and model library                         */
-        /* ---------------------------------------------------- */
-
+        .strategy-workspace .validation-box p { /* I group descriptive paragraph selectors. */
+            font-size: .8125rem !important; /* I set a consistent paragraph size. */
+            line-height: 1.5; /* I set readable line spacing. */
+        } /* I close the paragraph rule. */
+        .strategy-workspace .strategy-eyebrow { /* I target supporting section labels. */
+            font-size: .75rem !important; /* I set their size. */
+            line-height: 1.3; /* I set their line spacing. */
+        } /* I close the label rule. */
+        .strategy-workspace .strategy-flow-copy strong { /* I target workflow step titles. */
+            font-size: .8125rem !important; /* I set their size. */
+        } /* I close the step-title rule. */
+        .strategy-workspace .strategy-flow-copy span { /* I target workflow explanations. */
+            font-size: .75rem !important; /* I set supporting text size. */
+            line-height: 1.4; /* I set its line spacing. */
+        } /* I close the explanation rule. */
         .strategy-workspace .strategy-category-name,
         .strategy-workspace .strategy-category-name strong,
         .strategy-workspace .strategy-model-name,
-        .strategy-workspace .strategy-model-title {
-
-            font-size:
-                .8125rem
-                !important;
-        }
-
-
+        .strategy-workspace .strategy-model-title { /* I group category and model-name selectors. */
+            font-size: .8125rem !important; /* I normalise their sizes. */
+        } /* I close the model-name rule. */
         .strategy-workspace .strategy-model-row,
         .strategy-workspace .strategy-model-row p,
-        .strategy-workspace .strategy-model-summary {
-
-            font-size:
-                .8125rem
-                !important;
-
-            line-height:
-                1.45;
-        }
-
-
-        /* ---------------------------------------------------- */
-        /* Forms                                                */
-        /* ---------------------------------------------------- */
-
-        .strategy-workspace label {
-
-            font-size:
-                .75rem
-                !important;
-        }
-
-
+        .strategy-workspace .strategy-model-summary { /* I target model-row content. */
+            font-size: .8125rem !important; /* I set its text size. */
+            line-height: 1.45; /* I set row-copy spacing. */
+        } /* I close the model-row rule. */
+        .strategy-workspace label { /* I target form labels within strategies. */
+            font-size: .75rem !important; /* I set label size. */
+        } /* I close the label rule. */
         .strategy-workspace input,
         .strategy-workspace select,
         .strategy-workspace textarea,
         .strategy-workspace .form-control,
-        .strategy-workspace .form-select {
-
-            font-size:
-                .8125rem
-                !important;
-        }
-
-
-        /* ---------------------------------------------------- */
-        /* Buttons                                              */
-        /* ---------------------------------------------------- */
-
-        .strategy-workspace .btn,
-        .strategy-workspace button {
-
-            font-size:
-                .8125rem
-                !important;
-        }
-
-
-        /* ---------------------------------------------------- */
-        /* Accordions / details                                 */
-        /* ---------------------------------------------------- */
-
+        .strategy-workspace .form-select { /* I group strategy form controls. */
+            font-size: .8125rem !important; /* I set their text size. */
+        } /* I close the control rule. */
+        .strategy-workspace .btn, .strategy-workspace button { /* I target strategy buttons. */
+            font-size: .8125rem !important; /* I set button-label size. */
+        } /* I close the button rule. */
         .strategy-workspace summary,
-        .strategy-workspace .my-strategy-details summary {
-
-            font-size:
-                .8125rem
-                !important;
-
-            line-height:
-                1.4;
-        }
-
-
-        /* ---------------------------------------------------- */
-        /* Supporting / muted metadata                          */
-        /* ---------------------------------------------------- */
-
+        .strategy-workspace .my-strategy-details summary { /* I target expandable-detail labels. */
+            font-size: .8125rem !important; /* I set their size. */
+            line-height: 1.4; /* I set their line spacing. */
+        } /* I close the summary rule. */
         .strategy-workspace small,
         .strategy-workspace .small,
         .strategy-workspace .form-text,
-        .strategy-workspace .text-muted {
-
-            font-size:
-                .75rem
-                !important;
-        }
-
-
-        /* ---------------------------------------------------- */
-        /* Metrics                                              */
-        /* ---------------------------------------------------- */
-
-        .strategy-workspace .my-strategy-metric span {
-
-            font-size:
-                .7rem
-                !important;
-        }
-
-
-        .strategy-workspace .my-strategy-metric strong {
-
-            font-size:
-                .875rem
-                !important;
-        }
-
-
-        /* ---------------------------------------------------- */
-        /* Validation                                           */
-        /* ---------------------------------------------------- */
-
-        .strategy-workspace .validation-question {
-
-            font-size:
-                .8125rem
-                !important;
-
-            line-height:
-                1.45;
-        }
-
-
-        /* ---------------------------------------------------- */
-        /* Related / integrated research tools                  */
-        /* ---------------------------------------------------- */
-
-        .strategy-workspace .related-tool h3 {
-
-            font-size:
-                .95rem
-                !important;
-        }
-
-
-        .strategy-workspace .related-tool p {
-
-            font-size:
-                .8125rem
-                !important;
-        }
-
-
-        /* ==================================================== */
-        /* FORMS                                                 */
-        /* ==================================================== */
-
-        .form-control,
-        .form-select {
-
-            color:
-                var(--mp-text);
-
-            background-color:
-                var(--mp-panel-dark);
-
-            border-color:
-                var(--mp-border);
-        }
-
-
-        .form-control:focus,
-        .form-select:focus {
-
-            color:
-                var(--mp-text);
-
-            background-color:
-                var(--mp-panel-dark);
-
-            border-color:
-                var(--mp-primary);
-
-            box-shadow:
-                0 0 0 .2rem
-                rgba(79, 134, 182, .16);
-        }
-
-
-        .form-control::placeholder {
-
-            color:
-                var(--mp-muted);
-
-            opacity:
-                .75;
-        }
-
-
-        .form-control:disabled,
-        .form-select:disabled {
-
-            color:
-                var(--mp-muted);
-
-            background-color:
-                #111d2b;
-
-            border-color:
-                var(--mp-border-soft);
-        }
-
-
-        .form-text {
-
-            color:
-                var(--mp-muted);
-        }
-
-
-        .input-group-text {
-
-            color:
-                var(--mp-text);
-
-            background-color:
-                var(--mp-panel-soft);
-
-            border-color:
-                var(--mp-border);
-        }
-
-
-        /* ==================================================== */
-        /* TABLES                                                */
-        /* ==================================================== */
-
-        .table {
-
-            --bs-table-color:
-                var(--mp-text);
-
-            --bs-table-bg:
-                transparent;
-
-            --bs-table-border-color:
-                var(--mp-border-soft);
-
-            --bs-table-striped-color:
-                var(--mp-text);
-
-            --bs-table-striped-bg:
-                rgba(255, 255, 255, .025);
-
-            --bs-table-hover-color:
-                var(--mp-text);
-
-            --bs-table-hover-bg:
-                rgba(79, 134, 182, .08);
-
-            color:
-                var(--mp-text);
-        }
-
-
-        .table-light {
-
-            --bs-table-color:
-                var(--mp-text);
-
-            --bs-table-bg:
-                var(--mp-panel-soft);
-
-            --bs-table-border-color:
-                var(--mp-border);
-        }
-
-
-        /* ==================================================== */
-        /* LIST GROUPS                                           */
-        /* ==================================================== */
-
-        .list-group-item {
-
-            color:
-                var(--mp-text);
-
-            background-color:
-                var(--mp-panel);
-
-            border-color:
-                var(--mp-border);
-        }
-
-
-        /* ==================================================== */
-        /* ACCORDIONS                                            */
-        /* ==================================================== */
-
-        .accordion {
-
-            --bs-accordion-color:
-                var(--mp-text);
-
-            --bs-accordion-bg:
-                var(--mp-panel);
-
-            --bs-accordion-border-color:
-                var(--mp-border);
-
-            --bs-accordion-btn-color:
-                var(--mp-text);
-
-            --bs-accordion-btn-bg:
-                var(--mp-panel-soft);
-
-            --bs-accordion-active-color:
-                #ffffff;
-
-            --bs-accordion-active-bg:
-                #1b2d42;
-        }
-
-
-        /* ==================================================== */
-        /* MODALS                                                */
-        /* ==================================================== */
-
-        .modal-content {
-
-            color:
-                var(--mp-text);
-
-            background-color:
-                var(--mp-panel);
-
-            border-color:
-                var(--mp-border);
-        }
-
-
-        .modal-header,
-        .modal-footer {
-
-            border-color:
-                var(--mp-border);
-        }
-
-
-        /* ==================================================== */
-        /* DROPDOWNS                                             */
-        /* ==================================================== */
-
-        .dropdown-menu {
-
-            color:
-                var(--mp-text);
-
-            background-color:
-                var(--mp-panel);
-
-            border-color:
-                var(--mp-border);
-        }
-
-
-        .dropdown-item {
-
-            color:
-                var(--mp-text);
-        }
-
-
-        .dropdown-item:hover,
-        .dropdown-item:focus {
-
-            color:
-                #ffffff;
-
-            background-color:
-                var(--mp-panel-soft);
-        }
-
-
-        /* ==================================================== */
-        /* BUTTONS                                               */
-        /* ==================================================== */
-
-        .btn-primary {
-
-            --bs-btn-color:
-                #ffffff;
-
-            --bs-btn-bg:
-                #3f739e;
-
-            --bs-btn-border-color:
-                #4f86b6;
-
-            --bs-btn-hover-color:
-                #ffffff;
-
-            --bs-btn-hover-bg:
-                var(--mp-primary-hover);
-
-            --bs-btn-hover-border-color:
-                var(--mp-primary-hover);
-
-            --bs-btn-active-color:
-                #ffffff;
-
-            --bs-btn-active-bg:
-                #477aa5;
-
-            --bs-btn-active-border-color:
-                #477aa5;
-        }
-
-
-        .btn-outline-primary {
-
-            --bs-btn-color:
-                #86b2d5;
-
-            --bs-btn-border-color:
-                var(--mp-primary);
-
-            --bs-btn-hover-color:
-                #ffffff;
-
-            --bs-btn-hover-bg:
-                var(--mp-primary);
-
-            --bs-btn-hover-border-color:
-                var(--mp-primary);
-        }
-
-
-        .btn-outline-dark {
-
-            --bs-btn-color:
-                var(--mp-text);
-
-            --bs-btn-border-color:
-                var(--mp-border);
-
-            --bs-btn-hover-color:
-                #ffffff;
-
-            --bs-btn-hover-bg:
-                var(--mp-panel-soft);
-
-            --bs-btn-hover-border-color:
-                var(--mp-primary);
-        }
-
-
-        /* ==================================================== */
-        /* ALERTS                                                */
-        /* ==================================================== */
-
-        .alert {
-
-            border-width:
-                1px;
-        }
-
-
-        .alert-light {
-
-            color:
-                var(--mp-text)
-                !important;
-
-            background-color:
-                var(--mp-panel-soft)
-                !important;
-
-            border-color:
-                var(--mp-border)
-                !important;
-        }
-
-
-        /* ==================================================== */
-        /* BORDERS                                               */
-        /* ==================================================== */
-
-        .border,
-        .border-top,
-        .border-bottom,
-        .border-start,
-        .border-end {
-
-            border-color:
-                var(--mp-border)
-                !important;
-        }
-
-
-        hr {
-
-            color:
-                var(--mp-border);
-
-            opacity:
-                1;
-        }
-
-
-        /* ==================================================== */
-        /* FOOTER                                                */
-        /* ==================================================== */
-
-        .marketpulse-footer {
-
-            color:
-                var(--mp-muted);
-
-            background:
-                var(--mp-nav);
-
-            border-top:
-                1px solid
-                var(--mp-border-soft);
-        }
-
-
-        /* ==================================================== */
-        /* ACCESSIBILITY                                         */
-        /* ==================================================== */
-
-        .skip-link {
-
-            position:
-                absolute;
-
-            top:
-                -100px;
-
-            left:
-                1rem;
-
-            z-index:
-                2000;
-
-            padding:
-                .65rem
-                1rem;
-
-            color:
-                #ffffff;
-
-            background:
-                var(--mp-primary);
-
-            border-radius:
-                .4rem;
-
-            text-decoration:
-                none;
-        }
-
-
-        .skip-link:focus {
-
-            top:
-                1rem;
-        }
-
-
-        /* ==================================================== */
-        /* SELECTION                                             */
-        /* ==================================================== */
-
-        ::selection {
-
-            color:
-                #ffffff;
-
-            background:
-                rgba(79, 134, 182, .72);
-        }
-
-
-        /* ==================================================== */
-        /* SCROLLBAR                                             */
-        /* ==================================================== */
-
-        * {
-
-            scrollbar-color:
-                #40546b
-                var(--mp-bg);
-
-            scrollbar-width:
-                thin;
-        }
-
-
-        /* ==================================================== */
-        /* SHARED RESPONSIVE SAFETY                              */
-        /* ==================================================== */
-
-        #main-content,
-        .marketpulse-main {
-
-            width:
-                100%;
-
-            max-width:
-                100%;
-
-            min-width:
-                0;
-
-            overflow-x:
-                hidden;
-        }
-
-
-        .marketpulse-main > * {
-
-            min-width:
-                0;
-
-            max-width:
-                100%;
-        }
-
-
+        .strategy-workspace .text-muted { /* I group supporting metadata. */
+            font-size: .75rem !important; /* I set its size. */
+        } /* I close the metadata rule. */
+        .strategy-workspace .my-strategy-metric span { /* I target metric labels. */
+            font-size: .7rem !important; /* I make labels smaller than values. */
+        } /* I close the metric-label rule. */
+        .strategy-workspace .my-strategy-metric strong { /* I target metric values. */
+            font-size: .875rem !important; /* I set value size. */
+        } /* I close the metric-value rule. */
+        .strategy-workspace .validation-question { /* I target validation questions. */
+            font-size: .8125rem !important; /* I set their size. */
+            line-height: 1.45; /* I set their line spacing. */
+        } /* I close the validation rule. */
+        .strategy-workspace .related-tool h3 { /* I target related-tool headings. */
+            font-size: .95rem !important; /* I set their size. */
+        } /* I close the heading rule. */
+        .strategy-workspace .related-tool p { /* I target related-tool paragraphs. */
+            font-size: .8125rem !important; /* I set their size. */
+        } /* I close the paragraph rule. */
+
+        /* ================================================= */
+        /* 1.7 FORMS — NORMAL, FOCUS AND DISABLED STATES       */
+        /* ================================================= */
+        .form-control, .form-select { /* I style text controls and selectors. */
+            color: var(--mp-text); /* I set input text colour. */
+            background-color: var(--mp-panel-dark); /* I set their background. */
+            border-color: var(--mp-border); /* I set their borders. */
+        } /* I close the normal-state rule. */
+        .form-control:focus, .form-select:focus { /* I target focused controls. */
+            color: var(--mp-text); /* I retain readable text. */
+            background-color: var(--mp-panel-dark); /* I retain the dark background. */
+            border-color: var(--mp-primary); /* I highlight the border. */
+            box-shadow: 0 0 0 .2rem rgba(79, 134, 182, .16); /* I add a translucent focus ring. */
+        } /* I close the focus rule. */
+        .form-control::placeholder { /* A pseudo-element targets placeholder text. */
+            color: var(--mp-muted); /* I use muted colour. */
+            opacity: .75; /* I reduce its opacity. */
+        } /* I close the placeholder rule. */
+        .form-control:disabled, .form-select:disabled { /* I target disabled controls. */
+            color: var(--mp-muted); /* I mute the text. */
+            background-color: #111d2b; /* I use a disabled-state background. */
+            border-color: var(--mp-border-soft); /* I soften the border. */
+        } /* I close the disabled rule. */
+        .form-text { /* I target supporting form guidance. */
+            color: var(--mp-muted); /* I apply muted colour. */
+        } /* I close the guidance rule. */
+        .input-group-text { /* I target input prefixes and suffixes. */
+            color: var(--mp-text); /* I set their text colour. */
+            background-color: var(--mp-panel-soft); /* I set their background. */
+            border-color: var(--mp-border); /* I set their border. */
+        } /* I close the input-group rule. */
+
+        /* ================================================= */
+        /* 1.8 TABLES                                        */
+        /* ================================================= */
+        .table { /* I configure Bootstrap table variables. */
+            --bs-table-color: var(--mp-text); /* I set table text colour. */
+            --bs-table-bg: transparent; /* I let the parent background show through. */
+            --bs-table-border-color: var(--mp-border-soft); /* I set table borders. */
+            --bs-table-striped-color: var(--mp-text); /* I set striped-row text colour. */
+            --bs-table-striped-bg: rgba(255, 255, 255, .025); /* I set a faint stripe background. */
+            --bs-table-hover-color: var(--mp-text); /* I set hovered-row text colour. */
+            --bs-table-hover-bg: rgba(79, 134, 182, .08); /* I set the hover background. */
+            color: var(--mp-text); /* I also set the element's text colour. */
+        } /* I close the table rule. */
+        .table-light { /* I override the light table variant. */
+            --bs-table-color: var(--mp-text); /* I use light text. */
+            --bs-table-bg: var(--mp-panel-soft); /* I use a dark panel background. */
+            --bs-table-border-color: var(--mp-border); /* I use shared borders. */
+        } /* I close the table variant. */
+
+        /* ================================================= */
+        /* 1.9 LISTS, ACCORDIONS, MODALS AND DROPDOWNS         */
+        /* ================================================= */
+        .list-group-item { /* I style list-group entries. */
+            color: var(--mp-text); /* I set entry text colour. */
+            background-color: var(--mp-panel); /* I set entry background. */
+            border-color: var(--mp-border); /* I set entry borders. */
+        } /* I close the list-group rule. */
+        .accordion { /* I configure Bootstrap accordion variables. */
+            --bs-accordion-color: var(--mp-text); /* I set accordion text colour. */
+            --bs-accordion-bg: var(--mp-panel); /* I set its background. */
+            --bs-accordion-border-color: var(--mp-border); /* I set its borders. */
+            --bs-accordion-btn-color: var(--mp-text); /* I set trigger text colour. */
+            --bs-accordion-btn-bg: var(--mp-panel-soft); /* I set trigger background. */
+            --bs-accordion-active-color: #ffffff; /* I set expanded-trigger text colour. */
+            --bs-accordion-active-bg: #1b2d42; /* I set expanded-trigger background. */
+        } /* I close the accordion rule. */
+        .modal-content { /* I style modal panels. */
+            color: var(--mp-text); /* I set modal text colour. */
+            background-color: var(--mp-panel); /* I set modal background. */
+            border-color: var(--mp-border); /* I set modal borders. */
+        } /* I close the modal rule. */
+        .modal-header, .modal-footer { /* I group modal section selectors. */
+            border-color: var(--mp-border); /* I set their separating borders. */
+        } /* I close the modal-section rule. */
+        .dropdown-menu { /* I style dropdown menus. */
+            color: var(--mp-text); /* I set their text colour. */
+            background-color: var(--mp-panel); /* I set their background. */
+            border-color: var(--mp-border); /* I set their borders. */
+        } /* I close the dropdown-menu rule. */
+        .dropdown-item { /* I style each dropdown choice. */
+            color: var(--mp-text); /* I set its text colour. */
+        } /* I close the item rule. */
+        .dropdown-item:hover, .dropdown-item:focus { /* I target interactive item states. */
+            color: #ffffff; /* I highlight the text. */
+            background-color: var(--mp-panel-soft); /* I highlight the background. */
+        } /* I close the item-state rule. */
+
+        /* ================================================= */
+        /* 1.10 BUTTONS — COMPONENT VARIABLES                 */
+        /* ================================================= */
+        .btn-primary { /* I configure primary-button states. */
+            --bs-btn-color: #ffffff; /* I set normal text colour. */
+            --bs-btn-bg: #3f739e; /* I set normal background. */
+            --bs-btn-border-color: #4f86b6; /* I set normal border. */
+            --bs-btn-hover-color: #ffffff; /* I set hovered text colour. */
+            --bs-btn-hover-bg: var(--mp-primary-hover); /* I set hovered background. */
+            --bs-btn-hover-border-color: var(--mp-primary-hover); /* I set hovered border. */
+            --bs-btn-active-color: #ffffff; /* I set active text colour. */
+            --bs-btn-active-bg: #477aa5; /* I set active background. */
+            --bs-btn-active-border-color: #477aa5; /* I set active border. */
+        } /* I close the primary-button rule. */
+        .btn-outline-primary { /* I configure outlined primary buttons. */
+            --bs-btn-color: #86b2d5; /* I set normal text colour. */
+            --bs-btn-border-color: var(--mp-primary); /* I set the outline colour. */
+            --bs-btn-hover-color: #ffffff; /* I set hovered text colour. */
+            --bs-btn-hover-bg: var(--mp-primary); /* I fill the button on hover. */
+            --bs-btn-hover-border-color: var(--mp-primary); /* I set hovered border. */
+        } /* I close the outlined-primary rule. */
+        .btn-outline-dark { /* I adapt outlined-dark buttons to my theme. */
+            --bs-btn-color: var(--mp-text); /* I set readable text. */
+            --bs-btn-border-color: var(--mp-border); /* I set the outline colour. */
+            --bs-btn-hover-color: #ffffff; /* I set hovered text. */
+            --bs-btn-hover-bg: var(--mp-panel-soft); /* I set hovered background. */
+            --bs-btn-hover-border-color: var(--mp-primary); /* I highlight the hovered border. */
+        } /* I close the outlined-dark rule. */
+
+        /* ================================================= */
+        /* 1.11 ALERTS, BORDERS AND FOOTER                     */
+        /* ================================================= */
+        .alert { /* I target alert components. */
+            border-width: 1px; /* I set their border thickness. */
+        } /* I close the alert rule. */
+        .alert-light { /* I adapt light alerts to the dark theme. */
+            color: var(--mp-text) !important; /* I prioritise readable text. */
+            background-color: var(--mp-panel-soft) !important; /* I prioritise a dark background. */
+            border-color: var(--mp-border) !important; /* I prioritise the shared border. */
+        } /* I close the alert variant. */
+        .border, .border-top, .border-bottom, .border-start, .border-end { /* I group border utility selectors. */
+            border-color: var(--mp-border) !important; /* I apply the theme border colour. */
+        } /* I close the border rule. */
+        hr { /* I target thematic separators. */
+            color: var(--mp-border); /* I use the border token. */
+            opacity: 1; /* I keep the separator fully opaque. */
+        } /* I close the separator rule. */
+        .marketpulse-footer { /* I style the shared footer. */
+            color: var(--mp-muted); /* I use supporting text colour. */
+            background: var(--mp-nav); /* I match the navigation background. */
+            border-top: 1px solid var(--mp-border-soft); /* I separate it from the page body. */
+        } /* I close the footer rule. */
+
+        /* ================================================= */
+        /* 1.12 ACCESSIBILITY, SELECTION AND SCROLLBARS        */
+        /* ================================================= */
+        .skip-link { /* I style keyboard-accessible main-content navigation. */
+            position: absolute; /* I position it independently of normal flow. */
+            top: -100px; /* I place it above the visible page by default. */
+            left: 1rem; /* I set its horizontal position. */
+            z-index: 2000; /* I place it above lower-stacking content. */
+            padding: .65rem 1rem; /* I add vertical and horizontal padding. */
+            color: #ffffff; /* I use white text. */
+            background: var(--mp-primary); /* I use the primary background. */
+            border-radius: .4rem; /* I round its corners. */
+            text-decoration: none; /* I remove the underline. */
+        } /* I close the skip-link rule. */
+        .skip-link:focus { /* I target keyboard or programmatic focus. */
+            top: 1rem; /* I bring the skip link into view. */
+        } /* I close the focus rule. */
+        ::selection { /* I style selected text. */
+            color: #ffffff; /* I use white selected text. */
+            background: rgba(79, 134, 182, .72); /* I use a translucent highlight. */
+        } /* I close selection styling. */
+        * { /* The universal selector matches every element. */
+            scrollbar-color: #40546b var(--mp-bg); /* I set scrollbar thumb and track colours where supported. */
+            scrollbar-width: thin; /* I request narrow scrollbars. */
+        } /* I close scrollbar styling. */
+
+        /* ================================================= */
+        /* 1.13 RESPONSIVE SAFETY — SIZING AND OVERFLOW        */
+        /* ================================================= */
+        #main-content, .marketpulse-main { /* I constrain the main page region. */
+            width: 100%; /* I use the available width. */
+            max-width: 100%; /* I limit its maximum width. */
+            min-width: 0; /* I allow it to shrink. */
+            overflow-x: hidden; /* I hide overflow beyond the main region; this can clip oversized content. */
+        } /* I close the main sizing rule. */
+        .marketpulse-main > * { /* I target every direct main-content child. */
+            min-width: 0; /* I allow children to shrink. */
+            max-width: 100%; /* I constrain their maximum width. */
+        } /* I close the child rule. */
         .marketpulse-main .row,
         .marketpulse-main [class*="col-"],
         .marketpulse-main .card,
         .marketpulse-main .card-body,
         .marketpulse-main .card-header,
-        .marketpulse-main .card-footer {
-
-            min-width:
-                0;
-        }
-
-
-        /* ---------------------------------------------------- */
-        /* Responsive media                                     */
-        /* ---------------------------------------------------- */
-
-        .marketpulse-main img,
-        .marketpulse-main svg,
-        .marketpulse-main video {
-
-            max-width:
-                100%;
-
-            height:
-                auto;
-        }
-
-
-        .marketpulse-main canvas {
-
-            max-width:
-                100%;
-        }
-
-
-        /* ---------------------------------------------------- */
-        /* Responsive tables                                    */
-        /* ---------------------------------------------------- */
-
-        .marketpulse-main .table-responsive {
-
-            display:
-                block;
-
-            width:
-                100%;
-
-            max-width:
-                100%;
-
-            overflow-x:
-                auto;
-
-            -webkit-overflow-scrolling:
-                touch;
-        }
-
-
-        .marketpulse-main .table-responsive > .table {
-
-            margin-bottom:
-                0;
-        }
-
-
-        /* ---------------------------------------------------- */
-        /* Forms and buttons                                    */
-        /* ---------------------------------------------------- */
-
+        .marketpulse-main .card-footer { /* The attribute selector matches class text containing col-. */
+            min-width: 0; /* I permit grid and card content to shrink. */
+        } /* I close the shrink rule. */
+        .marketpulse-main img, .marketpulse-main svg, .marketpulse-main video { /* I group visual-media selectors. */
+            max-width: 100%; /* I keep media within its container. */
+            height: auto; /* I let height adapt to its sizing. */
+        } /* I close the media rule. */
+        .marketpulse-main canvas { /* I target canvas-based visuals. */
+            max-width: 100%; /* I constrain displayed canvas width. */
+        } /* I close the canvas rule. */
+        .marketpulse-main .table-responsive { /* I target table-scroll wrappers. */
+            display: block; /* I give the wrapper block layout. */
+            width: 100%; /* I use available width. */
+            max-width: 100%; /* I constrain the wrapper. */
+            overflow-x: auto; /* I allow internal horizontal scrolling. */
+            -webkit-overflow-scrolling: touch; /* I retain the platform-specific touch-scrolling setting. */
+        } /* I close the table-wrapper rule. */
+        .marketpulse-main .table-responsive > .table { /* I target direct table children. */
+            margin-bottom: 0; /* I remove lower table spacing. */
+        } /* I close the table-child rule. */
         .marketpulse-main .form-control,
         .marketpulse-main .form-select,
         .marketpulse-main .input-group,
-        .marketpulse-main .btn {
-
-            max-width:
-                100%;
-        }
-
-
-        /* ---------------------------------------------------- */
-        /* Long text must not force horizontal overflow         */
-        /* ---------------------------------------------------- */
-
+        .marketpulse-main .btn { /* I group form controls and buttons. */
+            max-width: 100%; /* I constrain them to the parent width. */
+        } /* I close the control-sizing rule. */
         .marketpulse-main p,
         .marketpulse-main small,
         .marketpulse-main span,
         .marketpulse-main strong,
         .marketpulse-main a,
         .marketpulse-main td,
-        .marketpulse-main th {
+        .marketpulse-main th { /* I target common text containers. */
+            overflow-wrap: break-word; /* I allow long words to wrap when needed. */
+        } /* I close the text-wrapping rule. */
 
-            overflow-wrap:
-                break-word;
-        }
-
-
-        /* ==================================================== */
-        /* SHARED MOBILE REFINEMENTS                             */
-        /* ==================================================== */
-
-        @media (max-width: 767.98px) {
-
-            .marketpulse-main {
-
-                padding-left:
-                    .75rem
-                    !important;
-
-                padding-right:
-                    .75rem
-                    !important;
-
-                padding-top:
-                    1rem
-                    !important;
-
-                padding-bottom:
-                    1rem
-                    !important;
-            }
-
-
-            .marketpulse-main .d-flex {
-
-                min-width:
-                    0;
-            }
-
-
-            .marketpulse-main .btn {
-
-                white-space:
-                    normal;
-            }
-
-
-            /* ----------------------------------------------- */
-            /* Strategy typography remains readable on mobile */
-            /* ----------------------------------------------- */
-
-            .strategy-workspace .strategy-page-title {
-
-                font-size:
-                    1.35rem
-                    !important;
-            }
-
-
-            .strategy-workspace .strategy-page-subtitle {
-
-                font-size:
-                    .8125rem
-                    !important;
-            }
-
-
+        /* ================================================= */
+        /* 1.14 MOBILE BREAKPOINT                             */
+        /* ================================================= */
+        @media (max-width: 767.98px) { /* This conditional stylesheet applies at this viewport width or below. */
+            .marketpulse-main { /* I adjust the main page spacing. */
+                padding-left: .75rem !important; /* I reduce left padding. */
+                padding-right: .75rem !important; /* I reduce right padding. */
+                padding-top: 1rem !important; /* I set top padding. */
+                padding-bottom: 1rem !important; /* I set bottom padding. */
+            } /* I close mobile main spacing. */
+            .marketpulse-main .d-flex { /* I target flex containers within main content. */
+                min-width: 0; /* I allow them to shrink. */
+            } /* I close the flex rule. */
+            .marketpulse-main .btn { /* I target page buttons. */
+                white-space: normal; /* I allow button text to wrap. */
+            } /* I close the button rule. */
+            .strategy-workspace .strategy-page-title { /* I adjust the strategy heading. */
+                font-size: 1.35rem !important; /* I use a smaller mobile heading. */
+            } /* I close the heading rule. */
+            .strategy-workspace .strategy-page-subtitle { /* I adjust the subtitle. */
+                font-size: .8125rem !important; /* I set its mobile size. */
+            } /* I close the subtitle rule. */
             .strategy-workspace p,
             .strategy-workspace .strategy-section-header p,
             .strategy-workspace .related-tool p,
-            .strategy-workspace .validation-box p {
+            .strategy-workspace .validation-box p { /* I group mobile paragraph selectors. */
+                font-size: .8125rem !important; /* I retain readable paragraph sizing. */
+            } /* I close the paragraph rule. */
+        } /* I close the mobile media query. */
 
-                font-size:
-                    .8125rem
-                    !important;
-            }
-
-        }
-
-
-        /* ==================================================== */
-        /* VERY SMALL DEVICES                                    */
-        /* ==================================================== */
-
-        @media (max-width: 575.98px) {
-
-            .marketpulse-main {
-
-                padding-left:
-                    .625rem
-                    !important;
-
-                padding-right:
-                    .625rem
-                    !important;
-            }
-
-
+        /* ================================================= */
+        /* 1.15 VERY SMALL DEVICE BREAKPOINT                  */
+        /* ================================================= */
+        @media (max-width: 575.98px) { /* I apply additional rules for narrower viewports. */
+            .marketpulse-main { /* I adjust the main wrapper. */
+                padding-left: .625rem !important; /* I reduce left padding further. */
+                padding-right: .625rem !important; /* I reduce right padding further. */
+            } /* I close the spacing rule. */
             .marketpulse-main h1,
             .marketpulse-main h2,
-            .marketpulse-main h3 {
-
-                overflow-wrap:
-                    anywhere;
-            }
-
-        }
-
-    </style>
-
-</head>
-
+            .marketpulse-main h3 { /* I group the larger heading levels. */
+                overflow-wrap: anywhere; /* I allow long headings to break at any needed point. */
+            } /* I close the heading-wrap rule. */
+        } /* I close the small-device media query. */
+    </style> {# I close the inline stylesheet. #}
+</head> {# I close document metadata. #}
 
 {# ======================================================== #}
-{# 2. PAGE BODY                                             #}
+{# 2. BODY AND ACCESSIBILITY                               #}
 {# ======================================================== #}
+<body class="marketpulse-body d-flex flex-column min-vh-100"> {# I create a vertical flex layout with at least viewport height. #}
+    <a class="skip-link" href="#main-content"> {# I link keyboard users directly to the main-content ID. #}
+        Skip to main content{# I display the accessible navigation label. #}
+    </a> {# I close the skip link. #}
 
-<body
-    class="
-        marketpulse-body
-        d-flex
-        flex-column
-        min-vh-100
-    "
->
+{# ======================================================== #}
+{# 3. SHARED NAVIGATION — ROUTES AND CONDITIONS             #}
+{# ======================================================== #}
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow-sm marketpulse-navbar"> {# I create a sticky navbar that expands at large widths. #}
+        <div class="container-fluid px-3 px-lg-4"> {# I create a full-width wrapper with responsive padding. #}
 
+            {# 3.1 BRAND #}
+            <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="{% url 'home' %}"> {# The url tag resolves the named home route. #}
+                <i class="fa-solid fa-chart-line" aria-hidden="true"></i> {# I hide this decorative icon from assistive technology. #}
+                <span> {# I group the brand text. #}
+                    MarketPulse{# I display the project name. #}
+                </span> {# I close the brand-text wrapper. #}
+            </a> {# I close the brand link. #}
 
-    {# ==================================================== #}
-    {# 2.1 ACCESSIBILITY                                    #}
-    {# ==================================================== #}
+            {# 3.2 MOBILE TOGGLE #}
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation"> {# Bootstrap connects this button to the collapsible element with ID mainNav. #}
+                <span class="navbar-toggler-icon"></span> {# Bootstrap styles the toggle icon. #}
+            </button> {# I close the toggle button. #}
 
-    <a
-        class="skip-link"
-        href="#main-content"
-    >
-        Skip to main content
-    </a>
+            {# 3.3 COLLAPSIBLE LINKS #}
+            <div class="collapse navbar-collapse" id="mainNav"> {# I define the target controlled by the toggle. #}
+                <ul class="navbar-nav me-auto ms-lg-3"> {# I create the left navigation list with responsive spacing. #}
 
-
-    {# ==================================================== #}
-    {# 3. SHARED NAVIGATION                                 #}
-    {# ==================================================== #}
-
-    <nav
-        class="
-            navbar
-            navbar-expand-lg
-            navbar-dark
-            bg-primary
-            sticky-top
-            shadow-sm
-            marketpulse-navbar
-        "
-    >
-
-        <div class="container-fluid px-3 px-lg-4">
-
-
-            {# ================================================= #}
-            {# 3.1 MARKETPULSE BRAND                              #}
-            {# ================================================= #}
-
-            <a
-                class="
-                    navbar-brand
-                    fw-bold
-                    d-flex
-                    align-items-center
-                    gap-2
-                "
-                href="{% url 'home' %}"
-            >
-
-                <i
-                    class="fa-solid fa-chart-line"
-                    aria-hidden="true"
-                ></i>
-
-                <span>
-                    MarketPulse
-                </span>
-
-            </a>
-
-
-            {# ================================================= #}
-            {# 3.2 MOBILE NAVIGATION TOGGLE                       #}
-            {# ================================================= #}
-
-            <button
-                class="navbar-toggler"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#mainNav"
-                aria-controls="mainNav"
-                aria-expanded="false"
-                aria-label="Toggle navigation"
-            >
-
-                <span class="navbar-toggler-icon"></span>
-
-            </button>
-
-
-            {# ================================================= #}
-            {# 3.3 COLLAPSIBLE NAVIGATION                         #}
-            {# ================================================= #}
-
-            <div
-                class="collapse navbar-collapse"
-                id="mainNav"
-            >
-
-
-                {# ============================================= #}
-                {# LEFT NAVIGATION                               #}
-                {# ============================================= #}
-
-                <ul class="navbar-nav me-auto ms-lg-3">
-
-
-                    {# ----------------------------------------- #}
-                    {# HOME                                      #}
-                    {# ----------------------------------------- #}
-
-                    <li class="nav-item">
-
+                    {# HOME #}
+                    <li class="nav-item"> {# I begin the Home list item. #}
                         <a
-                            class="
-                                nav-link
-                                {% if request.resolver_match.url_name == 'home' %}
-                                    active
-                                    fw-semibold
-                                {% endif %}
-                            "
+                            class="nav-link {% if request.resolver_match.url_name == 'home' %}active fw-semibold{% endif %}"
                             href="{% url 'home' %}"
-                        >
+                        > {# Equality checks the resolved route name and conditionally adds active styling. #}
+                            <i class="fa-solid fa-house me-1" aria-hidden="true"></i> {# I display a decorative Home icon. #}
+                            Home{# I display the link label. #}
+                        </a> {# I close the Home link. #}
+                    </li> {# I close its list item. #}
 
-                            <i
-                                class="fa-solid fa-house me-1"
-                                aria-hidden="true"
-                            ></i>
+                    {% if user.is_authenticated %} {# Selection: I show these application links to signed-in users. #}
 
-                            Home
-
-                        </a>
-
-                    </li>
-
-
-                    {% if user.is_authenticated %}
-
-
-                        {# ------------------------------------- #}
-                        {# DASHBOARD                             #}
-                        {# ------------------------------------- #}
-
-                        <li class="nav-item">
-
+                        {# DASHBOARD #}
+                        <li class="nav-item"> {# I begin the Dashboard item. #}
                             <a
-                                class="
-                                    nav-link
-                                    {% if request.resolver_match.url_name == 'dashboard' %}
-                                        active
-                                        fw-semibold
-                                    {% endif %}
-                                "
+                                class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active fw-semibold{% endif %}"
                                 href="{% url 'dashboard' %}"
-                            >
+                            > {# I resolve the dashboard URL and highlight its current route. #}
+                                <i class="fa-solid fa-gauge-high me-1" aria-hidden="true"></i> {# I display its decorative icon. #}
+                                Dashboard{# I display the label. #}
+                            </a> {# I close the link. #}
+                        </li> {# I close the item. #}
 
-                                <i
-                                    class="fa-solid fa-gauge-high me-1"
-                                    aria-hidden="true"
-                                ></i>
-
-                                Dashboard
-
-                            </a>
-
-                        </li>
-
-
-                        {# ------------------------------------- #}
-                        {# DATA                                  #}
-                        {# ------------------------------------- #}
-
-                        <li class="nav-item">
-
+                        {# DATA #}
+                        <li class="nav-item"> {# I begin the Data item. #}
                             <a
-                                class="
-                                    nav-link
-                                    {% if request.resolver_match.namespace == 'data_management' %}
-                                        active
-                                        fw-semibold
-                                    {% endif %}
-                                "
+                                class="nav-link {% if request.resolver_match.namespace == 'data_management' %}active fw-semibold{% endif %}"
                                 href="{% url 'data_management:import' %}"
-                            >
+                            > {# I use a namespace comparison to highlight pages belonging to the Data app. #}
+                                <i class="fa-solid fa-database me-1" aria-hidden="true"></i> {# I display its decorative icon. #}
+                                Data{# I display the label. #}
+                            </a> {# I close the link. #}
+                        </li> {# I close the item. #}
 
-                                <i
-                                    class="fa-solid fa-database me-1"
-                                    aria-hidden="true"
-                                ></i>
-
-                                Data
-
-                            </a>
-
-                        </li>
-
-
-                        {# ------------------------------------- #}
-                        {# STRATEGIES + RISK WORKFLOW            #}
-                        {# ------------------------------------- #}
-                        {#                                       #}
-                        {# Risk is deliberately no longer a      #}
-                        {# separate top-level navigation item.    #}
-                        {#                                       #}
-                        {# Both strategy_builder and              #}
-                        {# risk_management belong visually to     #}
-                        {# the Strategies application area.       #}
-
-                        <li class="nav-item">
-
+                        {# STRATEGIES AND RISK SHARE NAVIGATION HIGHLIGHTING. #}
+                        <li class="nav-item"> {# I begin the Strategies item. #}
                             <a
-                                class="
-                                    nav-link
-                                    {% if request.resolver_match.namespace == 'strategy_builder' or request.resolver_match.namespace == 'risk_management' %}
-                                        active
-                                        fw-semibold
-                                    {% endif %}
-                                "
+                                class="nav-link {% if request.resolver_match.namespace == 'strategy_builder' or request.resolver_match.namespace == 'risk_management' %}active fw-semibold{% endif %}"
                                 href="{% url 'strategy_builder:list' %}"
-                            >
+                            > {# Boolean OR highlights this link when either application namespace matches. #}
+                                <i class="fa-solid fa-flask me-1" aria-hidden="true"></i> {# I display its decorative research icon. #}
+                                Strategies{# I display the label. #}
+                            </a> {# I close the link. #}
+                        </li> {# I close the item. #}
 
-                                <i
-                                    class="fa-solid fa-flask me-1"
-                                    aria-hidden="true"
-                                ></i>
+                    {% endif %} {# I close the signed-in application-link condition. #}
+                </ul> {# I close left navigation. #}
 
-                                Strategies
+                {# 3.4 AUTHENTICATION NAVIGATION #}
+                <ul class="navbar-nav align-items-lg-center"> {# I create the right navigation list. #}
+                    {% if user.is_authenticated %} {# I choose account controls for signed-in users. #}
 
-                            </a>
-
-                        </li>
-
-
-                    {% endif %}
-
-                </ul>
-
-
-                {# ============================================= #}
-                {# RIGHT AUTHENTICATION NAVIGATION               #}
-                {# ============================================= #}
-
-                <ul class="navbar-nav align-items-lg-center">
-
-
-                    {% if user.is_authenticated %}
-
-
-                        {# ------------------------------------- #}
-                        {# USER PROFILE                          #}
-                        {# ------------------------------------- #}
-
-                        <li class="nav-item">
-
+                        {# PROFILE #}
+                        <li class="nav-item"> {# I begin the profile item. #}
                             <a
-                                class="
-                                    nav-link
-                                    {% if request.resolver_match.namespace == 'accounts' and request.resolver_match.url_name == 'profile' %}
-                                        active
-                                        fw-semibold
-                                    {% endif %}
-                                "
+                                class="nav-link {% if request.resolver_match.namespace == 'accounts' and request.resolver_match.url_name == 'profile' %}active fw-semibold{% endif %}"
                                 href="{% url 'accounts:profile' %}"
-                            >
+                            > {# Boolean AND requires both namespace and route name to highlight Profile. #}
+                                <i class="fa-solid fa-circle-user me-1" aria-hidden="true"></i> {# I display the decorative account icon. #}
+                                {{ user.username }}{# Attribute lookup supplies the username; Django normally escapes its output. #}
+                            </a> {# I close the profile link. #}
+                        </li> {# I close the profile item. #}
 
-                                <i
-                                    class="fa-solid fa-circle-user me-1"
-                                    aria-hidden="true"
-                                ></i>
+                        {# LOGOUT — POST REQUEST #}
+                        <li class="nav-item"> {# I begin the logout item. #}
+                            <form method="post" action="{% url 'accounts:logout' %}" class="m-0"> {# I submit logout to its named Django route. #}
+                                {% csrf_token %} {# Django inserts the CSRF token for this POST form. #}
+                                <button class="nav-link border-0 bg-transparent text-start w-100" type="submit"> {# I style the submit button like a navigation link. #}
+                                    <i class="fa-solid fa-arrow-right-from-bracket me-1" aria-hidden="true"></i> {# I display a decorative logout icon. #}
+                                    Logout{# I display the action label. #}
+                                </button> {# I close the submit button. #}
+                            </form> {# I close the logout form. #}
+                        </li> {# I close the logout item. #}
 
-                                {{ user.username }}
+                    {% else %} {# I choose visitor controls when the user is not signed in. #}
 
-                            </a>
-
-                        </li>
-
-
-                        {# ------------------------------------- #}
-                        {# LOGOUT                                #}
-                        {# ------------------------------------- #}
-
-                        <li class="nav-item">
-
-                            <form
-                                method="post"
-                                action="{% url 'accounts:logout' %}"
-                                class="m-0"
-                            >
-
-                                {% csrf_token %}
-
-                                <button
-                                    class="
-                                        nav-link
-                                        border-0
-                                        bg-transparent
-                                        text-start
-                                        w-100
-                                    "
-                                    type="submit"
-                                >
-
-                                    <i
-                                        class="
-                                            fa-solid
-                                            fa-arrow-right-from-bracket
-                                            me-1
-                                        "
-                                        aria-hidden="true"
-                                    ></i>
-
-                                    Logout
-
-                                </button>
-
-                            </form>
-
-                        </li>
-
-
-                    {% else %}
-
-
-                        {# ------------------------------------- #}
-                        {# LOGIN                                 #}
-                        {# ------------------------------------- #}
-
-                        <li class="nav-item">
-
+                        {# LOGIN #}
+                        <li class="nav-item"> {# I begin the login item. #}
                             <a
-                                class="
-                                    nav-link
-                                    {% if request.resolver_match.namespace == 'accounts' and request.resolver_match.url_name == 'login' %}
-                                        active
-                                        fw-semibold
-                                    {% endif %}
-                                "
+                                class="nav-link {% if request.resolver_match.namespace == 'accounts' and request.resolver_match.url_name == 'login' %}active fw-semibold{% endif %}"
                                 href="{% url 'accounts:login' %}"
-                            >
-                                Login
-                            </a>
+                            > {# I resolve the login URL and highlight it when both route properties match. #}
+                                Login{# I display the label. #}
+                            </a> {# I close the login link. #}
+                        </li> {# I close the login item. #}
 
-                        </li>
+                        {# REGISTER #}
+                        <li class="nav-item ms-lg-2 mt-2 mt-lg-0"> {# I add responsive spacing around registration. #}
+                            <a class="btn btn-outline-light btn-sm px-3" href="{% url 'accounts:register' %}"> {# I resolve registration and style it as a button. #}
+                                Register{# I display the label. #}
+                            </a> {# I close the registration link. #}
+                        </li> {# I close the registration item. #}
 
+                    {% endif %} {# I close the authentication-navigation condition. #}
+                </ul> {# I close right navigation. #}
+            </div> {# I close the collapsible navigation region. #}
+        </div> {# I close the navbar container. #}
+    </nav> {# I close the shared navigation. #}
 
-                        {# ------------------------------------- #}
-                        {# REGISTER                              #}
-                        {# ------------------------------------- #}
+{# ======================================================== #}
+{# 4. MAIN CONTENT — MESSAGES AND CHILD TEMPLATE BLOCK      #}
+{# ======================================================== #}
+    <main id="main-content" class="marketpulse-main container-fluid flex-grow-1 px-3 px-lg-4 py-4"> {# I identify the main landmark and let it fill remaining vertical space. #}
 
-                        <li class="nav-item ms-lg-2 mt-2 mt-lg-0">
+        {# 4.1 DJANGO MESSAGES #}
+        {% if messages %} {# I check whether Django supplied notification messages. #}
+            <div class="mb-4" aria-live="polite"> {# I create a notification region with polite announcements. #}
+                {% for message in messages %} {# Iteration: I display each supplied message. #}
+                    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert"> {# A filter supplies info styling when tags are false or absent. #}
+                        {{ message }}{# I display the message text with normal template escaping. #}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button> {# Bootstrap dismisses this alert when the close control is clicked. #}
+                    </div> {# I close the notification. #}
+                {% endfor %} {# I close the message loop. #}
+            </div> {# I close the notification region. #}
+        {% endif %} {# I close the message-presence condition. #}
 
-                            <a
-                                class="
-                                    btn
-                                    btn-outline-light
-                                    btn-sm
-                                    px-3
-                                "
-                                href="{% url 'accounts:register' %}"
-                            >
-                                Register
-                            </a>
+        {# 4.2 CHILD-PAGE CONTENT #}
+        {% block content %} {# Child templates insert their page body here. #}
+        {% endblock %} {# I close the replaceable content block. #}
+    </main> {# I close the main page landmark. #}
 
-                        </li>
+{# ======================================================== #}
+{# 5. SHARED FOOTER                                        #}
+{# ======================================================== #}
+    <footer class="marketpulse-footer mt-auto py-3"> {# I create the footer with automatic top margin and vertical padding. #}
+        <div class="container-fluid px-3 px-lg-4 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 small"> {# I stack footer items, changing to a horizontal layout at small widths. #}
+            <span> {# I begin the copyright label. #}
+                &copy; {% now "Y" %} MarketPulse{# The entity displays copyright; the now tag renders the current year. #}
+            </span> {# I close the copyright label. #}
+            <span> {# I begin the educational-purpose label. #}
+                <i class="fa-solid fa-graduation-cap me-1" aria-hidden="true"></i> {# I display a decorative education icon. #}
+                Educational decision support —{# I state the project role. #}
+                not investment advice{# I complete the notice. #}
+            </span> {# I close the purpose label. #}
+        </div> {# I close the footer layout container. #}
+    </footer> {# I close the footer. #}
 
-
-                    {% endif %}
-
-                </ul>
-
-            </div>
-
-        </div>
-
-    </nav>
-
-
-    {# ==================================================== #}
-    {# 4. MAIN APPLICATION CONTENT                          #}
-    {# ==================================================== #}
-
-    <main
-        id="main-content"
-        class="
-            marketpulse-main
-            container-fluid
-            flex-grow-1
-            px-3
-            px-lg-4
-            py-4
-        "
-    >
-
-
-        {# ================================================= #}
-        {# 4.1 DJANGO MESSAGES                                #}
-        {# ================================================= #}
-
-        {% if messages %}
-
-            <div
-                class="mb-4"
-                aria-live="polite"
-            >
-
-                {% for message in messages %}
-
-                    <div
-                        class="
-                            alert
-                            alert-{{ message.tags|default:'info' }}
-                            alert-dismissible
-                            fade
-                            show
-                        "
-                        role="alert"
-                    >
-
-                        {{ message }}
-
-                        <button
-                            type="button"
-                            class="btn-close"
-                            data-bs-dismiss="alert"
-                            aria-label="Close"
-                        ></button>
-
-                    </div>
-
-                {% endfor %}
-
-            </div>
-
-        {% endif %}
-
-
-        {# ================================================= #}
-        {# 4.2 CHILD TEMPLATE CONTENT                         #}
-        {# ================================================= #}
-
-        {% block content %}
-        {% endblock %}
-
-
-    </main>
-
-
-    {# ==================================================== #}
-    {# 5. SHARED FOOTER                                     #}
-    {# ==================================================== #}
-
-    <footer
-        class="
-            marketpulse-footer
-            mt-auto
-            py-3
-        "
-    >
-
-        <div
-            class="
-                container-fluid
-                px-3
-                px-lg-4
-                d-flex
-                flex-column
-                flex-sm-row
-                justify-content-between
-                align-items-sm-center
-                gap-2
-                small
-            "
-        >
-
-            <span>
-                &copy; {% now "Y" %} MarketPulse
-            </span>
-
-
-            <span>
-
-                <i
-                    class="fa-solid fa-graduation-cap me-1"
-                    aria-hidden="true"
-                ></i>
-
-                Educational decision support —
-                not investment advice
-
-            </span>
-
-        </div>
-
-    </footer>
-
-
-    {# ==================================================== #}
-    {# 6. BOOTSTRAP JAVASCRIPT                              #}
-    {# ==================================================== #}
-
-    {% bootstrap_javascript %}
-
-
-    {# ==================================================== #}
-    {# 7. SHARED MARKETPULSE JAVASCRIPT                     #}
-    {# ==================================================== #}
-
-    <script src="{% static 'js/app.js' %}"></script>
-
-
-    {# ==================================================== #}
-    {# 8. OPTIONAL PAGE-SPECIFIC JAVASCRIPT                 #}
-    {# ==================================================== #}
-
-    {% block extra_js %}
-    {% endblock %}
-
-
-</body>
-
-</html>
+{# ======================================================== #}
+{# 6. SHARED AND OPTIONAL JAVASCRIPT                        #}
+{# ======================================================== #}
+    {% bootstrap_javascript %} {# I load Bootstrap's scripts for components such as collapse and alerts. #}
+    <script src="{% static 'js/app.js' %}"></script> {# Django resolves the shared project-script URL. #}
+    {% block extra_js %} {# Child templates can add page-specific scripts here. #}
+    {% endblock %} {# I close the optional script block. #}
+</body> {# I close the page body. #}
+</html> {# I close the HTML document. #}

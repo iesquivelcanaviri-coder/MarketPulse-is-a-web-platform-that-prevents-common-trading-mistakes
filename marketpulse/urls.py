@@ -2,951 +2,253 @@
 ============================================================
 MARKETPULSE - ROOT URL ROUTER
 ============================================================
-
-Framework mapping:
-
-Browser Request
-        ↓
-marketpulse/urls.py
-        ↓
-Individual Django Apps
-
-
-VISIBLE APPLICATION AREAS:
-
-Home
-Dashboard
-Accounts
-Data
-Strategies
-Risk
-Community
-Inbox
-API
-
-
-COMMUNITY / MESSAGING ARCHITECTURE:
-
-User
-    ↓
-Community
-    ↓
-Community Feed
-    ↓
-Create Trading / Market Post
-    ↓
-CommunityPost
-    ↓
-PostgreSQL
-
-
-User
-    ↓
-Inbox
-    ↓
-Received Messages / Sent Messages
-    ↓
-Compose Message
-    ↓
-PrivateMessage
-    ↓
-PostgreSQL
-
-
-Framework mapping:
-
-templates/home.html
-        ↓
-{% url 'community:feed' %}
-        ↓
-marketpulse/urls.py
-        ↓
-community/urls.py
-        ↓
-community.views.feed
-
-
-templates/home.html
-        ↓
-{% url 'community:inbox' %}
-        ↓
-marketpulse/urls.py
-        ↓
-community/urls.py
-        ↓
-community.views.inbox
-
-
-IMPORTANT:
-
-The following root URL registration:
-
-    path(
-        "community/",
-        include("community.urls"),
-    )
-
-connects the MarketPulse project-level URL configuration
-to the URL patterns defined inside:
-
-    community/urls.py
-
-
-community/urls.py must contain:
-
-    app_name = "community"
-
-This allows Django templates to use namespaced URLs such as:
-
-    {% url 'community:feed' %}
-
-    {% url 'community:inbox' %}
-
-    {% url 'community:compose_message' %}
-
-    {% url 'community:message_detail' message.pk %}
-
-
-AUTHENTICATION / PASSWORD RECOVERY:
-
-User
-    ↓
-Login
-    ↓
-Forgot Password
-    ↓
-Django PasswordResetView
-    ↓
-Password Reset Email
-    ↓
-Secure UID + Token Link
-    ↓
-PasswordResetConfirmView
-    ↓
-New Password
-    ↓
-PasswordResetCompleteView
-    ↓
-Return to Login
-
-
-DASHBOARD ALERT ARCHITECTURE:
-
-There are two related but different concepts:
-
-1. AlertRule
-       ↓
-   A configurable condition created by the user.
-
-   Example:
-
-       SPY
-       Price
-       Greater Than
-       800
-
-
-2. Alert
-       ↓
-   A notification/event generated when attention is required.
-
-
-Framework mapping:
-
-Dashboard
-    ↓
-Alert Rule
-    ↓
-Market Monitoring
-    ↓
-Condition Triggered
-    ↓
-Alert
-    ↓
-User Acknowledgement / Resolution
-
-
+PURPOSE:
+Connect requested URL paths to Django views and app routers.
+FRAMEWORK:
+Browser request → Root URL router → View or app URL router.
+APPLICATION AREAS:
+Home, Dashboard, Accounts, Data, Strategies, Risk, Community,
+Inbox and API.
+COMMUNITY:
+community.urls supplies community and private-messaging routes.
+Its app_name="community" supports names such as community:feed,
+community:inbox, community:compose_message and
+community:message_detail.
+PASSWORD RECOVERY:
+Request reset → Email-request confirmation → UID/token link
+→ Set new password → Reset-complete page.
+DASHBOARD ALERTS:
+AlertRule describes a monitoring condition.
+Alert represents a generated notification or event.
+Views handle editing, acknowledgement, resolution and rules.
 INTERNAL ANALYTICS:
-
-The old public /analysis/ route has been removed.
-
-The analysis_tools app can remain installed internally
-because analytical functionality may still be used by:
-
-Data
-    → Market Condition / Regime Analysis
-
-Strategies
-    → Strategy Robustness / Overfitting Analysis
-
-
-Risk now focuses on:
-
-Risk
-    → Trade Risk Planning
-    → Position Sizing
-    → Stop-Loss Analysis
-    → Reward / Risk
-
-
-Stress Testing has been removed from the current
-user-facing MarketPulse project.
-
+This root router does not register an analysis/ prefix.
+App routers determine their own remaining public routes.
+LECTURE:
+Imports, aliases, variables, lists, strings, function calls,
+keyword arguments, attribute access and modular design.
 ============================================================
 """
-
-
 # ============================================================
 # 1. DJANGO IMPORTS
 # ============================================================
-
-from django.contrib import admin
-
-# Django's built-in authentication views provide the complete
-# password-reset workflow without MarketPulse having to create
-# its own reset-token security system.
-from django.contrib.auth import views as auth_views
-
-from django.urls import (
-    include,
-    path,
-)
-
-
+from django.contrib import admin  # I import Django's administration site.
+from django.contrib.auth import views as auth_views  # I import authentication views with an alias to distinguish them from project views.
+from django.urls import (  # I begin a grouped import of URL-routing tools.
+    include,  # I import the function that delegates routing to another URL configuration.
+    path,  # I import the function that defines a URL pattern.
+)  # I finish the grouped import.
 # ============================================================
 # 2. CORE VIEW IMPORT
 # ============================================================
-
-from core import views as core_views
-
-
+from core import views as core_views  # I import core views using an alias that identifies their application.
 # ============================================================
 # 3. ROOT URL PATTERNS
 # ============================================================
-
-urlpatterns = [
-
-
+urlpatterns = [  # I create the ordered list Django uses to resolve requests.
     # ========================================================
     # 3.1 DJANGO ADMINISTRATION
     # ========================================================
-
-    path(
-        "admin/",
-        admin.site.urls,
-    ),
-
-
+    path(  # I register a URL pattern.
+        "admin/",  # I match URLs beginning with the admin prefix.
+        admin.site.urls,  # I connect this prefix to Django's admin URL configuration.
+    ),  # I finish the admin route.
     # ========================================================
     # 3.2 PUBLIC HOME PAGE
     # ========================================================
-
-    path(
-        "",
-        core_views.home,
-        name="home",
-    ),
-
-
+    path(  # I register the home-page route.
+        "",  # I match the site's root path.
+        core_views.home,  # I pass the home view reference; Django calls it when a request matches.
+        name="home",  # I give this route a name for URL reversing.
+    ),  # I finish the home route.
     # ========================================================
     # 3.3 MAIN DASHBOARD
     # ========================================================
-
-    path(
-        "dashboard/",
-        core_views.dashboard,
-        name="dashboard",
-    ),
-
-
+    path(  # I register the dashboard route.
+        "dashboard/",  # I match the dashboard path.
+        core_views.dashboard,  # I select the dashboard view.
+        name="dashboard",  # I give the route its reusable name.
+    ),  # I finish the dashboard route.
     # ========================================================
     # 3.4 DASHBOARD - EDIT GENERATED ALERT
     # ========================================================
-
-    # Browser action:
-    #
-    # /dashboard/alerts/5/edit/
-    #
-    # where:
-    #
-    # 5 = Alert database ID
-    #
-    #
-    # Framework mapping:
-    #
-    # Dashboard
-    #     ↓
-    # Edit Alert button
-    #     ↓
-    # POST request
-    #     ↓
-    # core.views.edit_alert
-    #     ↓
-    # AlertEditForm
-    #     ↓
-    # core.models.Alert
-    #     ↓
-    # PostgreSQL
-    #
-    #
-    # SECURITY:
-    #
-    # The corresponding view filters using:
-    #
-    #     user=request.user
-    #
-    # so a user cannot edit another user's Alert simply by
-    # changing the numeric ID inside the URL.
-
-    path(
-        "dashboard/alerts/<int:alert_id>/edit/",
-        core_views.edit_alert,
-        name="alert_edit",
-    ),
-
-
+    # Example: /dashboard/alerts/5/edit/
+    # The view handles forms, ownership checks and database edits.
+    path(  # I register an alert-edit route.
+        "dashboard/alerts/<int:alert_id>/edit/",  # I capture the alert ID and convert it to an integer.
+        core_views.edit_alert,  # I send the request and alert_id to the editing view.
+        name="alert_edit",  # I name the route for links and redirects.
+    ),  # I finish the alert-edit route.
     # ========================================================
     # 3.5 DASHBOARD - MARK GENERATED ALERT AS READ
     # ========================================================
-
-    # Browser action:
-    #
-    # /dashboard/alerts/5/read/
-    #
-    #
-    # Purpose:
-    #
-    # Marks the Alert as acknowledged without resolving the
-    # underlying condition.
-    #
-    #
-    # Example:
-    #
-    # High volatility Alert
-    #     ↓
-    # User reads Alert
-    #     ↓
-    # is_read = True
-    #
-    # but:
-    #
-    # is_active may remain True.
-
-    path(
-        "dashboard/alerts/<int:alert_id>/read/",
-        core_views.mark_alert_read,
-        name="alert_mark_read",
-    ),
-
-
+    # Acknowledging an alert is separate from resolving it.
+    path(  # I register the acknowledgement route.
+        "dashboard/alerts/<int:alert_id>/read/",  # I capture the ID of the alert being acknowledged.
+        core_views.mark_alert_read,  # I delegate the read-status update to this view.
+        name="alert_mark_read",  # I give the route its reusable name.
+    ),  # I finish the acknowledgement route.
     # ========================================================
     # 3.6 DASHBOARD - RESOLVE / REOPEN GENERATED ALERT
     # ========================================================
-
-    # Browser action:
-    #
-    # /dashboard/alerts/5/resolution/
-    #
-    #
-    # Framework mapping:
-    #
-    # Dashboard
-    #     ↓
-    # Resolve / Reopen
-    #     ↓
-    # core.views.toggle_alert_resolution
-    #     ↓
-    # core.models.Alert
-    #
-    #
-    # Active Alert:
-    #
-    # is_active = True
-    #     ↓
-    # Resolve
-    #     ↓
-    # is_active = False
-    # resolved_at = timestamp
-    #
-    #
-    # Resolved Alert:
-    #
-    # is_active = False
-    #     ↓
-    # Reopen
-    #     ↓
-    # is_active = True
-    # is_read = False
-    # resolved_at = None
-
-    path(
-        "dashboard/alerts/<int:alert_id>/resolution/",
-        core_views.toggle_alert_resolution,
-        name="alert_toggle_resolution",
-    ),
-
-
+    # The view controls active status and resolution timestamps.
+    path(  # I register the resolution-toggle route.
+        "dashboard/alerts/<int:alert_id>/resolution/",  # I capture the target alert's integer ID.
+        core_views.toggle_alert_resolution,  # I delegate resolution or reopening to this view.
+        name="alert_toggle_resolution",  # I name the route.
+    ),  # I finish the resolution route.
     # ========================================================
     # 3.7 DASHBOARD - CREATE ALERT RULE
     # ========================================================
-
-    # Browser action:
-    #
-    # /dashboard/alert-rules/create/
-    #
-    #
-    # Framework mapping:
-    #
-    # Dashboard
-    #     ↓
-    # Add Alert Rule
-    #     ↓
-    # POST
-    #     ↓
-    # core.views.create_alert_rule
-    #     ↓
-    # AlertRuleForm
-    #     ↓
-    # core.models.AlertRule
-    #     ↓
-    # PostgreSQL
-    #
-    #
-    # Example rule:
-    #
-    # Symbol:
-    #     SPY
-    #
-    # Metric:
-    #     Price
-    #
-    # Operator:
-    #     Greater Than
-    #
-    # Threshold:
-    #     800
-
-    path(
-        "dashboard/alert-rules/create/",
-        core_views.create_alert_rule,
-        name="alert_rule_create",
-    ),
-
-
+    # Example rule: SPY price greater than 800.
+    path(  # I register the rule-creation route.
+        "dashboard/alert-rules/create/",  # I match the create-rule path.
+        core_views.create_alert_rule,  # I select the view responsible for creating a rule.
+        name="alert_rule_create",  # I name the creation route.
+    ),  # I finish the rule-creation route.
     # ========================================================
     # 3.8 DASHBOARD - EDIT ALERT RULE
     # ========================================================
-
-    # Browser action:
-    #
-    # /dashboard/alert-rules/4/edit/
-    #
-    # where:
-    #
-    # 4 = AlertRule database ID
-    #
-    #
-    # Framework mapping:
-    #
-    # Dashboard Alert Rule table
-    #     ↓
-    # Edit
-    #     ↓
-    # POST
-    #     ↓
-    # core.views.edit_alert_rule
-    #     ↓
-    # AlertRuleForm
-    #     ↓
-    # AlertRule
-    #     ↓
-    # PostgreSQL
-    #
-    #
-    # SECURITY:
-    #
-    # The view retrieves the rule using:
-    #
-    #     user=request.user
-    #
-    # so users may modify only their own rule records.
-
-    path(
-        "dashboard/alert-rules/<int:rule_id>/edit/",
-        core_views.edit_alert_rule,
-        name="alert_rule_edit",
-    ),
-
-
+    # The view is responsible for restricting edits to the owner.
+    path(  # I register the rule-editing route.
+        "dashboard/alert-rules/<int:rule_id>/edit/",  # I capture the rule ID as an integer.
+        core_views.edit_alert_rule,  # I pass the request and rule_id to the editing view.
+        name="alert_rule_edit",  # I name the editing route.
+    ),  # I finish the rule-editing route.
     # ========================================================
     # 3.9 DASHBOARD - ENABLE / DISABLE ALERT RULE
     # ========================================================
-
-    # Browser action:
-    #
-    # /dashboard/alert-rules/4/toggle/
-    #
-    #
-    # Purpose:
-    #
-    # Allows the user to temporarily stop monitoring a rule
-    # without deleting its configuration.
-    #
-    #
-    # Enabled:
-    #
-    #     is_enabled = True
-    #
-    # Toggle:
-    #
-    #     ↓
-    #
-    # Disabled:
-    #
-    #     is_enabled = False
-    #
-    #
-    # The rule remains stored in PostgreSQL.
-
-    path(
-        "dashboard/alert-rules/<int:rule_id>/toggle/",
-        core_views.toggle_alert_rule,
-        name="alert_rule_toggle",
-    ),
-
-
+    # Toggling monitoring does not itself mean deleting the rule.
+    path(  # I register the enable-or-disable route.
+        "dashboard/alert-rules/<int:rule_id>/toggle/",  # I capture the rule whose status should change.
+        core_views.toggle_alert_rule,  # I delegate the status change to the view.
+        name="alert_rule_toggle",  # I name the toggle route.
+    ),  # I finish the rule-toggle route.
     # ========================================================
     # 3.10 DASHBOARD - DELETE ALERT RULE
     # ========================================================
-
-    # Browser action:
-    #
-    # /dashboard/alert-rules/4/delete/
-    #
-    #
-    # Purpose:
-    #
-    # Permanently remove one configurable AlertRule.
-    #
-    #
-    # IMPORTANT:
-    #
-    # Deleting an AlertRule should not automatically delete
-    # historical Alert records that may already have been
-    # generated from that rule.
-    #
-    # This preserves the historical record of previous
-    # notifications.
-
-    path(
-        "dashboard/alert-rules/<int:rule_id>/delete/",
-        core_views.delete_alert_rule,
-        name="alert_rule_delete",
-    ),
-
-
+    # Record deletion and historical-alert retention belong to
+    # the view and model relationships, not this URL declaration.
+    path(  # I register the rule-deletion route.
+        "dashboard/alert-rules/<int:rule_id>/delete/",  # I capture the target rule's ID.
+        core_views.delete_alert_rule,  # I select the view responsible for deletion.
+        name="alert_rule_delete",  # I name the deletion route.
+    ),  # I finish the rule-deletion route.
     # ========================================================
     # 3.11 PASSWORD RECOVERY - REQUEST RESET
     # ========================================================
-
-    # Browser URL:
-    #
-    # /accounts/password-reset/
-    #
-    #
-    # User workflow:
-    #
-    # Login
-    #     ↓
-    # Forgot Password?
-    #     ↓
-    # Enter registered email
-    #     ↓
-    # PasswordResetView
-    #
-    #
-    # Django handles:
-    #
-    # - Looking for an account with the submitted email
-    # - Creating the secure reset token
-    # - Creating the encoded user identifier
-    # - Building the reset email
-    # - Sending the email using EMAIL_BACKEND
-    #
-    #
-    # MarketPulse customises:
-    #
-    # - Page template
-    # - Email message template
-    # - Email subject template
-    #
-    #
-    # The actual email provider is configured separately in:
-    #
-    # marketpulse/settings.py
-
-    path(
-        "accounts/password-reset/",
-
-        auth_views.PasswordResetView.as_view(
-
-            template_name=(
-                "accounts/password_reset.html"
-            ),
-
-            email_template_name=(
-                "accounts/password_reset_email.html"
-            ),
-
-            subject_template_name=(
-                "accounts/password_reset_subject.txt"
-            ),
-
-        ),
-
-        name="password_reset",
-    ),
-
-
+    # Django handles the reset workflow; settings configure email.
+    path(  # I register the password-reset request route.
+        "accounts/password-reset/",  # I match the password-reset form path.
+        auth_views.PasswordResetView.as_view(  # I convert Django's class-based view into a callable with these settings.
+            template_name=(  # I configure the reset-request page template.
+                "accounts/password_reset.html"  # I specify the HTML template path.
+            ),  # I finish the template-name argument.
+            email_template_name=(  # I configure the reset-email body template.
+                "accounts/password_reset_email.html"  # I specify the email body template path.
+            ),  # I finish the email-template argument.
+            subject_template_name=(  # I configure the reset-email subject template.
+                "accounts/password_reset_subject.txt"  # I specify the subject template path.
+            ),  # I finish the subject-template argument.
+        ),  # I finish configuring the password-reset view.
+        name="password_reset",  # I give the route Django's standard reset-request name.
+    ),  # I finish the reset-request route.
     # ========================================================
     # 3.12 PASSWORD RECOVERY - EMAIL REQUEST COMPLETE
     # ========================================================
-
-    # Browser URL:
-    #
-    # /accounts/password-reset/done/
-    #
-    #
-    # Framework mapping:
-    #
-    # Password Reset Form
-    #     ↓
-    # Successful submission
-    #     ↓
-    # PasswordResetDoneView
-    #     ↓
-    # "Check your email" page
-    #
-    #
-    # SECURITY:
-    #
-    # The page should use neutral wording such as:
-    #
-    # "If an account exists for this email..."
-    #
-    # This avoids revealing whether a particular email
-    # address is registered with MarketPulse.
-
-    path(
-        "accounts/password-reset/done/",
-
-        auth_views.PasswordResetDoneView.as_view(
-
-            template_name=(
-                "accounts/password_reset_done.html"
-            ),
-
-        ),
-
-        name="password_reset_done",
-    ),
-
-
+    # The confirmation page should avoid revealing account existence.
+    path(  # I register the reset-request confirmation route.
+        "accounts/password-reset/done/",  # I match the confirmation-page path.
+        auth_views.PasswordResetDoneView.as_view(  # I configure Django's request-complete view.
+            template_name=(  # I supply its page template.
+                "accounts/password_reset_done.html"  # I specify the confirmation template path.
+            ),  # I finish the template argument.
+        ),  # I finish configuring the view.
+        name="password_reset_done",  # I give the route its standard password-reset name.
+    ),  # I finish the confirmation route.
     # ========================================================
     # 3.13 PASSWORD RECOVERY - SECURE RESET LINK
     # ========================================================
-
-    # Example email URL:
-    #
-    # /accounts/password-reset-confirm/
-    # <uidb64>/<token>/
-    #
-    #
-    # uidb64:
-    #
-    #     Encoded identifier for the account.
-    #
-    #
-    # token:
-    #
-    #     Secure Django-generated password-reset token.
-    #
-    #
-    # Framework mapping:
-    #
-    # User opens email
-    #     ↓
-    # Clicks secure reset URL
-    #     ↓
-    # Django validates UID + token
-    #     ↓
-    # PasswordResetConfirmView
-    #     ↓
-    # User enters new password twice
-    #     ↓
-    # Django validates password
-    #     ↓
-    # Password changed
-    #
-    #
-    # MarketPulse does NOT need to create or store its own
-    # password-reset tokens.
-
-    path(
-        (
-            "accounts/password-reset-confirm/"
-            "<uidb64>/<token>/"
-        ),
-
-        auth_views.PasswordResetConfirmView.as_view(
-
-            template_name=(
-                "accounts/password_reset_confirm.html"
-            ),
-
-        ),
-
-        name="password_reset_confirm",
-    ),
-
-
+    path(  # I register the route used by the reset link.
+        (  # I group adjacent strings that Python joins into one route string.
+            "accounts/password-reset-confirm/"  # I define the fixed route prefix.
+            "<uidb64>/<token>/"  # I capture the encoded user identifier and token as strings.
+        ),  # I finish the combined route string.
+        auth_views.PasswordResetConfirmView.as_view(  # I configure Django's token-validation and password-setting view.
+            template_name=(  # I supply the password-setting page template.
+                "accounts/password_reset_confirm.html"  # I specify the confirmation-form template path.
+            ),  # I finish the template argument.
+        ),  # I finish configuring the reset-confirm view.
+        name="password_reset_confirm",  # I give the route its standard reset-link name.
+    ),  # I finish the reset-confirm route.
     # ========================================================
     # 3.14 PASSWORD RECOVERY - RESET COMPLETE
     # ========================================================
-
-    # Browser URL:
-    #
-    # /accounts/password-reset-complete/
-    #
-    #
-    # Framework mapping:
-    #
-    # New password accepted
-    #     ↓
-    # PasswordResetCompleteView
-    #     ↓
-    # Password Updated page
-    #     ↓
-    # User returns to Login
-    #
-    #
-    # No password or token is exposed by this page.
-
-    path(
-        "accounts/password-reset-complete/",
-
-        auth_views.PasswordResetCompleteView.as_view(
-
-            template_name=(
-                "accounts/password_reset_complete.html"
-            ),
-
-        ),
-
-        name="password_reset_complete",
-    ),
-
-
+    path(  # I register the password-reset completion route.
+        "accounts/password-reset-complete/",  # I match the completion-page path.
+        auth_views.PasswordResetCompleteView.as_view(  # I configure Django's reset-complete view.
+            template_name=(  # I supply its completion-page template.
+                "accounts/password_reset_complete.html"  # I specify the template path.
+            ),  # I finish the template argument.
+        ),  # I finish configuring the completion view.
+        name="password_reset_complete",  # I give the route its standard completion name.
+    ),  # I finish the completion route.
     # ========================================================
     # 3.15 ACCOUNTS
     # ========================================================
-
-    # Includes the existing MarketPulse account system:
-    #
-    # - Registration
-    # - Login
-    # - Logout
-    # - Profile
-    # - Change Password
-    #
-    #
-    # Password recovery is intentionally defined above rather
-    # than replacing the existing accounts application.
-    #
-    # This means MarketPulse keeps its existing custom User
-    # model and registration/login workflow.
-
-    path(
-        "accounts/",
-        include(
-            "accounts.urls"
-        ),
-    ),
-
-
+    # Explicit password-reset routes remain above this app include.
+    path(  # I register the accounts application's route prefix.
+        "accounts/",  # I match the accounts prefix.
+        include(  # I delegate the remaining path to another URL configuration.
+            "accounts.urls"  # I identify the accounts URL module.
+        ),  # I finish the include call.
+    ),  # I finish the accounts registration.
     # ========================================================
     # 3.16 DATA MANAGEMENT
     # ========================================================
-
-    # Includes:
-    #
-    # - Historical market data
-    # - Alpaca imports
-    # - Historical OHLCV storage
-    # - Market Condition / regime analysis
-
-    path(
-        "data/",
-        include(
-            "data_management.urls"
-        ),
-    ),
-
-
+    path(  # I register the data application's route prefix.
+        "data/",  # I match the data prefix.
+        include(  # I delegate the remaining path.
+            "data_management.urls"  # I identify the data-management URL module.
+        ),  # I finish the include call.
+    ),  # I finish the data registration.
     # ========================================================
     # 3.17 STRATEGY BUILDER
     # ========================================================
-
-    # Includes:
-    #
-    # - Strategy and model library
-    # - User-created strategies
-    # - Strategy rules
-    # - Backtesting
-    # - Strategy comparison
-    # - Robustness / overfitting analysis
-
-    path(
-        "strategy/",
-        include(
-            "strategy_builder.urls"
-        ),
-    ),
-
-
+    path(  # I register the strategy application's route prefix.
+        "strategy/",  # I match the strategy prefix.
+        include(  # I delegate the remaining path.
+            "strategy_builder.urls"  # I identify the strategy-builder URL module.
+        ),  # I finish the include call.
+    ),  # I finish the strategy registration.
     # ========================================================
     # 3.18 RISK MANAGEMENT
     # ========================================================
-
-    # Includes:
-    #
-    # - Trade Risk Planner
-    # - Position sizing
-    # - Stop-loss analysis
-    # - Reward-to-risk calculations
-    # - Historical risk context
-    #
-    #
-    # Stress testing has been removed from the current
-    # MarketPulse user-facing Risk workflow.
-
-    path(
-        "risk/",
-        include(
-            "risk_management.urls"
-        ),
-    ),
-
-
+    # The included file determines which risk routes are exposed.
+    path(  # I register the risk application's route prefix.
+        "risk/",  # I match the risk prefix.
+        include(  # I delegate the remaining path.
+            "risk_management.urls"  # I identify the risk-management URL module.
+        ),  # I finish the include call.
+    ),  # I finish the risk registration.
     # ========================================================
     # 3.19 COMMUNITY & PRIVATE MESSAGING
     # ========================================================
-
-    # This route connects:
-    #
-    # marketpulse/urls.py
-    #       ↓
-    # community/urls.py
-    #
-    #
-    # The community app provides:
-    #
-    # - Community trading feed
-    # - Market updates
-    # - Trading warnings
-    # - Risk alerts
-    # - Trading discussions
-    # - Private user-to-user messaging
-    # - Inbox
-    # - Sent messages
-    # - Message detail
-    # - Compose message
-    #
-    #
-    # Browser URLs:
-    #
-    # /community/
-    #
-    #     → Community Feed
-    #
-    #
-    # /community/inbox/
-    #
-    #     → User Inbox
-    #
-    #
-    # /community/inbox/compose/
-    #
-    #     → Compose New Message
-    #
-    #
-    # /community/inbox/<id>/
-    #
-    #     → Open Individual Message
-    #
-    #
-    # IMPORTANT:
-    #
-    # community/urls.py must contain:
-    #
-    #     app_name = "community"
-    #
-    #
-    # This creates the URL namespace used by templates:
-    #
-    #     community:feed
-    #
-    #     community:inbox
-    #
-    #     community:compose_message
-    #
-    #     community:message_detail
-    #
-    #
-    # Example from home.html:
-    #
-    #     {% url 'community:feed' %}
-    #
-    #
-    # Django resolves that as:
-    #
-    # community
-    #     ↓
-    # community/urls.py
-    #     ↓
-    # name="feed"
-    #     ↓
-    # community.views.feed
-
-    path(
-        "community/",
-        include(
-            "community.urls"
-        ),
-    ),
-
-
+    # community.urls supplies its routes and community namespace.
+    # Templates can use {% url 'community:feed' %} when configured.
+    path(  # I register the community application's route prefix.
+        "community/",  # I match the community prefix.
+        include(  # I delegate the remaining path.
+            "community.urls"  # I identify the community and messaging URL module.
+        ),  # I finish the include call.
+    ),  # I finish the community registration.
     # ========================================================
     # 3.20 REST API
     # ========================================================
-
-    # Includes:
-    #
-    # - Dashboard live market API
-    # - Alpaca asset search
-    # - Alpaca asset details
-    # - Alpaca snapshots
-    # - Alpaca historical chart data
-    # - Strategy API
-    # - Backtest API
-    # - Risk APIs
-    # - Optional MATLAB bridge endpoints
-
-    path(
-        "api/",
-        include(
-            "api.urls"
-        ),
-    ),
-
-]
+    path(  # I register the API route prefix.
+        "api/",  # I match the API prefix.
+        include(  # I delegate the remaining path.
+            "api.urls"  # I identify the API URL module.
+        ),  # I finish the include call.
+    ),  # I finish the API registration.
+]  # I finish the ordered root URL list.

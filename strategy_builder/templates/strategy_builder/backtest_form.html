@@ -1,2 +1,38 @@
-{% extends 'base.html' %}<!-- ======================================================== BACKTEST FORM: dates/capital → realistic engine. -->
-{% block title %}Backtest | MarketPulse{% endblock %}{% block content %}<h1 class="h3">Backtest {{ strategy.name }}</h1><div class="alert alert-info">Includes commissions, slippage, overnight gaps, session-open execution and volume capacity.</div><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Run Backtest</button></form>{% endblock %}
+{% extends 'base.html' %} {# Template inheritance: I reuse the shared MarketPulse layout. #}
+<!-- ======================================================== BACKTEST FORM: dates/capital → realistic engine. -->
+
+{# ======================================================== #}
+{# 1. PAGE TITLE                                            #}
+{# ======================================================== #}
+{% block title %}Backtest | MarketPulse{% endblock %} {# Named block: I set this page's browser title. #}
+
+{# ======================================================== #}
+{# 2. PAGE CONTENT AND STRATEGY HEADING                      #}
+{# ======================================================== #}
+{% block content %} {# Named block: I insert this page into the shared content area. #}
+<h1 class="h3">Backtest {{ strategy.name }}</h1> {# Heading and variable lookup: I display the name of the strategy being tested. #}
+
+{# ======================================================== #}
+{# 3. EXECUTION-MODEL NOTICE                                #}
+{# ======================================================== #}
+<div class="alert alert-info"> {# HTML container and CSS classes: I display an informational notice. #}
+    Includes commissions, slippage, overnight gaps, session-open execution and volume capacity. {# Static text: I describe the engine's execution assumptions; this template does not calculate them. #}
+</div> {# Closing tag: I finish the notice. #}
+
+{# ======================================================== #}
+{# 4. POST FORM AND CSRF PROTECTION                          #}
+{# ======================================================== #}
+<form method="post"> {# Form and HTTP method: I submit the entered settings to the current URL using POST. #}
+    {% csrf_token %} {# Django template tag: I include a token for server-side CSRF checks. #}
+
+    {# -------------------------------------------------------- #}
+    {# 4.1 AUTOMATIC FORM RENDERING                             #}
+    {# -------------------------------------------------------- #}
+    {{ form.as_p }} {# Form rendering: Django displays the form fields in paragraphs, including labels and validation feedback. #}
+
+    {# -------------------------------------------------------- #}
+    {# 4.2 SUBMIT THE BACKTEST REQUEST                          #}
+    {# -------------------------------------------------------- #}
+    <button class="btn btn-primary">Run Backtest</button> {# Button: With no type specified, this button submits its containing form. #}
+</form> {# Closing tag: I finish the backtest form. #}
+{% endblock %} {# Block boundary: I finish the page content. #}

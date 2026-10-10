@@ -3,7 +3,108 @@
 MARKETPULSE - CORE FORMS
 ============================================================
 
-Framework mapping:
+SHORT PURPOSE:
+
+This file controls MarketPulse Alert forms.
+
+It receives data entered by the user, prepares the form fields,
+checks whether the data is valid, cleans the data, and connects
+the validated data to the Alert and AlertRule Django models.
+
+FRAMEWORK:
+
+Browser / Dashboard
+    ↓
+HTML Form / Modal
+    ↓
+core/views.py
+    ↓
+core/forms.py
+    ↓
+Validation / Cleaning
+    ↓
+core/models.py
+    ↓
+Django ORM
+    ↓
+PostgreSQL / Neon
+
+If validation fails:
+
+core/forms.py
+    ↓
+core/views.py
+    ↓
+Template
+    ↓
+Error shown to user
+
+
+LECTURE - PROGRAMMING LANGUAGE FEATURES / CONCEPTS:
+
+Module
+    → This Python file is a module.
+
+Import
+    → Imports Django forms and MarketPulse models.
+
+Class
+    → AlertEditForm and AlertRuleForm are Python classes.
+
+Inheritance
+    → Both forms inherit from Django forms.ModelForm.
+
+Object-Oriented Programming
+    → Forms combine data and behaviour inside classes.
+
+Nested Class
+    → Meta is a class inside each ModelForm class.
+
+Functions / Methods
+    → clean_title(), clean_symbol(), clean(), etc.
+
+Parameters
+    → self, *args and **kwargs pass information to methods.
+
+Variables
+    → title, message, symbol, threshold and cooldown.
+
+Lists
+    → fields stores ordered collections of field names.
+
+Dictionaries
+    → widgets, labels, help_texts and attrs use key/value pairs.
+
+Sets
+    → allowed_characters stores unique permitted characters.
+
+Strings
+    → Used for labels, messages, field names and HTML attributes.
+
+Conditionals
+    → if statements make decisions during validation.
+
+Boolean Logic
+    → and / not / comparisons combine conditions.
+
+Iteration
+    → The generator expression checks each symbol character.
+
+Exceptions
+    → ValidationError stops invalid form data.
+
+Return Values
+    → Cleaning methods return validated values.
+
+Method Overriding
+    → clean() and __init__() extend Django's existing methods.
+
+super()
+    → Calls the inherited Django ModelForm implementation.
+
+============================================================
+FRAMEWORK MAPPING
+============================================================
 
 Dashboard
     ↓
@@ -17,13 +118,11 @@ Django ORM
     ↓
 PostgreSQL / Neon
 
-
 ============================================================
 FORM RESPONSIBILITIES
 ============================================================
 
 This module contains two separate concepts.
-
 
 1. AlertEditForm
 ------------------------------------------------------------
@@ -43,7 +142,6 @@ The user may edit presentation fields such as:
     - message
     - action URL
     - read status
-
 
 2. AlertRuleForm
 ------------------------------------------------------------
@@ -68,7 +166,6 @@ This represents:
 
         SPY price > 800
 
-
 AlertRule therefore defines:
 
     WHAT MarketPulse should monitor.
@@ -76,7 +173,6 @@ AlertRule therefore defines:
 Alert defines:
 
     WHAT MarketPulse has already detected.
-
 
 ============================================================
 SECURITY / DATA INTEGRITY
@@ -107,27 +203,36 @@ core/views.py rather than being supplied by the browser.
 
 # ============================================================
 # 1. DJANGO IMPORTS
+# Programming concept: MODULES AND IMPORTS
+# Imports let this module reuse code provided by Django.
 # ============================================================
 
-from django import forms
+from django import forms  # Imports Django's forms framework into this Python module.
 
 
 # ============================================================
 # 2. CORE MODELS
+# Programming concept: RELATIVE IMPORTS / REUSING CLASSES
+# "." means import from the current Django application.
 # ============================================================
 
-from .models import (
-    Alert,
-    AlertRule,
+from .models import (  # Imports model classes defined inside core/models.py.
+    Alert,  # Imports the Alert model representing an alert already created.
+    AlertRule,  # Imports the AlertRule model representing a condition to monitor.
 )
 
 
 # ============================================================
 # 3. ALERT EDIT FORM
+# Programming concepts:
+# CLASS + INHERITANCE + OBJECT-ORIENTED PROGRAMMING
+#
+# AlertEditForm becomes a specialised version of ModelForm.
+# Django provides ModelForm behaviour and this class customises it.
 # ============================================================
 
 class AlertEditForm(
-    forms.ModelForm
+    forms.ModelForm  # Inheritance: this form receives ModelForm functionality from Django.
 ):
     """
     ============================================================
@@ -150,188 +255,164 @@ class AlertEditForm(
     ============================================================
     """
 
-
     # ========================================================
     # 3.1 FORM CONFIGURATION
+    # Programming concept: NESTED CLASS
+    #
+    # Meta is a class inside AlertEditForm.
+    # Django reads it as configuration for the ModelForm.
     # ========================================================
 
     class Meta:
-
-        model = Alert
-
+        model = Alert  # Associates this ModelForm with the Alert database model.
 
         # ----------------------------------------------------
         # USER-EDITABLE ALERT FIELDS
+        # Programming concept: LIST
+        #
+        # A list keeps several values together in an ordered
+        # collection.
         # ----------------------------------------------------
 
         fields = [
-
-            "alert_type",
-
-            "severity",
-
-            "title",
-
-            "message",
-
-            "action_url",
-
-            "is_read",
-
+            "alert_type",  # Makes the Alert alert_type field available in the form.
+            "severity",  # Makes the Alert severity field available in the form.
+            "title",  # Makes the Alert title field available in the form.
+            "message",  # Makes the Alert message field available in the form.
+            "action_url",  # Makes the Alert action URL available in the form.
+            "is_read",  # Makes the Alert read-status field available in the form.
         ]
-
 
         # ----------------------------------------------------
         # BOOTSTRAP FORM WIDGETS
+        # Programming concept: DICTIONARY
+        #
+        # A dictionary stores key:value pairs.
+        # Here:
+        #
+        # field name → Django HTML widget
         # ----------------------------------------------------
 
         widgets = {
-
-
             # ------------------------------------------------
             # ALERT TYPE
             # ------------------------------------------------
-
             "alert_type":
-                forms.Select(
-                    attrs={
-
+                forms.Select(  # Creates an HTML <select> control for alert_type.
+                    attrs={  # Dictionary containing HTML attributes for the widget.
                         "class":
-                            "form-select",
-
+                            "form-select",  # Adds Bootstrap's form-select CSS class.
                     }
                 ),
-
 
             # ------------------------------------------------
             # SEVERITY
             # ------------------------------------------------
-
             "severity":
-                forms.Select(
-                    attrs={
-
+                forms.Select(  # Creates an HTML <select> control for severity.
+                    attrs={  # Supplies HTML attributes to the select element.
                         "class":
-                            "form-select",
-
+                            "form-select",  # Applies Bootstrap select styling.
                     }
                 ),
-
 
             # ------------------------------------------------
             # TITLE
             # ------------------------------------------------
-
             "title":
-                forms.TextInput(
-                    attrs={
-
+                forms.TextInput(  # Creates a normal HTML text input.
+                    attrs={  # Defines extra HTML attributes.
                         "class":
-                            "form-control",
-
+                            "form-control",  # Applies Bootstrap text-input styling.
                         "placeholder":
-                            "Alert title",
-
+                            "Alert title",  # Displays guidance before the user enters a title.
                     }
                 ),
-
 
             # ------------------------------------------------
             # MESSAGE
             # ------------------------------------------------
-
             "message":
-                forms.Textarea(
-                    attrs={
-
+                forms.Textarea(  # Creates a multi-line HTML textarea.
+                    attrs={  # Stores textarea HTML attributes.
                         "class":
-                            "form-control",
-
+                            "form-control",  # Applies Bootstrap form-control styling.
                         "rows":
-                            4,
-
+                            4,  # Displays the textarea approximately four rows high.
                         "placeholder":
                             (
                                 "Explain what requires "
                                 "attention."
-                            ),
-
+                            ),  # Gives the user instructions inside the empty textarea.
                     }
                 ),
-
 
             # ------------------------------------------------
             # ACTION URL
             # ------------------------------------------------
-
             "action_url":
-                forms.TextInput(
-                    attrs={
-
+                forms.TextInput(  # Creates a text field for the optional action URL.
+                    attrs={  # Defines HTML attributes for this input.
                         "class":
-                            "form-control",
-
+                            "form-control",  # Applies Bootstrap input styling.
                         "placeholder":
-                            "/data/import/?symbol=AAPL",
-
+                            "/data/import/?symbol=AAPL",  # Shows an example internal application URL.
                     }
                 ),
-
 
             # ------------------------------------------------
             # READ STATUS
             # ------------------------------------------------
-
             "is_read":
-                forms.CheckboxInput(
-                    attrs={
-
+                forms.CheckboxInput(  # Creates an HTML checkbox for the Boolean field.
+                    attrs={  # Defines attributes belonging to the checkbox.
                         "class":
-                            "form-check-input",
-
+                            "form-check-input",  # Applies Bootstrap checkbox styling.
                     }
                 ),
-
         }
-
 
     # ========================================================
     # 3.2 CLEAN TITLE
+    # Programming concepts:
+    # METHOD + VARIABLE + DICTIONARY LOOKUP + RETURN VALUE
+    #
+    # Django automatically calls clean_title() while validating
+    # the field named "title".
     # ========================================================
 
     def clean_title(
-        self,
+        self,  # self represents the current AlertEditForm object.
     ):
         """
         Remove unnecessary leading/trailing whitespace from the
         Alert title.
         """
 
-        title = (
-            self.cleaned_data
-            .get(
-                "title",
-                "",
+        title = (  # Creates a local variable containing the submitted title.
+            self.cleaned_data  # cleaned_data stores form values Django has already processed.
+            .get(  # get() safely retrieves a dictionary value.
+                "title",  # Looks for the title field.
+                "",  # Uses an empty string if title is unavailable.
             )
         )
 
-
-        return (
-            str(
-                title
-                or
-                ""
+        return (  # Sends the cleaned title back to Django.
+            str(  # Converts the value to a Python string.
+                title  # Uses the submitted title.
+                or  # Boolean operator: if title is false/empty, use the next value.
+                ""  # Provides a safe empty-string fallback.
             )
-            .strip()
+            .strip()  # Removes whitespace from the beginning and end.
         )
-
 
     # ========================================================
     # 3.3 CLEAN MESSAGE
+    # Programming concept: FIELD-SPECIFIC VALIDATION METHOD
     # ========================================================
 
     def clean_message(
-        self,
+        self,  # self refers to this specific form instance.
     ):
         """
         Remove unnecessary whitespace from the alert message.
@@ -339,31 +420,33 @@ class AlertEditForm(
         The message content itself is not changed.
         """
 
-        message = (
-            self.cleaned_data
-            .get(
-                "message",
-                "",
+        message = (  # Stores the submitted message in a local variable.
+            self.cleaned_data  # Accesses Django's cleaned form-data dictionary.
+            .get(  # Safely reads a value by its dictionary key.
+                "message",  # Requests the message field.
+                "",  # Uses an empty string when no value exists.
             )
         )
 
-
-        return (
-            str(
-                message
-                or
-                ""
+        return (  # Returns the final cleaned message to Django.
+            str(  # Makes sure the value is represented as text.
+                message  # Uses the submitted message.
+                or  # Falls back when message evaluates to false.
+                ""  # Empty-string fallback.
             )
-            .strip()
+            .strip()  # Removes unwanted whitespace from both ends.
         )
-
 
     # ========================================================
     # 3.4 CLEAN ACTION URL
+    # Programming concept: DATA NORMALISATION
+    #
+    # Normalisation converts equivalent user inputs into one
+    # consistent stored representation.
     # ========================================================
 
     def clean_action_url(
-        self,
+        self,  # self gives this method access to the current form object.
     ):
         """
         Normalise the optional Alert action URL.
@@ -377,31 +460,35 @@ class AlertEditForm(
             "/data/import/?symbol=AAPL"
         """
 
-        action_url = (
-            self.cleaned_data
-            .get(
-                "action_url",
-                "",
+        action_url = (  # Stores the submitted URL in a local variable.
+            self.cleaned_data  # Reads from Django's cleaned form-data dictionary.
+            .get(  # Gets a dictionary value safely.
+                "action_url",  # Requests the action_url field.
+                "",  # Uses an empty string if the field has no value.
             )
         )
 
-
-        return (
-            str(
-                action_url
-                or
-                ""
+        return (  # Returns the normalised URL.
+            str(  # Converts the value into text.
+                action_url  # Uses the URL entered by the user.
+                or  # Uses the fallback if no URL was supplied.
+                ""  # Safe empty-string fallback.
             )
-            .strip()
+            .strip()  # Removes spaces from the beginning and end.
         )
 
 
 # ============================================================
 # 4. ALERT RULE FORM
+# Programming concepts:
+# CLASS + INHERITANCE + ABSTRACTION
+#
+# The form hides much of Django's database/form machinery and
+# exposes only the fields needed to define an alert rule.
 # ============================================================
 
 class AlertRuleForm(
-    forms.ModelForm
+    forms.ModelForm  # Inherits Django ModelForm functionality.
 ):
     """
     ============================================================
@@ -428,7 +515,6 @@ class AlertRuleForm(
 
         AAPL price > 260
 
-
     Another example:
 
         Symbol:
@@ -447,7 +533,6 @@ class AlertRuleForm(
 
         IWM daily percentage change < -3%
 
-
     Framework mapping:
 
     Dashboard Alert Rule Modal
@@ -462,350 +547,298 @@ class AlertRuleForm(
     ============================================================
     """
 
-
     # ========================================================
     # 4.1 FORM CONFIGURATION
+    # Programming concept: DECLARATIVE CONFIGURATION
+    #
+    # Instead of manually programming every HTML field, Meta
+    # describes what Django should build.
     # ========================================================
 
     class Meta:
-
-        model = AlertRule
-
+        model = AlertRule  # Connects this form with the AlertRule model.
 
         # ----------------------------------------------------
         # USER-EDITABLE ALERT RULE FIELDS
+        # Programming concept: LIST
         # ----------------------------------------------------
 
         fields = [
-
-            "symbol",
-
-            "metric",
-
-            "operator",
-
-            "threshold",
-
-            "message",
-
-            "cooldown_minutes",
-
-            "is_enabled",
-
+            "symbol",  # Market ticker that the rule should monitor.
+            "metric",  # Measurement such as price, volume or volatility.
+            "operator",  # Comparison operation used by the rule.
+            "threshold",  # Number against which the metric is compared.
+            "message",  # Optional custom message for generated alerts.
+            "cooldown_minutes",  # Minimum delay between repeated alerts.
+            "is_enabled",  # Boolean controlling whether the rule is active.
         ]
-
 
         # ----------------------------------------------------
         # BOOTSTRAP FORM WIDGETS
+        # Programming concepts:
+        # DICTIONARIES + OBJECT CREATION + KEYWORD ARGUMENTS
         # ----------------------------------------------------
 
         widgets = {
-
-
             # ------------------------------------------------
             # MARKET SYMBOL
             # ------------------------------------------------
-
             "symbol":
-                forms.TextInput(
-                    attrs={
-
+                forms.TextInput(  # Creates a text-input widget object.
+                    attrs={  # Dictionary of HTML attributes.
                         "class":
-                            "form-control",
-
+                            "form-control",  # Bootstrap styling class.
                         "placeholder":
-                            "AAPL, MSFT, SPY...",
-
+                            "AAPL, MSFT, SPY...",  # Example ticker symbols.
                         "autocomplete":
-                            "off",
-
+                            "off",  # Asks the browser not to autofill previous values.
                         "maxlength":
-                            "20",
-
+                            "20",  # Limits the HTML input to twenty characters.
                     }
                 ),
-
 
             # ------------------------------------------------
             # METRIC
             # ------------------------------------------------
-
             "metric":
-                forms.Select(
-                    attrs={
-
+                forms.Select(  # Creates a dropdown/select element.
+                    attrs={  # Supplies HTML attributes.
                         "class":
-                            "form-select",
-
+                            "form-select",  # Adds Bootstrap dropdown styling.
                     }
                 ),
-
 
             # ------------------------------------------------
             # COMPARISON OPERATOR
             # ------------------------------------------------
-
             "operator":
-                forms.Select(
-                    attrs={
-
+                forms.Select(  # Creates a dropdown for the comparison operator.
+                    attrs={  # Stores HTML attributes.
                         "class":
-                            "form-select",
-
+                            "form-select",  # Applies Bootstrap select styling.
                     }
                 ),
-
 
             # ------------------------------------------------
             # THRESHOLD
             # ------------------------------------------------
-
             "threshold":
-                forms.NumberInput(
-                    attrs={
-
+                forms.NumberInput(  # Creates an HTML numeric input.
+                    attrs={  # Contains its HTML attributes.
                         "class":
-                            "form-control",
-
+                            "form-control",  # Adds Bootstrap input styling.
                         "step":
-                            "0.01",
-
+                            "0.01",  # Allows decimal increments such as 0.01.
                         "placeholder":
-                            "Enter threshold",
-
+                            "Enter threshold",  # Explains what value the user should enter.
                     }
                 ),
-
 
             # ------------------------------------------------
             # CUSTOM ALERT MESSAGE
             # ------------------------------------------------
-
             "message":
-                forms.TextInput(
-                    attrs={
-
+                forms.TextInput(  # Creates a single-line text field.
+                    attrs={  # Defines browser-side HTML attributes.
                         "class":
-                            "form-control",
-
+                            "form-control",  # Applies Bootstrap styling.
                         "placeholder":
                             (
                                 "Optional alert message"
-                            ),
-
+                            ),  # Explains that this field does not have to be populated.
                         "maxlength":
-                            "255",
-
+                            "255",  # Limits the browser input to 255 characters.
                     }
                 ),
-
 
             # ------------------------------------------------
             # COOLDOWN
             # ------------------------------------------------
-
             "cooldown_minutes":
-                forms.NumberInput(
-                    attrs={
-
+                forms.NumberInput(  # Creates a numeric cooldown input.
+                    attrs={  # Dictionary containing HTML attributes.
                         "class":
-                            "form-control",
-
+                            "form-control",  # Applies Bootstrap styling.
                         "min":
-                            "1",
-
+                            "1",  # Browser-side minimum value is one.
                         "step":
-                            "1",
-
+                            "1",  # Allows whole-number increments.
                         "placeholder":
-                            "60",
-
+                            "60",  # Displays an example cooldown.
                     }
                 ),
-
 
             # ------------------------------------------------
             # ENABLE / DISABLE
             # ------------------------------------------------
-
             "is_enabled":
-                forms.CheckboxInput(
-                    attrs={
-
+                forms.CheckboxInput(  # Creates a Boolean checkbox.
+                    attrs={  # Provides the checkbox HTML attributes.
                         "class":
-                            "form-check-input",
-
+                            "form-check-input",  # Bootstrap checkbox styling.
                     }
                 ),
-
         }
-
 
         # ----------------------------------------------------
         # FIELD LABELS
+        # Programming concept: DICTIONARY
+        #
+        # key   = Django/model field name
+        # value = user-friendly label
         # ----------------------------------------------------
 
         labels = {
-
             "symbol":
-                "Market Symbol",
-
+                "Market Symbol",  # User-facing label for symbol.
             "metric":
-                "Alert Metric",
-
+                "Alert Metric",  # User-facing label for metric.
             "operator":
-                "Condition",
-
+                "Condition",  # User-facing label for operator.
             "threshold":
-                "Threshold",
-
+                "Threshold",  # User-facing label for threshold.
             "message":
-                "Alert Message",
-
+                "Alert Message",  # User-facing label for message.
             "cooldown_minutes":
-                "Cooldown (Minutes)",
-
+                "Cooldown (Minutes)",  # User-facing label for cooldown.
             "is_enabled":
-                "Enable Alert Rule",
-
+                "Enable Alert Rule",  # User-facing label for enabled status.
         }
-
 
         # ----------------------------------------------------
         # FIELD HELP TEXT
+        # Programming concept: DICTIONARY OF STRINGS
         # ----------------------------------------------------
 
         help_texts = {
-
             "symbol":
                 (
                     "Enter the ticker MarketPulse should "
                     "monitor, for example AAPL, SPY or QQQ."
-                ),
-
+                ),  # Explains what the symbol field expects.
             "metric":
                 (
                     "Select the market measurement that should "
                     "trigger the rule."
-                ),
-
+                ),  # Explains the purpose of the metric.
             "operator":
                 (
                     "Choose how the current market value should "
                     "be compared with the threshold."
-                ),
-
+                ),  # Explains the comparison operator.
             "threshold":
                 (
                     "Enter the value that should trigger the "
                     "alert condition."
-                ),
-
+                ),  # Explains the threshold value.
             "message":
                 (
                     "Optional message shown when MarketPulse "
                     "creates an Alert."
-                ),
-
+                ),  # Explains the optional alert message.
             "cooldown_minutes":
                 (
                     "Minimum time before the same rule may "
                     "trigger another alert."
-                ),
-
+                ),  # Explains why cooldown exists.
             "is_enabled":
                 (
                     "Disabled rules remain stored but are not "
                     "evaluated."
-                ),
-
+                ),  # Explains the Boolean enabled state.
         }
-
 
     # ========================================================
     # 4.2 INITIAL FORM CONFIGURATION
+    # Programming concepts:
+    # CONSTRUCTOR + PARAMETERS + *ARGS + **KWARGS + SUPER()
+    #
+    # __init__() runs when an AlertRuleForm object is created.
+    #
+    # *args:
+    # collects positional arguments.
+    #
+    # **kwargs:
+    # collects named/keyword arguments.
+    #
+    # super():
+    # calls Django ModelForm's existing __init__() method.
     # ========================================================
 
     def __init__(
-        self,
-        *args,
-        **kwargs,
+        self,  # Current AlertRuleForm object.
+        *args,  # Collects any positional arguments supplied to the form.
+        **kwargs,  # Collects any keyword arguments supplied to the form.
     ):
         """
         Apply small usability improvements after Django creates
         the ModelForm fields.
         """
 
-        super().__init__(
-            *args,
-            **kwargs,
+        super().__init__(  # Calls the inherited Django ModelForm constructor.
+            *args,  # Passes positional arguments to the parent constructor.
+            **kwargs,  # Passes keyword arguments to the parent constructor.
         )
-
 
         # ----------------------------------------------------
         # SYMBOL INPUT
+        # Programming concept: CONDITIONAL
+        #
+        # The if statement checks whether a condition is true
+        # before executing the indented block.
         # ----------------------------------------------------
 
-        if "symbol" in self.fields:
-
-            self.fields[
-                "symbol"
-            ].widget.attrs.update(
+        if "symbol" in self.fields:  # Checks that Django created a field named symbol.
+            self.fields[  # Accesses the form's dictionary of fields.
+                "symbol"  # Selects the symbol field by its dictionary key.
+            ].widget.attrs.update(  # Adds attributes to the symbol field's HTML widget.
                 {
-
                     "aria-label":
-                        "Market symbol",
-
+                        "Market symbol",  # Adds an accessibility label.
                 }
             )
-
 
         # ----------------------------------------------------
         # THRESHOLD INPUT
         # ----------------------------------------------------
 
-        if "threshold" in self.fields:
-
-            self.fields[
-                "threshold"
-            ].widget.attrs.update(
+        if "threshold" in self.fields:  # Checks that the threshold field exists.
+            self.fields[  # Accesses the current form's fields.
+                "threshold"  # Selects the threshold field.
+            ].widget.attrs.update(  # Adds another HTML attribute to its widget.
                 {
-
                     "aria-label":
-                        "Alert threshold",
-
+                        "Alert threshold",  # Provides an accessible name for the input.
                 }
             )
-
 
         # ----------------------------------------------------
         # DEFAULT COOLDOWN
         # ----------------------------------------------------
 
-        if (
-            "cooldown_minutes"
-            in
-            self.fields
+        if (  # Starts a multi-line Boolean condition.
+            "cooldown_minutes"  # Field name being searched for.
+            in  # Membership operator checks whether the key exists.
+            self.fields  # Dictionary containing the form fields.
         ):
-
-            self.fields[
-                "cooldown_minutes"
-            ].widget.attrs.update(
+            self.fields[  # Accesses the form fields collection.
+                "cooldown_minutes"  # Selects the cooldown field.
+            ].widget.attrs.update(  # Adds attributes to its HTML widget.
                 {
-
                     "aria-label":
-                        "Alert cooldown minutes",
-
+                        "Alert cooldown minutes",  # Accessibility label for the cooldown field.
                 }
             )
 
-
     # ========================================================
     # 4.3 CLEAN MARKET SYMBOL
+    # Programming concepts:
+    # METHOD + NORMALISATION + STRING METHODS + CONDITIONALS
+    # + SETS + ITERATION + GENERATOR EXPRESSION + EXCEPTIONS
     # ========================================================
 
     def clean_symbol(
-        self,
+        self,  # Current AlertRuleForm object.
     ):
         """
         Normalise the selected asset ticker.
@@ -822,37 +855,35 @@ class AlertRuleForm(
         MarketPulse consistently stores symbols in uppercase.
         """
 
-        symbol = (
-            self.cleaned_data
-            .get(
-                "symbol",
-                "",
+        symbol = (  # Creates a local variable for the submitted ticker.
+            self.cleaned_data  # Dictionary containing Django-cleaned values.
+            .get(  # Retrieves a dictionary value safely.
+                "symbol",  # Requests the symbol field.
+                "",  # Provides an empty-string default.
             )
         )
 
-
-        symbol = (
-            str(
-                symbol
-                or
-                ""
+        symbol = (  # Reassigns symbol with its normalised value.
+            str(  # Converts the value to a string.
+                symbol  # Uses the value previously retrieved.
+                or  # Boolean OR supplies the fallback when necessary.
+                ""  # Empty-string fallback.
             )
-            .strip()
-            .upper()
+            .strip()  # Removes leading and trailing spaces.
+            .upper()  # Converts letters to uppercase.
         )
 
-
-        if not symbol:
-
-            raise forms.ValidationError(
+        if not symbol:  # Tests whether the cleaned symbol is empty.
+            raise forms.ValidationError(  # Raises a Django validation exception.
                 (
                     "A market symbol is required."
-                )
+                )  # Message that Django can display beside the form.
             )
-
 
         # ----------------------------------------------------
         # SIMPLE TICKER VALIDATION
+        # Programming concepts:
+        # SET + MEMBERSHIP + ITERATION
         # ----------------------------------------------------
         #
         # Alpaca ticker symbols may include some punctuation
@@ -872,53 +903,49 @@ class AlertRuleForm(
         # hyphens
         # ----------------------------------------------------
 
-        allowed_characters = set(
+        allowed_characters = set(  # Creates a set containing unique allowed characters.
             (
-                "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                "0123456789"
-                ".-"
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ"  # Allows uppercase letters.
+                "0123456789"  # Allows numeric digits.
+                ".-"  # Allows periods and hyphens.
             )
         )
 
+        if not all(  # all() is true only when every generated Boolean value is true.
+            character  # Current character being inspected.
+            in  # Membership operator.
+            allowed_characters  # Checks whether the character belongs to the allowed set.
 
-        if not all(
-            character
-            in
-            allowed_characters
-
-            for character
-            in
-            symbol
+            for character  # Iteration variable representing one symbol character at a time.
+            in  # Starts iteration through the following value.
+            symbol  # Iterates over every character in the ticker symbol.
         ):
-
-            raise forms.ValidationError(
+            raise forms.ValidationError(  # Stops validation for an invalid ticker.
                 (
                     "Enter a valid market symbol using letters, "
                     "numbers, periods or hyphens only."
-                )
+                )  # Explains the accepted characters to the user.
             )
 
-
-        if len(
-            symbol
-        ) > 20:
-
-            raise forms.ValidationError(
+        if len(  # len() calculates how many characters are in the symbol.
+            symbol  # Value whose length Django needs to validate.
+        ) > 20:  # Comparison operator checks whether it exceeds twenty characters.
+            raise forms.ValidationError(  # Creates a form validation error.
                 (
                     "The market symbol is too long."
-                )
+                )  # User-facing validation message.
             )
 
-
-        return symbol
-
+        return symbol  # Returns the validated uppercase symbol to Django.
 
     # ========================================================
     # 4.4 CLEAN THRESHOLD
+    # Programming concepts:
+    # VARIABLE + NONE + CONDITIONAL + EXCEPTION + RETURN
     # ========================================================
 
     def clean_threshold(
-        self,
+        self,  # Current form object.
     ):
         """
         Validate the numeric condition threshold.
@@ -931,32 +958,30 @@ class AlertRuleForm(
             Percent Change < -3
         """
 
-        threshold = (
-            self.cleaned_data
-            .get(
-                "threshold"
+        threshold = (  # Stores the submitted threshold.
+            self.cleaned_data  # Reads Django's cleaned values.
+            .get(  # Safely accesses the dictionary.
+                "threshold"  # Requests the threshold value.
             )
         )
 
-
-        if threshold is None:
-
-            raise forms.ValidationError(
+        if threshold is None:  # Checks specifically whether no threshold value exists.
+            raise forms.ValidationError(  # Raises a form validation exception.
                 (
                     "A threshold value is required."
-                )
+                )  # Error displayed to the user.
             )
 
-
-        return threshold
-
+        return threshold  # Returns the valid numeric threshold.
 
     # ========================================================
     # 4.5 CLEAN COOLDOWN
+    # Programming concepts:
+    # CONDITIONAL BRANCHING + COMPARISON + RETURN VALUES
     # ========================================================
 
     def clean_cooldown_minutes(
-        self,
+        self,  # Current form object.
     ):
         """
         Require a positive cooldown interval.
@@ -972,80 +997,79 @@ class AlertRuleForm(
         allowing that rule to trigger another Alert.
         """
 
-        cooldown = (
-            self.cleaned_data
-            .get(
-                "cooldown_minutes"
+        cooldown = (  # Creates a local variable holding the submitted cooldown.
+            self.cleaned_data  # Accesses Django's cleaned form data.
+            .get(  # Retrieves the requested dictionary value.
+                "cooldown_minutes"  # Field being retrieved.
             )
         )
 
+        if cooldown is None:  # Checks whether the user supplied no cooldown.
+            return 60  # Uses sixty minutes as the default return value.
 
-        if cooldown is None:
-
-            return 60
-
-
-        if cooldown < 1:
-
-            raise forms.ValidationError(
+        if cooldown < 1:  # Checks the lower numerical boundary.
+            raise forms.ValidationError(  # Rejects values below one.
                 (
                     "Cooldown must be at least 1 minute."
-                )
+                )  # Error message for the user.
             )
-
 
         # Very large cooldowns are technically possible but are
         # unlikely to be intentional in this educational
         # application.
-        if cooldown > 525600:
-
-            raise forms.ValidationError(
+        if cooldown > 525600:  # Checks the upper numerical boundary of one year.
+            raise forms.ValidationError(  # Rejects a cooldown that exceeds this limit.
                 (
                     "Cooldown cannot exceed one year."
-                )
+                )  # Explains why the submitted value failed.
             )
 
-
-        return cooldown
-
+        return cooldown  # Returns the validated cooldown value.
 
     # ========================================================
     # 4.6 CLEAN OPTIONAL MESSAGE
+    # Programming concepts:
+    # STRING CONVERSION + METHOD CHAINING + RETURN
     # ========================================================
 
     def clean_message(
-        self,
+        self,  # Current form instance.
     ):
         """
         Strip unnecessary whitespace from the optional user
         message.
         """
 
-        message = (
-            self.cleaned_data
-            .get(
-                "message",
-                "",
+        message = (  # Stores the submitted custom message.
+            self.cleaned_data  # Accesses Django's cleaned form-data dictionary.
+            .get(  # Safely retrieves a dictionary value.
+                "message",  # Requests the message field.
+                "",  # Provides an empty-string default.
             )
         )
 
-
-        return (
-            str(
-                message
-                or
-                ""
+        return (  # Returns the cleaned message.
+            str(  # Converts the value into a Python string.
+                message  # Uses the user-provided message.
+                or  # Falls back if the message is empty/falsy.
+                ""  # Empty-string fallback.
             )
-            .strip()
+            .strip()  # Removes whitespace from the beginning and end.
         )
-
 
     # ========================================================
     # 4.7 CROSS-FIELD VALIDATION
+    # Programming concepts:
+    # METHOD OVERRIDING + SUPER() + MULTIPLE VARIABLES
+    # + BOOLEAN EXPRESSIONS + COMPARISON + ERROR HANDLING
+    #
+    # clean_<field>() validates one field.
+    #
+    # clean() can compare several fields together.
     # ========================================================
 
     def clean(
-        self,
+        self,  # Current AlertRuleForm object.
     ):
         """
         Perform validation involving more than one field.
@@ -1054,89 +1078,84 @@ class AlertRuleForm(
         combinations before the rule reaches the database.
         """
 
-        cleaned_data = (
-            super().clean()
+        cleaned_data = (  # Stores all values validated so far.
+            super().clean()  # Calls Django ModelForm's normal clean() implementation first.
         )
 
-
-        metric = (
-            cleaned_data.get(
-                "metric"
+        metric = (  # Stores the selected metric in a local variable.
+            cleaned_data.get(  # Safely reads from the cleaned-data dictionary.
+                "metric"  # Retrieves the metric field.
             )
         )
 
-
-        threshold = (
-            cleaned_data.get(
-                "threshold"
+        threshold = (  # Stores the cleaned threshold in a local variable.
+            cleaned_data.get(  # Safely reads from the dictionary.
+                "threshold"  # Retrieves the threshold field.
             )
         )
-
 
         # ----------------------------------------------------
         # VOLUME CANNOT BE NEGATIVE
+        # Programming concept: COMPOUND BOOLEAN CONDITION
+        #
+        # All three expressions connected with "and" must be
+        # true before the body of this if statement executes.
         # ----------------------------------------------------
 
         if (
-            metric
+            metric  # Current rule metric.
             ==
-            AlertRule.METRIC_VOLUME
-            and
-            threshold is not None
-            and
-            threshold < 0
+            AlertRule.METRIC_VOLUME  # Checks whether the metric is volume.
+            and  # Logical AND requires the next condition to also be true.
+            threshold is not None  # Makes sure a threshold exists before comparing it.
+            and  # Logical AND combines another condition.
+            threshold < 0  # Tests whether the numeric threshold is negative.
         ):
-
-            self.add_error(
-                "threshold",
+            self.add_error(  # Adds a validation error to a specific form field.
+                "threshold",  # Attaches the error to the threshold input.
                 (
                     "Volume thresholds cannot be negative."
-                ),
+                ),  # Message displayed to the user.
             )
-
 
         # ----------------------------------------------------
         # PRICE CANNOT BE NEGATIVE
         # ----------------------------------------------------
 
         if (
-            metric
+            metric  # Selected alert-rule metric.
             ==
-            AlertRule.METRIC_PRICE
-            and
-            threshold is not None
-            and
-            threshold < 0
+            AlertRule.METRIC_PRICE  # Checks whether the rule monitors price.
+            and  # Requires the following condition too.
+            threshold is not None  # Confirms a threshold exists.
+            and  # Combines the final condition.
+            threshold < 0  # Checks whether the price threshold is negative.
         ):
-
-            self.add_error(
-                "threshold",
+            self.add_error(  # Adds an error without immediately throwing away cleaned_data.
+                "threshold",  # Associates the error with the threshold field.
                 (
                     "Price thresholds cannot be negative."
-                ),
+                ),  # User-facing validation message.
             )
-
 
         # ----------------------------------------------------
         # VOLATILITY CANNOT BE NEGATIVE
         # ----------------------------------------------------
 
         if (
-            metric
+            metric  # Current selected metric.
             ==
-            AlertRule.METRIC_VOLATILITY
-            and
-            threshold is not None
-            and
-            threshold < 0
+            AlertRule.METRIC_VOLATILITY  # Checks whether the metric represents volatility.
+            and  # Requires another true expression.
+            threshold is not None  # Makes sure threshold has a value.
+            and  # Requires the final test as well.
+            threshold < 0  # Checks whether volatility threshold is negative.
         ):
-
-            self.add_error(
-                "threshold",
+            self.add_error(  # Adds a field-specific Django validation error.
+                "threshold",  # Places the error beside the threshold form field.
                 (
                     "Volatility thresholds cannot be negative."
-                ),
+                ),  # Explains the invalid combination.
             )
 
-
-        return cleaned_data
+        return cleaned_data  # Returns all validated form values back to Django.

@@ -1,2 +1,178 @@
-{% extends 'base.html' %}<!-- ======================================================== OVERFITTING FORM: Strategy + symbol → four-window analyzer. -->
-{% block title %}Overfitting | MarketPulse{% endblock %}{% block content %}<h1 class="h3">Smart Model Testing</h1><form method="post">{% csrf_token %}<label>Strategy</label><select class="form-select mb-3" name="strategy">{% for s in strategies %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select><label>Symbol</label><input class="form-control mb-3" name="symbol" value="AAPL"><button class="btn btn-primary">Run Overfitting Check</button></form>{% endblock %}
+{% comment %}
+============================================================
+MARKETPULSE - OVERFITTING ANALYSIS FORM
+============================================================
+
+FILE:
+analysis_tools/templates/analysis_tools/overfitting.html
+
+PURPOSE:
+
+This Django template lets the user:
+
+1. Select a saved strategy.
+2. Enter a market symbol such as AAPL.
+3. Submit the form.
+4. Send the strategy and symbol to the Django backend.
+5. Run the MarketPulse overfitting analysis.
+
+FRAMEWORK FLOW:
+
+User
+    ↓
+analysis_tools/urls.py
+    ↓
+analysis_tools/views.py
+    ↓
+strategies context variable
+    ↓
+analysis_tools/overfitting.html
+    ↓
+Strategy + Symbol
+    ↓
+HTTP POST
+    ↓
+Django View
+    ↓
+Overfitting Analyzer
+
+LECTURE / PROGRAMMING LANGUAGE CONCEPTS:
+
+Template Inheritance
+    {% extends 'base.html' %}
+
+Blocks
+    {% block title %}
+    {% block content %}
+
+Variables / Data Binding
+    {{ s.id }}
+    {{ s.name }}
+
+Iteration / Loops
+    {% for s in strategies %}
+
+Object Properties
+    s.id
+    s.name
+
+Security
+    {% csrf_token %}
+
+HTML Forms
+    <form>
+    <select>
+    <input>
+    <button>
+
+HTTP Request Methods
+    method="post"
+
+These concepts are building blocks used to connect
+the frontend template with Django's backend logic.
+============================================================
+{% endcomment %}
+{% extends 'base.html' %}{# TEMPLATE INHERITANCE: Reuses the common MarketPulse page structure from base.html. #}
+
+{% comment %}
+============================================================
+SECTION 1 - PAGE TITLE
+============================================================
+
+PROGRAMMING CONCEPT:
+Template blocks allow a child template to replace a named
+section that was defined inside base.html.
+============================================================
+{% endcomment %}
+{% block title %}Overfitting | MarketPulse{% endblock %}{# BLOCK: Sets the browser/page title specifically for this page. #}
+
+{% comment %}
+============================================================
+SECTION 2 - MAIN PAGE CONTENT
+============================================================
+
+PROGRAMMING CONCEPT:
+The content block inserts this page's HTML into the
+corresponding content block inside base.html.
+============================================================
+{% endcomment %}
+{% block content %}{# BLOCK START: Everything below becomes the main content of this page. #}
+<h1 class="h3">Smart Model Testing</h1>{# HTML HEADING: Shows the user the name of this analysis workspace. #}
+
+{% comment %}
+============================================================
+SECTION 3 - OVERFITTING FORM
+============================================================
+
+PROGRAMMING CONCEPT:
+A form collects user input.
+
+method="post" means the browser sends the entered data
+to the Django backend inside an HTTP POST request.
+============================================================
+{% endcomment %}
+<form method="post">{# HTML FORM: Starts the form and tells the browser to submit its data using POST. #}
+{% csrf_token %}{# SECURITY: Django adds a CSRF token to protect the POST request from forged submissions. #}
+
+{% comment %}
+============================================================
+SECTION 4 - STRATEGY SELECTION
+============================================================
+
+PROGRAMMING CONCEPTS:
+
+Variable:
+    strategies
+
+Iteration:
+    for s in strategies
+
+Object properties:
+    s.id
+    s.name
+
+Django receives "strategies" from the view and loops
+through each Strategy object to create the dropdown.
+============================================================
+{% endcomment %}
+<label>Strategy</label>{# HTML LABEL: Tells the user that the next field is used to choose a strategy. #}
+<select class="form-select mb-3" name="strategy">{# HTML SELECT: Creates a Bootstrap-styled dropdown called strategy. #}
+{% for s in strategies %}{# LOOP: Repeats the following option once for every strategy supplied by the Django view. #}
+<option value="{{ s.id }}">{{ s.name }}</option>{# DATA BINDING: Uses the strategy ID as the submitted value and displays its name to the user. #}
+{% endfor %}{# LOOP END: Stops repeating after every strategy has been displayed. #}
+</select>{# HTML: Ends the strategy dropdown. #}
+
+{% comment %}
+============================================================
+SECTION 5 - MARKET SYMBOL
+============================================================
+
+PROGRAMMING CONCEPT:
+Input allows information entered by the user to become
+part of the request sent to the server.
+
+The field name "symbol" becomes the key Django can read
+from request.POST.
+============================================================
+{% endcomment %}
+<label>Symbol</label>{# HTML LABEL: Tells the user that this field expects a market ticker symbol. #}
+<input class="form-control mb-3" name="symbol" value="AAPL">{# HTML INPUT: Creates a Bootstrap-styled symbol field with AAPL as its default value. #}
+
+{% comment %}
+============================================================
+SECTION 6 - SUBMIT ANALYSIS
+============================================================
+
+PROGRAMMING CONCEPT:
+Submitting the form transfers the form values from the
+frontend template to the Django backend.
+
+The POST request contains values similar to:
+
+strategy = selected strategy ID
+symbol = AAPL
+============================================================
+{% endcomment %}
+<button class="btn btn-primary">Run Overfitting Check</button>{# HTML BUTTON: Submits the selected strategy and symbol to the Django view. #}
+</form>{# HTML FORM END: Finishes the overfitting analysis form. #}
+{% endblock %}{# BLOCK END: Finishes the content inserted into base.html. #}

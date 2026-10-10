@@ -1,11 +1,238 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {# PROGRAMMING CONCEPT: Template inheritance - this page reuses the shared MarketPulse base.html layout. #}
 
 {% comment %}
 ============================================================
 MARKETPULSE - USER REGISTRATION
 ============================================================
 
-PURPOSE:
+FILE:
+accounts/templates/accounts/register.html
+
+SHORT PURPOSE:
+
+This is the presentation/template layer for MarketPulse registration.
+
+It:
+1. Displays the UserRegistrationForm.
+2. Collects username, first name, last name, email and passwords.
+3. Sends the form to the Django backend using HTTP POST.
+4. Displays validation errors returned by Django.
+5. Provides a link back to the login page.
+
+It does NOT directly create users or save passwords.
+That work belongs to the Django view, form, authentication system,
+models and database.
+
+============================================================
+FRAMEWORK - DJANGO MVT
+============================================================
+
+Django uses an MVT-style architecture:
+
+MODEL
+    ↓
+accounts.User
+accounts.UserProfile
+    ↓
+Data stored in PostgreSQL
+
+VIEW
+    ↓
+accounts.views.register
+    ↓
+Receives the HTTP request
+Creates/processes UserRegistrationForm
+Checks whether submitted data is valid
+
+TEMPLATE
+    ↓
+accounts/templates/accounts/register.html
+    ↓
+Displays the form and validation feedback
+
+COMPLETE REGISTRATION FLOW:
+
+Browser / User
+    ↓
+Django URL
+    ↓
+accounts.views.register
+    ↓
+UserRegistrationForm
+    ↓
+register.html
+    ↓
+User enters registration information
+    ↓
+<form method="post">
+    ↓
+HTTP POST request
+    ↓
+accounts.views.register
+    ↓
+UserRegistrationForm validation
+    ↓
+Valid?
+    ├── NO
+    │     ↓
+    │   Form + errors returned to register.html
+    │
+    └── YES
+          ↓
+       accounts.User
+          ↓
+       UserProfile
+          ↓
+       PostgreSQL
+          ↓
+       Redirect to Login
+
+============================================================
+FRONT-END FRAMEWORK
+============================================================
+
+HTML:
+- Gives the page its structure.
+- Defines headings, paragraphs, forms, buttons and links.
+
+Bootstrap:
+- container
+- row / columns
+- cards
+- spacing
+- responsive breakpoints
+- buttons
+- alerts
+- typography utilities
+
+Font Awesome:
+- Supplies icons such as:
+  chart-line
+  user-plus
+  shield-halved
+  circle-exclamation
+
+static/css/styles.css:
+- MarketPulse dark theme
+- Shared colours
+- Card styling
+- Form styling
+- Button styling
+- Borders
+- Muted text
+
+============================================================
+LECTURE CONNECTION:
+PROGRAMMING LANGUAGE FEATURES / CONCEPTS
+============================================================
+
+These are the building blocks being demonstrated in this file.
+
+1. TEMPLATE INHERITANCE
+   {% extends "base.html" %}
+
+   Similar idea:
+   Reusing existing code instead of duplicating it.
+
+2. BLOCKS
+   {% block title %}
+   {% block content %}
+
+   Similar idea:
+   Defined sections that a child template can replace.
+
+3. VARIABLES
+   {{ form.username }}
+   {{ form.email }}
+   {{ error }}
+
+   Similar idea:
+   A variable contains/references data supplied by the backend.
+
+4. OBJECT / PROPERTY ACCESS
+   form.username.id_for_label
+   form.email.errors
+   form.non_field_errors
+
+   Similar idea:
+   Accessing properties belonging to an object.
+
+5. CONDITIONAL CONTROL FLOW
+   {% if form.non_field_errors %}
+
+   Similar idea:
+   Python:
+   if condition:
+       ...
+
+6. ITERATION / LOOPS
+   {% for error in form.username.errors %}
+
+   Similar idea:
+   Python:
+   for error in errors:
+       ...
+
+7. URL ROUTING
+   {% url 'accounts:login' %}
+
+   Django generates the correct URL from its named route.
+
+8. SECURITY
+   {% csrf_token %}
+
+   Adds Django's CSRF protection token to the POST form.
+
+9. HTTP / CLIENT-SERVER COMMUNICATION
+   <form method="post">
+
+   The browser sends submitted registration data to the server.
+
+10. VALIDATION
+    form.username.errors
+    form.email.errors
+    form.password1.errors
+    form.password2.errors
+
+    Validation rules belong to the form/backend.
+    This template displays the resulting messages.
+
+11. SEPARATION OF CONCERNS
+
+    HTML / Template
+        = presentation
+
+    Bootstrap / CSS
+        = visual styling
+
+    forms.py
+        = input definition and validation
+
+    views.py
+        = request processing
+
+    models.py
+        = database structure
+
+    urls.py
+        = routing
+
+    PostgreSQL
+        = persistent data storage
+
+12. DECLARATIVE PROGRAMMING
+
+    Bootstrap classes describe what the interface should look like:
+
+    class="btn btn-primary"
+    class="row g-3"
+    class="text-secondary"
+
+    We declare the desired styling and Bootstrap applies it.
+
+============================================================
+PURPOSE
+============================================================
 
 Allows a new MarketPulse user to create an account.
 
@@ -46,32 +273,38 @@ Redirect to Login
 ============================================================
 {% endcomment %}
 
+{# ============================================================ #}
+{# 1. PAGE TITLE                                                #}
+{# PROGRAMMING CONCEPT: A Django block overrides part of base.html. #}
+{# ============================================================ #}
 
-{% block title %}
-Create Account | MarketPulse
-{% endblock %}
+{% block title %} {# Starts the title block inherited from base.html. #}
+Create Account | MarketPulse {# Text that will normally appear in the browser tab/title. #}
+{% endblock %} {# Ends the title block. #}
 
+{# ============================================================ #}
+{# 2. MAIN PAGE CONTENT                                         #}
+{# PROGRAMMING CONCEPT: Another reusable template block.        #}
+{# ============================================================ #}
 
-{% block content %}
+{% block content %} {# Starts the main content that will be inserted into base.html. #}
 
-<div class="container py-4 py-lg-5">
+<div class="container py-4 py-lg-5"> {# HTML container; Bootstrap adds responsive horizontal layout and vertical spacing. #}
+    <div class="row justify-content-center"> {# Bootstrap row; justify-content-center centres the registration column. #}
+        <div class="col-12 col-md-10 col-lg-8 col-xl-7"> {# Responsive Bootstrap grid column; width changes as the screen becomes larger. #}
 
-    <div class="row justify-content-center">
+            {# ============================================================ #}
+            {# 3. REGISTRATION CARD                                         #}
+            {# PROGRAMMING CONCEPT: HTML groups related interface content. #}
+            {# ============================================================ #}
 
-        <div class="col-12 col-md-10 col-lg-8 col-xl-7">
+            <div class="card shadow-sm"> {# Bootstrap card creates the main visual registration panel. #}
 
-            <!-- ================================================= -->
-            <!-- REGISTRATION CARD                                 -->
-            <!-- ================================================= -->
+                {# ======================================================== #}
+                {# 4. REGISTRATION HEADER                                  #}
+                {# ======================================================== #}
 
-            <div class="card shadow-sm">
-
-                <!-- ================================================= -->
-                <!-- HEADER                                            -->
-                <!-- ================================================= -->
-
-                <div class="card-header p-4">
-
+                <div class="card-header p-4"> {# Card header with Bootstrap padding. #}
                     <div
                         class="
                             d-flex
@@ -83,127 +316,103 @@ Create Account | MarketPulse
                             text-uppercase
                             mb-2
                         "
-                    >
-                        <i class="fa-solid fa-chart-line"></i>
+                    > {# Bootstrap flex utilities align the MarketPulse branding horizontally. #}
+                        <i class="fa-solid fa-chart-line"></i> {# Font Awesome chart icon used for the MarketPulse brand. #}
+                        <span> {# Inline HTML container for the brand text. #}
+                            MarketPulse {# Visible application name. #}
+                        </span> {# Ends the brand-text container. #}
+                    </div> {# Ends the branding row. #}
 
-                        <span>
-                            MarketPulse
-                        </span>
-                    </div>
+                    <h1 class="h3 mb-2"> {# Main page heading; Bootstrap h3 controls visual size. #}
+                        Create Your Account {# Tells the user what action this page performs. #}
+                    </h1> {# Ends the main heading. #}
 
-
-                    <h1 class="h3 mb-2">
-                        Create Your Account
-                    </h1>
-
-
-                    <p class="text-secondary small mb-0">
-
+                    <p class="text-secondary small mb-0"> {# Supporting text styled using Bootstrap typography utilities. #}
                         Create a MarketPulse account to access the
                         dashboard, analyse market data, build and test
                         strategies, and use the risk-management tools.
+                    </p> {# Ends the registration-page description. #}
+                </div> {# Ends the card header. #}
 
-                    </p>
+                {# ======================================================== #}
+                {# 5. REGISTRATION FORM BODY                               #}
+                {# PROGRAMMING CONCEPT: Client-server communication.       #}
+                {# ======================================================== #}
 
-                </div>
-
-
-                <!-- ================================================= -->
-                <!-- BODY                                              -->
-                <!-- ================================================= -->
-
-                <div class="card-body p-4">
-
+                <div class="card-body p-4"> {# Main card body containing the registration form. #}
                     <form
                         method="post"
                         novalidate
-                    >
+                    > {# HTML form sends entered data to Django using an HTTP POST request; novalidate leaves validation to your Django form. #}
 
-                        {% csrf_token %}
+                        {% csrf_token %} {# SECURITY CONCEPT: Django inserts a CSRF token to protect the POST request. #}
 
+                        {# ==================================================== #}
+                        {# 6. NON-FIELD FORM ERRORS                            #}
+                        {# PROGRAMMING CONCEPT: CONDITIONAL / IF STATEMENT     #}
+                        {# ==================================================== #}
 
-                        <!-- ========================================= -->
-                        <!-- NON-FIELD ERRORS                          -->
-                        <!-- ========================================= -->
-
-                        {% if form.non_field_errors %}
-
+                        {% if form.non_field_errors %} {# IF: only execute/render this section when general form errors exist. #}
                             <div
                                 class="alert alert-danger"
                                 role="alert"
-                            >
-
-                                <div class="fw-semibold mb-1">
-
+                            > {# Bootstrap danger alert visually identifies an error message. #}
+                                <div class="fw-semibold mb-1"> {# Bold error heading with bottom spacing. #}
                                     <i
                                         class="
                                             fa-solid
                                             fa-circle-exclamation
                                             me-1
                                         "
-                                    ></i>
+                                    ></i> {# Font Awesome warning icon. #}
+                                    We could not create your account. {# General message shown when the complete form has a validation problem. #}
+                                </div> {# Ends the error heading. #}
 
-                                    We could not create your account.
+                                {% for error in form.non_field_errors %} {# LOOP: repeat the following HTML once for every non-field validation error. #}
+                                    <div class="small"> {# Small text container for one validation error. #}
+                                        {{ error }} {# VARIABLE: output the current error supplied by the Django form. #}
+                                    </div> {# Ends this individual error message. #}
+                                {% endfor %} {# Ends the loop after all non-field errors have been displayed. #}
+                            </div> {# Ends the Bootstrap error alert. #}
+                        {% endif %} {# Ends the conditional error section. #}
 
-                                </div>
+                        {# ==================================================== #}
+                        {# 7. ACCOUNT INFORMATION                              #}
+                        {# ==================================================== #}
 
+                        <div class="mb-4"> {# Groups the user's general account information fields. #}
+                            <h2 class="h6 mb-1"> {# Section heading styled using Bootstrap. #}
+                                Account Information {# Visible section title. #}
+                            </h2> {# Ends the account-information heading. #}
 
-                                {% for error in form.non_field_errors %}
-
-                                    <div class="small">
-                                        {{ error }}
-                                    </div>
-
-                                {% endfor %}
-
-                            </div>
-
-                        {% endif %}
-
-
-                        <!-- ========================================= -->
-                        <!-- ACCOUNT INFORMATION                       -->
-                        <!-- ========================================= -->
-
-                        <div class="mb-4">
-
-                            <h2 class="h6 mb-1">
-                                Account Information
-                            </h2>
-
-                            <p class="small text-secondary mb-3">
+                            <p class="small text-secondary mb-3"> {# Supporting instructions for the account fields. #}
                                 Enter the details you will use for your
                                 MarketPulse account.
-                            </p>
+                            </p> {# Ends the instructions. #}
 
+                            <div class="row g-3"> {# Bootstrap row with a consistent gap between form fields. #}
 
-                            <div class="row g-3">
+                                {# ================================================= #}
+                                {# 7.1 USERNAME                                      #}
+                                {# PROGRAMMING CONCEPT: FORM VARIABLE / OBJECT ACCESS #}
+                                {# ================================================= #}
 
-                                <!-- ================================= -->
-                                <!-- USERNAME                          -->
-                                <!-- ================================= -->
-
-                                <div class="col-12">
-
+                                <div class="col-12"> {# Username occupies the full width of this Bootstrap row. #}
                                     <label
                                         for="{{ form.username.id_for_label }}"
                                         class="form-label fw-semibold"
-                                    >
-                                        Username
-                                    </label>
+                                    > {# Label is connected to the generated username input through its Django-generated ID. #}
+                                        Username {# Human-readable label for the username field. #}
+                                    </label> {# Ends the username label. #}
 
+                                    {{ form.username }} {# VARIABLE: Django renders the username form widget defined by UserRegistrationForm. #}
 
-                                    {{ form.username }}
-
-
-                                    <div class="form-text">
+                                    <div class="form-text"> {# Bootstrap helper-text styling. #}
                                         Choose a unique username for your
                                         MarketPulse account.
-                                    </div>
+                                    </div> {# Ends the username guidance. #}
 
-
-                                    {% for error in form.username.errors %}
-
+                                    {% for error in form.username.errors %} {# LOOP: process every validation error belonging to username. #}
                                         <div
                                             class="
                                                 text-danger
@@ -214,46 +423,36 @@ Create Account | MarketPulse
                                                 gap-1
                                             "
                                             role="alert"
-                                        >
-
+                                        > {# Styled field-level error container. #}
                                             <i
                                                 class="
                                                     fa-solid
                                                     fa-circle-exclamation
                                                     mt-1
                                                 "
-                                            ></i>
+                                            ></i> {# Warning icon for the validation error. #}
+                                            <span> {# Inline container holding the actual error text. #}
+                                                {{ error }} {# VARIABLE: current username validation error. #}
+                                            </span> {# Ends the error-text container. #}
+                                        </div> {# Ends this username error message. #}
+                                    {% endfor %} {# Ends the username error loop. #}
+                                </div> {# Ends the username field. #}
 
-                                            <span>
-                                                {{ error }}
-                                            </span>
+                                {# ================================================= #}
+                                {# 7.2 FIRST NAME                                    #}
+                                {# ================================================= #}
 
-                                        </div>
-
-                                    {% endfor %}
-
-                                </div>
-
-
-                                <!-- ================================= -->
-                                <!-- FIRST NAME                        -->
-                                <!-- ================================= -->
-
-                                <div class="col-12 col-md-6">
-
+                                <div class="col-12 col-md-6"> {# Full width on small screens and half width from the md Bootstrap breakpoint. #}
                                     <label
                                         for="{{ form.first_name.id_for_label }}"
                                         class="form-label fw-semibold"
-                                    >
-                                        First Name
-                                    </label>
+                                    > {# Label uses the ID generated for the first-name field. #}
+                                        First Name {# Human-readable first-name label. #}
+                                    </label> {# Ends the first-name label. #}
 
+                                    {{ form.first_name }} {# VARIABLE: Django renders the first-name form widget. #}
 
-                                    {{ form.first_name }}
-
-
-                                    {% for error in form.first_name.errors %}
-
+                                    {% for error in form.first_name.errors %} {# LOOP: display each validation error belonging to first_name. #}
                                         <div
                                             class="
                                                 text-danger
@@ -264,46 +463,36 @@ Create Account | MarketPulse
                                                 gap-1
                                             "
                                             role="alert"
-                                        >
-
+                                        > {# Error container styled with Bootstrap utilities. #}
                                             <i
                                                 class="
                                                     fa-solid
                                                     fa-circle-exclamation
                                                     mt-1
                                                 "
-                                            ></i>
+                                            ></i> {# Warning icon. #}
+                                            <span> {# Contains the current first-name error. #}
+                                                {{ error }} {# VARIABLE: current validation error from the Django form. #}
+                                            </span> {# Ends error text. #}
+                                        </div> {# Ends this first-name error. #}
+                                    {% endfor %} {# Ends the first-name error loop. #}
+                                </div> {# Ends the first-name field. #}
 
-                                            <span>
-                                                {{ error }}
-                                            </span>
+                                {# ================================================= #}
+                                {# 7.3 LAST NAME                                     #}
+                                {# ================================================= #}
 
-                                        </div>
-
-                                    {% endfor %}
-
-                                </div>
-
-
-                                <!-- ================================= -->
-                                <!-- LAST NAME                         -->
-                                <!-- ================================= -->
-
-                                <div class="col-12 col-md-6">
-
+                                <div class="col-12 col-md-6"> {# Responsive half-width column matching First Name. #}
                                     <label
                                         for="{{ form.last_name.id_for_label }}"
                                         class="form-label fw-semibold"
-                                    >
-                                        Last Name
-                                    </label>
+                                    > {# Links this label with Django's last-name input. #}
+                                        Last Name {# Human-readable last-name label. #}
+                                    </label> {# Ends the last-name label. #}
 
+                                    {{ form.last_name }} {# VARIABLE: Django renders the last-name form widget. #}
 
-                                    {{ form.last_name }}
-
-
-                                    {% for error in form.last_name.errors %}
-
+                                    {% for error in form.last_name.errors %} {# LOOP: repeat for every last-name validation error. #}
                                         <div
                                             class="
                                                 text-danger
@@ -314,54 +503,41 @@ Create Account | MarketPulse
                                                 gap-1
                                             "
                                             role="alert"
-                                        >
-
+                                        > {# Bootstrap-styled error message. #}
                                             <i
                                                 class="
                                                     fa-solid
                                                     fa-circle-exclamation
                                                     mt-1
                                                 "
-                                            ></i>
+                                            ></i> {# Validation warning icon. #}
+                                            <span> {# Container for the error value. #}
+                                                {{ error }} {# VARIABLE: current last-name validation message. #}
+                                            </span> {# Ends the error value. #}
+                                        </div> {# Ends this last-name error. #}
+                                    {% endfor %} {# Ends the last-name error loop. #}
+                                </div> {# Ends the last-name field. #}
 
-                                            <span>
-                                                {{ error }}
-                                            </span>
+                                {# ================================================= #}
+                                {# 7.4 EMAIL                                         #}
+                                {# ================================================= #}
 
-                                        </div>
-
-                                    {% endfor %}
-
-                                </div>
-
-
-                                <!-- ================================= -->
-                                <!-- EMAIL                             -->
-                                <!-- ================================= -->
-
-                                <div class="col-12">
-
+                                <div class="col-12"> {# Email occupies the full width of the Bootstrap row. #}
                                     <label
                                         for="{{ form.email.id_for_label }}"
                                         class="form-label fw-semibold"
-                                    >
-                                        Email Address
-                                    </label>
+                                    > {# Associates the text label with Django's generated email input. #}
+                                        Email Address {# Human-readable email label. #}
+                                    </label> {# Ends the email label. #}
 
+                                    {{ form.email }} {# VARIABLE: Django renders the email form widget. #}
 
-                                    {{ form.email }}
-
-
-                                    <div class="form-text">
-
+                                    <div class="form-text"> {# Bootstrap helper text placed under the field. #}
                                         Enter a valid email address associated
                                         with your account.
+                                    </div> {# Ends the email instructions. #}
 
-                                    </div>
-
-
-                                    {% for error in form.email.errors %}
-
+                                    {% for error in form.email.errors %} {# LOOP: repeat for every email validation error. #}
                                         <div
                                             class="
                                                 text-danger
@@ -372,70 +548,55 @@ Create Account | MarketPulse
                                                 gap-1
                                             "
                                             role="alert"
-                                        >
-
+                                        > {# Styled email error container. #}
                                             <i
                                                 class="
                                                     fa-solid
                                                     fa-circle-exclamation
                                                     mt-1
                                                 "
-                                            ></i>
+                                            ></i> {# Error icon. #}
+                                            <span> {# Contains one email error message. #}
+                                                {{ error }} {# VARIABLE: current email validation error. #}
+                                            </span> {# Ends email error text. #}
+                                        </div> {# Ends this email error. #}
+                                    {% endfor %} {# Ends the email-error loop. #}
+                                </div> {# Ends the email field. #}
+                            </div> {# Ends the account-information Bootstrap row. #}
+                        </div> {# Ends the account-information section. #}
 
-                                            <span>
-                                                {{ error }}
-                                            </span>
+                        <hr class="my-4"> {# Horizontal divider visually separates account information from security fields. #}
 
-                                        </div>
+                        {# ==================================================== #}
+                        {# 8. ACCOUNT SECURITY                                 #}
+                        {# ==================================================== #}
 
-                                    {% endfor %}
+                        <div class="mb-4"> {# Groups both password fields. #}
+                            <h2 class="h6 mb-1"> {# Security section heading. #}
+                                Account Security {# Visible section title. #}
+                            </h2> {# Ends the security heading. #}
 
-                                </div>
-
-                            </div>
-
-                        </div>
-
-
-                        <hr class="my-4">
-
-
-                        <!-- ========================================= -->
-                        <!-- ACCOUNT SECURITY                          -->
-                        <!-- ========================================= -->
-
-                        <div class="mb-4">
-
-                            <h2 class="h6 mb-1">
-                                Account Security
-                            </h2>
-
-                            <p class="small text-secondary mb-3">
+                            <p class="small text-secondary mb-3"> {# Short password instruction. #}
                                 Create a secure password for your account.
-                            </p>
+                            </p> {# Ends the password instruction. #}
 
+                            <div class="row g-3"> {# Bootstrap row controls spacing between password fields. #}
 
-                            <div class="row g-3">
+                                {# ================================================= #}
+                                {# 8.1 PASSWORD 1                                    #}
+                                {# ================================================= #}
 
-                                <!-- ================================= -->
-                                <!-- PASSWORD 1                        -->
-                                <!-- ================================= -->
-
-                                <div class="col-12">
-
+                                <div class="col-12"> {# First password field occupies the full width. #}
                                     <label
                                         for="{{ form.password1.id_for_label }}"
                                         class="form-label fw-semibold"
-                                    >
-                                        Password
-                                    </label>
+                                    > {# Label is associated with Django's first password input. #}
+                                        Password {# Human-readable password label. #}
+                                    </label> {# Ends the password label. #}
 
+                                    {{ form.password1 }} {# VARIABLE: renders the first password field from UserRegistrationForm. #}
 
-                                    {{ form.password1 }}
-
-
-                                    {% for error in form.password1.errors %}
-
+                                    {% for error in form.password1.errors %} {# LOOP: iterate through validation errors for password1. #}
                                         <div
                                             class="
                                                 text-danger
@@ -446,46 +607,36 @@ Create Account | MarketPulse
                                                 gap-1
                                             "
                                             role="alert"
-                                        >
-
+                                        > {# Error styling for the password field. #}
                                             <i
                                                 class="
                                                     fa-solid
                                                     fa-circle-exclamation
                                                     mt-1
                                                 "
-                                            ></i>
+                                            ></i> {# Password-validation warning icon. #}
+                                            <span> {# Contains one password error. #}
+                                                {{ error }} {# VARIABLE: current password1 validation message. #}
+                                            </span> {# Ends the password-error text. #}
+                                        </div> {# Ends this password1 error. #}
+                                    {% endfor %} {# Ends the password1 error loop. #}
+                                </div> {# Ends the first password field. #}
 
-                                            <span>
-                                                {{ error }}
-                                            </span>
+                                {# ================================================= #}
+                                {# 8.2 PASSWORD 2 / CONFIRMATION                     #}
+                                {# ================================================= #}
 
-                                        </div>
-
-                                    {% endfor %}
-
-                                </div>
-
-
-                                <!-- ================================= -->
-                                <!-- PASSWORD 2                        -->
-                                <!-- ================================= -->
-
-                                <div class="col-12">
-
+                                <div class="col-12"> {# Password confirmation also uses the full width. #}
                                     <label
                                         for="{{ form.password2.id_for_label }}"
                                         class="form-label fw-semibold"
-                                    >
-                                        Confirm Password
-                                    </label>
+                                    > {# Associates the label with Django's password confirmation field. #}
+                                        Confirm Password {# Tells the user to repeat the password. #}
+                                    </label> {# Ends the password confirmation label. #}
 
+                                    {{ form.password2 }} {# VARIABLE: renders the confirmation-password form field. #}
 
-                                    {{ form.password2 }}
-
-
-                                    {% for error in form.password2.errors %}
-
+                                    {% for error in form.password2.errors %} {# LOOP: iterate through validation errors belonging to password2. #}
                                         <div
                                             class="
                                                 text-danger
@@ -496,34 +647,27 @@ Create Account | MarketPulse
                                                 gap-1
                                             "
                                             role="alert"
-                                        >
-
+                                        > {# Styled password-confirmation error container. #}
                                             <i
                                                 class="
                                                     fa-solid
                                                     fa-circle-exclamation
                                                     mt-1
                                                 "
-                                            ></i>
+                                            ></i> {# Validation warning icon. #}
+                                            <span> {# Contains the current password2 error. #}
+                                                {{ error }} {# VARIABLE: current password-confirmation validation message. #}
+                                            </span> {# Ends the password2 error text. #}
+                                        </div> {# Ends this password2 error. #}
+                                    {% endfor %} {# Ends the password2 error loop. #}
+                                </div> {# Ends the password confirmation field. #}
+                            </div> {# Ends the password-fields Bootstrap row. #}
+                        </div> {# Ends the account-security section. #}
 
-                                            <span>
-                                                {{ error }}
-                                            </span>
-
-                                        </div>
-
-                                    {% endfor %}
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-
-                        <!-- ========================================= -->
-                        <!-- PASSWORD GUIDANCE                         -->
-                        <!-- ========================================= -->
+                        {# ==================================================== #}
+                        {# 9. PASSWORD GUIDANCE                                #}
+                        {# PROGRAMMING CONCEPT: STATIC PRESENTATION CONTENT     #}
+                        {# ==================================================== #}
 
                         <div
                             class="
@@ -532,8 +676,7 @@ Create Account | MarketPulse
                                 p-3
                                 mb-4
                             "
-                        >
-
+                        > {# Bootstrap utilities create a bordered information panel. #}
                             <div
                                 class="
                                     d-flex
@@ -543,14 +686,10 @@ Create Account | MarketPulse
                                     small
                                     mb-2
                                 "
-                            >
-
-                                <i class="fa-solid fa-shield-halved text-success"></i>
-
-                                Password requirements
-
-                            </div>
-
+                            > {# Flex layout aligns the security icon and heading. #}
+                                <i class="fa-solid fa-shield-halved text-success"></i> {# Green shield icon represents password security. #}
+                                Password requirements {# Heading describing the guidance below. #}
+                            </div> {# Ends the password-requirements heading. #}
 
                             <ul
                                 class="
@@ -559,30 +698,24 @@ Create Account | MarketPulse
                                     mb-0
                                     ps-3
                                 "
-                            >
-
-                                <li class="mb-1">
+                            > {# HTML unordered list styled with Bootstrap typography and spacing utilities. #}
+                                <li class="mb-1"> {# First password guidance item. #}
                                     Use a password that is difficult for
                                     somebody else to guess.
-                                </li>
-
-                                <li class="mb-1">
+                                </li> {# Ends the first guidance item. #}
+                                <li class="mb-1"> {# Second password guidance item. #}
                                     Avoid using only numbers or very common
                                     passwords.
-                                </li>
-
-                                <li>
+                                </li> {# Ends the second guidance item. #}
+                                <li> {# Third password guidance item. #}
                                     Both password fields must match.
-                                </li>
+                                </li> {# Ends the third guidance item. #}
+                            </ul> {# Ends the password requirements list. #}
+                        </div> {# Ends the password-guidance panel. #}
 
-                            </ul>
-
-                        </div>
-
-
-                        <!-- ========================================= -->
-                        <!-- ACTIONS                                   -->
-                        <!-- ========================================= -->
+                        {# ==================================================== #}
+                        {# 10. FORM ACTIONS                                    #}
+                        {# ==================================================== #}
 
                         <div
                             class="
@@ -593,23 +726,17 @@ Create Account | MarketPulse
                                 justify-content-between
                                 gap-3
                             "
-                        >
-
+                        > {# Responsive Bootstrap flex container positions the submit button and login link. #}
                             <button
                                 type="submit"
                                 class="btn btn-primary px-4"
-                            >
+                            > {# SUBMIT ACTION: clicking this button sends the form's POST data to the Django backend. #}
+                                <i class="fa-solid fa-user-plus me-2"></i> {# Font Awesome user-plus icon. #}
+                                Create Account {# Visible text on the registration submit button. #}
+                            </button> {# Ends the submit button. #}
 
-                                <i class="fa-solid fa-user-plus me-2"></i>
-
-                                Create Account
-
-                            </button>
-
-
-                            <div class="small text-secondary">
-
-                                Already have an account?
+                            <div class="small text-secondary"> {# Container for users who already have an account. #}
+                                Already have an account? {# Login prompt. #}
 
                                 <a
                                     href="{% url 'accounts:login' %}"
@@ -618,18 +745,15 @@ Create Account | MarketPulse
                                         fw-semibold
                                         text-decoration-none
                                     "
-                                >
-                                    Log in
-                                </a>
+                                > {# URL ROUTING: Django resolves the named accounts:login route instead of hard-coding a URL. #}
+                                    Log in {# Clickable login-link text. #}
+                                </a> {# Ends the login link. #}
+                            </div> {# Ends the login prompt. #}
+                        </div> {# Ends the actions section. #}
 
-                            </div>
-
-                        </div>
-
-
-                        <!-- ========================================= -->
-                        <!-- SECURITY INFORMATION                      -->
-                        <!-- ========================================= -->
+                        {# ==================================================== #}
+                        {# 11. SECURITY INFORMATION                            #}
+                        {# ==================================================== #}
 
                         <div
                             class="
@@ -642,8 +766,7 @@ Create Account | MarketPulse
                                 small
                                 text-secondary
                             "
-                        >
-
+                        > {# Bootstrap utilities create a separated security-information row. #}
                             <i
                                 class="
                                     fa-solid
@@ -651,30 +774,21 @@ Create Account | MarketPulse
                                     text-success
                                     mt-1
                                 "
-                            ></i>
+                            ></i> {# Green shield icon reinforces the security information. #}
 
-
-                            <div>
-
+                            <div> {# Contains the explanatory security text. #}
                                 MarketPulse uses Django's authentication
                                 system to validate registration details
                                 and securely hash passwords before they
                                 are stored in the database.
+                            </div> {# Ends the security explanation. #}
+                        </div> {# Ends the security-information section. #}
 
-                            </div>
+                    </form> {# Ends the HTML form; all fields above belong to this registration submission. #}
+                </div> {# Ends the Bootstrap card body. #}
+            </div> {# Ends the registration card. #}
+        </div> {# Ends the responsive registration column. #}
+    </div> {# Ends the centred Bootstrap row. #}
+</div> {# Ends the main page container. #}
 
-                        </div>
-
-                    </form>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-
-{% endblock %}
+{% endblock %} {# Ends this template's content block and returns control to base.html. #}

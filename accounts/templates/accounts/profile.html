@@ -1,73 +1,155 @@
 {% extends 'base.html' %}
+{# CONCEPT - TEMPLATE INHERITANCE: This page reuses the common layout from base.html. #}
 
 <!-- ========================================================
      PROFILE TEMPLATE
+     ========================================================
 
-     Framework mapping:
-     accounts/views.py sends the logged-in user's account
-     information, profile information, and update forms here.
+     SHORT PURPOSE:
 
-     This page allows the user to:
+     This template displays and updates the logged-in user's
+     MarketPulse profile.
 
-     - View their account information
-     - View their MarketPulse trading/risk profile
-     - Edit their personal information
-     - Edit their trading and risk preferences
-     - Save updated information
-     - Change their account password securely
+     DJANGO MTV FRAMEWORK:
 
-     Related files:
-
-     accounts/views.py
-            ↓
-     accounts/forms.py
-            ↓
-     accounts/templates/accounts/profile.html
-            ↓
+     Browser
+        ↓
      accounts/urls.py
+        ↓
+     accounts/views.py
+        ↓
+     accounts/forms.py + Django/UserProfile models
+        ↓
+     Template Context
+        ↓
+     accounts/templates/accounts/profile.html
+        ↓
+     base.html
+        ↓
+     HTML Response
+        ↓
+     Browser
+
+     PROFILE UPDATE FLOW:
+
+     User opens Profile
+        ↓
+     accounts/urls.py chooses the profile URL
+        ↓
+     accounts/views.py handles the request
+        ↓
+     user_form handles account information
+        ↓
+     profile_form handles trading/risk information
+        ↓
+     This template displays the forms
+        ↓
+     User clicks Save Changes
+        ↓
+     POST request returns to the Django view
+        ↓
+     Django validates the forms
+        ↓
+     Valid information is saved
+        ↓
+     Updated profile is displayed
+
+     PROGRAMMING LANGUAGE FEATURES / CONCEPTS:
+
+     {% extends %}       = inheritance / reuse
+     {% block %}         = abstraction / overriding sections
+     {{ variable }}      = variables / output
+     {% if %}            = selection / conditional logic
+     {% elif %}          = alternative conditional branch
+     {% else %}          = default conditional branch
+     {% for %}           = iteration / loops
+     {% empty %}         = empty collection handling
+     {% csrf_token %}    = security mechanism
+     |default            = filter / data transformation
+     field.property      = object/property access
+     {% url %}           = framework URL abstraction
+
+     FRONT-END FRAMEWORK:
+
+     Bootstrap classes control:
+     - Layout
+     - Grid
+     - Cards
+     - Buttons
+     - Alerts
+     - Spacing
+     - Responsive behaviour
+     - Collapse behaviour
+
 ========================================================= -->
 
+{# ======================================================== #}
+{# 1. PAGE TITLE BLOCK                                     #}
+{# ======================================================== #}
 
 {% block title %}
-Profile | MarketPulse
-{% endblock %}
+{# CONCEPT - BLOCK: This overrides the title block defined in base.html. #}
 
+Profile | MarketPulse
+{# HTML/TEXT: This becomes the page title content supplied to base.html. #}
+
+{% endblock %}
+{# CONCEPT - BLOCK END: Finishes the title section. #}
+
+{# ======================================================== #}
+{# 2. MAIN CONTENT BLOCK                                   #}
+{# ======================================================== #}
 
 {% block content %}
-
+{# CONCEPT - BLOCK: Everything below is inserted into base.html's content block. #}
 
 <!-- ========================================================
      1. PROFILE PAGE CONTAINER
 ========================================================= -->
 
 <div class="container py-4">
-
+{# HTML + BOOTSTRAP: container centres the content and py-4 adds vertical padding. #}
 
     <!-- ----------------------------------------------------
          PAGE HEADER
     ----------------------------------------------------- -->
 
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
+        {# BOOTSTRAP: Uses Flexbox and changes from column to row on medium screens. #}
 
         <div>
+            {# HTML: Groups the page heading and description. #}
 
             <h1 class="h3 mb-1">
+                {# HTML + BOOTSTRAP: Main heading styled using Bootstrap's h3 size. #}
+
                 My Profile
+                {# TEXT: Visible heading for the user. #}
+
             </h1>
+            {# HTML: Ends the main heading. #}
 
             <p class="text-muted mb-0">
+                {# HTML + BOOTSTRAP: Displays secondary explanatory text. #}
+
                 View and manage your MarketPulse account,
+                {# TEXT: Explains the account-management purpose. #}
+
                 personal information, and trading risk preferences.
+                {# TEXT: Continues the profile description. #}
+
             </p>
+            {# HTML: Ends the explanatory paragraph. #}
 
         </div>
-
+        {# HTML: Ends the heading text group. #}
 
         <!-- ------------------------------------------------
              EDIT PROFILE BUTTON
         ------------------------------------------------- -->
 
         <div class="mt-3 mt-md-0">
+            {# BOOTSTRAP: Adds responsive spacing around the button. #}
 
             <button
                 class="btn btn-primary"
@@ -76,229 +158,325 @@ Profile | MarketPulse
                 data-bs-target="#editProfile"
                 aria-expanded="false"
                 aria-controls="editProfile">
+                {# HTML + BOOTSTRAP: Button controls the Bootstrap collapse component called editProfile. #}
+                {# CONCEPT - EVENT/UI CONTROL: Bootstrap JavaScript reacts when this button is clicked. #}
 
                 Edit Profile
+                {# TEXT: Button label shown to the user. #}
 
             </button>
+            {# HTML: Ends the Edit Profile button. #}
 
         </div>
+        {# HTML: Ends the button wrapper. #}
 
     </div>
-
+    {# HTML: Ends the responsive profile header. #}
 
     <!-- ====================================================
          2. DJANGO MESSAGES
     ===================================================== -->
 
     {% if messages %}
+        {# CONCEPT - SELECTION: Runs this section only when Django messages exist. #}
 
         {% for message in messages %}
+            {# CONCEPT - ITERATION: Loops through every Django message. #}
 
             <div
                 class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show"
                 role="alert">
+                {# DJANGO VARIABLE: message.tags supplies the Bootstrap alert type. #}
+                {# CONCEPT - FILTER: default:'info' supplies info when no message tag exists. #}
+                {# BOOTSTRAP: alert-dismissible allows the alert to be closed. #}
 
                 {{ message }}
+                {# CONCEPT - VARIABLE OUTPUT: Displays the message supplied by Django. #}
 
                 <button
                     type="button"
                     class="btn-close"
                     data-bs-dismiss="alert"
                     aria-label="Close">
+                    {# BOOTSTRAP: data-bs-dismiss tells Bootstrap to close this alert. #}
                 </button>
+                {# HTML: Ends the dismiss button. #}
 
             </div>
+            {# HTML: Ends this message alert. #}
 
         {% endfor %}
+        {# CONCEPT - LOOP END: Finishes iteration through messages. #}
 
     {% endif %}
-
+    {# CONCEPT - CONDITIONAL END: Finishes the messages condition. #}
 
     <!-- ====================================================
          3. PROFILE OVERVIEW
     ===================================================== -->
 
     <div class="row g-4">
-
+        {# BOOTSTRAP GRID: Creates a row with spacing between its columns. #}
 
         <!-- =================================================
              ACCOUNT INFORMATION
         ================================================== -->
 
         <div class="col-lg-6">
+            {# BOOTSTRAP GRID: Uses half the row width on large screens. #}
 
             <div class="card shadow-sm h-100">
+                {# BOOTSTRAP: Creates a card with a small shadow and full column height. #}
 
                 <div class="card-header">
+                    {# BOOTSTRAP: Defines the card's heading area. #}
 
                     <h5 class="mb-0">
+                        {# HTML: Account information section heading. #}
+
                         Account Information
+                        {# TEXT: Describes the first profile-information card. #}
+
                     </h5>
+                    {# HTML: Ends the card heading. #}
 
                 </div>
-
+                {# HTML: Ends the card header. #}
 
                 <div class="card-body">
-
+                    {# BOOTSTRAP: Contains the account information. #}
 
                     <!-- -------------------------------------
                          ACCOUNT DETAILS FROM DJANGO USER
                     -------------------------------------- -->
 
                     {% for label, value in account_details %}
+                        {# CONCEPT - ITERATION + UNPACKING: Gets label and value from each account_details pair. #}
 
                         <div class="row py-3 border-bottom">
+                            {# BOOTSTRAP GRID: Displays each account item as a row. #}
 
                             <div class="col-sm-5">
+                                {# BOOTSTRAP GRID: Label uses five grid columns. #}
 
                                 <strong>
+                                    {# HTML: Makes the account label visually important. #}
+
                                     {{ label }}
+                                    {# CONCEPT - VARIABLE: Displays the current label from the loop. #}
+
                                 </strong>
+                                {# HTML: Ends the strong label. #}
 
                             </div>
-
+                            {# HTML: Ends the label column. #}
 
                             <div class="col-sm-7 text-muted">
+                                {# BOOTSTRAP GRID: Value uses the remaining seven columns. #}
 
                                 {% if value %}
+                                    {# CONCEPT - SELECTION/TRUTHINESS: Checks whether this value contains data. #}
 
                                     {{ value }}
+                                    {# CONCEPT - VARIABLE: Displays the account value. #}
 
                                 {% else %}
+                                    {# CONCEPT - ALTERNATIVE BRANCH: Runs when the value is empty or false. #}
 
                                     <span class="text-muted">
+                                        {# HTML: Wraps the fallback text. #}
+
                                         Not provided
+                                        {# TEXT: Tells the user no value was supplied. #}
+
                                     </span>
+                                    {# HTML: Ends the fallback text. #}
 
                                 {% endif %}
+                                {# CONCEPT - CONDITIONAL END: Completes the value check. #}
 
                             </div>
+                            {# HTML: Ends the value column. #}
 
                         </div>
+                        {# HTML: Ends one account-information row. #}
 
                     {% empty %}
+                        {# CONCEPT - EMPTY LOOP BRANCH: Runs if account_details contains no items. #}
 
                         <div class="alert alert-light border mb-0">
+                            {# BOOTSTRAP: Shows an informational empty-state box. #}
 
                             No account information is currently available.
+                            {# TEXT: Empty-state message. #}
 
                         </div>
+                        {# HTML: Ends the empty-state alert. #}
 
                     {% endfor %}
+                    {# CONCEPT - LOOP END: Completes iteration through account_details. #}
 
                 </div>
+                {# HTML: Ends the account-information card body. #}
 
             </div>
+            {# HTML: Ends the account-information card. #}
 
         </div>
-
+        {# HTML: Ends the first grid column. #}
 
         <!-- =================================================
              TRADING & RISK PROFILE INFORMATION
         ================================================== -->
 
         <div class="col-lg-6">
+            {# BOOTSTRAP GRID: Uses the second half of the row on large screens. #}
 
             <div class="card shadow-sm h-100">
+                {# BOOTSTRAP: Creates the trading/risk profile card. #}
 
                 <div class="card-header">
+                    {# BOOTSTRAP: Defines the second card header. #}
 
                     <h5 class="mb-0">
+                        {# HTML: Starts the trading/risk card heading. #}
+
                         Trading & Risk Profile
+                        {# TEXT: Visible heading for trading and risk data. #}
+
                     </h5>
+                    {# HTML: Ends the heading. #}
 
                 </div>
-
+                {# HTML: Ends the second card header. #}
 
                 <div class="card-body">
-
+                    {# BOOTSTRAP: Holds the profile preference values. #}
 
                     <!-- -------------------------------------
                          PROFILE DETAILS FROM USERPROFILE
                     -------------------------------------- -->
 
                     {% for label, value in profile_details %}
+                        {# CONCEPT - ITERATION + UNPACKING: Reads each profile label/value pair. #}
 
                         <div class="row py-3 border-bottom">
+                            {# BOOTSTRAP GRID: Creates one row per profile preference. #}
 
                             <div class="col-sm-5">
+                                {# BOOTSTRAP GRID: Uses five columns for the label. #}
 
                                 <strong>
+                                    {# HTML: Emphasises the profile label. #}
+
                                     {{ label }}
+                                    {# CONCEPT - VARIABLE: Displays the current profile label. #}
+
                                 </strong>
+                                {# HTML: Ends label emphasis. #}
 
                             </div>
-
+                            {# HTML: Ends label column. #}
 
                             <div class="col-sm-7 text-muted">
-
+                                {# BOOTSTRAP GRID: Holds the profile value. #}
 
                                 <!-- -------------------------
                                      BOOLEAN VALUE = YES
                                 -------------------------- -->
 
                                 {% if value is True %}
+                                    {# CONCEPT - BOOLEAN + SELECTION: Tests specifically for Python/Django True. #}
 
                                     <span class="badge bg-success">
-                                        Yes
-                                    </span>
+                                        {# BOOTSTRAP: Displays a green badge for True. #}
 
+                                        Yes
+                                        {# TEXT: Human-readable representation of True. #}
+
+                                    </span>
+                                    {# HTML: Ends the Yes badge. #}
 
                                 <!-- -------------------------
                                      BOOLEAN VALUE = NO
                                 -------------------------- -->
 
                                 {% elif value is False %}
+                                    {# CONCEPT - ELIF BRANCH: Tests specifically for Boolean False. #}
 
                                     <span class="badge bg-secondary">
-                                        No
-                                    </span>
+                                        {# BOOTSTRAP: Displays a secondary badge for False. #}
 
+                                        No
+                                        {# TEXT: Human-readable representation of False. #}
+
+                                    </span>
+                                    {# HTML: Ends the No badge. #}
 
                                 <!-- -------------------------
                                      NORMAL VALUE
                                 -------------------------- -->
 
                                 {% elif value %}
+                                    {# CONCEPT - TRUTHINESS: Handles ordinary non-empty values. #}
 
                                     {{ value }}
-
+                                    {# CONCEPT - VARIABLE: Displays the profile value. #}
 
                                 <!-- -------------------------
                                      EMPTY VALUE
                                 -------------------------- -->
 
                                 {% else %}
+                                    {# CONCEPT - DEFAULT BRANCH: Handles empty or missing values. #}
 
                                     <span class="text-muted">
+                                        {# HTML: Wraps the empty-state text. #}
+
                                         Not provided
+                                        {# TEXT: Shows that no preference was provided. #}
+
                                     </span>
+                                    {# HTML: Ends empty-state text. #}
 
                                 {% endif %}
+                                {# CONCEPT - CONDITIONAL END: Finishes Boolean/value decision logic. #}
 
                             </div>
+                            {# HTML: Ends the value column. #}
 
                         </div>
+                        {# HTML: Ends this profile-information row. #}
 
                     {% empty %}
+                        {# CONCEPT - EMPTY LOOP BRANCH: Runs when profile_details has no items. #}
 
                         <div class="alert alert-light border mb-0">
+                            {# BOOTSTRAP: Displays the empty-profile alert. #}
 
                             No trading or risk preferences
+                            {# TEXT: First part of the empty-state message. #}
+
                             have been added yet.
+                            {# TEXT: Completes the empty-state message. #}
 
                         </div>
+                        {# HTML: Ends the empty-state alert. #}
 
                     {% endfor %}
+                    {# CONCEPT - LOOP END: Completes iteration through profile_details. #}
 
                 </div>
+                {# HTML: Ends profile card body. #}
 
             </div>
+            {# HTML: Ends profile card. #}
 
         </div>
+        {# HTML: Ends the second grid column. #}
 
     </div>
-
+    {# HTML: Ends the profile-overview row. #}
 
     <!-- ====================================================
          4. EDIT PROFILE SECTION
@@ -307,25 +485,40 @@ Profile | MarketPulse
     <div
         class="collapse mt-4"
         id="editProfile">
+        {# BOOTSTRAP COLLAPSE: Hidden section controlled by the Edit Profile button. #}
 
         <div class="card shadow-sm">
+            {# BOOTSTRAP: Wraps the editable profile form in a card. #}
 
             <div class="card-header">
+                {# BOOTSTRAP: Defines the edit-form heading area. #}
 
                 <h5 class="mb-1">
+                    {# HTML: Edit Profile heading. #}
+
                     Edit Profile
+                    {# TEXT: Names the editable section. #}
+
                 </h5>
+                {# HTML: Ends the heading. #}
 
                 <small class="text-muted">
+                    {# HTML + BOOTSTRAP: Displays smaller supporting text. #}
+
                     Update your account information
+                    {# TEXT: Explains the first purpose of the form. #}
+
                     and MarketPulse preferences.
+                    {# TEXT: Completes the explanation. #}
+
                 </small>
+                {# HTML: Ends supporting text. #}
 
             </div>
-
+            {# HTML: Ends the form card header. #}
 
             <div class="card-body">
-
+                {# BOOTSTRAP: Contains the profile-edit form. #}
 
                 <!-- -----------------------------------------
                      PROFILE UPDATE FORM
@@ -340,336 +533,447 @@ Profile | MarketPulse
                 <form
                     method="post"
                     enctype="multipart/form-data">
+                    {# HTML FORM: method="post" sends submitted data in the HTTP request body. #}
+                    {# HTML FORM: multipart/form-data also allows uploaded file data when required. #}
 
                     {% csrf_token %}
-
+                    {# DJANGO SECURITY: Adds the CSRF token required to safely submit an internal POST form. #}
 
                     <!-- =====================================
                          FORM-WIDE USER FORM ERRORS
                     ====================================== -->
 
                     {% if user_form.non_field_errors %}
+                        {# CONCEPT - SELECTION + OBJECT ACCESS: Checks errors not linked to one specific user field. #}
 
                         <div class="alert alert-danger">
+                            {# BOOTSTRAP: Displays user-form errors in a red alert. #}
 
                             {% for error in user_form.non_field_errors %}
+                                {# CONCEPT - ITERATION: Loops through all general user-form errors. #}
 
                                 <div>
+                                    {# HTML: Wraps one error message. #}
+
                                     {{ error }}
+                                    {# CONCEPT - VARIABLE: Outputs the current validation error. #}
+
                                 </div>
+                                {# HTML: Ends one error wrapper. #}
 
                             {% endfor %}
+                            {# CONCEPT - LOOP END: Completes the user-form error loop. #}
 
                         </div>
+                        {# HTML: Ends the danger alert. #}
 
                     {% endif %}
-
+                    {# CONCEPT - CONDITIONAL END: Ends user-form general-error check. #}
 
                     <!-- =====================================
                          FORM-WIDE PROFILE FORM ERRORS
                     ====================================== -->
 
                     {% if profile_form.non_field_errors %}
+                        {# CONCEPT - SELECTION: Checks for general profile-form validation errors. #}
 
                         <div class="alert alert-danger">
+                            {# BOOTSTRAP: Creates an error alert. #}
 
                             {% for error in profile_form.non_field_errors %}
+                                {# CONCEPT - ITERATION: Loops through profile-form general errors. #}
 
                                 <div>
+                                    {# HTML: Wraps one profile error. #}
+
                                     {{ error }}
+                                    {# CONCEPT - VARIABLE: Displays the error supplied by Django forms. #}
+
                                 </div>
+                                {# HTML: Ends this error wrapper. #}
 
                             {% endfor %}
+                            {# CONCEPT - LOOP END: Completes the error loop. #}
 
                         </div>
+                        {# HTML: Ends profile error alert. #}
 
                     {% endif %}
-
+                    {# CONCEPT - CONDITIONAL END: Completes profile-form general-error check. #}
 
                     <!-- =====================================
                          PERSONAL & ACCOUNT DETAILS
                     ====================================== -->
 
                     <div class="mb-4">
+                        {# BOOTSTRAP: Groups account form fields and adds bottom spacing. #}
 
                         <h6 class="mb-1">
+                            {# HTML: Starts subsection heading. #}
+
                             Personal & Account Details
+                            {# TEXT: Names the Django User form section. #}
+
                         </h6>
+                        {# HTML: Ends subsection heading. #}
 
                         <p class="small text-muted mb-3">
+                            {# BOOTSTRAP: Small secondary explanatory text. #}
 
                             Update the personal information
+                            {# TEXT: Explains what can be edited. #}
+
                             connected to your MarketPulse account.
+                            {# TEXT: Completes the account-form explanation. #}
 
                         </p>
-
+                        {# HTML: Ends explanatory paragraph. #}
 
                         <div class="row g-3">
-
+                            {# BOOTSTRAP GRID: Creates responsive field rows with spacing. #}
 
                             <!-- --------------------------------
                                  LOOP THROUGH USER FORM FIELDS
                             --------------------------------- -->
 
                             {% for field in user_form %}
+                                {# CONCEPT - ITERATION: Loops through every Django field in user_form. #}
 
                                 <div class="col-md-6">
+                                    {# BOOTSTRAP GRID: Places two fields per row on medium+ screens. #}
 
                                     <label
                                         for="{{ field.id_for_label }}"
                                         class="form-label">
+                                        {# HTML LABEL: Connects this label to the Django-generated field ID. #}
+                                        {# CONCEPT - OBJECT ACCESS: field.id_for_label retrieves a field property. #}
 
                                         {{ field.label }}
-
+                                        {# CONCEPT - VARIABLE: Displays the field's configured label. #}
 
                                         <!-- -----------------
                                              REQUIRED FIELD
                                         ------------------ -->
 
                                         {% if field.field.required %}
+                                            {# CONCEPT - NESTED PROPERTY ACCESS + SELECTION: Checks whether the form field is required. #}
 
                                             <span class="text-danger">
+                                                {# BOOTSTRAP: Makes the required marker red. #}
+
                                                 *
+                                                {# TEXT: Standard visual indicator for a required field. #}
+
                                             </span>
+                                            {# HTML: Ends required marker. #}
 
                                         {% endif %}
+                                        {# CONCEPT - CONDITIONAL END: Ends required-field test. #}
 
                                     </label>
-
+                                    {# HTML: Ends field label. #}
 
                                     <!-- ---------------------
                                          DJANGO FORM FIELD
                                     ---------------------- -->
 
                                     {{ field }}
-
+                                    {# DJANGO FORM RENDERING: Outputs this field's configured HTML input/widget. #}
 
                                     <!-- ---------------------
                                          FIELD HELP TEXT
                                     ---------------------- -->
 
                                     {% if field.help_text %}
+                                        {# CONCEPT - SELECTION: Only displays help text when it exists. #}
 
                                         <div class="form-text">
+                                            {# BOOTSTRAP: Styles supporting form instructions. #}
 
                                             {{ field.help_text }}
+                                            {# CONCEPT - PROPERTY ACCESS: Reads and displays field.help_text. #}
 
                                         </div>
+                                        {# HTML: Ends help-text wrapper. #}
 
                                     {% endif %}
-
+                                    {# CONCEPT - CONDITIONAL END: Finishes help-text check. #}
 
                                     <!-- ---------------------
                                          FIELD VALIDATION ERRORS
                                     ---------------------- -->
 
                                     {% for error in field.errors %}
+                                        {# CONCEPT - ITERATION: Loops through validation errors for this field. #}
 
                                         <div class="text-danger small mt-1">
+                                            {# BOOTSTRAP: Styles the validation error red and small. #}
 
                                             {{ error }}
+                                            {# CONCEPT - VARIABLE: Displays the current field validation error. #}
 
                                         </div>
+                                        {# HTML: Ends error message wrapper. #}
 
                                     {% endfor %}
+                                    {# CONCEPT - LOOP END: Finishes this field's validation-error loop. #}
 
                                 </div>
+                                {# HTML: Ends one user-form field column. #}
 
                             {% endfor %}
+                            {# CONCEPT - LOOP END: Finishes iteration through user_form. #}
 
                         </div>
+                        {# HTML: Ends the user-form field grid. #}
 
                     </div>
-
+                    {# HTML: Ends Personal & Account Details section. #}
 
                     <hr class="my-4">
-
+                    {# HTML + BOOTSTRAP: Adds a horizontal separator with vertical margin. #}
 
                     <!-- =====================================
                          TRADING & RISK PROFILE
                     ====================================== -->
 
                     <div class="mb-4">
+                        {# BOOTSTRAP: Groups the MarketPulse profile fields. #}
 
                         <h6 class="mb-1">
-                            Trading & Risk Preferences
-                        </h6>
+                            {# HTML: Trading/risk subsection heading. #}
 
+                            Trading & Risk Preferences
+                            {# TEXT: Names the UserProfile preference section. #}
+
+                        </h6>
+                        {# HTML: Ends subsection heading. #}
 
                         <p class="small text-muted mb-3">
+                            {# BOOTSTRAP: Styles the explanatory paragraph. #}
 
                             These preferences help MarketPulse provide
+                            {# TEXT: Explains why profile preferences are collected. #}
+
                             a more suitable risk-management experience.
+                            {# TEXT: Completes the explanation. #}
 
                         </p>
-
+                        {# HTML: Ends explanatory paragraph. #}
 
                         <div class="row g-3">
-
+                            {# BOOTSTRAP GRID: Creates the profile-field grid. #}
 
                             <!-- --------------------------------
                                  LOOP THROUGH PROFILE FORM
                             --------------------------------- -->
 
                             {% for field in profile_form %}
-
+                                {# CONCEPT - ITERATION: Loops through all fields in profile_form. #}
 
                                 <!-- =========================
                                      CHECKBOX FIELD
                                 ========================== -->
 
                                 {% if field.field.widget.input_type == "checkbox" %}
+                                    {# CONCEPT - SELECTION + COMPARISON: Checks whether this field's input type equals checkbox. #}
+                                    {# CONCEPT - OBJECT ACCESS: field.field.widget.input_type accesses nested object properties. #}
 
                                     <div class="col-md-6">
+                                        {# BOOTSTRAP GRID: Checkbox occupies half the row on medium+ screens. #}
 
                                         <div class="form-check mt-4">
+                                            {# BOOTSTRAP FORM: Uses Bootstrap's checkbox layout. #}
 
                                             {{ field }}
+                                            {# DJANGO FORM RENDERING: Outputs the checkbox input widget. #}
 
                                             <label
                                                 class="form-check-label"
                                                 for="{{ field.id_for_label }}">
+                                                {# HTML LABEL: Associates this label with the checkbox input ID. #}
 
                                                 {{ field.label }}
+                                                {# CONCEPT - VARIABLE: Displays the checkbox label. #}
 
                                             </label>
+                                            {# HTML: Ends checkbox label. #}
 
                                         </div>
-
+                                        {# HTML: Ends form-check wrapper. #}
 
                                         <!-- -----------------
                                              HELP TEXT
                                         ------------------ -->
 
                                         {% if field.help_text %}
+                                            {# CONCEPT - SELECTION: Checks whether checkbox help text exists. #}
 
                                             <div class="form-text">
+                                                {# BOOTSTRAP: Styles the help text. #}
 
                                                 {{ field.help_text }}
+                                                {# CONCEPT - VARIABLE: Displays checkbox help text. #}
 
                                             </div>
+                                            {# HTML: Ends help-text container. #}
 
                                         {% endif %}
-
+                                        {# CONCEPT - CONDITIONAL END: Ends checkbox help-text check. #}
 
                                         <!-- -----------------
                                              VALIDATION ERRORS
                                         ------------------ -->
 
                                         {% for error in field.errors %}
+                                            {# CONCEPT - ITERATION: Loops through checkbox validation errors. #}
 
                                             <div class="text-danger small mt-1">
+                                                {# BOOTSTRAP: Styles the validation error. #}
 
                                                 {{ error }}
+                                                {# CONCEPT - VARIABLE: Displays the current validation error. #}
 
                                             </div>
+                                            {# HTML: Ends error wrapper. #}
 
                                         {% endfor %}
+                                        {# CONCEPT - LOOP END: Ends checkbox-error loop. #}
 
                                     </div>
-
+                                    {# HTML: Ends checkbox field column. #}
 
                                 <!-- =========================
                                      NORMAL FORM FIELD
                                 ========================== -->
 
                                 {% else %}
+                                    {# CONCEPT - ELSE BRANCH: Handles every profile field that is not a checkbox. #}
 
                                     <div class="col-md-6">
+                                        {# BOOTSTRAP GRID: Normal field occupies half the row on medium+ screens. #}
 
                                         <label
                                             for="{{ field.id_for_label }}"
                                             class="form-label">
+                                            {# HTML LABEL: Connects the label to the current form field. #}
 
                                             {{ field.label }}
-
+                                            {# CONCEPT - VARIABLE: Displays the normal field's label. #}
 
                                             <!-- -----------------
                                                  REQUIRED FIELD
                                             ------------------ -->
 
                                             {% if field.field.required %}
+                                                {# CONCEPT - SELECTION: Checks whether this profile field is required. #}
 
                                                 <span class="text-danger">
+                                                    {# BOOTSTRAP: Makes the required indicator red. #}
+
                                                     *
+                                                    {# TEXT: Required-field marker. #}
+
                                                 </span>
+                                                {# HTML: Ends required marker. #}
 
                                             {% endif %}
+                                            {# CONCEPT - CONDITIONAL END: Ends required-field check. #}
 
                                         </label>
-
+                                        {# HTML: Ends normal field label. #}
 
                                         <!-- -----------------
                                              FIELD INPUT
                                         ------------------ -->
 
                                         {{ field }}
-
+                                        {# DJANGO FORM RENDERING: Outputs the field's actual HTML widget. #}
 
                                         <!-- -----------------
                                              HELP TEXT
                                         ------------------ -->
 
                                         {% if field.help_text %}
+                                            {# CONCEPT - SELECTION: Displays help text only when available. #}
 
                                             <div class="form-text">
+                                                {# BOOTSTRAP: Styles supporting instructions. #}
 
                                                 {{ field.help_text }}
+                                                {# CONCEPT - VARIABLE: Displays help text from the form field. #}
 
                                             </div>
+                                            {# HTML: Ends help-text wrapper. #}
 
                                         {% endif %}
-
+                                        {# CONCEPT - CONDITIONAL END: Ends help-text test. #}
 
                                         <!-- -----------------
                                              VALIDATION ERRORS
                                         ------------------ -->
 
                                         {% for error in field.errors %}
+                                            {# CONCEPT - ITERATION: Loops through validation errors for the current field. #}
 
                                             <div class="text-danger small mt-1">
+                                                {# BOOTSTRAP: Styles a validation error. #}
 
                                                 {{ error }}
+                                                {# CONCEPT - VARIABLE: Displays the current validation error. #}
 
                                             </div>
+                                            {# HTML: Ends error wrapper. #}
 
                                         {% endfor %}
+                                        {# CONCEPT - LOOP END: Completes validation-error loop. #}
 
                                     </div>
+                                    {# HTML: Ends normal profile-field column. #}
 
                                 {% endif %}
-
+                                {# CONCEPT - CONDITIONAL END: Completes checkbox-versus-normal-field decision. #}
 
                             <!-- =============================
                                  NO PROFILE FIELDS
                             ============================== -->
 
                             {% empty %}
+                                {# CONCEPT - EMPTY LOOP BRANCH: Runs if profile_form contains no fields. #}
 
                                 <div class="col-12">
+                                    {# BOOTSTRAP GRID: Empty-state message uses the full row width. #}
 
                                     <div class="alert alert-light border mb-0">
+                                        {# BOOTSTRAP: Displays an informational alert. #}
 
                                         No additional profile fields
+                                        {# TEXT: First part of empty-state message. #}
+
                                         are currently configured.
+                                        {# TEXT: Completes empty-state message. #}
 
                                     </div>
+                                    {# HTML: Ends empty-state alert. #}
 
                                 </div>
+                                {# HTML: Ends full-width grid column. #}
 
                             {% endfor %}
+                            {# CONCEPT - LOOP END: Finishes iteration through profile_form. #}
 
                         </div>
+                        {# HTML: Ends profile-form grid. #}
 
                     </div>
-
+                    {# HTML: Ends Trading & Risk Preferences section. #}
 
                     <!-- =====================================
                          FORM ACTION BUTTONS
                     ====================================== -->
 
                     <div class="d-flex flex-wrap gap-2 mt-4">
-
+                        {# BOOTSTRAP FLEXBOX: Places action buttons next to each other with spacing. #}
 
                         <!-- ---------------------------------
                              SAVE PROFILE
@@ -678,11 +982,13 @@ Profile | MarketPulse
                         <button
                             type="submit"
                             class="btn btn-primary">
+                            {# HTML FORM CONTROL: type="submit" submits the complete POST form to Django. #}
 
                             Save Changes
+                            {# TEXT: User action for saving profile changes. #}
 
                         </button>
-
+                        {# HTML: Ends save button. #}
 
                         <!-- ---------------------------------
                              CANCEL EDITING
@@ -694,192 +1000,293 @@ Profile | MarketPulse
                             data-bs-toggle="collapse"
                             data-bs-target="#editProfile"
                             aria-controls="editProfile">
+                            {# BOOTSTRAP COLLAPSE: Closes/toggles the same editProfile section without submitting. #}
 
                             Cancel
+                            {# TEXT: User action for cancelling the visible editing session. #}
 
                         </button>
+                        {# HTML: Ends Cancel button. #}
 
                     </div>
+                    {# HTML: Ends form-action button group. #}
 
                 </form>
+                {# HTML FORM END: Finishes the complete profile update form. #}
 
             </div>
+            {# HTML: Ends Edit Profile card body. #}
 
         </div>
+        {# HTML: Ends Edit Profile card. #}
 
     </div>
-
+    {# HTML: Ends collapsible Edit Profile section. #}
 
     <!-- ====================================================
          5. ACCOUNT SECURITY
     ===================================================== -->
 
     <div class="card shadow-sm mt-4">
+        {# BOOTSTRAP: Creates the Account Security card. #}
 
         <div class="card-header">
+            {# BOOTSTRAP: Defines Account Security card heading area. #}
 
             <h5 class="mb-0">
+                {# HTML: Starts security heading. #}
+
                 Account Security
+                {# TEXT: Names the security section. #}
+
             </h5>
+            {# HTML: Ends security heading. #}
 
         </div>
-
+        {# HTML: Ends security card header. #}
 
         <div class="card-body">
+            {# BOOTSTRAP: Contains password/security information. #}
 
             <div class="row align-items-center">
-
+                {# BOOTSTRAP GRID: Creates a row and vertically centres its columns. #}
 
                 <!-- ------------------------------------------------
                      SECURITY INFORMATION
                 ------------------------------------------------- -->
 
                 <div class="col-lg-8">
+                    {# BOOTSTRAP GRID: Security explanation uses eight columns on large screens. #}
 
                     <h6>
-                        Password & Account Protection
-                    </h6>
+                        {# HTML: Starts password subsection heading. #}
 
+                        Password & Account Protection
+                        {# TEXT: Names the password-management area. #}
+
+                    </h6>
+                    {# HTML: Ends subsection heading. #}
 
                     <p class="text-muted mb-1">
+                        {# BOOTSTRAP: Displays secondary security information. #}
 
                         Your password is securely managed through
+                        {# TEXT: Explains responsibility for password handling. #}
+
                         Django's authentication system.
+                        {# TEXT: Identifies Django authentication as the password system. #}
 
                     </p>
-
+                    {# HTML: Ends first security paragraph. #}
 
                     <p class="text-muted mb-lg-0">
+                        {# BOOTSTRAP: Displays second security explanation. #}
 
                         For security reasons, your existing password
+                        {# TEXT: Begins security explanation. #}
+
                         is never displayed on your profile. You can
+                        {# TEXT: Explains that the stored password is not exposed. #}
+
                         change your password securely using your
+                        {# TEXT: Explains the supported password-change action. #}
+
                         current password.
+                        {# TEXT: Completes password-change explanation. #}
 
                     </p>
+                    {# HTML: Ends second security paragraph. #}
 
                 </div>
-
+                {# HTML: Ends security-information grid column. #}
 
                 <!-- ------------------------------------------------
                      CHANGE PASSWORD BUTTON
                 ------------------------------------------------- -->
 
                 <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                    {# BOOTSTRAP GRID: Places the password button in the remaining four columns. #}
 
                     <a
                         href="{% url 'accounts:password_change' %}"
                         class="btn btn-outline-primary">
+                        {# DJANGO URL TAG: Resolves the named accounts:password_change URL dynamically. #}
+                        {# CONCEPT - ABSTRACTION: The template does not hard-code the actual browser URL. #}
 
                         Change Password
+                        {# TEXT: Link/button label. #}
 
                     </a>
+                    {# HTML LINK: Ends password-change navigation link. #}
 
                 </div>
+                {# HTML: Ends password-button column. #}
 
             </div>
+            {# HTML: Ends Account Security row. #}
 
         </div>
+        {# HTML: Ends Account Security card body. #}
 
     </div>
-
+    {# HTML: Ends Account Security card. #}
 
     <!-- ====================================================
          6. PROFILE & PASSWORD MANAGEMENT EXPLANATION
     ===================================================== -->
 
     <div class="card shadow-sm mt-4">
+        {# BOOTSTRAP: Creates the Account Management information card. #}
 
         <div class="card-body">
+            {# BOOTSTRAP: Contains account-management guidance. #}
 
             <h5 class="mb-3">
-                Account Management
-            </h5>
+                {# HTML: Starts section heading. #}
 
+                Account Management
+                {# TEXT: Names the informational section. #}
+
+            </h5>
+            {# HTML: Ends section heading. #}
 
             <div class="row g-4">
-
+                {# BOOTSTRAP GRID: Creates two responsive information columns. #}
 
                 <!-- ------------------------------------------------
                      PROFILE MANAGEMENT
                 ------------------------------------------------- -->
 
                 <div class="col-md-6">
+                    {# BOOTSTRAP GRID: First information section uses half width on medium+ screens. #}
 
                     <h6>
+                        {# HTML: Starts profile-information heading. #}
+
                         Profile Information
+                        {# TEXT: Names the profile-management explanation. #}
+
                     </h6>
+                    {# HTML: Ends heading. #}
 
                     <p class="text-muted mb-0">
+                        {# BOOTSTRAP: Displays secondary explanatory text. #}
 
                         Use the Edit Profile option to update your
+                        {# TEXT: Explains how the user starts editing. #}
+
                         personal information, trading preferences,
+                        {# TEXT: Lists editable information. #}
+
                         and risk-management settings.
+                        {# TEXT: Completes the list. #}
 
                     </p>
+                    {# HTML: Ends profile-management explanation. #}
 
                 </div>
-
+                {# HTML: Ends Profile Information column. #}
 
                 <!-- ------------------------------------------------
                      PASSWORD MANAGEMENT
                 ------------------------------------------------- -->
 
                 <div class="col-md-6">
+                    {# BOOTSTRAP GRID: Second information section uses half width on medium+ screens. #}
 
                     <h6>
+                        {# HTML: Starts password-management heading. #}
+
                         Password Management
+                        {# TEXT: Names the password-management explanation. #}
+
                     </h6>
+                    {# HTML: Ends password-management heading. #}
 
                     <p class="text-muted mb-0">
+                        {# BOOTSTRAP: Displays password guidance as secondary text. #}
 
                         If you know your current password, use
+                        {# TEXT: Gives first password-management condition. #}
+
                         Change Password above. If you forget your
+                        {# TEXT: Explains normal versus forgotten-password paths. #}
+
                         password, use the password recovery option
+                        {# TEXT: Directs the user toward password recovery. #}
+
                         available from the login page.
+                        {# TEXT: Identifies where password recovery is available. #}
 
                     </p>
+                    {# HTML: Ends password-management explanation. #}
 
                 </div>
+                {# HTML: Ends Password Management column. #}
 
             </div>
+            {# HTML: Ends account-management grid row. #}
 
         </div>
+        {# HTML: Ends Account Management card body. #}
 
     </div>
-
+    {# HTML: Ends Account Management card. #}
 
     <!-- ====================================================
          7. MARKETPULSE PROFILE INFORMATION
     ===================================================== -->
 
     <div class="card shadow-sm mt-4">
+        {# BOOTSTRAP: Creates the final MarketPulse information card. #}
 
         <div class="card-body">
+            {# BOOTSTRAP: Contains explanatory profile information. #}
 
             <h5>
-                Why does MarketPulse use this information?
-            </h5>
+                {# HTML: Starts explanatory heading. #}
 
+                Why does MarketPulse use this information?
+                {# TEXT: Explains the reason for collecting trading/risk profile data. #}
+
+            </h5>
+            {# HTML: Ends explanatory heading. #}
 
             <p class="text-muted mb-0">
+                {# BOOTSTRAP: Displays explanatory text in a muted style. #}
 
                 Your trading and risk preferences can be used across
+                {# TEXT: Explains that profile preferences can support other platform features. #}
+
                 MarketPulse features such as risk-management tools,
+                {# TEXT: Lists risk-management tools as one use. #}
+
                 strategy analysis, backtesting, alerts, and
+                {# TEXT: Lists additional MarketPulse features. #}
+
                 decision-support functionality.
+                {# TEXT: Completes the feature list. #}
 
                 Keeping this information up to date helps the
+                {# TEXT: Explains why current information is useful. #}
+
                 platform provide results that better reflect your
+                {# TEXT: Explains personalisation of results. #}
+
                 trading preferences and risk limits.
+                {# TEXT: Completes the explanation. #}
 
             </p>
+            {# HTML: Ends final explanatory paragraph. #}
 
         </div>
+        {# HTML: Ends final card body. #}
 
     </div>
-
+    {# HTML: Ends MarketPulse information card. #}
 
 </div>
+{# HTML: Ends the main Bootstrap profile-page container. #}
 
 {% endblock %}
+{# CONCEPT - BLOCK END: Finishes the content inserted into base.html. #}

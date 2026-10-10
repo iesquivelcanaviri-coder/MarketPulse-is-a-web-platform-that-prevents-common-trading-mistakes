@@ -1,2 +1,31 @@
-{% extends 'base.html' %}<!-- ======================================================== STRATEGY CREATE: user form → Strategy + IF/THEN rules. -->
-{% block title %}Create Strategy | MarketPulse{% endblock %}{% block content %}<h1 class="h3">Create IF/THEN Strategy</h1><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Create</button></form>{% endblock %}
+{% extends 'base.html' %} {# Template inheritance: I reuse the shared MarketPulse page layout. #}
+<!-- ======================================================== STRATEGY CREATE: user form → Strategy + IF/THEN rules. -->
+
+{# ======================================================== #}
+{# 1. PAGE TITLE                                            #}
+{# ======================================================== #}
+{% block title %}Create Strategy | MarketPulse{% endblock %} {# Named block: I set this page's browser title. #}
+
+{# ======================================================== #}
+{# 2. PAGE CONTENT AND HEADING                               #}
+{# ======================================================== #}
+{% block content %} {# Named block: I insert this page into the base template's content area. #}
+<h1 class="h3">Create IF/THEN Strategy</h1> {# HTML heading and CSS class: I display the main heading with Bootstrap's h3 visual size. #}
+
+{# ======================================================== #}
+{# 3. FORM SUBMISSION AND SECURITY                           #}
+{# ======================================================== #}
+<form method="post"> {# Form and HTTP method: I submit the entered fields to the current URL using POST. #}
+    {% csrf_token %} {# Django template tag: I include a token for server-side CSRF checks. #}
+
+    {# -------------------------------------------------------- #}
+    {# 3.1 AUTOMATIC FORM RENDERING                              #}
+    {# -------------------------------------------------------- #}
+    {{ form.as_p }} {# Variable lookup and method resolution: Django renders the form fields in paragraphs, including labels and validation feedback. #}
+
+    {# -------------------------------------------------------- #}
+    {# 3.2 CREATE BUTTON                                        #}
+    {# -------------------------------------------------------- #}
+    <button class="btn btn-primary">Create</button> {# Button and CSS classes: With no type specified, this button submits its containing form. #}
+</form> {# Closing tag: I finish the strategy-creation form. #}
+{% endblock %} {# Block boundary: I finish the page content. #}

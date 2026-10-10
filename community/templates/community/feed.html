@@ -1,196 +1,385 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %} {# TEMPLATE INHERITANCE: Reuses the main MarketPulse base template. #}
 
-{% block title %}
-Community | MarketPulse
-{% endblock %}
+{% comment %}
+============================================================
+MARKETPULSE - COMMUNITY FEED
+============================================================
+
+FILE PURPOSE:
+
+This template builds the MarketPulse Community page.
+
+It allows a logged-in MarketPulse user to:
+1. Read the community disclaimer.
+2. Complete the community post form.
+3. Submit a new post.
+4. View posts supplied by the Django view.
+5. See the author, post type, ticker, date and content.
+6. See an empty message when there are no posts.
 
 
-{% block content %}
+============================================================
+DJANGO FRAMEWORK MAPPING
+============================================================
 
-<div class="container py-4">
+Browser Request
+    ↓
+community/urls.py
+    ↓
+community/views.py
+    ↓
+Django prepares:
+    - form
+    - posts
+    ↓
+community/templates/community/feed.html
+    ↓
+extends base.html
+    ↓
+Bootstrap / MarketPulse CSS
+    ↓
+Rendered HTML
+    ↓
+Browser
 
+
+============================================================
+CREATE POST FLOW
+============================================================
+
+User completes form
+    ↓
+Clicks "Publish Post"
+    ↓
+<form method="post">
+    ↓
+CSRF token is checked
+    ↓
+community/views.py receives POST request
+    ↓
+Django form is validated
+    ↓
+View handles the new community post
+    ↓
+Database
+    ↓
+Updated posts are supplied to this template
+    ↓
+Community feed is displayed
+
+
+============================================================
+LECTURE - PROGRAMMING LANGUAGE FEATURES / CONCEPTS
+============================================================
+
+Programming language features are the building blocks
+used to tell a computer what to do.
+
+This template demonstrates:
+
+1. TEMPLATE INHERITANCE
+   {% extends 'base.html' %}
+
+   Reuses an existing parent template instead of repeating
+   the whole website structure.
+
+2. BLOCKS
+   {% block title %}
+   {% block content %}
+
+   Define sections that are inserted into base.html.
+
+3. VARIABLES
+   {{ field.label }}
+   {{ post.author.username }}
+   {{ post.ticker }}
+
+   Values supplied to the template at runtime.
+
+4. OBJECT / ATTRIBUTE ACCESS
+   post.author.username
+
+   Accesses related information using dot notation.
+
+5. ITERATION / LOOPS
+   {% for field in form %}
+   {% for post in posts %}
+
+   Repeats code for multiple objects.
+
+6. NESTED LOOPS
+   {% for error in field.errors %}
+
+   A loop running inside another loop.
+
+7. SELECTION / CONDITIONAL LOGIC
+   {% if post.ticker %}
+
+   Runs HTML only when a condition is true.
+
+8. EMPTY BRANCH
+   {% empty %}
+
+   Gives an alternative when the posts collection
+   contains no items.
+
+9. FILTERS
+   |date
+   |linebreaksbr
+
+   Transform data before displaying it.
+
+10. FORM PROCESSING
+    <form method="post">
+
+    Sends user input back to the Django server.
+
+11. SECURITY
+    {% csrf_token %}
+
+    Helps protect the POST request from CSRF attacks.
+
+12. HTML STRUCTURE
+    <div>, <form>, <label>, <button>, <p>
+
+    Defines the structure and meaning of the web page.
+
+13. CSS / BOOTSTRAP CLASSES
+    container, card, row, badge, btn, d-flex
+
+    Control the appearance and responsive layout.
+
+============================================================
+{% endcomment %}
+
+
+{# ============================================================ #}
+{# 1. PAGE TITLE BLOCK                                           #}
+{# Programming concept: template inheritance / blocks.           #}
+{# ============================================================ #}
+
+{% block title %} {# BLOCK: Fills the title area defined inside base.html. #}
+Community | MarketPulse {# TEXT: Sets the browser/page title for this template. #}
+{% endblock %} {# Ends the title block. #}
+
+
+{# ============================================================ #}
+{# 2. MAIN CONTENT BLOCK                                         #}
+{# Programming concept: template inheritance / page structure.   #}
+{# ============================================================ #}
+
+{% block content %} {# BLOCK: Starts the page content inserted into base.html. #}
+
+<div class="container py-4"> {# HTML + BOOTSTRAP: Creates the main responsive container with vertical padding. #}
+
+
+    {# ======================================================== #}
+    {# 3. PAGE HEADER                                            #}
+    {# Programming concept: HTML structure and CSS classes.      #}
+    {# ======================================================== #}
 
     <!-- ====================================================
          PAGE HEADER
-    ===================================================== -->
+    ===================================================== --> {# HTML COMMENT: Labels the page-header section for developers. #}
 
-    <div class="mb-4">
+    <div class="mb-4"> {# HTML + BOOTSTRAP: Groups the heading and adds bottom margin. #}
+        <h1 class="h3 mb-1"> {# HTML HEADING: Main page heading styled with Bootstrap. #}
+            MarketPulse Community {# TEXT: Visible title shown to the user. #}
+        </h1> {# Ends the main heading. #}
 
-        <h1 class="h3 mb-1">
-            MarketPulse Community
-        </h1>
+        <p class="text-muted"> {# HTML PARAGRAPH: Displays supporting text in a muted style. #}
+            Share market observations, trading warnings, {# TEXT: First part of the community description. #}
+            risk alerts and strategy discussions with {# TEXT: Continues the community description. #}
+            other MarketPulse users. {# TEXT: Finishes the community description. #}
+        </p> {# Ends the description paragraph. #}
+    </div> {# Ends the page-header wrapper. #}
 
-        <p class="text-muted">
-            Share market observations, trading warnings,
-            risk alerts and strategy discussions with
-            other MarketPulse users.
-        </p>
 
-    </div>
-
+    {# ======================================================== #}
+    {# 4. IMPORTANT DISCLAIMER                                   #}
+    {# Programming concept: static content and presentation.     #}
+    {# ======================================================== #}
 
     <!-- ====================================================
          IMPORTANT DISCLAIMER
-    ===================================================== -->
+    ===================================================== --> {# HTML COMMENT: Labels the disclaimer section. #}
 
-    <div class="alert alert-warning">
+    <div class="alert alert-warning"> {# BOOTSTRAP COMPONENT: Displays the disclaimer as a warning alert. #}
+        Community posts are shared by MarketPulse users {# TEXT: Explains where community posts come from. #}
+        for educational and discussion purposes only. {# TEXT: States the educational purpose of posts. #}
 
-        Community posts are shared by MarketPulse users
-        for educational and discussion purposes only.
+        They should not be treated as personalised {# TEXT: Starts the financial-advice warning. #}
+        financial or investment advice. {# TEXT: Completes the financial-advice warning. #}
+    </div> {# Ends the warning alert. #}
 
-        They should not be treated as personalised
-        financial or investment advice.
 
-    </div>
-
+    {# ======================================================== #}
+    {# 5. CREATE POST CARD                                       #}
+    {# Programming concepts: forms, POST requests and security.  #}
+    {# ======================================================== #}
 
     <!-- ====================================================
          CREATE POST
-    ===================================================== -->
+    ===================================================== --> {# HTML COMMENT: Labels the create-post section. #}
 
-    <div class="card shadow-sm mb-4">
+    <div class="card shadow-sm mb-4"> {# BOOTSTRAP CARD: Groups the post form inside a styled card. #}
 
-        <div class="card-header bg-white">
+        <div class="card-header bg-white"> {# BOOTSTRAP: Creates the card header with a white background. #}
+            <h5 class="mb-0"> {# HTML HEADING: Small heading with no bottom margin. #}
+                Share an Update {# TEXT: Tells the user what the form is for. #}
+            </h5> {# Ends the card heading. #}
+        </div> {# Ends the card header. #}
 
-            <h5 class="mb-0">
-                Share an Update
-            </h5>
+        <div class="card-body"> {# BOOTSTRAP: Creates the main content area of the card. #}
 
-        </div>
+            <form method="post"> {# HTML FORM: Sends entered form data to the server using HTTP POST. #}
+
+                {% csrf_token %} {# DJANGO SECURITY TAG: Adds the CSRF token required for a protected POST form. #}
+
+                <div class="row g-3"> {# BOOTSTRAP GRID: Creates a row and adds spacing between form fields. #}
+
+                    {% for field in form %} {# FOR LOOP: Repeats this section once for every field in the Django form. #}
+
+                        <div class="col-12"> {# BOOTSTRAP GRID: Makes each form field use the full row width. #}
+
+                            <label {# HTML LABEL: Starts the label connected to the current form field. #}
+                                class="form-label" {# BOOTSTRAP: Applies standard form-label styling. #}
+                                for="{{ field.id_for_label }}"> {# VARIABLE: Uses the current field's generated HTML ID. #}
+
+                                {{ field.label }} {# VARIABLE: Displays the current Django form field label. #}
+
+                            </label> {# Ends the label for the field. #}
+
+                            {{ field }} {# VARIABLE: Django renders the actual input, textarea or other field widget. #}
+
+                            {% for error in field.errors %} {# NESTED FOR LOOP: Repeats once for each validation error on this field. #}
+
+                                <div class="text-danger small"> {# BOOTSTRAP: Displays validation errors as small red text. #}
+                                    {{ error }} {# VARIABLE: Displays the current validation error message. #}
+                                </div> {# Ends the validation-error container. #}
+
+                            {% endfor %} {# CONTROL FLOW: Ends the field-error loop. #}
+
+                        </div> {# Ends the full-width form-field column. #}
+
+                    {% endfor %} {# CONTROL FLOW: Ends the main Django form-field loop. #}
+
+                </div> {# Ends the Bootstrap row containing the form fields. #}
+
+                <button {# HTML BUTTON: Starts the form submission button. #}
+                    type="submit" {# HTML ATTRIBUTE: Makes this button submit the form. #}
+                    class="btn btn-primary mt-3"> {# BOOTSTRAP: Styles the button and adds top margin. #}
+
+                    Publish Post {# TEXT: Button label shown to the user. #}
+
+                </button> {# Ends the submit button. #}
+
+            </form> {# Ends the POST form. #}
+
+        </div> {# Ends the create-post card body. #}
+
+    </div> {# Ends the create-post card. #}
 
 
-        <div class="card-body">
-
-            <form method="post">
-
-                {% csrf_token %}
-
-                <div class="row g-3">
-
-                    {% for field in form %}
-
-                        <div class="col-12">
-
-                            <label
-                                class="form-label"
-                                for="{{ field.id_for_label }}">
-
-                                {{ field.label }}
-
-                            </label>
-
-                            {{ field }}
-
-                            {% for error in field.errors %}
-
-                                <div class="text-danger small">
-                                    {{ error }}
-                                </div>
-
-                            {% endfor %}
-
-                        </div>
-
-                    {% endfor %}
-
-                </div>
-
-
-                <button
-                    type="submit"
-                    class="btn btn-primary mt-3">
-
-                    Publish Post
-
-                </button>
-
-            </form>
-
-        </div>
-
-    </div>
-
+    {# ======================================================== #}
+    {# 6. COMMUNITY POSTS LOOP                                   #}
+    {# Programming concept: iteration over a collection.         #}
+    {# ======================================================== #}
 
     <!-- ====================================================
          COMMUNITY POSTS
-    ===================================================== -->
+    ===================================================== --> {# HTML COMMENT: Labels the community-post list section. #}
 
-    {% for post in posts %}
+    {% for post in posts %} {# FOR LOOP: Repeats the post card once for every post supplied by the Django view. #}
 
-        <div class="card shadow-sm mb-3">
+        <div class="card shadow-sm mb-3"> {# BOOTSTRAP CARD: Creates a separate visual card for the current post. #}
 
-            <div class="card-body">
+            <div class="card-body"> {# BOOTSTRAP: Creates the content area inside the current post card. #}
 
-                <div class="d-flex justify-content-between">
+                <div class="d-flex justify-content-between"> {# FLEXBOX: Places author information and date on opposite sides. #}
 
-                    <div>
+                    <div> {# HTML CONTAINER: Groups the author and post-type information. #}
 
-                        <strong>
-                            {{ post.author.username }}
-                        </strong>
+                        <strong> {# HTML: Gives the username stronger visual importance. #}
+                            {{ post.author.username }} {# VARIABLE + ATTRIBUTE ACCESS: Gets the username from the post's author object. #}
+                        </strong> {# Ends the strong username text. #}
 
-                        <span class="badge bg-secondary ms-2">
+                        <span class="badge bg-secondary ms-2"> {# BOOTSTRAP BADGE: Displays the post type as a small label with left spacing. #}
 
-                            {{ post.get_post_type_display }}
+                            {{ post.get_post_type_display }} {# VARIABLE/METHOD ACCESS: Displays the readable label for the post type choice. #}
 
-                        </span>
+                        </span> {# Ends the post-type badge. #}
 
-                    </div>
+                    </div> {# Ends the author and post-type group. #}
 
+                    <small class="text-muted"> {# HTML + BOOTSTRAP: Displays secondary date information in smaller muted text. #}
 
-                    <small class="text-muted">
+                        {{ post.created_at|date:"d M Y H:i" }} {# FILTER: Formats the stored post date and time before displaying it. #}
 
-                        {{ post.created_at|date:"d M Y H:i" }}
+                    </small> {# Ends the post-date text. #}
 
-                    </small>
-
-                </div>
-
-
-                {% if post.ticker %}
-
-                    <div class="mt-2">
-
-                        <span class="badge bg-primary">
-
-                            {{ post.ticker }}
-
-                        </span>
-
-                    </div>
-
-                {% endif %}
+                </div> {# Ends the flex layout containing post metadata. #}
 
 
-                <p class="mt-3 mb-0">
+                {# ==================================================== #}
+                {# 7. OPTIONAL TICKER                                   #}
+                {# Programming concept: conditional / selection.        #}
+                {# ==================================================== #}
 
-                    {{ post.content|linebreaksbr }}
+                {% if post.ticker %} {# IF CONDITION: Runs this HTML only when the post contains a ticker. #}
 
-                </p>
+                    <div class="mt-2"> {# BOOTSTRAP: Adds space above the ticker area. #}
 
-            </div>
+                        <span class="badge bg-primary"> {# BOOTSTRAP BADGE: Displays the ticker as a primary-coloured label. #}
 
-        </div>
+                            {{ post.ticker }} {# VARIABLE: Displays the ticker stored on the current post. #}
 
+                        </span> {# Ends the ticker badge. #}
 
-    {% empty %}
+                    </div> {# Ends the ticker container. #}
 
-        <div class="card shadow-sm">
-
-            <div class="card-body text-center text-muted">
-
-                No community posts yet.
-
-                Be the first MarketPulse user
-                to share an update.
-
-            </div>
-
-        </div>
-
-    {% endfor %}
+                {% endif %} {# CONTROL FLOW: Ends the ticker condition. #}
 
 
-</div>
+                {# ==================================================== #}
+                {# 8. POST CONTENT                                      #}
+                {# Programming concepts: variables and filters.         #}
+                {# ==================================================== #}
 
-{% endblock %}
+                <p class="mt-3 mb-0"> {# HTML + BOOTSTRAP: Creates the post-content paragraph with controlled spacing. #}
+
+                    {{ post.content|linebreaksbr }} {# VARIABLE + FILTER: Displays post content and converts saved line breaks into HTML <br> tags. #}
+
+                </p> {# Ends the post-content paragraph. #}
+
+            </div> {# Ends the current post card body. #}
+
+        </div> {# Ends the current community-post card. #}
+
+
+    {# ======================================================== #}
+    {# 9. EMPTY POSTS BRANCH                                     #}
+    {# Programming concept: alternative branch / empty case.     #}
+    {# ======================================================== #}
+
+    {% empty %} {# EMPTY BRANCH: Runs only when the posts collection contains no posts. #}
+
+        <div class="card shadow-sm"> {# BOOTSTRAP CARD: Creates the empty-state card. #}
+
+            <div class="card-body text-center text-muted"> {# BOOTSTRAP: Centres the empty message and gives it muted styling. #}
+
+                No community posts yet. {# TEXT: Tells the user that the posts collection is empty. #}
+
+                Be the first MarketPulse user {# TEXT: Starts the encouragement message. #}
+                to share an update. {# TEXT: Completes the encouragement message. #}
+
+            </div> {# Ends the empty-state card body. #}
+
+        </div> {# Ends the empty-state card. #}
+
+    {% endfor %} {# CONTROL FLOW: Ends the posts loop and its empty alternative. #}
+
+
+</div> {# Ends the main Bootstrap page container. #}
+
+{% endblock %} {# Ends the content block inherited by base.html. #}

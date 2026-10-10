@@ -1,21 +1,30 @@
-{% extends "base.html" %}
-
+{% extends "base.html" %} {# DJANGO TEMPLATE INHERITANCE: reuse the main MarketPulse page structure from base.html. #}
 
 {% comment %}
 ============================================================
 MARKETPULSE - PRIVATE MESSAGE CONVERSATION
 ============================================================
 
-PURPOSE:
+FILE:
+community/templates/community/message_thread.html
 
-This template displays one complete private conversation
-between the authenticated MarketPulse user and another user.
+WHAT THIS FILE DOES:
+Displays one private conversation between the logged-in
+MarketPulse user and another MarketPulse user.
 
-It replaces the older email-style individual-message view
-with a modern threaded conversation interface.
+It:
+1. Shows the other user's username.
+2. Displays all messages in the conversation.
+3. Separates outgoing and incoming messages.
+4. Shows sent/read status.
+5. Provides a reply form.
+6. Displays Django form validation errors.
+7. Automatically scrolls to the latest message.
+8. Allows Ctrl + Enter / Command + Enter to send.
 
-
-FRAMEWORK MAPPING:
+============================================================
+DJANGO FRAMEWORK - MVT MAPPING
+============================================================
 
 Browser
     ↓
@@ -23,1641 +32,995 @@ community/urls.py
     ↓
 conversation_detail(request, pk)
     ↓
+community/views.py
+    ↓
 Conversation model
     ↓
 PrivateMessage model
     ↓
 PostgreSQL
     ↓
+View creates template context
+    ↓
 message_thread.html
+    ↓
+HTML + CSS + JavaScript
+    ↓
+Browser displays conversation
 
+MVT:
 
-VIEW CONTEXT EXPECTED:
+MODEL
+    Conversation
+    PrivateMessage
+    User
+    PostgreSQL records
+
+VIEW
+    conversation_detail(request, pk)
+
+TEMPLATE
+    message_thread.html
+
+============================================================
+PROGRAMMING LANGUAGE FEATURES / CONCEPTS
+============================================================
+
+1. VARIABLES
+   {{ other_user.username }}
+   {{ message.body }}
+   JavaScript const variables
+
+2. OBJECTS / ATTRIBUTES
+   message.sender
+   message.body
+   message.created_at
+   message.is_read
+
+3. ITERATION / LOOPS
+   {% for message in conversation_messages %}
+
+4. SELECTION / CONDITIONALS
+   {% if message.sender == request.user %}
+   {% if message.is_read %}
+
+5. BOOLEAN EXPRESSIONS
+   message.sender == request.user
+   replyForm && messageField
+   event.ctrlKey || event.metaKey
+
+6. FUNCTIONS
+   function (event) { ... }
+
+7. METHODS
+   document.getElementById()
+   addEventListener()
+   preventDefault()
+   trim()
+   requestSubmit()
+
+8. EVENTS
+   DOMContentLoaded
+   keydown
+
+9. OPERATORS
+   ==
+   ===
+   &&
+   ||
+   !
+
+10. TEMPLATE INHERITANCE
+    {% extends %}
+    {% block %}
+
+11. TEMPLATE FILTERS
+    |linebreaksbr
+    |date
+
+12. FORM PROCESSING
+    method="post"
+    {% csrf_token %}
+
+13. DOM MANIPULATION
+    scrollTop
+    scrollHeight
+
+14. RESPONSIVE DESIGN
+    CSS @media queries
+
+15. SEPARATION OF CONCERNS
+    Django = server logic
+    HTML = page structure
+    CSS = presentation
+    JavaScript = browser behaviour
+    PostgreSQL = persistent data
+
+============================================================
+VIEW CONTEXT EXPECTED
+============================================================
 
 conversation
-    The Conversation object being displayed.
+    Conversation object currently being displayed.
 
 conversation_messages
-    All PrivateMessage records belonging to this conversation,
+    PrivateMessage objects belonging to this conversation,
     ordered from oldest to newest.
 
 other_user
-    The other participant in the conversation.
+    Other participant in this conversation.
 
 reply_form
     MessageReplyForm containing the body field.
 
+request.user
+    Currently authenticated Django user.
 
-SECURITY:
+============================================================
+SECURITY
+============================================================
 
-The view must verify that request.user belongs to the
-conversation before rendering this template.
+IMPORTANT:
 
-The template itself must never be relied upon for
-authorisation.
+The Django VIEW must verify that request.user belongs to
+the Conversation before this template is rendered.
+
+The template should display authorised data.
+
+The template itself must NOT be responsible for deciding
+whether a user is authorised.
+
+The POST form also contains Django's CSRF token.
 
 ============================================================
 {% endcomment %}
 
+{# ============================================================ #}
+{# SECTION 1 - PAGE TITLE                                       #}
+{# PROGRAMMING CONCEPT: TEMPLATE BLOCK + VARIABLE ACCESS         #}
+{# ============================================================ #}
 
-{% block title %}
-Chat with {{ other_user.username }} | MarketPulse
-{% endblock %}
+{% block title %} {# Django block overrides the title block defined in base.html. #}
+Chat with {{ other_user.username }} | MarketPulse {# VARIABLE/ATTRIBUTE: read the username property from other_user. #}
+{% endblock %} {# End the title block. #}
 
+{# ============================================================ #}
+{# SECTION 2 - PAGE-SPECIFIC CSS                                #}
+{# PROGRAMMING CONCEPT: SEPARATION OF CONCERNS                  #}
+{# ============================================================ #}
 
-{% block extra_css %}
+{% block extra_css %} {# Add CSS that belongs specifically to this template. #}
 
-<style>
+<style> /* CSS controls the visual presentation of the conversation. */
 
-    /* ==================================================== */
-    /* 1. MESSAGING WORKSPACE                               */
-    /* ==================================================== */
+/* ============================================================ */
+/* 1. MESSAGING WORKSPACE                                       */
+/* ============================================================ */
 
-    .message-thread-workspace {
+.message-thread-workspace { /* CLASS SELECTOR: styles the main chat workspace. */
+    width: 100%; /* Make the workspace use the available horizontal space. */
+    max-width: 1180px; /* Prevent the conversation from becoming excessively wide. */
+    margin: 0 auto; /* Centre the workspace horizontally. */
+}
 
-        width:
-            100%;
+/* ============================================================ */
+/* 2. THREAD SHELL                                              */
+/* ============================================================ */
 
-        max-width:
-            1180px;
+.message-thread-card { /* Styles the main conversation container. */
+    overflow: hidden; /* Hide content extending outside the rounded card. */
+    background: var(--mp-panel, #152235); /* Use MarketPulse panel colour with fallback. */
+    border: 1px solid var(--mp-border, #314258); /* Draw the outer card border. */
+    border-radius: 12px; /* Round the outer corners. */
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .16); /* Add depth around the conversation card. */
+}
 
-        margin:
-            0 auto;
+/* ============================================================ */
+/* 3. THREAD HEADER                                             */
+/* ============================================================ */
+
+.message-thread-header { /* Styles the top section containing user information and buttons. */
+    display: flex; /* FLEXBOX: arrange child elements in a flexible row. */
+    align-items: center; /* Vertically align header children. */
+    justify-content: space-between; /* Put user details left and actions right. */
+    gap: 1rem; /* Add space between flex children. */
+    padding: 1rem 1.1rem; /* Add internal spacing. */
+    background: var(--mp-panel-soft, #18283a); /* Set header background colour. */
+    border-bottom: 1px solid var(--mp-border, #314258); /* Separate header from messages. */
+}
+
+.message-thread-user { /* Groups the large avatar and user details. */
+    display: flex; /* FLEXBOX: place avatar and text beside each other. */
+    align-items: center; /* Vertically centre avatar and text. */
+    gap: .8rem; /* Add space between avatar and username. */
+    min-width: 0; /* Allow flex content to shrink correctly. */
+}
+
+.message-thread-avatar { /* Styles the large conversation avatar. */
+    display: inline-flex; /* Use inline flex layout. */
+    align-items: center; /* Centre icon vertically. */
+    justify-content: center; /* Centre icon horizontally. */
+    flex: 0 0 auto; /* Keep avatar at its defined size. */
+    width: 44px; /* Set avatar width. */
+    height: 44px; /* Set avatar height. */
+    color: #9bc4e4; /* Set avatar icon colour. */
+    background: rgba(79, 134, 182, .15); /* Add translucent blue background. */
+    border: 1px solid rgba(79, 134, 182, .35); /* Add avatar outline. */
+    border-radius: 50%; /* Turn the square element into a circle. */
+    font-size: 1rem; /* Set icon size. */
+}
+
+.message-thread-user-copy { /* Contains username and description. */
+    min-width: 0; /* Allows text truncation inside flexbox. */
+}
+
+.message-thread-user-copy h1 { /* Styles the other user's username. */
+    margin: 0; /* Remove browser default heading margin. */
+    overflow: hidden; /* Hide username text if it becomes too wide. */
+    color: var(--mp-text, #f1f5f9); /* Set primary text colour. */
+    font-size: 1rem; /* Set heading size. */
+    font-weight: 700; /* Make username bold. */
+    text-overflow: ellipsis; /* Display ... if username is too long. */
+    white-space: nowrap; /* Prevent username wrapping onto another line. */
+}
+
+.message-thread-user-copy p { /* Styles "Private MarketPulse conversation". */
+    margin: .15rem 0 0; /* Add a small space above description. */
+    color: var(--mp-muted, #93a4b8); /* Use muted text colour. */
+    font-size: .75rem; /* Use smaller supporting text. */
+}
+
+.message-thread-actions { /* Contains Inbox and New Chat buttons. */
+    display: flex; /* FLEXBOX: position buttons in a row. */
+    align-items: center; /* Align buttons vertically. */
+    flex-wrap: wrap; /* Allow buttons to wrap on smaller screens. */
+    gap: .5rem; /* Put space between buttons. */
+    flex: 0 0 auto; /* Prevent the action group from shrinking unexpectedly. */
+}
+
+/* ============================================================ */
+/* 4. CONVERSATION AREA                                        */
+/* ============================================================ */
+
+.message-thread-body { /* Main scrolling area containing the messages. */
+    min-height: 460px; /* Keep a useful minimum chat height. */
+    max-height: min(68vh, 760px); /* Limit height using viewport and pixel values. */
+    overflow-y: auto; /* Add vertical scrolling when messages exceed the height. */
+    overflow-x: hidden; /* Prevent horizontal scrolling. */
+    padding: 1.25rem; /* Add space around messages. */
+    background: var(--mp-panel-dark, #101a28); /* Use dark chat background. */
+    scroll-behavior: smooth; /* Animate browser scrolling smoothly. */
+}
+
+/* ============================================================ */
+/* 5. EMPTY CONVERSATION                                       */
+/* ============================================================ */
+
+.message-thread-empty { /* Styles the screen shown when no messages exist. */
+    display: flex; /* FLEXBOX used for centring empty-state content. */
+    align-items: center; /* Centre content vertically. */
+    justify-content: center; /* Centre content horizontally. */
+    min-height: 400px; /* Give empty state enough vertical space. */
+    text-align: center; /* Centre its text. */
+}
+
+.message-thread-empty-icon { /* Styles the empty conversation icon. */
+    display: inline-flex; /* Use flex layout for the icon. */
+    align-items: center; /* Centre icon vertically. */
+    justify-content: center; /* Centre icon horizontally. */
+    width: 58px; /* Set icon container width. */
+    height: 58px; /* Set icon container height. */
+    margin-bottom: 1rem; /* Separate icon from heading. */
+    color: #8ab4d7; /* Set icon colour. */
+    background: rgba(79, 134, 182, .12); /* Give icon subtle background. */
+    border: 1px solid rgba(79, 134, 182, .25); /* Add subtle circular border. */
+    border-radius: 50%; /* Make container circular. */
+    font-size: 1.25rem; /* Increase icon size. */
+}
+
+/* ============================================================ */
+/* 6. MESSAGE ROW                                              */
+/* ============================================================ */
+
+.chat-message { /* Base style applied to every message row. */
+    display: flex; /* FLEXBOX controls left/right message positioning. */
+    width: 100%; /* Each message row uses the entire available width. */
+    margin-bottom: 1rem; /* Add vertical space between messages. */
+}
+
+.chat-message:last-child { /* PSEUDO-CLASS selects only the final message. */
+    margin-bottom: 0; /* Remove unnecessary space after final message. */
+}
+
+.chat-message-incoming { /* Applies to messages sent by the other user. */
+    justify-content: flex-start; /* Position incoming messages on the left. */
+}
+
+.chat-message-outgoing { /* Applies to messages sent by request.user. */
+    justify-content: flex-end; /* Position outgoing messages on the right. */
+}
+
+/* ============================================================ */
+/* 7. MESSAGE GROUP                                            */
+/* ============================================================ */
+
+.chat-message-group { /* Groups avatar, author, bubble and timestamp. */
+    display: flex; /* FLEXBOX positions avatar beside message content. */
+    align-items: flex-end; /* Align avatar with the bottom of the message. */
+    gap: .55rem; /* Add space between avatar and message content. */
+    min-width: 0; /* Allow group to shrink correctly. */
+    max-width: 78%; /* Prevent message bubbles becoming too wide. */
+}
+
+.chat-message-outgoing .chat-message-group { /* DESCENDANT SELECTOR targets outgoing message groups. */
+    flex-direction: row-reverse; /* Put current user's avatar on the right. */
+}
+
+/* ============================================================ */
+/* 8. SMALL MESSAGE AVATAR                                     */
+/* ============================================================ */
+
+.chat-avatar { /* Styles avatars beside individual messages. */
+    display: inline-flex; /* FLEXBOX lets the icon be centred. */
+    align-items: center; /* Centre icon vertically. */
+    justify-content: center; /* Centre icon horizontally. */
+    flex: 0 0 auto; /* Keep avatar size fixed. */
+    width: 30px; /* Set avatar width. */
+    height: 30px; /* Set avatar height. */
+    color: #a9cce7; /* Use light blue icon colour. */
+    background: var(--mp-panel-soft, #18283a); /* Use secondary panel background. */
+    border: 1px solid var(--mp-border, #314258); /* Draw avatar border. */
+    border-radius: 50%; /* Make avatar circular. */
+    font-size: .72rem; /* Set small icon size. */
+}
+
+.chat-message-outgoing .chat-avatar { /* Override avatar styling for current user. */
+    color: #ffffff; /* Make outgoing icon white. */
+    background: #345f84; /* Use stronger blue background. */
+    border-color: #4f86b6; /* Use matching blue border. */
+}
+
+/* ============================================================ */
+/* 9. MESSAGE CONTENT                                          */
+/* ============================================================ */
+
+.chat-content { /* Contains author, bubble and timestamp. */
+    min-width: 0; /* Allow content to shrink inside flex layout. */
+}
+
+.chat-message-outgoing .chat-content { /* Apply only to outgoing content. */
+    text-align: right; /* Align outgoing metadata toward the right. */
+}
+
+.chat-author { /* Styles sender name above each bubble. */
+    margin-bottom: .25rem; /* Add space between author and message. */
+    color: var(--mp-muted, #93a4b8); /* Use muted metadata colour. */
+    font-size: .68rem; /* Use smaller text for author name. */
+    font-weight: 600; /* Give author slightly heavier weight. */
+}
+
+/* ============================================================ */
+/* 10. CHAT BUBBLE                                             */
+/* ============================================================ */
+
+.chat-bubble { /* Shared presentation for incoming and outgoing text bubbles. */
+    display: inline-block; /* Bubble width follows its content. */
+    max-width: 100%; /* Prevent bubble escaping the message group. */
+    padding: .7rem .85rem; /* Add space around message text. */
+    text-align: left; /* Keep message text left aligned inside bubbles. */
+    overflow-wrap: anywhere; /* Break very long text when necessary. */
+    word-break: break-word; /* Prevent long words from breaking layout. */
+    border-radius: 14px; /* Round message bubble corners. */
+    font-size: .88rem; /* Set message font size. */
+    line-height: 1.5; /* Improve readability between text lines. */
+}
+
+.chat-message-incoming .chat-bubble { /* Incoming message appearance. */
+    color: var(--mp-text, #f1f5f9); /* Use normal MarketPulse text colour. */
+    background: var(--mp-panel-soft, #18283a); /* Use softer dark background. */
+    border: 1px solid var(--mp-border, #314258); /* Outline incoming bubble. */
+    border-bottom-left-radius: 4px; /* Create chat-tail effect on incoming bubble. */
+}
+
+.chat-message-outgoing .chat-bubble { /* Outgoing message appearance. */
+    color: #ffffff; /* Use white message text. */
+    background: #294d6c; /* Use blue background for current user's messages. */
+    border: 1px solid #4f86b6; /* Outline outgoing bubble. */
+    border-bottom-right-radius: 4px; /* Create chat-tail effect on outgoing bubble. */
+}
+
+/* ============================================================ */
+/* 11. MESSAGE TIME                                            */
+/* ============================================================ */
+
+.chat-time { /* Contains timestamp and sent/read status. */
+    display: flex; /* FLEXBOX arranges time and status icon horizontally. */
+    align-items: center; /* Vertically centre metadata. */
+    gap: .3rem; /* Add space between time and status. */
+    margin-top: .3rem; /* Separate metadata from bubble. */
+    color: var(--mp-muted, #93a4b8); /* Use muted metadata colour. */
+    font-size: .64rem; /* Make timestamp smaller than message text. */
+}
+
+.chat-message-outgoing .chat-time { /* Applies only to outgoing timestamp. */
+    justify-content: flex-end; /* Align outgoing metadata to the right. */
+}
+
+/* ============================================================ */
+/* 12. MESSAGE COMPOSER                                        */
+/* ============================================================ */
+
+.message-composer { /* Container around reply form. */
+    padding: 1rem; /* Add internal spacing. */
+    background: var(--mp-panel, #152235); /* Use standard panel background. */
+    border-top: 1px solid var(--mp-border, #314258); /* Separate form from message history. */
+}
+
+.message-composer-inner { /* Groups textarea and Send button. */
+    display: flex; /* FLEXBOX positions field and button together. */
+    align-items: flex-end; /* Align button with bottom of textarea. */
+    gap: .75rem; /* Add horizontal spacing. */
+}
+
+.message-composer-field { /* Wrapper around Django textarea. */
+    flex: 1 1 auto; /* Let field grow and fill remaining space. */
+    min-width: 0; /* Prevent flex overflow. */
+}
+
+.message-composer textarea { /* Targets the textarea generated by reply_form.body. */
+    width: 100%; /* Make textarea fill its parent. */
+    min-height: 48px; /* Give input a minimum usable height. */
+    max-height: 150px; /* Prevent input becoming excessively tall. */
+    resize: vertical; /* Allow user to resize textarea vertically. */
+    color: var(--mp-text, #f1f5f9); /* Set textarea text colour. */
+    background: var(--mp-panel-dark, #101a28); /* Set textarea background. */
+    border-color: var(--mp-border, #314258); /* Set textarea border. */
+    border-radius: 8px; /* Round textarea corners. */
+}
+
+.message-composer textarea:focus { /* PSEUDO-CLASS applies while user is typing in textarea. */
+    color: var(--mp-text, #f1f5f9); /* Keep normal text colour when focused. */
+    background: var(--mp-panel-dark, #101a28); /* Keep dark background when focused. */
+    border-color: var(--mp-primary, #4f86b6); /* Highlight active field. */
+    box-shadow: 0 0 0 .2rem rgba(79, 134, 182, .15); /* Add accessible focus glow. */
+}
+
+.message-send-button { /* Styles Send button dimensions. */
+    min-width: 96px; /* Give button consistent minimum width. */
+    min-height: 48px; /* Match textarea's minimum height. */
+}
+
+.message-composer-help { /* Styles help text below reply field. */
+    margin-top: .45rem; /* Separate help text from form controls. */
+    color: var(--mp-muted, #93a4b8); /* Use muted colour. */
+    font-size: .66rem; /* Make help text visually secondary. */
+}
+
+/* ============================================================ */
+/* 13. FORM ERRORS                                             */
+/* ============================================================ */
+
+.message-form-errors { /* Styles Django validation error containers. */
+    margin-bottom: .75rem; /* Separate errors from form controls. */
+}
+
+.message-form-errors ul { /* Targets Django's generated error list. */
+    margin-bottom: 0; /* Remove extra list spacing. */
+}
+
+/* ============================================================ */
+/* 14. RESPONSIVE DESIGN - TABLET                              */
+/* PROGRAMMING CONCEPT: CONDITIONAL PRESENTATION                */
+/* ============================================================ */
+
+@media (max-width: 767.98px) { /* Apply rules when viewport is tablet-sized or smaller. */
+    .message-thread-workspace { /* Adjust overall workspace. */
+        max-width: none; /* Remove desktop maximum width. */
     }
-
-
-    /* ==================================================== */
-    /* 2. THREAD SHELL                                      */
-    /* ==================================================== */
-
-    .message-thread-card {
-
-        overflow:
-            hidden;
-
-        background:
-            var(
-                --mp-panel,
-                #152235
-            );
-
-        border:
-            1px solid
-            var(
-                --mp-border,
-                #314258
-            );
-
-        border-radius:
-            12px;
-
-        box-shadow:
-            0 12px 30px
-            rgba(
-                0,
-                0,
-                0,
-                .16
-            );
+    .message-thread-header { /* Adjust header layout. */
+        align-items: flex-start; /* Align items toward top. */
+        padding: .9rem; /* Reduce padding slightly. */
     }
-
-
-    /* ==================================================== */
-    /* 3. THREAD HEADER                                     */
-    /* ==================================================== */
-
-    .message-thread-header {
-
-        display:
-            flex;
-
-        align-items:
-            center;
-
-        justify-content:
-            space-between;
-
-        gap:
-            1rem;
-
-        padding:
-            1rem 1.1rem;
-
-        background:
-            var(
-                --mp-panel-soft,
-                #18283a
-            );
-
-        border-bottom:
-            1px solid
-            var(
-                --mp-border,
-                #314258
-            );
+    .message-thread-body { /* Adjust scrolling conversation area. */
+        min-height: 420px; /* Reduce minimum chat height. */
+        max-height: 62vh; /* Use smaller portion of viewport. */
+        padding: 1rem .8rem; /* Reduce spacing around messages. */
     }
-
-
-    .message-thread-user {
-
-        display:
-            flex;
-
-        align-items:
-            center;
-
-        gap:
-            .8rem;
-
-        min-width:
-            0;
+    .chat-message-group { /* Adjust message width. */
+        max-width: 88%; /* Let messages use more screen width. */
     }
-
-
-    .message-thread-avatar {
-
-        display:
-            inline-flex;
-
-        align-items:
-            center;
-
-        justify-content:
-            center;
-
-        flex:
-            0 0 auto;
-
-        width:
-            44px;
-
-        height:
-            44px;
-
-        color:
-            #9bc4e4;
-
-        background:
-            rgba(
-                79,
-                134,
-                182,
-                .15
-            );
-
-        border:
-            1px solid
-            rgba(
-                79,
-                134,
-                182,
-                .35
-            );
-
-        border-radius:
-            50%;
-
-        font-size:
-            1rem;
+    .message-composer { /* Adjust reply form. */
+        padding: .8rem; /* Reduce composer padding. */
     }
+}
 
+/* ============================================================ */
+/* 15. RESPONSIVE DESIGN - MOBILE                              */
+/* ============================================================ */
 
-    .message-thread-user-copy {
-
-        min-width:
-            0;
+@media (max-width: 575.98px) { /* Apply rules to small mobile screens. */
+    .message-thread-header { /* Stack conversation header content. */
+        flex-direction: column; /* Change FLEXBOX from row to column. */
+        gap: .8rem; /* Maintain spacing between sections. */
     }
-
-
-    .message-thread-user-copy h1 {
-
-        margin:
-            0;
-
-        overflow:
-            hidden;
-
-        color:
-            var(
-                --mp-text,
-                #f1f5f9
-            );
-
-        font-size:
-            1rem;
-
-        font-weight:
-            700;
-
-        text-overflow:
-            ellipsis;
-
-        white-space:
-            nowrap;
+    .message-thread-actions { /* Make actions use full row. */
+        width: 100%; /* Fill available width. */
     }
-
-
-    .message-thread-user-copy p {
-
-        margin:
-            .15rem 0 0;
-
-        color:
-            var(
-                --mp-muted,
-                #93a4b8
-            );
-
-        font-size:
-            .75rem;
+    .message-thread-actions .btn { /* Target buttons inside header actions. */
+        flex: 1 1 auto; /* Let buttons share available width. */
     }
-
-
-    .message-thread-actions {
-
-        display:
-            flex;
-
-        align-items:
-            center;
-
-        flex-wrap:
-            wrap;
-
-        gap:
-            .5rem;
-
-        flex:
-            0 0 auto;
+    .message-thread-body { /* Resize message history on small screens. */
+        min-height: 380px; /* Reduce minimum height. */
+        max-height: 58vh; /* Restrict height to smaller viewport percentage. */
+        padding: .85rem .65rem; /* Reduce message area padding. */
     }
-
-
-    /* ==================================================== */
-    /* 4. CONVERSATION AREA                                 */
-    /* ==================================================== */
-
-    .message-thread-body {
-
-        min-height:
-            460px;
-
-        max-height:
-            min(
-                68vh,
-                760px
-            );
-
-        overflow-y:
-            auto;
-
-        overflow-x:
-            hidden;
-
-        padding:
-            1.25rem;
-
-        background:
-            var(
-                --mp-panel-dark,
-                #101a28
-            );
-
-        scroll-behavior:
-            smooth;
+    .chat-message-group { /* Allow bubbles to occupy most mobile screen. */
+        max-width: 94%; /* Increase bubble area on narrow screens. */
     }
-
-
-    /* ==================================================== */
-    /* 5. EMPTY CONVERSATION                                */
-    /* ==================================================== */
-
-    .message-thread-empty {
-
-        display:
-            flex;
-
-        align-items:
-            center;
-
-        justify-content:
-            center;
-
-        min-height:
-            400px;
-
-        text-align:
-            center;
+    .chat-avatar { /* Reduce message avatar size. */
+        width: 27px; /* Smaller mobile width. */
+        height: 27px; /* Smaller mobile height. */
     }
-
-
-    .message-thread-empty-icon {
-
-        display:
-            inline-flex;
-
-        align-items:
-            center;
-
-        justify-content:
-            center;
-
-        width:
-            58px;
-
-        height:
-            58px;
-
-        margin-bottom:
-            1rem;
-
-        color:
-            #8ab4d7;
-
-        background:
-            rgba(
-                79,
-                134,
-                182,
-                .12
-            );
-
-        border:
-            1px solid
-            rgba(
-                79,
-                134,
-                182,
-                .25
-            );
-
-        border-radius:
-            50%;
-
-        font-size:
-            1.25rem;
+    .chat-bubble { /* Adjust bubble dimensions on mobile. */
+        padding: .65rem .75rem; /* Reduce bubble padding. */
+        font-size: .84rem; /* Slightly reduce message text size. */
     }
-
-
-    /* ==================================================== */
-    /* 6. MESSAGE ROW                                       */
-    /* ==================================================== */
-
-    .chat-message {
-
-        display:
-            flex;
-
-        width:
-            100%;
-
-        margin-bottom:
-            1rem;
+    .message-composer-inner { /* Stack textarea and button vertically. */
+        align-items: stretch; /* Stretch children across available width. */
+        flex-direction: column; /* Change FLEXBOX orientation to a column. */
     }
-
-
-    .chat-message:last-child {
-
-        margin-bottom:
-            0;
+    .message-send-button { /* Make Send button mobile friendly. */
+        width: 100%; /* Fill available width. */
     }
+}
 
+</style> {# End template-specific CSS. #}
 
-    .chat-message-incoming {
+{% endblock %} {# End extra_css block. #}
 
-        justify-content:
-            flex-start;
-    }
+{# ============================================================ #}
+{# SECTION 3 - MAIN PAGE CONTENT                                #}
+{# ============================================================ #}
 
+{% block content %} {# Replace the content block from base.html. #}
 
-    .chat-message-outgoing {
+<div class="message-thread-workspace"> {# Main wrapper for the private conversation page. #}
 
-        justify-content:
-            flex-end;
-    }
+    {# ======================================================== #}
+    {# 3.1 BACK NAVIGATION                                     #}
+    {# PROGRAMMING CONCEPT: URL REVERSING                       #}
+    {# ======================================================== #}
 
+    <div class="mb-3"> {# Bootstrap margin-bottom utility adds spacing. #}
+        <a href="{% url 'community:inbox' %}" class="btn btn-sm btn-outline-primary"> {# DJANGO URL TAG builds the inbox URL instead of hard-coding it. #}
+            <i class="fa-solid fa-arrow-left me-1" aria-hidden="true"></i> {# Font Awesome back arrow; aria-hidden prevents duplicate screen-reader information. #}
+            Messages {# Visible navigation label. #}
+        </a> {# End inbox link. #}
+    </div> {# End back-navigation wrapper. #}
 
-    /* ==================================================== */
-    /* 7. MESSAGE GROUP                                     */
-    /* ==================================================== */
+    {# ======================================================== #}
+    {# 3.2 CONVERSATION SHELL                                  #}
+    {# ======================================================== #}
 
-    .chat-message-group {
+    <section class="message-thread-card"> {# Semantic section containing the entire conversation. #}
 
-        display:
-            flex;
+        {# ==================================================== #}
+        {# 3.2.1 THREAD HEADER                                 #}
+        {# ==================================================== #}
 
-        align-items:
-            flex-end;
+        <header class="message-thread-header"> {# Semantic header for conversation information. #}
 
-        gap:
-            .55rem;
+            <div class="message-thread-user"> {# Group the other user's avatar and details. #}
 
-        min-width:
-            0;
+                {# ------------------------------------------------ #}
+                {# USER AVATAR                                      #}
+                {# ------------------------------------------------ #}
 
-        max-width:
-            78%;
-    }
+                <span class="message-thread-avatar" aria-hidden="true"> {# Decorative avatar container. #}
+                    <i class="fa-solid fa-user"></i> {# Font Awesome user icon. #}
+                </span> {# End avatar. #}
 
+                {# ------------------------------------------------ #}
+                {# USER DETAILS                                     #}
+                {# PROGRAMMING CONCEPT: OBJECT ATTRIBUTE ACCESS     #}
+                {# ------------------------------------------------ #}
 
-    .chat-message-outgoing
-    .chat-message-group {
+                <div class="message-thread-user-copy"> {# Wrapper around username and conversation description. #}
+                    <h1> {# Main heading for the conversation. #}
+                        {{ other_user.username }} {# DJANGO VARIABLE: get username attribute from other_user object. #}
+                    </h1> {# End username heading. #}
+                    <p> {# Supporting description. #}
+                        Private MarketPulse conversation {# Explain that this is a private conversation. #}
+                    </p> {# End description. #}
+                </div> {# End user details. #}
 
-        flex-direction:
-            row-reverse;
-    }
+            </div> {# End message-thread-user group. #}
 
+            {# ------------------------------------------------ #}
+            {# HEADER ACTIONS                                   #}
+            {# ------------------------------------------------ #}
 
-    /* ==================================================== */
-    /* 8. SMALL MESSAGE AVATAR                              */
-    /* ==================================================== */
+            <div class="message-thread-actions"> {# Container for conversation action buttons. #}
 
-    .chat-avatar {
+                <a href="{% url 'community:inbox' %}" class="btn btn-sm btn-outline-secondary"> {# Navigate back to inbox using Django URL reversing. #}
+                    <i class="fa-solid fa-inbox me-1" aria-hidden="true"></i> {# Inbox icon. #}
+                    Inbox {# Visible button text. #}
+                </a> {# End Inbox button. #}
 
-        display:
-            inline-flex;
+                <a href="{% url 'community:new_conversation' %}" class="btn btn-sm btn-primary"> {# Navigate to form for creating a new conversation. #}
+                    <i class="fa-solid fa-pen-to-square me-1" aria-hidden="true"></i> {# New-message icon. #}
+                    New Chat {# Visible button text. #}
+                </a> {# End New Chat button. #}
 
-        align-items:
-            center;
+            </div> {# End header actions. #}
 
-        justify-content:
-            center;
+        </header> {# End conversation header. #}
 
-        flex:
-            0 0 auto;
+        {# ==================================================== #}
+        {# SECTION 4 - MESSAGE HISTORY                         #}
+        {# PROGRAMMING CONCEPT: ITERATION                      #}
+        {# ==================================================== #}
 
-        width:
-            30px;
+        <div id="messageThreadBody" class="message-thread-body" aria-live="polite"> {# DOM element containing message history; JavaScript later accesses this ID. #}
 
-        height:
-            30px;
+            {% for message in conversation_messages %} {# LOOP: repeat the following code once for every PrivateMessage object. #}
 
-        color:
-            #a9cce7;
+                {# ================================================= #}
+                {# SELECTION / CONDITIONAL                           #}
+                {# Is the sender the currently authenticated user?   #}
+                {# ================================================= #}
 
-        background:
-            var(
-                --mp-panel-soft,
-                #18283a
-            );
+                {% if message.sender == request.user %} {# CONDITIONAL: compare message.sender with Django's current request.user. #}
 
-        border:
-            1px solid
-            var(
-                --mp-border,
-                #314258
-            );
+                    {# ============================================= #}
+                    {# OUTGOING MESSAGE                              #}
+                    {# ============================================= #}
 
-        border-radius:
-            50%;
+                    <article class="chat-message chat-message-outgoing"> {# Semantic element representing one outgoing message. #}
 
-        font-size:
-            .72rem;
-    }
+                        <div class="chat-message-group"> {# Group avatar and outgoing message data. #}
 
+                            {# ------------------------------------- #}
+                            {# CURRENT USER AVATAR                   #}
+                            {# ------------------------------------- #}
 
-    .chat-message-outgoing
-    .chat-avatar {
+                            <span class="chat-avatar" aria-hidden="true"> {# Decorative avatar for the logged-in user. #}
+                                <i class="fa-solid fa-user"></i> {# User icon. #}
+                            </span> {# End current-user avatar. #}
 
-        color:
-            #ffffff;
+                            {# ------------------------------------- #}
+                            {# OUTGOING MESSAGE CONTENT              #}
+                            {# ------------------------------------- #}
 
-        background:
-            #345f84;
+                            <div class="chat-content"> {# Wrapper around sender name, message body and metadata. #}
 
-        border-color:
-            #4f86b6;
-    }
+                                <div class="chat-author"> {# Small sender label. #}
+                                    You {# Because message.sender equals request.user. #}
+                                </div> {# End author label. #}
 
+                                <div class="chat-bubble"> {# Visual outgoing message bubble. #}
+                                    {{ message.body|linebreaksbr }} {# VARIABLE + FILTER: display body and convert line breaks to HTML <br> elements. #}
+                                </div> {# End message bubble. #}
 
-    /* ==================================================== */
-    /* 9. MESSAGE CONTENT                                   */
-    /* ==================================================== */
+                                <div class="chat-time"> {# Contains timestamp and delivery/read status. #}
 
-    .chat-content {
+                                    <span> {# Wrap formatted creation date. #}
+                                        {{ message.created_at|date:"d M Y, H:i" }} {# DJANGO DATE FILTER formats the datetime for display. #}
+                                    </span> {# End timestamp. #}
 
-        min-width:
-            0;
-    }
+                                    {# --------------------------------- #}
+                                    {# READ STATUS CONDITIONAL           #}
+                                    {# --------------------------------- #}
 
+                                    {% if message.is_read %} {# BOOLEAN CONDITIONAL: test whether this message has been read. #}
 
-    .chat-message-outgoing
-    .chat-content {
+                                        <span title="Read" aria-label="Read"> {# Accessible read-status wrapper. #}
+                                            <i class="fa-solid fa-check-double" aria-hidden="true"></i> {# Double tick represents a read message. #}
+                                        </span> {# End read status. #}
 
-        text-align:
-            right;
-    }
+                                    {% else %} {# ELSE runs when message.is_read is False. #}
 
+                                        <span title="Sent" aria-label="Sent"> {# Accessible sent-status wrapper. #}
+                                            <i class="fa-solid fa-check" aria-hidden="true"></i> {# Single tick represents sent but not read. #}
+                                        </span> {# End sent status. #}
 
-    .chat-author {
+                                    {% endif %} {# Finish read-status selection structure. #}
 
-        margin-bottom:
-            .25rem;
+                                </div> {# End chat-time metadata. #}
 
-        color:
-            var(
-                --mp-muted,
-                #93a4b8
-            );
+                            </div> {# End chat-content. #}
 
-        font-size:
-            .68rem;
+                        </div> {# End outgoing message group. #}
 
-        font-weight:
-            600;
-    }
+                    </article> {# End outgoing message. #}
 
+                {% else %} {# ELSE: this message was sent by the other participant. #}
 
-    /* ==================================================== */
-    /* 10. CHAT BUBBLE                                      */
-    /* ==================================================== */
+                    {# ============================================= #}
+                    {# INCOMING MESSAGE                              #}
+                    {# ============================================= #}
 
-    .chat-bubble {
+                    <article class="chat-message chat-message-incoming"> {# Semantic element representing incoming message. #}
 
-        display:
-            inline-block;
+                        <div class="chat-message-group"> {# Group incoming avatar and message data. #}
 
-        max-width:
-            100%;
+                            {# ------------------------------------- #}
+                            {# OTHER USER AVATAR                     #}
+                            {# ------------------------------------- #}
 
-        padding:
-            .7rem .85rem;
+                            <span class="chat-avatar" aria-hidden="true"> {# Decorative avatar for other participant. #}
+                                <i class="fa-solid fa-user"></i> {# User icon. #}
+                            </span> {# End incoming avatar. #}
 
-        text-align:
-            left;
+                            {# ------------------------------------- #}
+                            {# INCOMING MESSAGE CONTENT              #}
+                            {# ------------------------------------- #}
 
-        overflow-wrap:
-            anywhere;
+                            <div class="chat-content"> {# Wrapper around incoming message information. #}
 
-        word-break:
-            break-word;
+                                <div class="chat-author"> {# Show sender above bubble. #}
+                                    {{ message.sender.username }} {# OBJECT ATTRIBUTE CHAIN: message → sender → username. #}
+                                </div> {# End incoming author. #}
 
-        border-radius:
-            14px;
+                                <div class="chat-bubble"> {# Incoming message bubble. #}
+                                    {{ message.body|linebreaksbr }} {# Display stored message body while preserving line breaks. #}
+                                </div> {# End incoming bubble. #}
 
-        font-size:
-            .88rem;
+                                <div class="chat-time"> {# Timestamp below incoming message. #}
+                                    {{ message.created_at|date:"d M Y, H:i" }} {# Format model datetime using Django's date filter. #}
+                                </div> {# End incoming timestamp. #}
 
-        line-height:
-            1.5;
-    }
+                            </div> {# End incoming chat content. #}
 
+                        </div> {# End incoming message group. #}
 
-    .chat-message-incoming
-    .chat-bubble {
+                    </article> {# End incoming message. #}
 
-        color:
-            var(
-                --mp-text,
-                #f1f5f9
-            );
+                {% endif %} {# Finish sender conditional. #}
 
-        background:
-            var(
-                --mp-panel-soft,
-                #18283a
-            );
+            {% empty %} {# Django for-loop EMPTY branch runs when conversation_messages contains no records. #}
 
-        border:
-            1px solid
-            var(
-                --mp-border,
-                #314258
-            );
+                {# ================================================ #}
+                {# EMPTY CONVERSATION                              #}
+                {# PROGRAMMING CONCEPT: EMPTY COLLECTION HANDLING  #}
+                {# ================================================ #}
 
-        border-bottom-left-radius:
-            4px;
-    }
+                <div class="message-thread-empty"> {# Empty-state container. #}
+                    <div> {# Inner container for centred content. #}
 
+                        <div class="message-thread-empty-icon"> {# Circular empty-state icon wrapper. #}
+                            <i class="fa-regular fa-comments" aria-hidden="true"></i> {# Conversation icon. #}
+                        </div> {# End empty-state icon. #}
 
-    .chat-message-outgoing
-    .chat-bubble {
+                        <h2 class="h5 mb-2"> {# Bootstrap heading style and bottom margin. #}
+                            Start the Conversation {# Tell user there are currently no messages. #}
+                        </h2> {# End empty-state heading. #}
 
-        color:
-            #ffffff;
-
-        background:
-            #294d6c;
-
-        border:
-            1px solid
-            #4f86b6;
-
-        border-bottom-right-radius:
-            4px;
-    }
-
-
-    /* ==================================================== */
-    /* 11. MESSAGE TIME                                     */
-    /* ==================================================== */
-
-    .chat-time {
-
-        display:
-            flex;
-
-        align-items:
-            center;
-
-        gap:
-            .3rem;
-
-        margin-top:
-            .3rem;
-
-        color:
-            var(
-                --mp-muted,
-                #93a4b8
-            );
-
-        font-size:
-            .64rem;
-    }
-
-
-    .chat-message-outgoing
-    .chat-time {
-
-        justify-content:
-            flex-end;
-    }
-
-
-    /* ==================================================== */
-    /* 12. COMPOSER                                         */
-    /* ==================================================== */
-
-    .message-composer {
-
-        padding:
-            1rem;
-
-        background:
-            var(
-                --mp-panel,
-                #152235
-            );
-
-        border-top:
-            1px solid
-            var(
-                --mp-border,
-                #314258
-            );
-    }
-
-
-    .message-composer-inner {
-
-        display:
-            flex;
-
-        align-items:
-            flex-end;
-
-        gap:
-            .75rem;
-    }
-
-
-    .message-composer-field {
-
-        flex:
-            1 1 auto;
-
-        min-width:
-            0;
-    }
-
-
-    .message-composer
-    textarea {
-
-        width:
-            100%;
-
-        min-height:
-            48px;
-
-        max-height:
-            150px;
-
-        resize:
-            vertical;
-
-        color:
-            var(
-                --mp-text,
-                #f1f5f9
-            );
-
-        background:
-            var(
-                --mp-panel-dark,
-                #101a28
-            );
-
-        border-color:
-            var(
-                --mp-border,
-                #314258
-            );
-
-        border-radius:
-            8px;
-    }
-
-
-    .message-composer
-    textarea:focus {
-
-        color:
-            var(
-                --mp-text,
-                #f1f5f9
-            );
-
-        background:
-            var(
-                --mp-panel-dark,
-                #101a28
-            );
-
-        border-color:
-            var(
-                --mp-primary,
-                #4f86b6
-            );
-
-        box-shadow:
-            0 0 0 .2rem
-            rgba(
-                79,
-                134,
-                182,
-                .15
-            );
-    }
-
-
-    .message-send-button {
-
-        min-width:
-            96px;
-
-        min-height:
-            48px;
-    }
-
-
-    .message-composer-help {
-
-        margin-top:
-            .45rem;
-
-        color:
-            var(
-                --mp-muted,
-                #93a4b8
-            );
-
-        font-size:
-            .66rem;
-    }
-
-
-    /* ==================================================== */
-    /* 13. FORM ERRORS                                      */
-    /* ==================================================== */
-
-    .message-form-errors {
-
-        margin-bottom:
-            .75rem;
-    }
-
-
-    .message-form-errors ul {
-
-        margin-bottom:
-            0;
-    }
-
-
-    /* ==================================================== */
-    /* 14. RESPONSIVE                                       */
-    /* ==================================================== */
-
-    @media (
-        max-width:
-        767.98px
-    ) {
-
-        .message-thread-workspace {
-
-            max-width:
-                none;
-        }
-
-
-        .message-thread-header {
-
-            align-items:
-                flex-start;
-
-            padding:
-                .9rem;
-        }
-
-
-        .message-thread-body {
-
-            min-height:
-                420px;
-
-            max-height:
-                62vh;
-
-            padding:
-                1rem .8rem;
-        }
-
-
-        .chat-message-group {
-
-            max-width:
-                88%;
-        }
-
-
-        .message-composer {
-
-            padding:
-                .8rem;
-        }
-
-    }
-
-
-    @media (
-        max-width:
-        575.98px
-    ) {
-
-        .message-thread-header {
-
-            flex-direction:
-                column;
-
-            gap:
-                .8rem;
-        }
-
-
-        .message-thread-actions {
-
-            width:
-                100%;
-        }
-
-
-        .message-thread-actions
-        .btn {
-
-            flex:
-                1 1 auto;
-        }
-
-
-        .message-thread-body {
-
-            min-height:
-                380px;
-
-            max-height:
-                58vh;
-
-            padding:
-                .85rem .65rem;
-        }
-
-
-        .chat-message-group {
-
-            max-width:
-                94%;
-        }
-
-
-        .chat-avatar {
-
-            width:
-                27px;
-
-            height:
-                27px;
-        }
-
-
-        .chat-bubble {
-
-            padding:
-                .65rem .75rem;
-
-            font-size:
-                .84rem;
-        }
-
-
-        .message-composer-inner {
-
-            align-items:
-                stretch;
-
-            flex-direction:
-                column;
-        }
-
-
-        .message-send-button {
-
-            width:
-                100%;
-        }
-
-    }
-
-</style>
-
-{% endblock %}
-
-
-{% block content %}
-
-
-<div class="message-thread-workspace">
-
-
-    <!-- ==================================================== -->
-    <!-- 1. BREADCRUMB / BACK NAVIGATION                     -->
-    <!-- ==================================================== -->
-
-    <div class="mb-3">
-
-        <a
-            href="{% url 'community:inbox' %}"
-            class="
-                btn
-                btn-sm
-                btn-outline-primary
-            "
-        >
-
-            <i
-                class="
-                    fa-solid
-                    fa-arrow-left
-                    me-1
-                "
-                aria-hidden="true"
-            ></i>
-
-            Messages
-
-        </a>
-
-    </div>
-
-
-    <!-- ==================================================== -->
-    <!-- 2. CONVERSATION SHELL                               -->
-    <!-- ==================================================== -->
-
-    <section class="message-thread-card">
-
-
-        <!-- ================================================= -->
-        <!-- THREAD HEADER                                     -->
-        <!-- ================================================= -->
-
-        <header class="message-thread-header">
-
-
-            <div class="message-thread-user">
-
-
-                <!-- ----------------------------------------- -->
-                <!-- USER AVATAR                               -->
-                <!-- ----------------------------------------- -->
-
-                <span
-                    class="message-thread-avatar"
-                    aria-hidden="true"
-                >
-
-                    <i class="fa-solid fa-user"></i>
-
-                </span>
-
-
-                <!-- ----------------------------------------- -->
-                <!-- USER DETAILS                              -->
-                <!-- ----------------------------------------- -->
-
-                <div class="message-thread-user-copy">
-
-                    <h1>
-
-                        {{ other_user.username }}
-
-                    </h1>
-
-                    <p>
-
-                        Private MarketPulse conversation
-
-                    </p>
-
-                </div>
-
-
-            </div>
-
-
-            <!-- --------------------------------------------- -->
-            <!-- HEADER ACTIONS                                -->
-            <!-- --------------------------------------------- -->
-
-            <div class="message-thread-actions">
-
-
-                <a
-                    href="{% url 'community:inbox' %}"
-                    class="
-                        btn
-                        btn-sm
-                        btn-outline-secondary
-                    "
-                >
-
-                    <i
-                        class="
-                            fa-solid
-                            fa-inbox
-                            me-1
-                        "
-                        aria-hidden="true"
-                    ></i>
-
-                    Inbox
-
-                </a>
-
-
-                <a
-                    href="{% url 'community:new_conversation' %}"
-                    class="
-                        btn
-                        btn-sm
-                        btn-primary
-                    "
-                >
-
-                    <i
-                        class="
-                            fa-solid
-                            fa-pen-to-square
-                            me-1
-                        "
-                        aria-hidden="true"
-                    ></i>
-
-                    New Chat
-
-                </a>
-
-
-            </div>
-
-
-        </header>
-
-
-        <!-- ================================================= -->
-        <!-- 3. MESSAGE HISTORY                                -->
-        <!-- ================================================= -->
-
-        <div
-            id="messageThreadBody"
-            class="message-thread-body"
-            aria-live="polite"
-        >
-
-
-            {% for message in conversation_messages %}
-
-
-                {% if message.sender == request.user %}
-
-
-                    <!-- ===================================== -->
-                    <!-- OUTGOING MESSAGE                      -->
-                    <!-- ===================================== -->
-
-                    <article
-                        class="
-                            chat-message
-                            chat-message-outgoing
-                        "
-                    >
-
-
-                        <div class="chat-message-group">
-
-
-                            <!-- -------------------------------- -->
-                            <!-- CURRENT USER AVATAR              -->
-                            <!-- -------------------------------- -->
-
-                            <span
-                                class="chat-avatar"
-                                aria-hidden="true"
-                            >
-
-                                <i class="fa-solid fa-user"></i>
-
-                            </span>
-
-
-                            <!-- -------------------------------- -->
-                            <!-- MESSAGE                          -->
-                            <!-- -------------------------------- -->
-
-                            <div class="chat-content">
-
-
-                                <div class="chat-author">
-
-                                    You
-
-                                </div>
-
-
-                                <div class="chat-bubble">
-
-                                    {{ message.body|linebreaksbr }}
-
-                                </div>
-
-
-                                <div class="chat-time">
-
-
-                                    <span>
-
-                                        {{ message.created_at|date:"d M Y, H:i" }}
-
-                                    </span>
-
-
-                                    {% if message.is_read %}
-
-                                        <span
-                                            title="Read"
-                                            aria-label="Read"
-                                        >
-
-                                            <i
-                                                class="
-                                                    fa-solid
-                                                    fa-check-double
-                                                "
-                                                aria-hidden="true"
-                                            ></i>
-
-                                        </span>
-
-                                    {% else %}
-
-                                        <span
-                                            title="Sent"
-                                            aria-label="Sent"
-                                        >
-
-                                            <i
-                                                class="
-                                                    fa-solid
-                                                    fa-check
-                                                "
-                                                aria-hidden="true"
-                                            ></i>
-
-                                        </span>
-
-                                    {% endif %}
-
-
-                                </div>
-
-
-                            </div>
-
-
-                        </div>
-
-
-                    </article>
-
-
-                {% else %}
-
-
-                    <!-- ===================================== -->
-                    <!-- INCOMING MESSAGE                      -->
-                    <!-- ===================================== -->
-
-                    <article
-                        class="
-                            chat-message
-                            chat-message-incoming
-                        "
-                    >
-
-
-                        <div class="chat-message-group">
-
-
-                            <!-- -------------------------------- -->
-                            <!-- OTHER USER AVATAR                -->
-                            <!-- -------------------------------- -->
-
-                            <span
-                                class="chat-avatar"
-                                aria-hidden="true"
-                            >
-
-                                <i class="fa-solid fa-user"></i>
-
-                            </span>
-
-
-                            <!-- -------------------------------- -->
-                            <!-- MESSAGE                          -->
-                            <!-- -------------------------------- -->
-
-                            <div class="chat-content">
-
-
-                                <div class="chat-author">
-
-                                    {{ message.sender.username }}
-
-                                </div>
-
-
-                                <div class="chat-bubble">
-
-                                    {{ message.body|linebreaksbr }}
-
-                                </div>
-
-
-                                <div class="chat-time">
-
-                                    {{ message.created_at|date:"d M Y, H:i" }}
-
-                                </div>
-
-
-                            </div>
-
-
-                        </div>
-
-
-                    </article>
-
-
-                {% endif %}
-
-
-            {% empty %}
-
-
-                <!-- ========================================= -->
-                <!-- EMPTY CONVERSATION                        -->
-                <!-- ========================================= -->
-
-                <div class="message-thread-empty">
-
-
-                    <div>
-
-
-                        <div class="message-thread-empty-icon">
-
-                            <i
-                                class="
-                                    fa-regular
-                                    fa-comments
-                                "
-                                aria-hidden="true"
-                            ></i>
-
-                        </div>
-
-
-                        <h2 class="h5 mb-2">
-
-                            Start the Conversation
-
-                        </h2>
-
-
-                        <p class="text-secondary mb-0">
-
+                        <p class="text-secondary mb-0"> {# Supporting Bootstrap muted text. #}
                             Send the first message to
-                            {{ other_user.username }}.
+                            {{ other_user.username }}. {# Insert the other participant's username dynamically. #}
+                        </p> {# End empty-state message. #}
 
-                        </p>
+                    </div> {# End centred empty-state content. #}
+                </div> {# End empty conversation state. #}
 
+            {% endfor %} {# Finish iteration through conversation_messages. #}
 
-                    </div>
+        </div> {# End message history area. #}
 
+        {# ==================================================== #}
+        {# SECTION 5 - REPLY COMPOSER                          #}
+        {# PROGRAMMING CONCEPT: INPUT + POST REQUEST           #}
+        {# ==================================================== #}
 
-                </div>
+        <div class="message-composer"> {# Container around message reply form. #}
 
+            <form method="post" id="messageReplyForm"> {# HTML FORM: POST sends entered message data back to the Django view. #}
 
-            {% endfor %}
+                {% csrf_token %} {# DJANGO SECURITY: insert CSRF token into POST form. #}
 
+                {# ================================================= #}
+                {# 5.1 NON-FIELD FORM ERRORS                         #}
+                {# ================================================= #}
 
-        </div>
+                {% if reply_form.non_field_errors %} {# CONDITIONAL: check for form errors not belonging to one field. #}
+                    <div class="alert alert-danger message-form-errors"> {# Bootstrap danger alert displays validation errors. #}
+                        {{ reply_form.non_field_errors }} {# Render Django non-field form errors. #}
+                    </div> {# End non-field error alert. #}
+                {% endif %} {# Finish non-field error conditional. #}
 
+                {# ================================================= #}
+                {# 5.2 MESSAGE BODY ERRORS                           #}
+                {# ================================================= #}
 
-        <!-- ================================================= -->
-        <!-- 4. REPLY COMPOSER                                 -->
-        <!-- ================================================= -->
+                {% if reply_form.body.errors %} {# CONDITIONAL: check whether body field has validation errors. #}
+                    <div class="alert alert-danger message-form-errors"> {# Display body errors as Bootstrap danger alert. #}
+                        {{ reply_form.body.errors }} {# Django renders validation messages for reply_form.body. #}
+                    </div> {# End body error alert. #}
+                {% endif %} {# Finish body-field error conditional. #}
 
-        <div class="message-composer">
+                {# ================================================= #}
+                {# 5.3 COMPOSER ROW                                  #}
+                {# ================================================= #}
 
+                <div class="message-composer-inner"> {# Flex container for textarea and button. #}
 
-            <form
-                method="post"
-                id="messageReplyForm"
-            >
+                    <div class="message-composer-field"> {# Wrapper allowing textarea to expand. #}
 
-                {% csrf_token %}
+                        <label for="{{ reply_form.body.id_for_label }}" class="visually-hidden"> {# Accessible label connected to Django-generated textarea ID. #}
+                            Message {# Label text available to assistive technologies. #}
+                        </label> {# End textarea label. #}
 
+                        {{ reply_form.body }} {# DJANGO FORM FIELD: render the MessageReplyForm body textarea. #}
 
-                <!-- ========================================= -->
-                <!-- FORM ERRORS                               -->
-                <!-- ========================================= -->
+                    </div> {# End message field wrapper. #}
 
-                {% if reply_form.non_field_errors %}
+                    <button type="submit" class="btn btn-primary message-send-button"> {# Submit button sends the POST form. #}
+                        <i class="fa-solid fa-paper-plane me-1" aria-hidden="true"></i> {# Paper-plane Send icon. #}
+                        Send {# Visible submit-button text. #}
+                    </button> {# End Send button. #}
 
-                    <div
-                        class="
-                            alert
-                            alert-danger
-                            message-form-errors
-                        "
-                    >
+                </div> {# End message-composer-inner. #}
 
-                        {{ reply_form.non_field_errors }}
-
-                    </div>
-
-                {% endif %}
-
-
-                {% if reply_form.body.errors %}
-
-                    <div
-                        class="
-                            alert
-                            alert-danger
-                            message-form-errors
-                        "
-                    >
-
-                        {{ reply_form.body.errors }}
-
-                    </div>
-
-                {% endif %}
-
-
-                <!-- ========================================= -->
-                <!-- COMPOSER ROW                              -->
-                <!-- ========================================= -->
-
-                <div class="message-composer-inner">
-
-
-                    <div class="message-composer-field">
-
-
-                        <label
-                            for="{{ reply_form.body.id_for_label }}"
-                            class="visually-hidden"
-                        >
-
-                            Message
-
-                        </label>
-
-
-                        {{ reply_form.body }}
-
-
-                    </div>
-
-
-                    <button
-                        type="submit"
-                        class="
-                            btn
-                            btn-primary
-                            message-send-button
-                        "
-                    >
-
-                        <i
-                            class="
-                                fa-solid
-                                fa-paper-plane
-                                me-1
-                            "
-                            aria-hidden="true"
-                        ></i>
-
-                        Send
-
-                    </button>
-
-
-                </div>
-
-
-                <div class="message-composer-help">
-
+                <div class="message-composer-help"> {# Supporting information below form controls. #}
                     Private conversation between you and
-                    {{ other_user.username }}.
-
+                    {{ other_user.username }}. {# Dynamically identify other participant. #}
                     Press Ctrl + Enter or Command + Enter
-                    to send.
+                    to send. {# Explain JavaScript keyboard shortcut. #}
+                </div> {# End composer help. #}
 
-                </div>
+            </form> {# End POST reply form. #}
 
+        </div> {# End reply composer. #}
 
-            </form>
+    </section> {# End complete conversation card. #}
 
+    {# ======================================================== #}
+    {# SECTION 6 - EDUCATIONAL / PRIVACY NOTE                  #}
+    {# ======================================================== #}
 
-        </div>
+    <div class="d-flex align-items-start gap-2 small text-secondary mt-3"> {# Bootstrap utility classes arrange privacy note. #}
 
+        <i class="fa-solid fa-lock mt-1" aria-hidden="true"></i> {# Lock icon communicates privacy visually. #}
 
-    </section>
-
-
-    <!-- ==================================================== -->
-    <!-- 5. EDUCATIONAL / PRIVACY NOTE                        -->
-    <!-- ==================================================== -->
-
-    <div
-        class="
-            d-flex
-            align-items-start
-            gap-2
-            small
-            text-secondary
-            mt-3
-        "
-    >
-
-        <i
-            class="
-                fa-solid
-                fa-lock
-                mt-1
-            "
-            aria-hidden="true"
-        ></i>
-
-
-        <p class="mb-0">
-
+        <p class="mb-0"> {# Remove default bottom paragraph spacing. #}
             Messages are visible only to participants in this
             private MarketPulse conversation.
-
             Market-related discussions are for educational
             purposes and should not be interpreted as
             personalised investment advice.
+        </p> {# End educational/privacy text. #}
 
-        </p>
+    </div> {# End educational/privacy note. #}
 
+</div> {# End message-thread-workspace. #}
 
-    </div>
+{% endblock %} {# End main content block. #}
 
+{# ============================================================ #}
+{# SECTION 7 - PAGE-SPECIFIC JAVASCRIPT                         #}
+{# PROGRAMMING CONCEPTS: VARIABLES, FUNCTIONS, EVENTS,          #}
+{# CONDITIONS, BOOLEAN OPERATORS, METHODS AND DOM MANIPULATION  #}
+{# ============================================================ #}
 
-</div>
+{% block extra_js %} {# Add JavaScript specifically for this conversation page. #}
 
+<script> // JavaScript controls browser-side behaviour after Django renders the HTML.
 
-{% endblock %}
+/* ============================================================ */
+/* 1. WAIT FOR THE HTML DOCUMENT                                */
+/* PROGRAMMING CONCEPT: EVENT-DRIVEN PROGRAMMING                */
+/* ============================================================ */
 
-
-{% block extra_js %}
-
-<script>
-
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
-
-
-        /* ==================================================== */
-        /* 1. SCROLL TO LATEST MESSAGE                          */
-        /* ==================================================== */
-
-        const messageThreadBody =
-            document.getElementById(
-                "messageThreadBody"
-            );
-
-
-        if (messageThreadBody) {
-
-            messageThreadBody.scrollTop =
-                messageThreadBody.scrollHeight;
-
-        }
-
+document.addEventListener( // METHOD CALL: attach an event listener to the document object.
+    "DOMContentLoaded", // EVENT: fires once the HTML DOM has been created.
+    function () { // ANONYMOUS FUNCTION: code executed when DOMContentLoaded occurs.
 
         /* ==================================================== */
-        /* 2. KEYBOARD SEND                                     */
+        /* 2. SCROLL TO LATEST MESSAGE                          */
+        /* PROGRAMMING CONCEPT: VARIABLE + DOM ACCESS           */
         /* ==================================================== */
 
-        const replyForm =
-            document.getElementById(
-                "messageReplyForm"
-            );
+        const messageThreadBody = // CONST VARIABLE: reference will not be reassigned.
+            document.getElementById( // DOM METHOD: search the page for one element by ID.
+                "messageThreadBody" // STRING VALUE: ID of the conversation message container.
+            ); // Finish getElementById() and save the result.
 
+        if (messageThreadBody) { // CONDITIONAL: only continue if the DOM element exists.
+            messageThreadBody.scrollTop = // OBJECT PROPERTY: set current vertical scroll position.
+                messageThreadBody.scrollHeight; // OBJECT PROPERTY: total scrollable height of the message area.
+        } // End existence check.
 
-        const messageField =
-            document.getElementById(
-                "{{ reply_form.body.id_for_label }}"
-            );
+        /* ==================================================== */
+        /* 3. FIND THE REPLY FORM                               */
+        /* ==================================================== */
 
+        const replyForm = // CONST VARIABLE stores reference to the form element.
+            document.getElementById( // DOM lookup method.
+                "messageReplyForm" // ID defined earlier on the HTML <form>.
+            ); // Finish form lookup.
 
-        if (
-            replyForm
-            &&
-            messageField
-        ) {
+        /* ==================================================== */
+        /* 4. FIND THE MESSAGE TEXTAREA                         */
+        /* DJANGO + JAVASCRIPT INTERACTION                      */
+        /* ==================================================== */
 
-            messageField.addEventListener(
-                "keydown",
-                function (event) {
+        const messageField = // CONST VARIABLE stores the textarea element.
+            document.getElementById( // Search DOM using the generated field ID.
+                "{{ reply_form.body.id_for_label }}" // Django inserts the textarea's real ID before browser receives JavaScript.
+            ); // Finish textarea lookup.
 
+        /* ==================================================== */
+        /* 5. CHECK REQUIRED DOM ELEMENTS                       */
+        /* PROGRAMMING CONCEPT: BOOLEAN OPERATOR &&             */
+        /* ==================================================== */
 
-                    const shortcutPressed =
-                        (
-                            event.ctrlKey
-                            ||
-                            event.metaKey
+        if ( // CONDITIONAL begins.
+            replyForm // First Boolean-style test: does the form exist?
+            && // LOGICAL AND: both values must be truthy.
+            messageField // Second test: does the textarea exist?
+        ) { // Run keyboard-shortcut logic only when both DOM elements exist.
+
+            /* ================================================= */
+            /* 6. LISTEN FOR KEYBOARD INPUT                       */
+            /* PROGRAMMING CONCEPT: EVENT + CALLBACK FUNCTION      */
+            /* ================================================= */
+
+            messageField.addEventListener( // METHOD: listen for an event on the textarea.
+                "keydown", // EVENT fires whenever a keyboard key is pressed down.
+                function (event) { // CALLBACK FUNCTION receives the browser's event object.
+
+                    /* ============================================= */
+                    /* 7. CALCULATE WHETHER SHORTCUT WAS PRESSED      */
+                    /* PROGRAMMING CONCEPTS: BOOLEAN EXPRESSION        */
+                    /* OPERATORS: || and && and ===                    */
+                    /* ============================================= */
+
+                    const shortcutPressed = // BOOLEAN VARIABLE stores true or false.
+                        ( // Parentheses group the Ctrl/Command test.
+                            event.ctrlKey // PROPERTY: true when Ctrl is held.
+                            || // LOGICAL OR: either Ctrl or Command is accepted.
+                            event.metaKey // PROPERTY: true when Command/Meta is held.
                         )
-                        &&
-                        event.key === "Enter";
+                        && // LOGICAL AND requires modifier plus Enter.
+                        event.key === "Enter"; // STRICT EQUALITY checks that the pressed key is exactly Enter.
 
+                    /* ============================================= */
+                    /* 8. GUARD CLAUSE                                */
+                    /* PROGRAMMING CONCEPT: EARLY RETURN               */
+                    /* ============================================= */
 
-                    if (!shortcutPressed) {
+                    if (!shortcutPressed) { // NOT OPERATOR: run when shortcutPressed is false.
+                        return; // EXIT FUNCTION immediately for normal keyboard input.
+                    } // End guard clause.
 
-                        return;
+                    /* ============================================= */
+                    /* 9. STOP DEFAULT KEYBOARD BEHAVIOUR             */
+                    /* ============================================= */
 
-                    }
+                    event.preventDefault(); // METHOD: prevent browser's default action for this shortcut.
 
+                    /* ============================================= */
+                    /* 10. DO NOT SEND AN EMPTY MESSAGE               */
+                    /* PROGRAMMING CONCEPT: VALIDATION + STRING METHOD */
+                    /* ============================================= */
 
-                    event.preventDefault();
+                    if ( // CONDITIONAL checks whether usable text exists.
+                        messageField.value.trim() // PROPERTY + STRING METHOD: remove surrounding whitespace and test remaining text.
+                    ) { // Continue only when trimmed text is not empty.
 
+                        replyForm.requestSubmit(); // FORM METHOD: submit the form through its normal submit mechanism.
 
-                    if (
-                        messageField.value.trim()
-                    ) {
+                    } // End non-empty message validation.
 
-                        replyForm.requestSubmit();
+                } // End keydown callback function.
+            ); // End keydown event listener.
 
-                    }
+        } // End form/textarea existence check.
 
+    } // End DOMContentLoaded callback function.
+); // End document.addEventListener() call.
 
-                }
-            );
+</script> {# End page-specific JavaScript. #}
 
-        }
-
-
-    }
-);
-
-</script>
-
-{% endblock %}
+{% endblock %} {# End extra_js block. #}

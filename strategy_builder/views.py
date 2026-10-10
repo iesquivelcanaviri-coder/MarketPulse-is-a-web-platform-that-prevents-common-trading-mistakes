@@ -4,1855 +4,603 @@ MARKETPULSE - STRATEGY BUILDER VIEWS
 ============================================================
 
 Framework mapping:
+Django URLs → these views → forms / models / analytics
+→ template context → HTML response.
 
-Strategy & Model Library
-        ↓
-StrategyLibraryItem
-        ↓
-strategy_list()
-        ↓
-templates/strategy_builder/list.html
-        ↓
-Browse / Filter / Compare Models
+Strategy & Model Library:
+StrategyLibraryItem → strategy_list()
+→ strategy_builder/list.html → Browse / Filter / Compare.
 
+Custom Strategy:
+StrategyCreateForm → core.Strategy → strategy_create()
+→ Backtesting.
 
-Custom Strategy Builder
-        ↓
-StrategyCreateForm
-        ↓
-core.Strategy
-        ↓
-strategy_create()
-        ↓
-Backtesting
+Historical Backtesting:
+BacktestForm → run_backtest() → core.Backtest
+→ BacktestTrade → backtest_results().
 
+Strategy Robustness:
+Strategies page → User Strategy → Historical MarketData
+→ detect_overfitting() → OverfittingTest
+→ Result displayed inside /strategy/.
 
-Historical Backtesting
-        ↓
-BacktestForm
-        ↓
-run_backtest()
-        ↓
-core.Backtest
-        ↓
-BacktestTrade
-        ↓
-backtest_results()
+Stress Testing:
+Strategies page → User Strategy → Historical MarketData
+→ run_stress_test() → StressTest
+→ Result displayed inside /strategy/.
 
+Library Creation:
+StrategyLibraryItemForm → StrategyLibraryItem
+→ Strategy & Model Library.
 
-Strategy Robustness
-        ↓
-Strategies Tab
-        ↓
-User Strategy
-        ↓
-Historical MarketData
-        ↓
-analysis_tools.detect_overfitting()
-        ↓
-OverfittingTest
-        ↓
-Result displayed inside /strategy/
+Student understanding:
+Views coordinate requests and return responses.
+Forms validate submitted data.
+Models provide database access through Django's ORM.
+Imported analytics functions perform the calculations.
+Templates display the supplied context.
 
+Programming concepts:
+Imports, functions, decorators, parameters, return values,
+variables, strings, numbers, Booleans, lists, tuples,
+dictionaries, loops, conditions, comprehensions, slicing,
+unpacking, method chaining and exception handling.
 
-Stress Testing
-        ↓
-Strategies Tab
-        ↓
-User Strategy
-        ↓
-Historical MarketData
-        ↓
-Predefined severe market scenario
-        ↓
-analysis_tools.run_stress_test()
-        ↓
-StressTest
-        ↓
-Result displayed inside /strategy/
+analysis_tools remains an internal analytics layer.
+Robustness and stress forms are handled on the Strategies page.
+Market Condition remains part of the Data workflow.
 
-
-Add New Library Model
-        ↓
-StrategyLibraryItemForm
-        ↓
-StrategyLibraryItem
-        ↓
-Strategy & Model Library
-
-
-PURPOSE:
-
-This views file connects the Strategy section of MarketPulse
-with:
-
-- The built-in model library
-- User-created strategies
-- Model comparison
-- Backtesting
-- Historical performance metrics
-- Strategy robustness / overfitting analysis
-- Stress testing
-- Future strategy/model execution
-
-
-IMPORTANT ARCHITECTURE:
-
-The old public "Analysis" section is removed from the
-user-facing navigation.
-
-analysis_tools remains inside the project as an INTERNAL
-analytics engine.
-
-The user now accesses:
-
-Strategy & Model Research
-    through the Strategies tab
-
-Historical Backtesting
-    through the Strategies tab
-
-Strategy Robustness
-    directly inside the Strategies page
-
-Stress Testing
-    directly inside the Strategies page
-
-Market Condition
-    through the Data tab
-
-
-IMPORTANT:
-
-Strategy Robustness and Stress Testing DO NOT require
-separate user-facing pages.
-
-Their calculations remain separated in the backend,
-but their forms and latest results are displayed inside:
-
-    /strategy/
-
+These notes describe this view's calls. Details inside imported
+forms and calculation engines belong to their own source files.
 ============================================================
 """
 
+# ============================================================
+# 1. DJANGO IMPORTS — REUSING FRAMEWORK FUNCTIONS
+# ============================================================
+from django.contrib import messages  # I import user-notification helpers.
+from django.contrib.auth.decorators import login_required  # I import the decorator that requires authentication.
+from django.db.models import Max, Min  # I import database aggregation functions for date ranges.
+from django.shortcuts import get_object_or_404, redirect, render  # I import retrieval and response helpers.
+from django.urls import reverse  # I import named-route URL resolution.
 
 # ============================================================
-# 1. DJANGO IMPORTS
+# 2. CORE MODELS — DATABASE ACCESS
 # ============================================================
-
-from django.contrib import messages
-
-from django.contrib.auth.decorators import login_required
-
-from django.db.models import (
-    Max,
-    Min,
-)
-
-from django.shortcuts import (
-    get_object_or_404,
-    redirect,
-    render,
-)
-
-from django.urls import reverse
-
+from core.models import Backtest, MarketData, Strategy  # I import model classes used by these views.
 
 # ============================================================
-# 2. CORE MODEL IMPORTS
+# 3. INTERNAL ANALYTICS — CALCULATIONS AND STORED RESULTS
 # ============================================================
-
-from core.models import (
-    Backtest,
-    MarketData,
-    Strategy,
-)
-
+from analysis_tools.analyzers import detect_overfitting, run_stress_test  # I delegate analysis to the internal engine.
+from analysis_tools.models import OverfittingTest, StressTest  # I import models used to retrieve analysis results.
 
 # ============================================================
-# 3. INTERNAL ANALYTICS ENGINE IMPORTS
+# 4. LOCAL FORMS — SUBMITTED DATA
 # ============================================================
-
-# analysis_tools remains an internal analytics layer.
-#
-# detect_overfitting()
-#     powers Strategy Robustness.
-#
-# run_stress_test()
-#     powers Strategy Stress Testing.
-from analysis_tools.analyzers import (
-    detect_overfitting,
-    run_stress_test,
-)
-
-
-# OverfittingTest stores Strategy Robustness results.
-#
-# StressTest stores Strategy Stress Testing results.
-from analysis_tools.models import (
-    OverfittingTest,
-    StressTest,
-)
-
+from .forms import BacktestForm, StrategyCreateForm, StrategyLibraryItemForm  # The leading dot imports from this package.
 
 # ============================================================
-# 4. STRATEGY BUILDER FORM IMPORTS
+# 5. LOCAL LIBRARY MODEL
 # ============================================================
-
-from .forms import (
-    BacktestForm,
-    StrategyCreateForm,
-    StrategyLibraryItemForm,
-)
-
+from .models import StrategyLibraryItem  # I import the strategy-library metadata model.
 
 # ============================================================
-# 5. STRATEGY BUILDER MODEL IMPORTS
+# 6. BACKTESTING ENGINE
 # ============================================================
-
-from .models import StrategyLibraryItem
-
+from .backtesting import run_backtest  # I import the function that performs historical simulation.
 
 # ============================================================
-# 6. BACKTESTING ENGINE IMPORT
+# 7. HELPERS — SMALL REUSABLE FUNCTIONS
 # ============================================================
-
-from .backtesting import run_backtest
-
-
-# ============================================================
-# 7. INTERNAL VIEW HELPERS
-# ============================================================
-
-def _strategy_workspace_url(
-    anchor=None,
-):
-    """
-    Return the main Strategies workspace URL.
-
-    Optional anchor examples:
-
-        strategyRobustnessSection
-        stressTestingSection
-        myStrategiesSection
-    """
-
-    url = reverse(
-        "strategy_builder:list"
-    )
-
-    if anchor:
-
-        return (
-            f"{url}#{anchor}"
-        )
-
-    return url
+def _strategy_workspace_url(anchor=None):  # I define a helper with an optional parameter defaulting to None.
+    """Return the Strategies URL, optionally followed by a section anchor."""
+    url = reverse("strategy_builder:list")  # I resolve the named route instead of hard-coding its path.
+    if anchor:  # I check whether a truthy anchor was supplied.
+        return f"{url}#{anchor}"  # An f-string inserts values; the fragment identifies a browser section.
+    return url  # I return the plain URL when there is no anchor.
 
 
-def _get_available_historical_symbols():
-    """
-    Return all symbols currently available in core.MarketData.
-
-    Both Strategy Robustness and Stress Testing depend on
-    stored historical data rather than only live Alpaca data.
-    """
-
-    return list(
-        MarketData.objects
-        .order_by(
-            "symbol"
-        )
-        .values_list(
-            "symbol",
-            flat=True,
-        )
-        .distinct()
-    )
+def _get_available_historical_symbols():  # I define a helper with no explicit parameters.
+    """Return distinct symbols stored in core.MarketData."""
+    return list(  # I evaluate the query and convert its results into a Python list.
+        MarketData.objects  # I access the model's query manager.
+        .order_by("symbol")  # I order the records by symbol.
+        .values_list("symbol", flat=True)  # I request symbol values rather than complete model objects.
+        .distinct()  # I remove duplicate symbol values.
+    )  # I finish the returned list conversion.
 
 
-def _robustness_interpretation(
-    test,
-):
-    """
-    Convert the technical OverfittingTest result into
-    user-friendly language.
-
-    Returns:
-
-        label,
-        explanation
-    """
-
-    if not test:
-
-        return (
-            None,
-            None,
-        )
-
-
-    score = float(
-        test.overfitting_score
-    )
-
-
-    if (
-        test.is_overfitted
-        and score >= 0.50
-    ):
-
-        return (
-            "High Overfitting Risk",
+def _robustness_interpretation(test):  # I receive an analysis result as a parameter.
+    """Return a user-facing label and explanation as a two-item tuple."""
+    if not test:  # I handle an absent or false result.
+        return (None, None)  # I return a tuple containing two empty values.
+    score = float(test.overfitting_score)  # I convert the stored score into a floating-point number.
+    if test.is_overfitted and score >= 0.50:  # Boolean AND requires the flag and score threshold to match.
+        return (  # I return the high-risk label and explanation.
+            "High Overfitting Risk",  # I supply the label string.
             (
-                "Performance weakened substantially when "
-                "MarketPulse moved from the in-sample period "
-                "to the out-of-sample period. The historical "
-                "result may depend too heavily on the data "
-                "used during strategy development."
-            ),
-        )
-
-
-    if test.is_overfitted:
-
-        return (
-            "Moderate Overfitting Risk",
+                "Performance weakened substantially when "  # Adjacent string literals join automatically.
+                "MarketPulse moved from the in-sample period "  # I continue the explanation.
+                "to the out-of-sample period. The historical "  # I describe the comparison.
+                "result may depend too heavily on the data "  # I explain the possible limitation.
+                "used during strategy development."  # I complete the explanation.
+            ),  # I close the explanation string.
+        )  # I close the returned tuple.
+    if test.is_overfitted:  # I handle flagged results below the previous threshold.
+        return (  # I return the moderate-risk interpretation.
+            "Moderate Overfitting Risk",  # I supply its label.
             (
-                "The strategy showed a meaningful reduction "
-                "in performance on the out-of-sample period. "
-                "Additional testing across other data periods "
-                "and market conditions would be useful."
-            ),
-        )
-
-
-    return (
-        "Low Overfitting Risk",
+                "The strategy showed a meaningful reduction "  # I begin the explanation.
+                "in performance on the out-of-sample period. "  # I describe the observed reduction.
+                "Additional testing across other data periods "  # I suggest broader evaluation.
+                "and market conditions would be useful."  # I complete the explanation.
+            ),  # I close the explanation string.
+        )  # I close the tuple.
+    return (  # I return the remaining interpretation.
+        "Low Overfitting Risk",  # I supply the unflagged-result label.
         (
-            "The simplified robustness check did not identify "
-            "a large deterioration between the in-sample and "
-            "out-of-sample periods. This does not guarantee "
-            "future performance."
-        ),
-    )
-
+            "The simplified robustness check did not identify "  # I describe this check's finding.
+            "a large deterioration between the in-sample and "  # I identify the comparison.
+            "out-of-sample periods. This does not guarantee "  # I state the interpretation's limit.
+            "future performance."  # I complete the explanation.
+        ),  # I close the explanation string.
+    )  # I close the tuple.
 
 # ============================================================
-# 8. STRATEGY & MODEL RESEARCH WORKSPACE
+# 8. STRATEGIES WORKSPACE — MAIN REQUEST HANDLER
 # ============================================================
-
-@login_required
-def strategy_list(request):
+@login_required  # A decorator checks authentication before this view executes.
+def strategy_list(request):  # Django supplies the HTTP request object.
     """
-    ============================================================
-    STRATEGY & MODEL RESEARCH WORKSPACE
-    ============================================================
-
-    URL:
-
-        /strategy/
-
-
-    The Strategies page now combines:
-
-    1. Strategy & Model Library
-
-    2. Model Search and Filtering
-
-    3. Model Comparison
-
-    4. User-Created Strategies
-
-    5. Historical Backtesting
-
-    6. Strategy Robustness
-
-    7. Stress Testing
-
-
-    IMPORTANT:
-
-    Strategy Robustness and Stress Testing are processed
-    directly by this view.
-
-    They no longer require users to leave the Strategies page.
-    ============================================================
+    Render the combined Strategies workspace.
+    GET prepares library, comparison and saved-strategy data.
+    POST also processes robustness or stress-test submissions.
     """
 
-
-    # ========================================================
-    # 8.1 LOAD THE COMPLETE ACTIVE MODEL LIBRARY
-    # ========================================================
-
-    library_items = (
-        StrategyLibraryItem.objects
-        .filter(
-            is_active=True
-        )
-        .order_by(
-            "category",
-            "display_order",
-            "name",
-        )
-    )
-
-
-    # ========================================================
-    # 8.2 BUILD CATEGORY SUMMARY CARDS
-    # ========================================================
-
-    category_cards = []
-
-
-    for (
-        category_code,
-        category_label,
-    ) in StrategyLibraryItem.CATEGORY_CHOICES:
-
-        category_count = (
-            library_items
-            .filter(
-                category=category_code
-            )
-            .count()
-        )
-
-
-        category_cards.append(
-            {
-                "code":
-                    category_code,
-
-                "label":
-                    category_label,
-
-                "count":
-                    category_count,
-            }
-        )
-
-
-    # ========================================================
-    # 8.3 LIBRARY SUMMARY STATISTICS
-    # ========================================================
-
-    total_library_models = (
-        library_items.count()
-    )
-
-
-    ready_models = (
-        library_items
-        .filter(
-            implementation_status="ready"
-        )
-        .count()
-    )
-
-
-    experimental_models = (
-        library_items
-        .filter(
-            implementation_status="experimental"
-        )
-        .count()
-    )
-
-
-    catalogued_models = (
-        library_items
-        .filter(
-            implementation_status="catalogued"
-        )
-        .count()
-    )
-
-
-    # ========================================================
-    # 8.4 MODEL COMPARISON
-    # ========================================================
-
-    requested_compare_codes = (
-        request.GET.getlist(
-            "compare"
-        )
-    )
-
-
-    # Remove duplicate selections while preserving order.
-    requested_compare_codes = list(
-        dict.fromkeys(
-            requested_compare_codes
-        )
-    )
-
-
-    comparison_message = ""
-
-
-    # ========================================================
-    # 8.5 LIMIT COMPARISON TO FOUR MODELS
-    # ========================================================
-
-    if len(requested_compare_codes) > 4:
-
-        requested_compare_codes = (
-            requested_compare_codes[:4]
-        )
-
-
-        comparison_message = (
-            "MarketPulse compares a maximum of four "
-            "models at the same time."
-        )
-
-
-    # ========================================================
-    # 8.6 RETRIEVE SELECTED COMPARISON MODELS
-    # ========================================================
-
-    compare_queryset = (
-        StrategyLibraryItem.objects
-        .filter(
-            code__in=requested_compare_codes,
-            is_active=True,
-        )
-    )
-
-
-    compare_lookup = {
-
-        item.code:
-            item
-
-        for item in compare_queryset
-    }
-
-
-    compare_items = [
-
-        compare_lookup[code]
-
-        for code in requested_compare_codes
-
-        if code in compare_lookup
-    ]
-
-
-    if (
-        requested_compare_codes
-        and len(compare_items) < 2
-    ):
-
-        comparison_message = (
-            "Select at least two models to compare."
-        )
-
-
-    # ========================================================
-    # 8.7 LOAD USER-CREATED STRATEGIES
-    # ========================================================
-
-    my_strategies = (
-        Strategy.objects
-        .filter(
-            user=request.user
-        )
-        .prefetch_related(
-            "rules"
-        )
-        .order_by(
-            "-created_at"
-        )
-    )
-
-
-    # ========================================================
-    # 8.8 AVAILABLE HISTORICAL MARKET DATA
-    # ========================================================
-
-    available_symbols = (
-        _get_available_historical_symbols()
-    )
-
-
-    # ========================================================
-    # 8.9 PRESERVE SAME-PAGE VALIDATION SELECTIONS
-    # ========================================================
-
-    # A strategy can be supplied by:
-    #
-    # POST:
-    #     when a form is submitted
-    #
-    # GET:
-    #     when a "Check Robustness" or Stress Test link
-    #     pre-selects a specific strategy.
-    selected_validation_strategy = (
-        request.POST.get(
-            "strategy"
-        )
-        or
-        request.GET.get(
-            "strategy"
-        )
-        or
-        ""
-    )
-
-
-    selected_validation_symbol = (
-        request.POST.get(
-            "symbol"
-        )
-        or
-        request.GET.get(
-            "symbol"
-        )
-        or
-        ""
-    ).strip().upper()
-
-
-    selected_stress_scenario = (
-        request.POST.get(
-            "scenario"
-        )
-        or
-        "crash"
-    )
-
-
-    # ========================================================
-    # 8.10 PROCESS SAME-PAGE STRATEGY ACTION
-    # ========================================================
-
-    if request.method == "POST":
-
-        action = (
-            request.POST.get(
-                "action",
-                "",
-            )
-        )
-
-
-        # ====================================================
-        # 8.10.1 STRATEGY ROBUSTNESS
-        # ====================================================
-
-        if action == "robustness":
-
-
-            # ------------------------------------------------
-            # Require strategy
-            # ------------------------------------------------
-
-            if not selected_validation_strategy:
-
-                messages.error(
-                    request,
-                    "Select a strategy to test.",
-                )
-
-
-            # ------------------------------------------------
-            # Require historical asset
-            # ------------------------------------------------
-
-            elif not selected_validation_symbol:
-
-                messages.error(
-                    request,
-                    "Select a historical asset to test.",
-                )
-
-
-            else:
-
-                strategy = get_object_or_404(
-                    Strategy,
-                    pk=selected_validation_strategy,
-                    user=request.user,
-                )
-
-
-                # =============================================
-                # HISTORICAL DATA FOR SELECTED SYMBOL
-                # =============================================
-
-                market_queryset = (
-                    MarketData.objects
-                    .filter(
-                        symbol=selected_validation_symbol
-                    )
-                    .order_by(
-                        "date"
-                    )
-                )
-
-
-                observation_count = (
-                    market_queryset.count()
-                )
-
-
-                # =============================================
-                # MINIMUM DATA REQUIREMENT
-                # =============================================
-
-                if observation_count < 60:
-
-                    messages.error(
-                        request,
+    # 8.1 ACTIVE MODEL LIBRARY
+    library_items = (  # I store a QuerySet representing matching library records.
+        StrategyLibraryItem.objects  # I access the library model manager.
+        .filter(is_active=True)  # I include only active items.
+        .order_by("category", "display_order", "name")  # I define the display ordering.
+    )  # I close the chained query.
+
+    # 8.2 CATEGORY SUMMARY CARDS
+    category_cards = []  # I initialise an empty list of category dictionaries.
+    for category_code, category_label in StrategyLibraryItem.CATEGORY_CHOICES:  # Tuple unpacking gives each choice a code and label.
+        category_count = library_items.filter(category=category_code).count()  # I count active items in this category.
+        category_cards.append({  # I append a dictionary representing one category.
+            "code": category_code,  # I store its machine-readable code.
+            "label": category_label,  # I store its readable label.
+            "count": category_count,  # I store its model count.
+        })  # I finish appending the category.
+
+    # 8.3 LIBRARY COUNTS
+    total_library_models = library_items.count()  # I count all active library records.
+    ready_models = library_items.filter(implementation_status="ready").count()  # I count ready records.
+    experimental_models = library_items.filter(implementation_status="experimental").count()  # I count experimental records.
+    catalogued_models = library_items.filter(implementation_status="catalogued").count()  # I count catalogued records.
+
+    # 8.4 COMPARISON INPUT
+    requested_compare_codes = request.GET.getlist("compare")  # I retrieve repeated compare query parameters as a list.
+    requested_compare_codes = list(dict.fromkeys(requested_compare_codes))  # Dictionary keys remove duplicates while retaining insertion order.
+    comparison_message = ""  # I initialise an empty feedback string.
+
+    # 8.5 SERVER-SIDE COMPARISON LIMIT
+    if len(requested_compare_codes) > 4:  # I check the list length independently of browser controls.
+        requested_compare_codes = requested_compare_codes[:4]  # Slicing retains only the first four codes.
+        comparison_message = (  # I prepare feedback about the limit.
+            "MarketPulse compares a maximum of four "  # I begin the message.
+            "models at the same time."  # I complete the message.
+        )  # I close the string expression.
+
+    # 8.6 RETRIEVE VALID COMPARISON ITEMS
+    compare_queryset = StrategyLibraryItem.objects.filter(  # I query active records matching submitted codes.
+        code__in=requested_compare_codes,  # The __in lookup matches any code in the list.
+        is_active=True,  # I exclude inactive records.
+    )  # I close the query.
+    compare_lookup = {item.code: item for item in compare_queryset}  # A dictionary comprehension indexes objects by code.
+    compare_items = [compare_lookup[code] for code in requested_compare_codes if code in compare_lookup]  # A list comprehension preserves requested order and skips unknown codes.
+    if requested_compare_codes and len(compare_items) < 2:  # I require at least two valid items when comparison was requested.
+        comparison_message = "Select at least two models to compare."  # I replace feedback with the minimum-selection message.
+
+    # 8.7 USER-OWNED STRATEGIES
+    my_strategies = (  # I prepare the user's strategy QuerySet.
+        Strategy.objects  # I access the Strategy manager.
+        .filter(user=request.user)  # I restrict this list to the current user.
+        .prefetch_related("rules")  # I preload related rules to reduce later repeated queries.
+        .order_by("-created_at")  # The minus sign requests newest-first ordering.
+    )  # I close the query.
+
+    # 8.8 STORED HISTORICAL SYMBOLS
+    available_symbols = _get_available_historical_symbols()  # I call the reusable helper for stored-data choices.
+
+    # 8.9 PRESERVE FORM SELECTIONS
+    selected_validation_strategy = (  # I choose the submitted or query-string strategy value.
+        request.POST.get("strategy")  # I first check form data.
+        or request.GET.get("strategy")  # Logical OR falls back to query-string data.
+        or ""  # I use an empty string when neither supplies a truthy value.
+    )  # I close the selection expression.
+    selected_validation_symbol = (  # I choose and normalise the asset symbol.
+        request.POST.get("symbol")  # I first check submitted form data.
+        or request.GET.get("symbol")  # I then check the query string.
+        or ""  # I provide an empty fallback.
+    ).strip().upper()  # Method chaining removes outer whitespace and uppercases the symbol.
+    selected_stress_scenario = request.POST.get("scenario") or "crash"  # I use the posted scenario or default to crash.
+
+    # 8.10 DISPATCH POST ACTIONS
+    if request.method == "POST":  # I process calculation actions only for a POST request.
+        action = request.POST.get("action", "")  # I read the hidden action field with an empty default.
+
+        # 8.10.1 ROBUSTNESS
+        if action == "robustness":  # Equality selects the robustness branch.
+            if not selected_validation_strategy:  # I require a strategy selection.
+                messages.error(request, "Select a strategy to test.")  # I queue user-facing error feedback.
+            elif not selected_validation_symbol:  # I next require a historical symbol.
+                messages.error(request, "Select a historical asset to test.")  # I queue missing-symbol feedback.
+            else:  # I continue when both selections are present.
+                strategy = get_object_or_404(  # I retrieve a matching strategy or raise Http404.
+                    Strategy,  # I identify the model.
+                    pk=selected_validation_strategy,  # I match the requested primary key.
+                    user=request.user,  # I also enforce ownership in this lookup.
+                )  # I close retrieval.
+                market_queryset = (  # I prepare the selected asset's historical data.
+                    MarketData.objects  # I access the market-data manager.
+                    .filter(symbol=selected_validation_symbol)  # I match the normalised symbol.
+                    .order_by("date")  # I order observations chronologically.
+                )  # I close the query.
+                observation_count = market_queryset.count()  # I count stored observations.
+                if observation_count < 60:  # I enforce this view's minimum robustness-data requirement.
+                    messages.error(  # I queue a detailed data-shortage message.
+                        request,  # I attach feedback to this request.
                         (
-                            f"{selected_validation_symbol} currently "
-                            f"has {observation_count} historical "
-                            f"observations. MarketPulse requires at "
-                            f"least 60 observations for this "
-                            f"Strategy Robustness check."
-                        ),
-                    )
-
-
-                else:
-
-                    # =========================================
-                    # DETERMINE AVAILABLE DATE RANGE
-                    # =========================================
-
-                    date_range = (
-                        market_queryset.aggregate(
-                            first_date=Min(
-                                "date"
-                            ),
-                            last_date=Max(
-                                "date"
-                            ),
-                        )
-                    )
-
-
-                    first_date = (
-                        date_range[
-                            "first_date"
-                        ]
-                    )
-
-
-                    last_date = (
-                        date_range[
-                            "last_date"
-                        ]
-                    )
-
-
-                    if (
-                        first_date is None
-                        or
-                        last_date is None
-                        or
-                        first_date >= last_date
-                    ):
-
-                        messages.error(
-                            request,
+                            f"{selected_validation_symbol} currently "  # An f-string inserts the selected symbol.
+                            f"has {observation_count} historical "  # I insert the observed count.
+                            f"observations. MarketPulse requires at "  # I continue the explanation.
+                            f"least 60 observations for this "  # I state the minimum.
+                            f"Strategy Robustness check."  # I complete the message.
+                        ),  # I close the combined string.
+                    )  # I finish queuing feedback.
+                else:  # I continue with sufficient observations.
+                    date_range = market_queryset.aggregate(  # Aggregation returns one dictionary of summary values.
+                        first_date=Min("date"),  # I calculate the earliest stored date.
+                        last_date=Max("date"),  # I calculate the latest stored date.
+                    )  # I close aggregation.
+                    first_date = date_range["first_date"]  # Dictionary indexing extracts the first date.
+                    last_date = date_range["last_date"]  # I extract the last date.
+                    if first_date is None or last_date is None or first_date >= last_date:  # Identity checks and OR detect an absent or invalid range.
+                        messages.error(  # I queue invalid-period feedback.
+                            request,  # I attach it to this request.
                             (
-                                "MarketPulse could not determine "
-                                "a valid historical period for "
-                                f"{selected_validation_symbol}."
-                            ),
-                        )
-
-
-                    else:
-
-                        # =====================================
-                        # ROBUSTNESS TEST PERIOD
-                        # =====================================
-
-                        # detect_overfitting() performs its own
-                        # internal in-sample/out-of-sample split.
-                        test_periods = [
-                            (
-                                first_date,
-                                last_date,
-                            )
-                        ]
-
-
-                        # =====================================
-                        # RUN INTERNAL ANALYTICS ENGINE
-                        # =====================================
-
-                        try:
-
-                            tests = (
-                                detect_overfitting(
-                                    strategy,
-                                    selected_validation_symbol,
-                                    test_periods,
-                                )
-                            )
-
-
-                            if tests:
-
-                                messages.success(
-                                    request,
+                                "MarketPulse could not determine "  # I explain the problem.
+                                "a valid historical period for "  # I continue the message.
+                                f"{selected_validation_symbol}."  # I identify the selected symbol.
+                            ),  # I close the combined string.
+                        )  # I finish feedback.
+                    else:  # I continue with a valid historical range.
+                        test_periods = [(first_date, last_date)]  # I build a list containing a start/end tuple for the engine.
+                        try:  # I begin calculation operations that may raise exceptions.
+                            tests = detect_overfitting(  # I delegate robustness calculation to the imported function.
+                                strategy,  # I pass the owned strategy object.
+                                selected_validation_symbol,  # I pass the selected symbol.
+                                test_periods,  # I pass the available test period.
+                            )  # I store the returned results.
+                            if tests:  # I treat a truthy result as successful.
+                                messages.success(  # I queue success feedback.
+                                    request,  # I attach it to the request.
                                     (
-                                        "Strategy Robustness check "
-                                        f"completed for "
-                                        f"{strategy.name} on "
-                                        f"{selected_validation_symbol}."
-                                    ),
-                                )
-
-
-                                return redirect(
-                                    _strategy_workspace_url(
-                                        "strategyRobustnessSection"
-                                    )
-                                )
-
-
-                            messages.error(
-                                request,
+                                        "Strategy Robustness check "  # I begin the success message.
+                                        f"completed for "  # I continue it.
+                                        f"{strategy.name} on "  # I insert the strategy name.
+                                        f"{selected_validation_symbol}."  # I insert the asset symbol.
+                                    ),  # I close the combined string.
+                                )  # I finish success feedback.
+                                return redirect(_strategy_workspace_url("strategyRobustnessSection"))  # I return a redirect to the workspace section after POST.
+                            messages.error(  # I handle a false or empty calculation result.
+                                request,  # I attach feedback to this request.
                                 (
-                                    "MarketPulse could not produce "
-                                    "a Strategy Robustness result."
-                                ),
-                            )
-
-
-                        except Exception as error:
-
-                            messages.error(
-                                request,
+                                    "MarketPulse could not produce "  # I explain the missing result.
+                                    "a Strategy Robustness result."  # I complete the message.
+                                ),  # I close the string.
+                            )  # I finish feedback.
+                        except Exception as error:  # I catch exceptions raised within this try block.
+                            messages.error(  # I queue calculation-failure feedback.
+                                request,  # I attach it to this request.
                                 (
-                                    "Strategy Robustness analysis "
-                                    "could not be completed: "
-                                    f"{error}"
-                                ),
-                            )
+                                    "Strategy Robustness analysis "  # I begin the explanation.
+                                    "could not be completed: "  # I introduce the error detail.
+                                    f"{error}"  # I insert the exception's string representation.
+                                ),  # I close the combined string.
+                            )  # I finish feedback.
 
-
-        # ====================================================
         # 8.10.2 STRESS TESTING
-        # ====================================================
-
-        elif action == "stress_test":
-
-
-            # ------------------------------------------------
-            # Require strategy
-            # ------------------------------------------------
-
-            if not selected_validation_strategy:
-
-                messages.error(
-                    request,
-                    "Select a strategy first.",
-                )
-
-
-            # ------------------------------------------------
-            # Require asset
-            # ------------------------------------------------
-
-            elif not selected_validation_symbol:
-
-                messages.error(
-                    request,
-                    "Select an asset first.",
-                )
-
-
-            else:
-
-                strategy = get_object_or_404(
-                    Strategy,
-                    pk=selected_validation_strategy,
-                    user=request.user,
-                )
-
-
-                # =============================================
-                # USER-FRIENDLY STRESS SCENARIOS
-                # =============================================
-
-                scenarios = {
-
-
-                    # -----------------------------------------
-                    # Severe market decline
-                    # -----------------------------------------
-
-                    "crash": {
-
-                        "crash_start":
-                            0.70,
-
-                        "crash_magnitude":
-                            0.20,
-
-                    },
-
-
-                    # -----------------------------------------
-                    # Volatility spike
-                    # -----------------------------------------
-
-                    "volatility_spike": {
-
-                        "spike_start":
-                            0.50,
-
-                        "spike_duration":
-                            0.10,
-
-                        "spike_magnitude":
-                            3.0,
-
-                    },
-
-
-                    # -----------------------------------------
-                    # Liquidity shock
-                    # -----------------------------------------
-
-                    "liquidity_crisis": {
-
-                        "crisis_start":
-                            0.60,
-
-                        "crisis_duration":
-                            0.20,
-
-                        "volume_reduction":
-                            0.70,
-
-                    },
-
-
-                    # -----------------------------------------
-                    # Market condition change
-                    # -----------------------------------------
-
-                    "regime_change": {
-
-                        "change_point":
-                            0.50,
-
-                        "new_trend":
-                            -0.01,
-
-                    },
-
-                }
-
-
-                parameters = (
-                    scenarios.get(
-                        selected_stress_scenario
-                    )
-                )
-
-
-                # =============================================
-                # VALIDATE SCENARIO
-                # =============================================
-
-                if parameters is None:
-
-                    messages.error(
-                        request,
-                        "Choose a valid stress scenario.",
-                    )
-
-
-                else:
-
-                    # =========================================
-                    # RUN INTERNAL STRESS TEST ENGINE
-                    # =========================================
-
-                    try:
-
-                        stress_result = (
-                            run_stress_test(
-                                strategy,
-                                selected_validation_symbol,
-                                selected_stress_scenario,
-                                parameters,
-                            )
-                        )
-
-
-                        if stress_result:
-
-                            messages.success(
-                                request,
+        elif action == "stress_test":  # I dispatch the alternative supported action.
+            if not selected_validation_strategy:  # I require a strategy.
+                messages.error(request, "Select a strategy first.")  # I queue missing-strategy feedback.
+            elif not selected_validation_symbol:  # I require an asset symbol.
+                messages.error(request, "Select an asset first.")  # I queue missing-asset feedback.
+            else:  # I continue when both selections exist.
+                strategy = get_object_or_404(  # I retrieve the selected strategy.
+                    Strategy,  # I identify its model.
+                    pk=selected_validation_strategy,  # I match its primary key.
+                    user=request.user,  # I restrict the lookup to the current owner.
+                )  # I close retrieval.
+                scenarios = {  # I define a nested dictionary of engine parameter presets.
+                    "crash": {  # I define the severe-decline preset.
+                        "crash_start": 0.70,  # I pass the engine's configured start parameter.
+                        "crash_magnitude": 0.20,  # I pass the configured shock magnitude.
+                    },  # I close the crash parameters.
+                    "volatility_spike": {  # I define the volatility preset.
+                        "spike_start": 0.50,  # I pass its start parameter.
+                        "spike_duration": 0.10,  # I pass its duration parameter.
+                        "spike_magnitude": 3.0,  # I pass its magnitude parameter.
+                    },  # I close the spike parameters.
+                    "liquidity_crisis": {  # I define the liquidity preset.
+                        "crisis_start": 0.60,  # I pass its start parameter.
+                        "crisis_duration": 0.20,  # I pass its duration parameter.
+                        "volume_reduction": 0.70,  # I pass its volume-reduction parameter.
+                    },  # I close the liquidity parameters.
+                    "regime_change": {  # I define the market-condition-change preset.
+                        "change_point": 0.50,  # I pass its change-point parameter.
+                        "new_trend": -0.01,  # I pass a negative floating-point trend parameter.
+                    },  # I close the regime-change parameters.
+                }  # I close the scenario dictionary; the engine defines the precise parameter semantics.
+                parameters = scenarios.get(selected_stress_scenario)  # Dictionary get returns the preset or None for an unknown key.
+                if parameters is None:  # I validate the requested scenario against these presets.
+                    messages.error(request, "Choose a valid stress scenario.")  # I queue invalid-scenario feedback.
+                else:  # I continue with an allowed preset.
+                    try:  # I begin calculation error handling.
+                        stress_result = run_stress_test(  # I delegate the numerical test to the engine.
+                            strategy,  # I pass the owned strategy.
+                            selected_validation_symbol,  # I pass the historical asset.
+                            selected_stress_scenario,  # I pass the scenario code.
+                            parameters,  # I pass the preset dictionary.
+                        )  # I store the returned result.
+                        if stress_result:  # I check for a truthy result.
+                            messages.success(  # I queue completion feedback.
+                                request,  # I attach it to the request.
                                 (
-                                    "Stress test completed "
-                                    f"for {strategy.name} on "
-                                    f"{selected_validation_symbol}."
-                                ),
-                            )
-
-
-                            return redirect(
-                                _strategy_workspace_url(
-                                    "stressTestingSection"
-                                )
-                            )
-
-
-                        messages.error(
-                            request,
+                                    "Stress test completed "  # I begin the message.
+                                    f"for {strategy.name} on "  # I insert the strategy name.
+                                    f"{selected_validation_symbol}."  # I insert the asset symbol.
+                                ),  # I close the string.
+                            )  # I finish feedback.
+                            return redirect(_strategy_workspace_url("stressTestingSection"))  # I redirect to the same workspace's stress section.
+                        messages.error(  # I handle a false calculation result.
+                            request,  # I attach feedback to the request.
                             (
-                                "MarketPulse could not complete "
-                                "the stress test. Make sure the "
-                                "selected asset has sufficient "
-                                "historical data."
-                            ),
-                        )
-
-
-                    except Exception as error:
-
-                        messages.error(
-                            request,
+                                "MarketPulse could not complete "  # I begin the explanation.
+                                "the stress test. Make sure the "  # I continue it.
+                                "selected asset has sufficient "  # I identify a data requirement.
+                                "historical data."  # I complete the guidance.
+                            ),  # I close the string.
+                        )  # I finish feedback.
+                    except Exception as error:  # I catch calculation exceptions.
+                        messages.error(  # I queue failure feedback.
+                            request,  # I attach it to the request.
                             (
-                                "Stress testing could not be "
-                                f"completed: {error}"
-                            ),
-                        )
-
-
-    # ========================================================
-    # 8.11 PREPARE STRATEGY PERFORMANCE + ROBUSTNESS SUMMARY
-    # ========================================================
-
-    my_strategy_rows = []
-
-
-    for strategy in my_strategies:
-
-
-        # ----------------------------------------------------
-        # Latest historical backtest
-        # ----------------------------------------------------
-
-        latest_backtest = (
-            strategy.backtests
-            .order_by(
-                "-created_at"
-            )
-            .first()
-        )
-
-
-        # ----------------------------------------------------
-        # Number of historical backtests
-        # ----------------------------------------------------
-
-        backtest_count = (
-            strategy.backtests
-            .count()
-        )
-
-
-        # ----------------------------------------------------
-        # Latest Strategy Robustness result
-        # ----------------------------------------------------
-
-        # Current MarketPulse OverfittingTest storage uses:
-        #
-        # user
-        # +
-        # strategy_name
-        #
-        # rather than requiring a Strategy foreign key here.
-        latest_robustness_test = (
-            OverfittingTest.objects
-            .filter(
-                user=request.user,
-                strategy_name=strategy.name,
-            )
-            .order_by(
-                "-created_at"
-            )
-            .first()
-        )
-
-
-        # ----------------------------------------------------
-        # Convert result into user-facing label
-        # ----------------------------------------------------
-
-        (
-            robustness_label,
-            robustness_explanation,
-        ) = _robustness_interpretation(
-            latest_robustness_test
-        )
-
-
-        # ----------------------------------------------------
-        # Add prepared row
-        # ----------------------------------------------------
-
-        my_strategy_rows.append(
-            {
-                "strategy":
-                    strategy,
-
-                "latest_backtest":
-                    latest_backtest,
-
-                "backtest_count":
-                    backtest_count,
-
-                "latest_robustness_test":
-                    latest_robustness_test,
-
-                "robustness_label":
-                    robustness_label,
-
-                "robustness_explanation":
-                    robustness_explanation,
-            }
-        )
-
-
-    # ========================================================
-    # 8.12 USER ROBUSTNESS SUMMARY
-    # ========================================================
-
-    robustness_test_count = (
-        OverfittingTest.objects
-        .filter(
-            user=request.user
-        )
-        .count()
-    )
-
-
-    latest_user_robustness_test = (
-        OverfittingTest.objects
-        .filter(
-            user=request.user
-        )
-        .order_by(
-            "-created_at"
-        )
-        .first()
-    )
-
-
-    (
-        latest_user_robustness_label,
-        latest_user_robustness_explanation,
-    ) = _robustness_interpretation(
-        latest_user_robustness_test
-    )
-
-
-    # ========================================================
-    # 8.13 USER STRESS TEST SUMMARY
-    # ========================================================
-
-    stress_test_count = (
-        StressTest.objects
-        .filter(
-            user=request.user
-        )
-        .count()
-    )
-
-
-    latest_strategy_stress_test = (
-        StressTest.objects
-        .filter(
-            user=request.user
-        )
-        .order_by(
-            "-created_at"
-        )
-        .first()
-    )
-
-
-    # ========================================================
-    # 8.14 BUILD TEMPLATE CONTEXT
-    # ========================================================
-
-    context = {
-
-
-        # ----------------------------------------------------
-        # Strategy library
-        # ----------------------------------------------------
-
-        "library_items":
-            library_items,
-
-
-        # ----------------------------------------------------
-        # Category cards
-        # ----------------------------------------------------
-
-        "category_cards":
-            category_cards,
-
-
-        # ----------------------------------------------------
-        # Summary statistics
-        # ----------------------------------------------------
-
-        "total_library_models":
-            total_library_models,
-
-        "ready_models":
-            ready_models,
-
-        "experimental_models":
-            experimental_models,
-
-        "catalogued_models":
-            catalogued_models,
-
-
-        # ----------------------------------------------------
-        # Model comparison
-        # ----------------------------------------------------
-
-        "compare_items":
-            compare_items,
-
-        "compare_codes":
-            requested_compare_codes,
-
-        "comparison_message":
-            comparison_message,
-
-
-        # ----------------------------------------------------
-        # User strategies
-        # ----------------------------------------------------
-
-        "my_strategy_rows":
-            my_strategy_rows,
-
-        "my_strategy_count":
-            my_strategies.count(),
-
-
-        # ----------------------------------------------------
-        # Historical assets
-        # ----------------------------------------------------
-
-        "available_symbols":
-            available_symbols,
-
-        # Compatibility name if another template still
-        # expects "symbols".
-        "symbols":
-            available_symbols,
-
-
-        # ----------------------------------------------------
-        # Current validation selections
-        # ----------------------------------------------------
-
-        "selected_validation_strategy":
-            selected_validation_strategy,
-
-        "selected_validation_symbol":
-            selected_validation_symbol,
-
-        "selected_stress_scenario":
-            selected_stress_scenario,
-
-
-        # ----------------------------------------------------
-        # Strategy robustness
-        # ----------------------------------------------------
-
-        "robustness_test_count":
-            robustness_test_count,
-
-        "latest_user_robustness_test":
-            latest_user_robustness_test,
-
-        "latest_user_robustness_label":
-            latest_user_robustness_label,
-
-        "latest_user_robustness_explanation":
-            latest_user_robustness_explanation,
-
-
-        # ----------------------------------------------------
-        # Stress testing
-        # ----------------------------------------------------
-
-        "stress_test_count":
-            stress_test_count,
-
-        "latest_strategy_stress_test":
-            latest_strategy_stress_test,
-
-
-        # ----------------------------------------------------
-        # Compatibility with older list.html
-        # ----------------------------------------------------
-
-        "strategies":
-            my_strategies,
-
-
-        # ----------------------------------------------------
-        # Page information
-        # ----------------------------------------------------
-
-        "page_title":
-            "Strategy & Model Research",
-
-    }
-
-
-    # ========================================================
-    # 8.15 DISPLAY STRATEGIES WORKSPACE
-    # ========================================================
-
-    return render(
-        request,
-        "strategy_builder/list.html",
-        context,
-    )
-
+                                "Stress testing could not be "  # I begin the explanation.
+                                f"completed: {error}"  # I insert the exception detail.
+                            ),  # I close the combined string.
+                        )  # I finish feedback.
+
+    # 8.11 PREPARE EACH STRATEGY'S SUMMARY
+    my_strategy_rows = []  # I initialise the list used by the template.
+    for strategy in my_strategies:  # I iterate over the current user's strategies.
+        latest_backtest = strategy.backtests.order_by("-created_at").first()  # I retrieve the newest related backtest or None.
+        backtest_count = strategy.backtests.count()  # I count related backtests.
+        latest_robustness_test = (  # I prepare the latest name-matched robustness result.
+            OverfittingTest.objects  # I access the result manager.
+            .filter(user=request.user, strategy_name=strategy.name)  # I match by user and strategy name, not a Strategy foreign key.
+            .order_by("-created_at")  # I sort newest first.
+            .first()  # I retrieve one result or None.
+        )  # I close the query.
+        robustness_label, robustness_explanation = _robustness_interpretation(latest_robustness_test)  # Tuple unpacking separates the two returned values.
+        my_strategy_rows.append({  # I append a presentation dictionary.
+            "strategy": strategy,  # I include the strategy object.
+            "latest_backtest": latest_backtest,  # I include the latest backtest.
+            "backtest_count": backtest_count,  # I include its count.
+            "latest_robustness_test": latest_robustness_test,  # I include the matched robustness result.
+            "robustness_label": robustness_label,  # I include the readable label.
+            "robustness_explanation": robustness_explanation,  # I include its explanation.
+        })  # I finish appending the row.
+
+    # 8.12 USER-LEVEL ROBUSTNESS SUMMARY
+    robustness_test_count = OverfittingTest.objects.filter(user=request.user).count()  # I count the user's robustness results.
+    latest_user_robustness_test = (  # I retrieve the user's newest robustness result across strategies.
+        OverfittingTest.objects  # I access the manager.
+        .filter(user=request.user)  # I restrict results to this user.
+        .order_by("-created_at")  # I sort newest first.
+        .first()  # I retrieve one object or None.
+    )  # I close the query.
+    latest_user_robustness_label, latest_user_robustness_explanation = _robustness_interpretation(latest_user_robustness_test)  # I unpack its readable interpretation.
+
+    # 8.13 USER-LEVEL STRESS SUMMARY
+    stress_test_count = StressTest.objects.filter(user=request.user).count()  # I count the user's stress results.
+    latest_strategy_stress_test = (  # Despite its name, this query retrieves the latest result for the user across strategies.
+        StressTest.objects  # I access the stress-result manager.
+        .filter(user=request.user)  # I restrict results to this user.
+        .order_by("-created_at")  # I sort newest first.
+        .first()  # I retrieve one object or None.
+    )  # I close the query.
+
+    # 8.14 TEMPLATE CONTEXT — DICTIONARY OF DISPLAY DATA
+    context = {  # I map template variable names to Python values.
+        "library_items": library_items,  # I supply the active model library.
+        "category_cards": category_cards,  # I supply category summaries.
+        "total_library_models": total_library_models,  # I supply the total count.
+        "ready_models": ready_models,  # I supply the ready count.
+        "experimental_models": experimental_models,  # I supply the experimental count.
+        "catalogued_models": catalogued_models,  # I supply the catalogued count.
+        "compare_items": compare_items,  # I supply valid comparison objects.
+        "compare_codes": requested_compare_codes,  # I supply selected codes for checkbox state.
+        "comparison_message": comparison_message,  # I supply comparison feedback.
+        "my_strategy_rows": my_strategy_rows,  # I supply enriched strategy summaries.
+        "my_strategy_count": my_strategies.count(),  # I supply the user's strategy count.
+        "available_symbols": available_symbols,  # I supply historical asset choices.
+        "symbols": available_symbols,  # I retain the older compatibility variable name.
+        "selected_validation_strategy": selected_validation_strategy,  # I supply the selected strategy value.
+        "selected_validation_symbol": selected_validation_symbol,  # I supply the normalised symbol.
+        "selected_stress_scenario": selected_stress_scenario,  # I supply the chosen scenario.
+        "robustness_test_count": robustness_test_count,  # I supply the user's robustness count.
+        "latest_user_robustness_test": latest_user_robustness_test,  # I supply the latest user-level result.
+        "latest_user_robustness_label": latest_user_robustness_label,  # I supply its readable label.
+        "latest_user_robustness_explanation": latest_user_robustness_explanation,  # I supply its explanation.
+        "stress_test_count": stress_test_count,  # I supply the user's stress count.
+        "latest_strategy_stress_test": latest_strategy_stress_test,  # I supply the latest user-level stress result.
+        "strategies": my_strategies,  # I retain the strategy collection used by forms and older templates.
+        "page_title": "Strategy & Model Research",  # I supply page information.
+    }  # I close the context dictionary.
+
+    # 8.15 HTML RESPONSE
+    return render(request, "strategy_builder/list.html", context)  # Django renders the template and returns an HTTP response.
 
 # ============================================================
-# 9. LEGACY STRATEGY ROBUSTNESS ROUTE
+# 9. LEGACY ROBUSTNESS ROUTE — REDIRECT COMPATIBILITY
 # ============================================================
-
-@login_required
-def strategy_robustness(request):
-    """
-    ============================================================
-    LEGACY STRATEGY ROBUSTNESS ROUTE
-    ============================================================
-
-    Previous URL:
-
-        /strategy/robustness/
-
-    Strategy Robustness now lives directly inside:
-
-        /strategy/#strategyRobustnessSection
-
-    This view is retained so existing links or bookmarks
-    do not cause a 404.
-
-    It no longer renders a separate robustness template.
-    ============================================================
-    """
-
-
-    strategy_id = (
-        request.GET.get(
-            "strategy"
-        )
-        or
-        ""
-    )
-
-
-    base_url = reverse(
-        "strategy_builder:list"
-    )
-
-
-    if strategy_id:
-
-        return redirect(
+@login_required  # I require authentication.
+def strategy_robustness(request):  # I keep the previous route usable.
+    """Redirect legacy robustness links to the combined Strategies page."""
+    strategy_id = request.GET.get("strategy") or ""  # I read an optional strategy query parameter.
+    base_url = reverse("strategy_builder:list")  # I resolve the main workspace URL.
+    if strategy_id:  # I check whether a strategy was supplied.
+        return redirect(  # I redirect while retaining the selection in the query string.
             (
-                f"{base_url}"
-                f"?strategy={strategy_id}"
-                "#strategyRobustnessSection"
-            )
-        )
-
-
-    return redirect(
+                f"{base_url}"  # I insert the resolved route.
+                f"?strategy={strategy_id}"  # I append the supplied strategy value.
+                "#strategyRobustnessSection"  # I append the browser section fragment.
+            )  # I close the combined string.
+        )  # I return the redirect response.
+    return redirect(  # I handle links without a strategy selection.
         (
-            f"{base_url}"
-            "#strategyRobustnessSection"
-        )
-    )
-
-
-# ============================================================
-# 10. LEGACY STRATEGY ROBUSTNESS RESULTS ROUTE
-# ============================================================
-
-@login_required
-def strategy_robustness_results(request):
-    """
-    ============================================================
-    LEGACY STRATEGY ROBUSTNESS RESULTS ROUTE
-    ============================================================
-
-    Previous URL:
-
-        /strategy/robustness/results/
-
-    Robustness results are now displayed directly inside
-    the Strategies workspace.
-
-    Existing links therefore redirect to the relevant
-    section of /strategy/.
-    ============================================================
-    """
-
-    return redirect(
-        _strategy_workspace_url(
-            "strategyRobustnessSection"
-        )
-    )
-
+            f"{base_url}"  # I insert the workspace URL.
+            "#strategyRobustnessSection"  # I select the robustness section.
+        )  # I close the combined string.
+    )  # I return the redirect.
 
 # ============================================================
-# 11. CREATE CUSTOM STRATEGY
+# 10. LEGACY ROBUSTNESS RESULTS ROUTE
 # ============================================================
-
-@login_required
-def strategy_create(request):
-    """
-    ============================================================
-    CREATE CUSTOM STRATEGY
-    ============================================================
-
-    URL:
-
-        /strategy/create/
-
-
-    Framework mapping:
-
-    User
-        ↓
-    StrategyCreateForm
-        ↓
-    core.Strategy
-        ↓
-    StrategyRule
-        ↓
-    Backtest
-
-
-    Once successfully created, MarketPulse sends the user
-    directly to the backtesting page.
-    ============================================================
-    """
-
-
-    # ========================================================
-    # 11.1 BUILD STRATEGY FORM
-    # ========================================================
-
-    form = StrategyCreateForm(
-        request.POST or None
-    )
-
-
-    # ========================================================
-    # 11.2 PROCESS SUBMITTED FORM
-    # ========================================================
-
-    if (
-        request.method == "POST"
-        and form.is_valid()
-    ):
-
-        strategy = form.save(
-            request.user
-        )
-
-
-        messages.success(
-            request,
-            "Strategy created successfully."
-        )
-
-
-        return redirect(
-            "strategy_builder:backtest",
-            strategy_id=strategy.pk,
-        )
-
-
-    # ========================================================
-    # 11.3 DISPLAY STRATEGY CREATION FORM
-    # ========================================================
-
-    context = {
-
-        "form":
-            form,
-
-        "page_title":
-            "Create Strategy",
-
-    }
-
-
-    return render(
-        request,
-        "strategy_builder/create.html",
-        context,
-    )
-
+@login_required  # I require authentication.
+def strategy_robustness_results(request):  # I handle the older results route.
+    """Redirect old robustness-results links to the Strategies workspace."""
+    return redirect(_strategy_workspace_url("strategyRobustnessSection"))  # I return a section redirect rather than rendering a separate page.
 
 # ============================================================
-# 12. ADD STRATEGY / MODEL TO LIBRARY
+# 11. CREATE A CUSTOM STRATEGY — FORM VALIDATION
 # ============================================================
+@login_required  # I require a signed-in user.
+def strategy_create(request):  # I handle strategy creation requests.
+    """Validate a StrategyCreateForm and redirect successful creation to backtesting."""
+    form = StrategyCreateForm(request.POST or None)  # I bind nonempty submitted data or create an unbound form.
+    if request.method == "POST" and form.is_valid():  # Short-circuit AND validates only when the method matches.
+        strategy = form.save(request.user)  # I call this form's custom save method with the current user.
+        messages.success(request, "Strategy created successfully.")  # I queue success feedback.
+        return redirect(  # I redirect to the new strategy's backtest route.
+            "strategy_builder:backtest",  # I identify the named route.
+            strategy_id=strategy.pk,  # I supply its required URL argument.
+        )  # I return the redirect.
+    context = {  # I prepare data for GET requests or unsuccessful validation.
+        "form": form,  # I include the form, which can contain validation errors.
+        "page_title": "Create Strategy",  # I include the page title.
+    }  # I close the context.
+    return render(request, "strategy_builder/create.html", context)  # I render the creation form.
 
-@login_required
-def library_item_create(request):
-    """
-    ============================================================
-    ADD STRATEGY OR MODEL TO LIBRARY
-    ============================================================
-
-    URL:
-
-        /strategy/library/add/
-
-
-    Framework mapping:
-
-    User
-        ↓
-    StrategyLibraryItemForm
-        ↓
-    StrategyLibraryItem
-        ↓
-    Strategy & Model Research page
-
-
-    IMPORTANT:
-
-    New models are stored with:
-
-        implementation_status = "catalogued"
-
-    because adding metadata does not mean the numerical
-    implementation is complete.
-    ============================================================
-    """
-
-
-    # ========================================================
-    # 12.1 PROCESS POST REQUEST
-    # ========================================================
-
-    if request.method == "POST":
-
-        form = StrategyLibraryItemForm(
-            request.POST
-        )
-
-
-        if form.is_valid():
-
-            library_item = form.save(
-                commit=False
-            )
-
-
-            # ------------------------------------------------
-            # New models begin as Catalogued
-            # ------------------------------------------------
-
-            library_item.implementation_status = (
-                "catalogued"
-            )
-
-
-            # ------------------------------------------------
-            # Make model visible
-            # ------------------------------------------------
-
-            library_item.is_active = True
-
-
-            # ------------------------------------------------
-            # Place custom items after built-ins
-            # ------------------------------------------------
-
-            library_item.display_order = 999
-
-
-            library_item.save()
-
-
-            messages.success(
-                request,
+# ============================================================
+# 12. ADD LIBRARY METADATA — DEFERRED MODEL SAVE
+# ============================================================
+@login_required  # This view checks login; it contains no additional is_staff check.
+def library_item_create(request):  # I handle library-item creation.
+    """Create an active library item whose initial implementation status is catalogued."""
+    if request.method == "POST":  # I distinguish submitted forms from initial page requests.
+        form = StrategyLibraryItemForm(request.POST)  # I bind submitted data to the form.
+        if form.is_valid():  # I validate it using the form's rules.
+            library_item = form.save(commit=False)  # I obtain a model instance without saving it yet.
+            library_item.implementation_status = "catalogued"  # I mark metadata as catalogued rather than numerically implemented.
+            library_item.is_active = True  # I make the item eligible for the active library.
+            library_item.display_order = 999  # I give it the configured later display-order value.
+            library_item.save()  # I persist the model instance.
+            messages.success(  # I queue creation feedback.
+                request,  # I attach it to the request.
                 (
-                    f"{library_item.name} was added "
-                    f"to the MarketPulse Strategy & "
-                    f"Model Library."
-                ),
-            )
-
-
-            return redirect(
-                "strategy_builder:list"
-            )
-
-
-    # ========================================================
-    # 12.2 GET REQUEST
-    # ========================================================
-
-    else:
-
-        form = StrategyLibraryItemForm()
-
-
-    # ========================================================
-    # 12.3 DISPLAY ADD MODEL FORM
-    # ========================================================
-
-    context = {
-
-        "form":
-            form,
-
-        "page_title":
-            "Add Strategy or Model",
-
-    }
-
-
-    return render(
-        request,
-        "strategy_builder/library_add.html",
-        context,
-    )
-
+                    f"{library_item.name} was added "  # I insert the new item's name.
+                    f"to the MarketPulse Strategy & "  # I continue the message.
+                    f"Model Library."  # I complete it.
+                ),  # I close the string.
+            )  # I finish feedback.
+            return redirect("strategy_builder:list")  # I return to the workspace after successful creation.
+    else:  # I handle a non-POST request.
+        form = StrategyLibraryItemForm()  # I create an empty form.
+    context = {  # I prepare initial or invalid-form display data.
+        "form": form,  # I include the form and any validation errors.
+        "page_title": "Add Strategy or Model",  # I include the page title.
+    }  # I close the context.
+    return render(request, "strategy_builder/library_add.html", context)  # I render the library-item form.
 
 # ============================================================
-# 13. BACKTEST STRATEGY
+# 13. BACKTEST A STRATEGY — VALIDATED KEYWORD UNPACKING
 # ============================================================
-
-@login_required
-def backtest_strategy(
-    request,
-    strategy_id,
-):
-    """
-    ============================================================
-    RUN HISTORICAL BACKTEST
-    ============================================================
-
-    URL example:
-
-        /strategy/5/backtest/
-
-
-    Framework mapping:
-
-    core.Strategy
-        ↓
-    BacktestForm
-        ↓
-    run_backtest()
-        ↓
-    Historical MarketData
-        ↓
-    Backtest
-        ↓
-    BacktestTrade
-        ↓
-    Results page
-    ============================================================
-    """
-
-
-    # ========================================================
-    # 13.1 RETRIEVE USER'S STRATEGY
-    # ========================================================
-
-    strategy = get_object_or_404(
-        Strategy,
-        pk=strategy_id,
-        user=request.user,
-    )
-
-
-    # ========================================================
-    # 13.2 BUILD BACKTEST FORM
-    # ========================================================
-
-    form = BacktestForm(
-        request.POST or None
-    )
-
-
-    # ========================================================
-    # 13.3 PROCESS BACKTEST REQUEST
-    # ========================================================
-
-    if (
-        request.method == "POST"
-        and form.is_valid()
-    ):
-
-        try:
-
-            backtest = run_backtest(
-                strategy,
-                **form.cleaned_data,
-            )
-
-
-            messages.success(
-                request,
+@login_required  # I require authentication.
+def backtest_strategy(request, strategy_id):  # Django supplies the request and route parameter.
+    """Run a historical backtest for a strategy owned by the current user."""
+    strategy = get_object_or_404(  # I retrieve the strategy or raise Http404.
+        Strategy,  # I identify its model.
+        pk=strategy_id,  # I match the URL's strategy ID.
+        user=request.user,  # I enforce ownership in the lookup.
+    )  # I close retrieval.
+    form = BacktestForm(request.POST or None)  # I create a bound or unbound backtest form.
+    if request.method == "POST" and form.is_valid():  # I require a submitted request and valid data.
+        try:  # I handle exceptions from calculation and subsequent operations.
+            backtest = run_backtest(  # I call the imported simulation engine.
+                strategy,  # I pass the owned strategy.
+                **form.cleaned_data,  # Double-star unpacking passes validated dictionary entries as keyword arguments.
+            )  # I store the returned backtest object.
+            messages.success(  # I queue completion feedback.
+                request,  # I attach it to the request.
                 (
-                    f"Backtest completed for "
-                    f"{strategy.name}."
-                ),
-            )
-
-
-            return redirect(
-                "strategy_builder:results",
-                backtest_id=backtest.pk,
-            )
-
-
-        except Exception as error:
-
-            messages.error(
-                request,
-                str(error),
-            )
-
-
-    # ========================================================
-    # 13.4 DISPLAY BACKTEST FORM
-    # ========================================================
-
-    context = {
-
-        "strategy":
-            strategy,
-
-        "form":
-            form,
-
-        "page_title":
-            f"Backtest {strategy.name}",
-
-    }
-
-
-    return render(
-        request,
-        "strategy_builder/backtest_form.html",
-        context,
-    )
-
+                    f"Backtest completed for "  # I begin the message.
+                    f"{strategy.name}."  # I insert the strategy name.
+                ),  # I close the string.
+            )  # I finish feedback.
+            return redirect(  # I navigate to the saved backtest result.
+                "strategy_builder:results",  # I identify the results route.
+                backtest_id=backtest.pk,  # I pass the backtest's primary key.
+            )  # I return the redirect response.
+        except Exception as error:  # I catch exceptions raised within the try block.
+            messages.error(request, str(error))  # I convert the exception to text and queue it as feedback.
+    context = {  # I prepare the initial or unsuccessful form response.
+        "strategy": strategy,  # I include the selected strategy.
+        "form": form,  # I include the form and validation errors.
+        "page_title": f"Backtest {strategy.name}",  # I build the title with an f-string.
+    }  # I close the context.
+    return render(request, "strategy_builder/backtest_form.html", context)  # I display the backtest form.
 
 # ============================================================
-# 14. BACKTEST RESULTS
+# 14. BACKTEST RESULTS — RELATED RECORDS AND OWNERSHIP
 # ============================================================
+@login_required  # I require authentication.
+def backtest_results(request, backtest_id):  # I receive the requested result ID.
+    """Display an owned backtest and its related simulated trades."""
+    backtest = get_object_or_404(  # I retrieve the result or raise Http404.
+        Backtest,  # I identify the model.
+        pk=backtest_id,  # I match the requested backtest.
+        strategy__user=request.user,  # A related-field lookup restricts results through the strategy owner.
+    )  # I close retrieval.
+    trades = backtest.trades.all().order_by("entry_date")  # I query related trades in entry-date order.
+    context = {  # I prepare results-template data.
+        "backtest": backtest,  # I supply the result object and its metrics.
+        "trades": trades,  # I supply the simulated trade collection.
+        "page_title": "Backtest Results",  # I supply the title.
+    }  # I close the dictionary.
+    return render(  # I return the rendered results page.
+        request,  # I pass the current request.
+        "strategy_builder/backtest_results.html",  # I select the results template.
+        context,  # I supply its display data.
+    )  # I finish the response.
 
-@login_required
-def backtest_results(
-    request,
-    backtest_id,
-):
-    """
-    ============================================================
-    DISPLAY BACKTEST RESULTS
-    ============================================================
-
-    Framework mapping:
-
-    Backtest
-        ↓
-    BacktestTrade
-        ↓
-    Performance metrics
-        ↓
-    backtest_results.html
-
-
-    Results may include:
-
-    - Total return
-    - Sharpe ratio
-    - Maximum drawdown
-    - Win rate
-    - Number of trades
-    - Individual simulated trades
-    ============================================================
-    """
-
-
-    # ========================================================
-    # 14.1 RETRIEVE BACKTEST
-    # ========================================================
-
-    backtest = get_object_or_404(
-        Backtest,
-        pk=backtest_id,
-        strategy__user=request.user,
-    )
-
-
-    # ========================================================
-    # 14.2 RETRIEVE SIMULATED TRADES
-    # ========================================================
-
-    trades = (
-        backtest.trades
-        .all()
-        .order_by(
-            "entry_date"
-        )
-    )
-
-
-    # ========================================================
-    # 14.3 BUILD RESULTS CONTEXT
-    # ========================================================
-
-    context = {
-
-        "backtest":
-            backtest,
-
-        "trades":
-            trades,
-
-        "page_title":
-            "Backtest Results",
-
-    }
-
-
-    # ========================================================
-    # 14.4 DISPLAY RESULTS
-    # ========================================================
-
-    return render(
-        request,
-        "strategy_builder/backtest_results.html",
-        context,
-    )
+# Lecturer explanation:
+# I use views to coordinate HTTP requests, form validation,
+# owned database records and imported calculation engines.
+# I pass prepared dictionaries to templates and redirect after
+# successful submissions. The numerical algorithms live in
+# the imported analytics and backtesting modules.

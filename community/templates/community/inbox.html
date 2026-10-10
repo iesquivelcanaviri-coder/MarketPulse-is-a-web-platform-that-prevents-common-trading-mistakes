@@ -1,14 +1,165 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %} {# TEMPLATE INHERITANCE: This page reuses the main MarketPulse base template. #}
 
+{% comment %}
+============================================================
+MARKETPULSE - COMMUNITY CONVERSATION INBOX
+FILE: community/templates/community/inbox.html
+============================================================
 
-{% block title %}
+WHAT THIS FILE IS FOR:
+
+This file is the front-end inbox for MarketPulse private
+conversations.
+
+It lets the logged-in user:
+
+1. See their conversations.
+2. See the other participant.
+3. See the latest message.
+4. See when the latest message was sent.
+5. See unread-message counts.
+6. Search conversations in the browser.
+7. Open an existing conversation.
+8. Start a new conversation.
+
+============================================================
+DJANGO FRAMEWORK FLOW
+============================================================
+
+Browser
+    ↓
+marketpulse/urls.py
+    ↓
+community/urls.py
+    ↓
+community/views.py
+    ↓
+Django ORM
+    ↓
+Conversation + PrivateMessage models
+    ↓
+PostgreSQL / Neon
+    ↓
+community/views.py creates context
+    ↓
+conversations
+    ↓
+community/templates/community/inbox.html
+    ↓
+Django Template Language
+    ↓
+HTML + Bootstrap + CSS
+    ↓
+JavaScript conversation search
+    ↓
+Rendered browser page
+
+============================================================
+HOW THIS CONNECTS TO THE LECTURE
+============================================================
+
+PROGRAMMING LANGUAGE FEATURES / CONCEPTS:
+
+Template inheritance:
+    {% extends %}
+    {% block %}
+
+Variables:
+    {{ conversations }}
+    conversation.other_user
+    conversation.last_message
+    JavaScript const and let
+
+Selection / conditionals:
+    {% if %}
+    {% else %}
+    JavaScript if
+    ternary operator ? :
+
+Iteration:
+    {% for %}
+    JavaScript forEach()
+
+Functions:
+    function () { ... }
+
+Events:
+    DOMContentLoaded
+    input
+
+Operators:
+    ||
+    &&
+    !
+    ===
+    !==
+    +=
+
+Objects and properties:
+    conversation.other_user
+    conversation.last_message
+    searchInput.value
+    item.dataset
+    searchEmpty.style
+
+Methods:
+    getElementById()
+    querySelectorAll()
+    Array.from()
+    trim()
+    toLowerCase()
+    includes()
+    classList.toggle()
+    addEventListener()
+
+Data structures:
+    conversations = Django collection/query data
+    conversationItems = JavaScript Array
+
+Control flow:
+    return
+    if
+    for
+    empty-state branches
+
+Presentation:
+    HTML gives structure.
+    CSS gives appearance.
+    Bootstrap gives reusable responsive classes.
+
+Browser programming:
+    JavaScript changes already-rendered HTML without
+    contacting Django or PostgreSQL again.
+
+============================================================
+IMPORTANT SEPARATION OF RESPONSIBILITIES
+============================================================
+
+MODEL:
+    Conversation / PrivateMessage
+    Stores application data.
+
+VIEW:
+    community/views.py
+    Gets data and prepares conversation.other_user,
+    conversation.last_message and conversation.unread_count.
+
+TEMPLATE:
+    This file.
+    Decides how the supplied information is displayed.
+
+CLIENT-SIDE JAVASCRIPT:
+    Filters already-rendered conversation rows.
+
+============================================================
+{% endcomment %}
+
+{% block title %} {# TEMPLATE BLOCK: Replaces the title section provided by base.html. #}
 Messages | MarketPulse
-{% endblock %}
+{% endblock %} {# Ends the title block. #}
 
-
-{% block extra_css %}
-
-<style>
+{% block extra_css %} {# TEMPLATE BLOCK: Adds CSS that belongs specifically to this inbox page. #}
+<style> /* HTML STYLE ELEMENT: Starts page-specific CSS. */
 
 /* ============================================================
    MARKETPULSE - CONVERSATION INBOX
@@ -30,7 +181,6 @@ Messages | MarketPulse
        ↓
    community/templates/community/inbox.html
 
-
    PURPOSE:
 
    This page replaces the original email-style messaging:
@@ -39,7 +189,6 @@ Messages | MarketPulse
        Sent Messages
 
    with a modern conversation-based messaging workspace.
-
 
    DESKTOP:
 
@@ -53,7 +202,6 @@ Messages | MarketPulse
    │ User3               │                                  │
    │ Latest message      │                                  │
    └─────────────────────┴──────────────────────────────────┘
-
 
    MOBILE:
 
@@ -69,11 +217,9 @@ Messages | MarketPulse
        ↓
    Dedicated conversation thread
 
-
    EXPECTED VIEW CONTEXT:
 
        conversations
-
 
    Each Conversation object should also be prepared by
    community/views.py with:
@@ -82,12 +228,10 @@ Messages | MarketPulse
        conversation.last_message
        conversation.unread_count
 
-
    URL DEPENDENCIES:
 
        community:new_conversation
        community:conversation_detail
-
 
    RESPONSIVE DESIGN:
 
@@ -102,455 +246,353 @@ Messages | MarketPulse
 
    This stylesheet handles only messaging-specific layout.
 
+   LECTURE CONCEPT:
+   CSS uses selectors, properties, values, inheritance,
+   variables, pseudo-classes and conditional media queries.
 ============================================================ */
-
 
 /* ============================================================
    1. MAIN WORKSPACE
+   CONCEPT: CSS class selector + sizing properties.
 ============================================================ */
 
-.messaging-workspace {
-
-    width:
-        100%;
-
-    max-width:
-        1480px;
-
-    min-width:
-        0;
-
-    margin:
-        0 auto;
-}
-
+.messaging-workspace { /* CLASS SELECTOR: Styles anything with class="messaging-workspace". */
+    width: /* PROPERTY: Controls the horizontal size. */
+        100%; /* VALUE: Makes the workspace use all available width. */
+    max-width: /* PROPERTY: Sets the largest allowed width. */
+        1480px; /* VALUE: Stops the page becoming excessively wide. */
+    min-width: /* PROPERTY: Sets the minimum width. */
+        0; /* VALUE: Allows flex/grid content to shrink correctly. */
+    margin: /* PROPERTY: Controls outside spacing. */
+        0 auto; /* VALUE: No vertical margin and automatic horizontal centering. */
+} /* Ends the .messaging-workspace CSS rule. */
 
 /* ============================================================
    2. PAGE HEADER
+   CONCEPT: Flexbox layout.
 ============================================================ */
 
-.messaging-header {
+.messaging-header { /* CLASS SELECTOR: Styles the inbox heading area. */
+    display: /* PROPERTY: Chooses the layout system. */
+        flex; /* VALUE: Uses Flexbox. */
+    align-items: /* PROPERTY: Aligns flex items across the cross axis. */
+        center; /* VALUE: Vertically centres the header items. */
+    justify-content: /* PROPERTY: Controls spacing along the main axis. */
+        space-between; /* VALUE: Pushes heading and button apart. */
+    flex-wrap: /* PROPERTY: Controls whether flex items can wrap. */
+        wrap; /* VALUE: Allows the button to move to another line when required. */
+    gap: /* PROPERTY: Adds spacing between flex children. */
+        1rem; /* VALUE: Uses one root-font-size unit of spacing. */
+    margin-bottom: /* PROPERTY: Adds spacing underneath the header. */
+        1.25rem; /* VALUE: Separates the header from the messaging box. */
+} /* Ends the header rule. */
 
-    display:
-        flex;
+.messaging-header-copy { /* CLASS SELECTOR: Styles the textual part of the header. */
+    min-width: /* PROPERTY: Defines its minimum width. */
+        0; /* VALUE: Allows content to shrink instead of overflowing. */
+} /* Ends the header-copy rule. */
 
-    align-items:
-        center;
-
-    justify-content:
-        space-between;
-
-    flex-wrap:
-        wrap;
-
-    gap:
-        1rem;
-
-    margin-bottom:
-        1.25rem;
-}
-
-
-.messaging-header-copy {
-
-    min-width:
-        0;
-}
-
-
-.messaging-eyebrow {
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    gap:
-        .4rem;
-
-    margin-bottom:
-        .3rem;
-
-    color:
-        var(
-            --mp-primary,
-            #4f86b6
+.messaging-eyebrow { /* CLASS SELECTOR: Styles the small "Private Messaging" label. */
+    display: /* PROPERTY: Selects the layout model. */
+        flex; /* VALUE: Places icon and text on one flex row. */
+    align-items: /* PROPERTY: Cross-axis alignment. */
+        center; /* VALUE: Centres the icon with the text. */
+    gap: /* PROPERTY: Space between icon and label. */
+        .4rem; /* VALUE: Gives them a small gap. */
+    margin-bottom: /* PROPERTY: Space below the label. */
+        .3rem; /* VALUE: Separates it from the main heading. */
+    color: /* PROPERTY: Sets text/icon colour. */
+        var( /* FUNCTION: Reads a CSS custom property. */
+            --mp-primary, /* VARIABLE: Preferred MarketPulse primary colour. */
+            #4f86b6 /* FALLBACK VALUE: Used if the variable does not exist. */
         );
+    font-size: /* PROPERTY: Controls text size. */
+        .68rem; /* VALUE: Makes the eyebrow small. */
+    font-weight: /* PROPERTY: Controls font thickness. */
+        700; /* VALUE: Bold text. */
+    letter-spacing: /* PROPERTY: Controls space between characters. */
+        .05em; /* VALUE: Slightly spreads the letters. */
+    text-transform: /* PROPERTY: Changes letter case visually. */
+        uppercase; /* VALUE: Displays text in uppercase. */
+} /* Ends eyebrow rule. */
 
-    font-size:
-        .68rem;
-
-    font-weight:
-        700;
-
-    letter-spacing:
-        .05em;
-
-    text-transform:
-        uppercase;
-}
-
-
-.messaging-title {
-
-    margin:
-        0 0 .25rem;
-
-    color:
-        var(
-            --mp-text,
-            #f1f5f9
+.messaging-title { /* CLASS SELECTOR: Styles the main "Messages" heading. */
+    margin: /* PROPERTY: Controls outside spacing. */
+        0 0 .25rem; /* VALUE: Removes top/side margin and adds a small bottom margin. */
+    color: /* PROPERTY: Sets heading colour. */
+        var( /* FUNCTION: Reads a custom property. */
+            --mp-text, /* VARIABLE: MarketPulse normal text colour. */
+            #f1f5f9 /* FALLBACK: Light text colour. */
         );
-
-    font-size:
-        clamp(
-            1.5rem,
-            2vw,
-            1.9rem
+    font-size: /* PROPERTY: Controls heading size. */
+        clamp( /* FUNCTION: Gives responsive minimum/preferred/maximum sizes. */
+            1.5rem, /* MINIMUM: Heading will not become smaller than this. */
+            2vw, /* PREFERRED: Size responds to viewport width. */
+            1.9rem /* MAXIMUM: Heading will not grow beyond this. */
         );
+    font-weight: /* PROPERTY: Controls font thickness. */
+        700; /* VALUE: Bold heading. */
+} /* Ends title rule. */
 
-    font-weight:
-        700;
-}
-
-
-.messaging-subtitle {
-
-    max-width:
-        720px;
-
-    margin:
-        0;
-
-    color:
-        var(
-            --mp-muted,
-            #93a4b8
+.messaging-subtitle { /* CLASS SELECTOR: Styles the explanation under the heading. */
+    max-width: /* PROPERTY: Limits line length. */
+        720px; /* VALUE: Prevents overly long text lines. */
+    margin: /* PROPERTY: Controls external spacing. */
+        0; /* VALUE: Removes default paragraph margin. */
+    color: /* PROPERTY: Sets subtitle colour. */
+        var( /* FUNCTION: Reads a CSS variable. */
+            --mp-muted, /* VARIABLE: MarketPulse muted text colour. */
+            #93a4b8 /* FALLBACK: Muted blue-grey. */
         );
-
-    font-size:
-        .88rem;
-
-    line-height:
-        1.5;
-}
-
+    font-size: /* PROPERTY: Controls text size. */
+        .88rem; /* VALUE: Slightly smaller than normal text. */
+    line-height: /* PROPERTY: Controls spacing between lines. */
+        1.5; /* VALUE: Improves readability. */
+} /* Ends subtitle rule. */
 
 /* ============================================================
    3. MAIN MESSAGING SHELL
+   CONCEPT: Box model and CSS custom properties.
 ============================================================ */
 
-.messaging-shell {
-
+.messaging-shell { /* CLASS SELECTOR: Styles the large inbox container. */
     width:
-        100%;
-
+        100%; /* Uses the full available width. */
     min-width:
-        0;
-
+        0; /* Allows the shell to shrink correctly. */
     overflow:
-        hidden;
-
+        hidden; /* Hides content extending outside rounded edges. */
     background:
         var(
-            --mp-panel,
-            #152235
+            --mp-panel, /* Uses the site's panel-colour variable. */
+            #152235 /* Fallback dark blue. */
         );
-
     border:
-        1px solid
+        1px solid /* Creates a thin solid border. */
         var(
-            --mp-border,
-            #314258
+            --mp-border, /* Uses the site border variable. */
+            #314258 /* Fallback border colour. */
         );
-
     border-radius:
-        12px;
-
+        12px; /* Rounds the shell corners. */
     box-shadow:
-        0 8px 24px
+        0 8px 24px /* Horizontal offset, vertical offset and blur radius. */
         rgba(
-            0,
-            0,
-            0,
-            .10
+            0, /* Red channel. */
+            0, /* Green channel. */
+            0, /* Blue channel. */
+            .10 /* Alpha: 10% opacity. */
         );
-}
+} /* Ends shell rule. */
 
-
-.messaging-shell > .row {
-
+.messaging-shell > .row { /* CHILD SELECTOR: Targets .row directly inside .messaging-shell. */
     min-height:
-        650px;
-}
-
+        650px; /* Gives the desktop workspace a substantial minimum height. */
+} /* Ends row rule. */
 
 /* ============================================================
    4. CONVERSATION SIDEBAR
+   CONCEPT: Flexbox container.
 ============================================================ */
 
-.conversation-sidebar {
-
+.conversation-sidebar { /* Styles the left conversation column. */
     display:
-        flex;
-
+        flex; /* Activates Flexbox. */
     flex-direction:
-        column;
-
+        column; /* Stacks header and conversation list vertically. */
     height:
-        100%;
-
+        100%; /* Fills the available height. */
     min-width:
-        0;
-
+        0; /* Prevents overflow from long text. */
     background:
         var(
             --mp-panel,
             #152235
-        );
-
+        ); /* Gives the sidebar its dark panel background. */
     border-right:
         1px solid
         var(
             --mp-border,
             #314258
-        );
-}
-
+        ); /* Creates the divider between left and right panels. */
+} /* Ends sidebar rule. */
 
 /* ============================================================
    5. SIDEBAR HEADER
 ============================================================ */
 
-.conversation-sidebar-header {
-
+.conversation-sidebar-header { /* Styles the top section of the conversation list. */
     padding:
-        1rem;
-
+        1rem; /* Adds internal spacing. */
     background:
         var(
             --mp-panel-soft,
             #18283a
-        );
-
+        ); /* Uses a slightly lighter panel background. */
     border-bottom:
         1px solid
         var(
             --mp-border,
             #314258
-        );
-}
+        ); /* Separates header from conversation rows. */
+} /* Ends sidebar-header rule. */
 
-
-.conversation-sidebar-heading {
-
+.conversation-sidebar-heading { /* Styles the row containing heading and count badge. */
     display:
-        flex;
-
+        flex; /* Puts heading and badge on one row. */
     align-items:
-        center;
-
+        center; /* Vertically centres the items. */
     justify-content:
-        space-between;
-
+        space-between; /* Pushes count badge to the far side. */
     gap:
-        .75rem;
-
+        .75rem; /* Adds space between flex items. */
     min-width:
-        0;
-}
+        0; /* Allows shrinking. */
+} /* Ends sidebar-heading rule. */
 
-
-.conversation-sidebar-heading-copy {
-
+.conversation-sidebar-heading-copy { /* Contains sidebar title and subtitle. */
     min-width:
-        0;
-}
+        0; /* Prevents long text from forcing overflow. */
+} /* Ends heading-copy rule. */
 
-
-.conversation-sidebar-title {
-
+.conversation-sidebar-title { /* Styles "Conversations". */
     margin:
-        0;
-
+        0; /* Removes browser default heading margin. */
     color:
         var(
             --mp-text,
             #f1f5f9
-        );
-
+        ); /* Sets normal MarketPulse text colour. */
     font-size:
-        .95rem;
-
+        .95rem; /* Sets compact heading size. */
     font-weight:
-        700;
-}
+        700; /* Makes the heading bold. */
+} /* Ends sidebar-title rule. */
 
-
-.conversation-sidebar-subtitle {
-
+.conversation-sidebar-subtitle { /* Styles "Your private MarketPulse chats". */
     margin:
-        .15rem 0 0;
-
+        .15rem 0 0; /* Small space above and none at the sides/bottom. */
     color:
         var(
             --mp-muted,
             #93a4b8
-        );
-
+        ); /* Uses muted text colour. */
     font-size:
-        .72rem;
-}
-
+        .72rem; /* Makes supporting text smaller. */
+} /* Ends sidebar-subtitle rule. */
 
 /* ============================================================
    6. CONVERSATION SEARCH
+   CONCEPT: Positioning.
 ============================================================ */
 
-.conversation-search {
-
+.conversation-search { /* Wrapper around the search control. */
     margin-top:
-        .85rem;
-}
+        .85rem; /* Separates the search box from the heading. */
+} /* Ends search wrapper rule. */
 
-
-.conversation-search-box {
-
+.conversation-search-box { /* Positioning container for icon + input. */
     position:
-        relative;
-}
+        relative; /* Makes absolutely positioned children relative to this box. */
+} /* Ends search-box rule. */
 
-
-.conversation-search-icon {
-
+.conversation-search-icon { /* Styles and positions the magnifying-glass icon. */
     position:
-        absolute;
-
+        absolute; /* Removes icon from normal layout and positions it precisely. */
     top:
-        50%;
-
+        50%; /* Moves top edge halfway down the input. */
     left:
-        .75rem;
-
+        .75rem; /* Positions icon from left edge. */
     z-index:
-        2;
-
+        2; /* Places icon above the input background. */
     color:
         var(
             --mp-muted,
             #93a4b8
-        );
-
+        ); /* Uses muted icon colour. */
     transform:
         translateY(
-            -50%
+            -50% /* Moves icon up by half its own height. */
         );
-
     pointer-events:
-        none;
-}
+        none; /* Mouse interaction passes through the icon to the input. */
+} /* Ends search-icon rule. */
 
-
-.conversation-search-input {
-
+.conversation-search-input { /* Styles the actual search input. */
     padding-left:
-        2.15rem;
-
+        2.15rem; /* Makes room for the search icon. */
     font-size:
-        .8rem;
-}
-
+        .8rem; /* Uses compact search text. */
+} /* Ends search-input rule. */
 
 /* ============================================================
    7. CONVERSATION LIST
+   CONCEPT: Scrolling and flex sizing.
 ============================================================ */
 
-.conversation-list {
-
+.conversation-list { /* Contains all conversation links. */
     flex:
-        1 1 auto;
-
+        1 1 auto; /* Allows the list to grow and shrink in the flex column. */
     min-width:
-        0;
-
+        0; /* Prevents horizontal overflow. */
     max-height:
-        590px;
-
+        590px; /* Limits desktop list height. */
     overflow-x:
-        hidden;
-
+        hidden; /* Prevents horizontal scrolling. */
     overflow-y:
-        auto;
-}
-
+        auto; /* Adds vertical scrolling when required. */
+} /* Ends conversation-list rule. */
 
 /* ============================================================
    8. CONVERSATION ITEM
+   CONCEPT: Links styled as interactive rows.
 ============================================================ */
 
-.conversation-item {
-
+.conversation-item { /* Styles every conversation <a> element. */
     display:
-        block;
-
+        block; /* Makes the link occupy a full row. */
     width:
-        100%;
-
+        100%; /* Makes row use all sidebar width. */
     min-width:
-        0;
-
+        0; /* Allows contents to shrink. */
     padding:
-        .9rem 1rem;
-
+        .9rem 1rem; /* Adds internal vertical/horizontal spacing. */
     color:
-        inherit;
-
+        inherit; /* Uses parent text colour. */
     background:
-        transparent;
-
+        transparent; /* Starts with no extra background colour. */
     border-bottom:
         1px solid
         var(
             --mp-border-soft,
             #26374b
-        );
-
+        ); /* Separates conversation rows. */
     text-decoration:
-        none;
-
+        none; /* Removes normal link underline. */
     transition:
-        background-color .15s ease,
-        border-color .15s ease;
-}
+        background-color .15s ease, /* Animates background changes. */
+        border-color .15s ease; /* Animates border changes. */
+} /* Ends conversation-item rule. */
 
-
-.conversation-item:last-child {
-
+.conversation-item:last-child { /* PSEUDO-CLASS: Selects the final conversation item. */
     border-bottom:
-        0;
-}
-
+        0; /* Removes unnecessary final divider. */
+} /* Ends last-child rule. */
 
 .conversation-item:hover,
-.conversation-item:focus {
-
+.conversation-item:focus { /* PSEUDO-CLASSES: Apply while mouse hovers or keyboard focuses. */
     color:
-        inherit;
-
+        inherit; /* Keeps text colour unchanged. */
     background:
         var(
             --mp-panel-soft,
             #18283a
-        );
-
+        ); /* Highlights the active row. */
     outline:
-        none;
-}
+        none; /* Removes default browser focus outline. */
+} /* Ends hover/focus rule. */
 
-
-.conversation-item:focus-visible {
-
+.conversation-item:focus-visible { /* PSEUDO-CLASS: Shows keyboard-focused state. */
     box-shadow:
         inset
         0
@@ -560,61 +602,46 @@ Messages | MarketPulse
         var(
             --mp-primary,
             #4f86b6
-        );
-}
+        ); /* Draws an accessible inner focus ring. */
+} /* Ends focus-visible rule. */
 
-
-.conversation-row {
-
+.conversation-row { /* Inner row holding avatar + conversation information. */
     display:
-        flex;
-
+        flex; /* Places avatar and content side-by-side. */
     align-items:
-        flex-start;
-
+        flex-start; /* Aligns items from their top edges. */
     gap:
-        .75rem;
-
+        .75rem; /* Adds spacing between avatar and text. */
     min-width:
-        0;
-}
-
+        0; /* Enables text truncation correctly. */
+} /* Ends conversation-row rule. */
 
 /* ============================================================
    9. USER AVATAR
 ============================================================ */
 
-.conversation-avatar {
-
+.conversation-avatar { /* Circular initial/avatar at left of each conversation. */
     display:
-        inline-flex;
-
+        inline-flex; /* Makes it inline while allowing flex alignment inside. */
     align-items:
-        center;
-
+        center; /* Centres content vertically. */
     justify-content:
-        center;
-
+        center; /* Centres content horizontally. */
     flex:
-        0 0 auto;
-
+        0 0 auto; /* Prevents avatar from growing or shrinking. */
     width:
-        44px;
-
+        44px; /* Sets avatar width. */
     height:
-        44px;
-
+        44px; /* Sets avatar height. */
     color:
-        #b7d4ea;
-
+        #b7d4ea; /* Sets avatar text/icon colour. */
     background:
         rgba(
             79,
             134,
             182,
             .14
-        );
-
+        ); /* Gives the avatar a translucent blue background. */
     border:
         1px solid
         rgba(
@@ -622,417 +649,308 @@ Messages | MarketPulse
             134,
             182,
             .30
-        );
-
+        ); /* Gives avatar a subtle blue border. */
     border-radius:
-        50%;
-
+        50%; /* Turns square into a circle. */
     font-size:
-        .85rem;
-
+        .85rem; /* Sets initial/icon size. */
     font-weight:
-        700;
-}
-
+        700; /* Makes username initial bold. */
+} /* Ends avatar rule. */
 
 /* ============================================================
    10. CONVERSATION CONTENT
+   CONCEPT: Text overflow and flex behaviour.
 ============================================================ */
 
-.conversation-content {
-
+.conversation-content { /* Holds username, time, preview and metadata. */
     flex:
-        1 1 auto;
-
+        1 1 auto; /* Uses remaining space beside avatar. */
     min-width:
-        0;
-}
+        0; /* Important so ellipsis can work. */
+} /* Ends conversation-content rule. */
 
-
-.conversation-topline {
-
+.conversation-topline { /* Holds username and message time. */
     display:
-        flex;
-
+        flex; /* Places values on one horizontal row. */
     align-items:
-        center;
-
+        center; /* Vertically aligns them. */
     justify-content:
-        space-between;
-
+        space-between; /* Puts time at opposite edge. */
     gap:
-        .75rem;
-
+        .75rem; /* Adds space between name and time. */
     min-width:
-        0;
-}
+        0; /* Allows contents to shrink. */
+} /* Ends topline rule. */
 
-
-.conversation-user {
-
+.conversation-user { /* Styles participant username. */
     min-width:
-        0;
-
+        0; /* Allows username to shrink. */
     overflow:
-        hidden;
-
+        hidden; /* Hides text beyond available width. */
     color:
         var(
             --mp-text,
             #f1f5f9
-        );
-
+        ); /* Uses primary text colour. */
     font-size:
-        .86rem;
-
+        .86rem; /* Sets compact username size. */
     font-weight:
-        700;
-
+        700; /* Makes username bold. */
     text-overflow:
-        ellipsis;
-
+        ellipsis; /* Shows ... when text is too long. */
     white-space:
-        nowrap;
-}
+        nowrap; /* Keeps username on one line. */
+} /* Ends user rule. */
 
-
-.conversation-time {
-
+.conversation-time { /* Styles "x minutes ago". */
     flex:
-        0 0 auto;
-
+        0 0 auto; /* Prevents time from shrinking. */
     color:
         var(
             --mp-muted,
             #93a4b8
-        );
-
+        ); /* Uses muted colour. */
     font-size:
-        .63rem;
-
+        .63rem; /* Keeps time secondary and compact. */
     white-space:
-        nowrap;
-}
+        nowrap; /* Prevents timestamp wrapping. */
+} /* Ends time rule. */
 
-
-.conversation-preview {
-
+.conversation-preview { /* Styles latest-message preview. */
     min-width:
-        0;
-
+        0; /* Enables shrinking. */
     overflow:
-        hidden;
-
+        hidden; /* Hides excess message text. */
     margin-top:
-        .22rem;
-
+        .22rem; /* Adds small space above preview. */
     color:
         var(
             --mp-muted,
             #93a4b8
-        );
-
+        ); /* Uses muted text colour. */
     font-size:
-        .75rem;
-
+        .75rem; /* Uses smaller text. */
     line-height:
-        1.35;
-
+        1.35; /* Gives comfortable line spacing. */
     text-overflow:
-        ellipsis;
-
+        ellipsis; /* Shows ... for text that is too long. */
     white-space:
-        nowrap;
-}
+        nowrap; /* Keeps preview on one line. */
+} /* Ends preview rule. */
 
-
-.conversation-meta {
-
+.conversation-meta { /* Holds sender and unread badge. */
     display:
-        flex;
-
+        flex; /* Places metadata on one row. */
     align-items:
-        center;
-
+        center; /* Vertically centres metadata. */
     justify-content:
-        space-between;
-
+        space-between; /* Pushes unread badge right. */
     gap:
-        .5rem;
-
+        .5rem; /* Adds spacing between metadata values. */
     min-width:
-        0;
-
+        0; /* Allows shrinking. */
     margin-top:
-        .35rem;
-}
+        .35rem; /* Separates metadata from preview. */
+} /* Ends meta rule. */
 
-
-.conversation-sender {
-
+.conversation-sender { /* Styles "You" or the sender's username. */
     min-width:
-        0;
-
+        0; /* Allows text to shrink. */
     overflow:
-        hidden;
-
+        hidden; /* Hides overflow. */
     color:
-        #7890a8;
-
+        #7890a8; /* Uses subdued sender colour. */
     font-size:
-        .65rem;
-
+        .65rem; /* Uses small metadata text. */
     text-overflow:
-        ellipsis;
-
+        ellipsis; /* Displays ... if sender text is too long. */
     white-space:
-        nowrap;
-}
-
+        nowrap; /* Keeps sender on one line. */
+} /* Ends sender rule. */
 
 /* ============================================================
    11. UNREAD STATE
+   CONCEPT: State represented by a CSS class.
 ============================================================ */
 
-.conversation-item-unread {
-
+.conversation-item-unread { /* Applied conditionally by Django for unread conversations. */
     background:
         rgba(
             79,
             134,
             182,
             .07
-        );
-
+        ); /* Gives unread rows a subtle blue tint. */
     border-left:
         3px solid
         var(
             --mp-primary,
             #4f86b6
-        );
-}
+        ); /* Adds visual unread indicator at the left. */
+} /* Ends unread-row rule. */
 
-
-.conversation-item-unread .conversation-user {
-
+.conversation-item-unread .conversation-user { /* DESCENDANT SELECTOR: Username inside unread row. */
     color:
-        #ffffff;
-}
+        #ffffff; /* Makes unread username brighter. */
+} /* Ends unread username rule. */
 
-
-.conversation-item-unread .conversation-preview {
-
+.conversation-item-unread .conversation-preview { /* Latest message inside unread row. */
     color:
-        #d6e1eb;
-}
+        #d6e1eb; /* Makes unread preview more prominent. */
+} /* Ends unread preview rule. */
 
-
-.unread-indicator {
-
+.unread-indicator { /* Styles numeric unread-message badge. */
     display:
-        inline-flex;
-
+        inline-flex; /* Allows internal centring. */
     align-items:
-        center;
-
+        center; /* Centres number vertically. */
     justify-content:
-        center;
-
+        center; /* Centres number horizontally. */
     flex:
-        0 0 auto;
-
+        0 0 auto; /* Prevents badge from shrinking. */
     min-width:
-        20px;
-
+        20px; /* Ensures badge remains circular/pill shaped. */
     height:
-        20px;
-
+        20px; /* Sets badge height. */
     padding:
-        0 .35rem;
-
+        0 .35rem; /* Gives multi-digit counts room. */
     color:
-        #ffffff;
-
+        #ffffff; /* Uses white number text. */
     background:
         var(
             --mp-primary,
             #4f86b6
-        );
-
+        ); /* Uses primary colour. */
     border-radius:
-        999px;
-
+        999px; /* Produces pill shape. */
     font-size:
-        .61rem;
-
+        .61rem; /* Makes count compact. */
     font-weight:
-        700;
-}
-
+        700; /* Makes count bold. */
+} /* Ends unread-indicator rule. */
 
 /* ============================================================
    12. EMPTY CONVERSATION STATE
+   CONCEPT: Alternative UI state.
 ============================================================ */
 
-.conversation-empty {
-
+.conversation-empty { /* Styles inbox when there are no conversations. */
     padding:
-        3rem 1.25rem;
-
+        3rem 1.25rem; /* Gives empty state generous spacing. */
     text-align:
-        center;
-}
+        center; /* Centres text and controls. */
+} /* Ends conversation-empty rule. */
 
-
-.conversation-empty-icon {
-
+.conversation-empty-icon { /* Circular icon shown in empty inbox. */
     display:
-        inline-flex;
-
+        inline-flex; /* Enables flex centring. */
     align-items:
-        center;
-
+        center; /* Centres icon vertically. */
     justify-content:
-        center;
-
+        center; /* Centres icon horizontally. */
     width:
-        58px;
-
+        58px; /* Sets icon container width. */
     height:
-        58px;
-
+        58px; /* Sets icon container height. */
     margin-bottom:
-        1rem;
-
+        1rem; /* Adds space below icon. */
     color:
-        #8ba8c0;
-
+        #8ba8c0; /* Sets icon colour. */
     background:
         var(
             --mp-panel-dark,
             #101a28
-        );
-
+        ); /* Uses dark panel background. */
     border:
         1px solid
         var(
             --mp-border,
             #314258
-        );
-
+        ); /* Adds border around icon. */
     border-radius:
-        50%;
-
+        50%; /* Makes icon container circular. */
     font-size:
-        1.25rem;
-}
-
+        1.25rem; /* Sets icon size. */
+} /* Ends empty-icon rule. */
 
 /* ============================================================
    13. SEARCH EMPTY STATE
 ============================================================ */
 
-.conversation-search-empty {
-
+.conversation-search-empty { /* Message shown when search has zero matches. */
     display:
-        none;
-
+        none; /* Hidden initially; JavaScript can change this. */
     padding:
-        2rem 1rem;
-
+        2rem 1rem; /* Adds internal spacing. */
     color:
         var(
             --mp-muted,
             #93a4b8
-        );
-
+        ); /* Uses muted text colour. */
     text-align:
-        center;
-
+        center; /* Centres message. */
     font-size:
-        .8rem;
-}
-
+        .8rem; /* Uses compact text. */
+} /* Ends search-empty rule. */
 
 /* ============================================================
    14. DESKTOP CHAT PREVIEW
 ============================================================ */
 
-.message-preview-panel {
-
+.message-preview-panel { /* Styles right-hand desktop panel. */
     display:
-        flex;
-
+        flex; /* Uses Flexbox. */
     align-items:
-        center;
-
+        center; /* Centres content vertically. */
     justify-content:
-        center;
-
+        center; /* Centres content horizontally. */
     width:
-        100%;
-
+        100%; /* Fills right-side column. */
     min-width:
-        0;
-
+        0; /* Allows shrinking. */
     min-height:
-        650px;
-
+        650px; /* Matches main shell desktop height. */
     padding:
-        2rem;
-
+        2rem; /* Adds inner spacing. */
     background:
         var(
             --mp-panel-dark,
             #101a28
-        );
-}
+        ); /* Uses darker background to distinguish panel. */
+} /* Ends preview-panel rule. */
 
-
-.message-preview-empty {
-
+.message-preview-empty { /* Wrapper around desktop empty-state content. */
     width:
-        100%;
-
+        100%; /* Allows wrapper to fill available area. */
     max-width:
-        470px;
-
+        470px; /* Keeps content readable. */
     text-align:
-        center;
-}
+        center; /* Centres text. */
+} /* Ends preview-empty rule. */
 
-
-.message-preview-icon {
-
+.message-preview-icon { /* Large icon above preview instructions. */
     display:
-        inline-flex;
-
+        inline-flex; /* Enables centring. */
     align-items:
-        center;
-
+        center; /* Centres icon vertically. */
     justify-content:
-        center;
-
+        center; /* Centres icon horizontally. */
     width:
-        76px;
-
+        76px; /* Sets icon-box width. */
     height:
-        76px;
-
+        76px; /* Sets icon-box height. */
     margin-bottom:
-        1.25rem;
-
+        1.25rem; /* Adds space underneath. */
     color:
-        #94b7d3;
-
+        #94b7d3; /* Sets icon colour. */
     background:
         rgba(
             79,
             134,
             182,
             .11
-        );
-
+        ); /* Gives translucent blue background. */
     border:
         1px solid
         rgba(
@@ -1040,357 +958,277 @@ Messages | MarketPulse
             134,
             182,
             .25
-        );
-
+        ); /* Gives subtle border. */
     border-radius:
-        20px;
-
+        20px; /* Rounds icon box corners. */
     font-size:
-        1.6rem;
-}
+        1.6rem; /* Makes icon larger. */
+} /* Ends preview-icon rule. */
 
-
-.message-preview-empty h2 {
-
+.message-preview-empty h2 { /* ELEMENT DESCENDANT SELECTOR: h2 inside preview empty state. */
     margin-bottom:
-        .5rem;
-
+        .5rem; /* Adds space below heading. */
     color:
         var(
             --mp-text,
             #f1f5f9
-        );
-
+        ); /* Uses main text colour. */
     font-size:
-        1.15rem;
-
+        1.15rem; /* Sets heading size. */
     font-weight:
-        700;
-}
+        700; /* Makes heading bold. */
+} /* Ends preview h2 rule. */
 
-
-.message-preview-empty p {
-
+.message-preview-empty p { /* Styles explanatory paragraph in desktop panel. */
     margin-bottom:
-        1.25rem;
-
+        1.25rem; /* Adds spacing below paragraph. */
     color:
         var(
             --mp-muted,
             #93a4b8
-        );
-
+        ); /* Uses muted text colour. */
     font-size:
-        .84rem;
-
+        .84rem; /* Uses slightly smaller text. */
     line-height:
-        1.55;
-}
-
+        1.55; /* Improves readability. */
+} /* Ends preview paragraph rule. */
 
 /* ============================================================
    15. CHAT FEATURE HINTS
+   CONCEPT: CSS Grid.
 ============================================================ */
 
-.message-preview-features {
-
+.message-preview-features { /* Container for three information cards. */
     display:
-        grid;
-
+        grid; /* Activates CSS Grid. */
     grid-template-columns:
-        repeat(
-            3,
-            minmax(
-                0,
-                1fr
+        repeat( /* FUNCTION: Repeats the same grid-column definition. */
+            3, /* Creates three columns. */
+            minmax( /* FUNCTION: Defines minimum and maximum track sizes. */
+                0, /* Minimum can shrink to zero. */
+                1fr /* Each column receives one equal fraction. */
             )
         );
-
     gap:
-        .6rem;
-
+        .6rem; /* Adds space between cards. */
     margin:
-        1.5rem 0;
-}
+        1.5rem 0; /* Adds vertical spacing above and below cards. */
+} /* Ends features-grid rule. */
 
-
-.message-preview-feature {
-
+.message-preview-feature { /* Styles one feature card. */
     min-width:
-        0;
-
+        0; /* Allows card content to shrink. */
     padding:
-        .75rem .5rem;
-
+        .75rem .5rem; /* Adds card padding. */
     color:
         var(
             --mp-muted,
             #93a4b8
-        );
-
+        ); /* Uses muted text colour. */
     background:
         rgba(
             255,
             255,
             255,
             .018
-        );
-
+        ); /* Adds extremely subtle light overlay. */
     border:
         1px solid
         var(
             --mp-border-soft,
             #26374b
-        );
-
+        ); /* Adds card border. */
     border-radius:
-        8px;
-
+        8px; /* Rounds card corners. */
     font-size:
-        .68rem;
-
+        .68rem; /* Uses small explanatory text. */
     line-height:
-        1.4;
-}
+        1.4; /* Sets readable line spacing. */
+} /* Ends feature-card rule. */
 
-
-.message-preview-feature i {
-
+.message-preview-feature i { /* ELEMENT SELECTOR: Icons inside feature cards. */
     display:
-        block;
-
+        block; /* Makes icon occupy its own line. */
     margin-bottom:
-        .4rem;
-
+        .4rem; /* Adds space beneath icon. */
     color:
         var(
             --mp-primary,
             #4f86b6
-        );
-
+        ); /* Uses MarketPulse primary colour. */
     font-size:
-        .9rem;
-}
-
+        .9rem; /* Sets icon size. */
+} /* Ends feature icon rule. */
 
 /* ============================================================
    16. PRIVACY / EDUCATIONAL NOTE
 ============================================================ */
 
-.messaging-privacy-note {
-
+.messaging-privacy-note { /* Styles disclaimer at bottom of page. */
     padding:
-        .85rem 1rem;
-
+        .85rem 1rem; /* Adds internal spacing. */
     background:
         rgba(
             255,
             255,
             255,
             .015
-        );
-
+        ); /* Adds subtle contrast. */
     border:
         1px solid
         var(
             --mp-border-soft,
             #26374b
-        );
-
+        ); /* Adds thin border. */
     border-radius:
-        8px;
-
+        8px; /* Rounds note corners. */
     line-height:
-        1.5;
-}
-
+        1.5; /* Improves text readability. */
+} /* Ends privacy-note rule. */
 
 /* ============================================================
    17. TABLET
+   CONCEPT: Conditional responsive CSS with a media query.
 ============================================================ */
 
-@media (
+@media ( /* MEDIA QUERY: Applies enclosed CSS only when condition is true. */
     max-width:
-    991.98px
+    991.98px /* CONDITION: Screens at or below this width. */
 ) {
-
-    .message-preview-features {
-
+    .message-preview-features { /* Changes feature layout on tablets. */
         grid-template-columns:
-            1fr;
-    }
-
-}
-
+            1fr; /* Uses one column rather than three. */
+    } /* Ends tablet feature rule. */
+} /* Ends tablet media query. */
 
 /* ============================================================
    18. MOBILE
 ============================================================ */
 
-@media (
+@media ( /* MEDIA QUERY: Creates mobile-specific behaviour. */
     max-width:
-    767.98px
+    767.98px /* CONDITION: Applies to screens at/below this width. */
 ) {
-
-    .messaging-shell > .row {
-
+    .messaging-shell > .row { /* Targets row in messaging shell. */
         min-height:
-            0;
-    }
+            0; /* Removes desktop minimum height. */
+    } /* Ends row override. */
 
-
-    .conversation-sidebar {
-
+    .conversation-sidebar { /* Mobile sidebar adjustment. */
         border-right:
-            0;
-    }
+            0; /* Removes divider because right panel is hidden. */
+    } /* Ends sidebar override. */
 
-
-    .conversation-list {
-
+    .conversation-list { /* Mobile conversation list. */
         max-height:
-            none;
-    }
+            none; /* Allows list to grow naturally. */
+    } /* Ends conversation-list override. */
 
-
-    .message-preview-panel {
-
+    .message-preview-panel { /* Desktop preview panel. */
         display:
-            none;
-    }
+            none; /* Hides it on mobile. */
+    } /* Ends preview-panel override. */
 
-
-    .messaging-header {
-
+    .messaging-header { /* Mobile page header. */
         align-items:
-            stretch;
-    }
+            stretch; /* Lets children use full available width. */
+    } /* Ends mobile header override. */
 
-
-    .messaging-header-copy {
-
+    .messaging-header-copy { /* Header text wrapper. */
         width:
-            100%;
-    }
+            100%; /* Gives copy full width. */
+    } /* Ends header-copy override. */
 
-
-    .messaging-header .btn {
-
+    .messaging-header .btn { /* Button within page header. */
         width:
-            100%;
-    }
-
-}
-
+            100%; /* Makes button full-width on mobile. */
+    } /* Ends mobile button rule. */
+} /* Ends mobile media query. */
 
 /* ============================================================
    19. SMALL PHONE
 ============================================================ */
 
-@media (
+@media ( /* MEDIA QUERY: Additional adjustments for small phones. */
     max-width:
-    575.98px
+    575.98px /* CONDITION: Applies on very narrow screens. */
 ) {
-
-    .conversation-sidebar-header {
-
+    .conversation-sidebar-header { /* Sidebar header on small phone. */
         padding:
-            .85rem .75rem;
-    }
+            .85rem .75rem; /* Reduces spacing. */
+    } /* Ends small-phone sidebar-header rule. */
 
-
-    .conversation-item {
-
+    .conversation-item { /* Conversation row on small phone. */
         padding:
-            .85rem .75rem;
-    }
+            .85rem .75rem; /* Reduces horizontal spacing. */
+    } /* Ends small-phone item rule. */
 
-
-    .conversation-avatar {
-
+    .conversation-avatar { /* Smaller avatar on small phone. */
         width:
-            40px;
-
+            40px; /* Reduces width. */
         height:
-            40px;
-
+            40px; /* Reduces height. */
         font-size:
-            .78rem;
-    }
+            .78rem; /* Reduces text/icon size. */
+    } /* Ends avatar override. */
 
-
-    .conversation-time {
-
+    .conversation-time { /* Timestamp on small phone. */
         font-size:
-            .59rem;
-    }
+            .59rem; /* Makes timestamp slightly smaller. */
+    } /* Ends time override. */
 
-
-    .conversation-preview {
-
+    .conversation-preview { /* Latest-message preview on small phone. */
         font-size:
-            .72rem;
-    }
+            .72rem; /* Makes preview slightly smaller. */
+    } /* Ends preview override. */
 
-
-    .messaging-privacy-note {
-
+    .messaging-privacy-note { /* Disclaimer on small phone. */
         padding:
-            .75rem;
-    }
+            .75rem; /* Reduces internal spacing. */
+    } /* Ends privacy-note override. */
+} /* Ends small-phone media query. */
 
-}
+</style> <!-- Ends this page's CSS. -->
+{% endblock %} {# Ends extra_css block. #}
 
-</style>
+{% block content %} {# TEMPLATE BLOCK: Starts the main visible page content. #}
 
-{% endblock %}
+<!-- ============================================================
+     HTML / DJANGO TEMPLATE SECTION
 
+     LECTURE CONCEPTS:
+     HTML = structure.
+     Django template tags = server-side decisions and loops.
+     Django variables = values supplied by community/views.py.
+============================================================= -->
 
-{% block content %}
-
-
-<div class="messaging-workspace">
-
+<div class="messaging-workspace"> <!-- MAIN CONTAINER: Wraps the complete inbox page. -->
 
     <!-- ====================================================
          1. PAGE HEADER
+         HTML CONCEPT: Semantic header.
+         DJANGO CONCEPT: URL reversing.
     ===================================================== -->
 
-    <header class="messaging-header">
-
-
-        <div class="messaging-header-copy">
-
-
-            <div class="messaging-eyebrow">
-
+    <header class="messaging-header"> <!-- Semantic header containing page introduction/actions. -->
+        <div class="messaging-header-copy"> <!-- Groups the textual header content. -->
+            <div class="messaging-eyebrow"> <!-- Small descriptive label above title. -->
                 <i
                     class="fa-regular fa-comments"
                     aria-hidden="true"
-                ></i>
+                ></i> <!-- Font Awesome decorative comments icon; aria-hidden keeps it from screen readers. -->
+                Private Messaging <!-- Visible eyebrow text. -->
+            </div> <!-- Ends messaging-eyebrow. -->
 
-                Private Messaging
+            <h1 class="messaging-title"> <!-- Main page heading. -->
+                Messages <!-- Visible heading text. -->
+            </h1> <!-- Ends main heading. -->
 
-            </div>
-
-
-            <h1 class="messaging-title">
-
-                Messages
-
-            </h1>
-
-
-            <p class="messaging-subtitle">
-
+            <p class="messaging-subtitle"> <!-- Supporting page description. -->
                 View your private conversations and continue
                 discussions with other MarketPulse users.
-
-            </p>
-
-
-        </div>
-
+            </p> <!-- Ends subtitle. -->
+        </div> <!-- Ends header-copy. -->
 
         <a
             href="{% url 'community:new_conversation' %}"
@@ -1399,30 +1237,23 @@ Messages | MarketPulse
                 btn-primary
                 align-self-md-center
             "
-        >
-
+        > <!-- DJANGO URL TAG: Generates the URL for the named new_conversation route; Bootstrap styles the link as a button. -->
             <i
                 class="fa-solid fa-plus me-2"
                 aria-hidden="true"
-            ></i>
-
-            New Conversation
-
-        </a>
-
-
-    </header>
-
+            ></i> <!-- Decorative plus icon with Bootstrap end margin. -->
+            New Conversation <!-- Link text shown to user. -->
+        </a> <!-- Ends new-conversation link. -->
+    </header> <!-- Ends page header. -->
 
     <!-- ====================================================
          2. CONVERSATION WORKSPACE
+         BOOTSTRAP CONCEPT:
+         Responsive grid columns.
     ===================================================== -->
 
-    <div class="messaging-shell">
-
-
-        <div class="row g-0">
-
+    <div class="messaging-shell"> <!-- Outer visual shell of inbox. -->
+        <div class="row g-0"> <!-- BOOTSTRAP GRID: row with zero gutters. -->
 
             <!-- =============================================
                  LEFT SIDE - CONVERSATIONS
@@ -1435,44 +1266,27 @@ Messages | MarketPulse
                     col-lg-4
                     col-xl-3
                 "
-            >
+            > <!-- RESPONSIVE GRID: Full width on mobile, then 5/12, 4/12 and 3/12 at larger breakpoints. -->
 
-
-                <aside class="conversation-sidebar">
-
+                <aside class="conversation-sidebar"> <!-- Semantic aside containing conversation navigation. -->
 
                     <!-- =====================================
                          SIDEBAR HEADER
                     ====================================== -->
 
-                    <div class="conversation-sidebar-header">
+                    <div class="conversation-sidebar-header"> <!-- Top of the left sidebar. -->
+                        <div class="conversation-sidebar-heading"> <!-- Flex row for title and conversation count. -->
+                            <div class="conversation-sidebar-heading-copy"> <!-- Groups title and subtitle. -->
+                                <h2 class="conversation-sidebar-title"> <!-- Secondary page heading. -->
+                                    Conversations <!-- Visible heading text. -->
+                                </h2> <!-- Ends sidebar title. -->
 
-
-                        <div class="conversation-sidebar-heading">
-
-
-                            <div class="conversation-sidebar-heading-copy">
-
-
-                                <h2 class="conversation-sidebar-title">
-
-                                    Conversations
-
-                                </h2>
-
-
-                                <p class="conversation-sidebar-subtitle">
-
+                                <p class="conversation-sidebar-subtitle"> <!-- Supporting sidebar description. -->
                                     Your private MarketPulse chats
+                                </p> <!-- Ends sidebar subtitle. -->
+                            </div> <!-- Ends sidebar-heading-copy. -->
 
-                                </p>
-
-
-                            </div>
-
-
-                            {% if conversations %}
-
+                            {% if conversations %} {# CONDITIONAL: Runs only when the conversations collection is not empty. #}
                                 <span
                                     class="
                                         badge
@@ -1482,30 +1296,21 @@ Messages | MarketPulse
                                         border-primary-subtle
                                     "
                                     title="Number of conversations"
-                                >
-
-                                    {{ conversations|length }}
-
-                                </span>
-
-                            {% endif %}
-
-
-                        </div>
-
+                                > <!-- BOOTSTRAP BADGE: Displays total number of conversations. -->
+                                    {{ conversations|length }} {# VARIABLE + FILTER: Gets number of conversations with Django's length filter. #}
+                                </span> <!-- Ends conversation-count badge. -->
+                            {% endif %} {# Ends conversations conditional. #}
+                        </div> <!-- Ends sidebar-heading. -->
 
                         <!-- ================================
                              CONVERSATION SEARCH
+                             DJANGO CONDITION:
+                             Search only appears if conversations exist.
                         ================================= -->
 
-                        {% if conversations %}
-
-                            <div class="conversation-search">
-
-
-                                <div class="conversation-search-box">
-
-
+                        {% if conversations %} {# CONDITIONAL: Avoids displaying search when inbox is empty. #}
+                            <div class="conversation-search"> <!-- Search control wrapper. -->
+                                <div class="conversation-search-box"> <!-- Relative-positioned box for icon and input. -->
                                     <i
                                         class="
                                             fa-solid
@@ -1513,8 +1318,7 @@ Messages | MarketPulse
                                             conversation-search-icon
                                         "
                                         aria-hidden="true"
-                                    ></i>
-
+                                    ></i> <!-- Decorative magnifying-glass icon. -->
 
                                     <input
                                         type="search"
@@ -1527,32 +1331,24 @@ Messages | MarketPulse
                                         placeholder="Search conversations..."
                                         aria-label="Search conversations"
                                         autocomplete="off"
-                                    >
-
-
-                                </div>
-
-
-                            </div>
-
-                        {% endif %}
-
-
-                    </div>
-
+                                    > <!-- INPUT ELEMENT: JavaScript reads this field to filter conversations. -->
+                                </div> <!-- Ends search box. -->
+                            </div> <!-- Ends search wrapper. -->
+                        {% endif %} {# Ends search-display conditional. #}
+                    </div> <!-- Ends sidebar header. -->
 
                     <!-- =====================================
                          CONVERSATION LIST
+                         LECTURE CONCEPT:
+                         ITERATION / LOOPING
                     ====================================== -->
 
                     <div
                         id="conversationList"
                         class="conversation-list"
-                    >
+                    > <!-- DOM CONTAINER: Holds conversation links and is used by browser layout. -->
 
-
-                        {% for conversation in conversations %}
-
+                        {% for conversation in conversations %} {# LOOP: Repeats the conversation row once for every conversation supplied by the view. #}
 
                             <a
                                 href="{% url 'community:conversation_detail' conversation.pk %}"
@@ -1571,112 +1367,80 @@ Messages | MarketPulse
                                         MarketPulse user
                                     {% endif %}
                                 "
-                            >
+                            > <!-- URL TAG + CONDITION: Links to conversation PK; unread CSS class is added only when unread_count is truthy; data attribute stores searchable text. -->
 
-
-                                <div class="conversation-row">
-
+                                <div class="conversation-row"> <!-- Flex row containing avatar and text details. -->
 
                                     <!-- =====================
                                          USER AVATAR
+                                         LECTURE CONCEPT:
+                                         CONDITIONAL SELECTION
                                     ====================== -->
 
                                     <div
                                         class="conversation-avatar"
                                         aria-hidden="true"
-                                    >
+                                    > <!-- Avatar is visual, so aria-hidden prevents redundant screen-reader output. -->
 
+                                        {% if conversation.other_user %} {# CONDITIONAL: Checks whether view supplied the other participant. #}
+                                            {{ conversation.other_user.username|slice:":1"|upper }} {# FILTER CHAIN: Takes first username character and converts it to uppercase. #}
+                                        {% else %} {# ALTERNATIVE BRANCH: Used if there is no other_user value. #}
+                                            <i class="fa-solid fa-user"></i> <!-- Fallback Font Awesome user icon. -->
+                                        {% endif %} {# Ends other-user conditional. #}
 
-                                        {% if conversation.other_user %}
-
-                                            {{ conversation.other_user.username|slice:":1"|upper }}
-
-                                        {% else %}
-
-                                            <i class="fa-solid fa-user"></i>
-
-                                        {% endif %}
-
-
-                                    </div>
-
+                                    </div> <!-- Ends avatar. -->
 
                                     <!-- =====================
                                          CONVERSATION DETAILS
                                     ====================== -->
 
-                                    <div class="conversation-content">
-
+                                    <div class="conversation-content"> <!-- Holds all textual conversation information. -->
 
                                         <!-- =================
                                              USER + TIME
                                         ================== -->
 
-                                        <div class="conversation-topline">
+                                        <div class="conversation-topline"> <!-- Row containing participant name and timestamp. -->
 
+                                            <div class="conversation-user"> <!-- Participant-name wrapper. -->
+                                                {% if conversation.other_user %} {# CONDITIONAL: Uses username if other participant exists. #}
+                                                    {{ conversation.other_user.username }} {# VARIABLE OUTPUT: Displays username from Django object. #}
+                                                {% else %} {# FALLBACK BRANCH. #}
+                                                    Conversation <!-- Generic fallback label. -->
+                                                {% endif %} {# Ends participant-name conditional. #}
+                                            </div> <!-- Ends conversation-user. -->
 
-                                            <div class="conversation-user">
-
-
-                                                {% if conversation.other_user %}
-
-                                                    {{ conversation.other_user.username }}
-
-                                                {% else %}
-
-                                                    Conversation
-
-                                                {% endif %}
-
-
-                                            </div>
-
-
-                                            {% if conversation.last_message %}
-
+                                            {% if conversation.last_message %} {# CONDITIONAL: Timestamp appears only if conversation has a message. #}
                                                 <time
                                                     class="conversation-time"
                                                     datetime="{{ conversation.last_message.created_at|date:'c' }}"
                                                     title="{{ conversation.last_message.created_at|date:'d M Y H:i' }}"
-                                                >
+                                                > <!-- SEMANTIC TIME: Machine-readable datetime plus human-readable hover title. -->
+                                                    {{ conversation.last_message.created_at|timesince }} {# FILTER: Calculates human-readable elapsed time. #}
+                                                    ago <!-- Completes text such as "5 minutes ago". -->
+                                                </time> <!-- Ends semantic time element. -->
+                                            {% endif %} {# Ends last-message timestamp conditional. #}
 
-                                                    {{ conversation.last_message.created_at|timesince }}
-                                                    ago
-
-                                                </time>
-
-                                            {% endif %}
-
-
-                                        </div>
-
+                                        </div> <!-- Ends conversation-topline. -->
 
                                         <!-- =================
                                              LAST MESSAGE
                                         ================== -->
 
-                                        {% if conversation.last_message %}
+                                        {% if conversation.last_message %} {# CONDITIONAL: Displays preview/meta when a last message exists. #}
 
-
-                                            <div class="conversation-preview">
-
-                                                {{ conversation.last_message.body|truncatechars:85 }}
-
-                                            </div>
-
+                                            <div class="conversation-preview"> <!-- Latest-message preview wrapper. -->
+                                                {{ conversation.last_message.body|truncatechars:85 }} {# FILTER: Displays message body shortened to at most 85 characters. #}
+                                            </div> <!-- Ends latest-message preview. -->
 
                                             <!-- =============
                                                  MESSAGE META
                                             ============== -->
 
-                                            <div class="conversation-meta">
+                                            <div class="conversation-meta"> <!-- Holds sender and unread count. -->
+                                                <span class="conversation-sender"> <!-- Latest-message sender label. -->
 
-
-                                                <span class="conversation-sender">
-
-
-                                                    {% if conversation.last_message.sender == request.user %}
-
+                                                    {% if conversation.last_message.sender == request.user %} {# COMPARISON: Tests whether logged-in user sent the latest message. #}
                                                         <i
                                                             class="
                                                                 fa-solid
@@ -1684,125 +1448,86 @@ Messages | MarketPulse
                                                                 me-1
                                                             "
                                                             aria-hidden="true"
-                                                        ></i>
+                                                        ></i> <!-- Decorative reply icon. -->
+                                                        You <!-- Indicates current user sent the latest message. -->
+                                                    {% else %} {# ALTERNATIVE: Another user sent the latest message. #}
+                                                        {{ conversation.last_message.sender.username }} {# VARIABLE: Displays sender's username. #}
+                                                    {% endif %} {# Ends sender comparison. #}
 
-                                                        You
+                                                </span> <!-- Ends sender label. -->
 
-                                                    {% else %}
-
-                                                        {{ conversation.last_message.sender.username }}
-
-                                                    {% endif %}
-
-
-                                                </span>
-
-
-                                                {% if conversation.unread_count %}
-
+                                                {% if conversation.unread_count %} {# CONDITIONAL: Displays badge only when unread messages exist. #}
                                                     <span
                                                         class="unread-indicator"
                                                         title="{{ conversation.unread_count }} unread message{% if conversation.unread_count != 1 %}s{% endif %}"
-                                                    >
+                                                    > <!-- CONDITIONAL STRING: Adds plural "s" when unread count is not 1. -->
+                                                        {{ conversation.unread_count }} {# VARIABLE: Displays number of unread messages. #}
+                                                    </span> <!-- Ends unread badge. -->
+                                                {% endif %} {# Ends unread-count conditional. #}
 
-                                                        {{ conversation.unread_count }}
+                                            </div> <!-- Ends conversation metadata. -->
 
-                                                    </span>
+                                        {% else %} {# ALTERNATIVE: Conversation exists but contains no messages. #}
 
-                                                {% endif %}
+                                            <div class="conversation-preview"> <!-- Uses same preview styling for fallback. -->
+                                                No messages yet. <!-- Fallback message. -->
+                                            </div> <!-- Ends fallback preview. -->
 
+                                        {% endif %} {# Ends last-message conditional. #}
 
-                                            </div>
+                                    </div> <!-- Ends conversation-content. -->
+                                </div> <!-- Ends conversation-row. -->
+                            </a> <!-- Ends clickable conversation item. -->
 
-
-                                        {% else %}
-
-
-                                            <div class="conversation-preview">
-
-                                                No messages yet.
-
-                                            </div>
-
-
-                                        {% endif %}
-
-
-                                    </div>
-
-
-                                </div>
-
-
-                            </a>
-
-
-                        {% empty %}
-
+                        {% empty %} {# LOOP EMPTY BRANCH: Runs when conversations collection contains no items. #}
 
                             <!-- ==============================
                                  EMPTY INBOX
+                                 LECTURE CONCEPT:
+                                 Alternative control-flow branch.
                             =============================== -->
 
-                            <div class="conversation-empty">
-
-
-                                <div class="conversation-empty-icon">
-
+                            <div class="conversation-empty"> <!-- Empty-inbox state wrapper. -->
+                                <div class="conversation-empty-icon"> <!-- Decorative icon wrapper. -->
                                     <i
                                         class="fa-regular fa-comments"
                                         aria-hidden="true"
-                                    ></i>
+                                    ></i> <!-- Decorative Font Awesome comments icon. -->
+                                </div> <!-- Ends empty icon. -->
 
-                                </div>
+                                <h3 class="h6 mb-2"> <!-- Bootstrap heading-size and margin classes. -->
+                                    No Conversations Yet <!-- Empty-state heading. -->
+                                </h3> <!-- Ends empty-state heading. -->
 
-
-                                <h3 class="h6 mb-2">
-
-                                    No Conversations Yet
-
-                                </h3>
-
-
-                                <p class="text-secondary small mb-3">
-
+                                <p class="text-secondary small mb-3"> <!-- Bootstrap muted/small text with bottom margin. -->
                                     Start a private conversation
                                     with another registered
                                     MarketPulse user.
-
-                                </p>
-
+                                </p> <!-- Ends empty-state description. -->
 
                                 <a
                                     href="{% url 'community:new_conversation' %}"
                                     class="btn btn-sm btn-primary"
-                                >
-
+                                > <!-- URL REVERSING: Opens route for starting a conversation. -->
                                     <i
                                         class="fa-solid fa-plus me-1"
                                         aria-hidden="true"
-                                    ></i>
+                                    ></i> <!-- Decorative plus icon. -->
+                                    Start Conversation <!-- Link text. -->
+                                </a> <!-- Ends empty-state action. -->
+                            </div> <!-- Ends conversation-empty wrapper. -->
 
-                                    Start Conversation
-
-                                </a>
-
-
-                            </div>
-
-
-                        {% endfor %}
-
+                        {% endfor %} {# Ends conversation loop and its empty branch. #}
 
                         <!-- ==============================
                              SEARCH EMPTY STATE
+                             JavaScript shows this dynamically.
                         =============================== -->
 
                         <div
                             id="conversationSearchEmpty"
                             class="conversation-search-empty"
-                        >
-
+                        > <!-- DOM ELEMENT: Initially hidden; JavaScript displays it when search returns zero matches. -->
                             <i
                                 class="
                                     fa-solid
@@ -1811,21 +1536,13 @@ Messages | MarketPulse
                                     mb-2
                                 "
                                 aria-hidden="true"
-                            ></i>
+                            ></i> <!-- Search icon using Bootstrap display/margin classes. -->
+                            No conversations match your search. <!-- Zero-search-results message. -->
+                        </div> <!-- Ends search-empty element. -->
 
-                            No conversations match your search.
-
-                        </div>
-
-
-                    </div>
-
-
-                </aside>
-
-
-            </div>
-
+                    </div> <!-- Ends conversation list. -->
+                </aside> <!-- Ends conversation sidebar. -->
+            </div> <!-- Ends Bootstrap left-side grid column. -->
 
             <!-- =============================================
                  RIGHT SIDE - DESKTOP WORKSPACE
@@ -1839,140 +1556,93 @@ Messages | MarketPulse
                     d-none
                     d-md-block
                 "
-            >
+            > <!-- BOOTSTRAP RESPONSIVENESS: Hidden on mobile; shown from md upward with matching grid widths. -->
 
-
-                <section class="message-preview-panel">
-
-
-                    <div class="message-preview-empty">
-
-
-                        <div class="message-preview-icon">
-
+                <section class="message-preview-panel"> <!-- Semantic section for desktop conversation-selection guidance. -->
+                    <div class="message-preview-empty"> <!-- Centres instructional content. -->
+                        <div class="message-preview-icon"> <!-- Large decorative icon. -->
                             <i
                                 class="fa-regular fa-comments"
                                 aria-hidden="true"
-                            ></i>
+                            ></i> <!-- Font Awesome comments icon. -->
+                        </div> <!-- Ends preview icon. -->
 
-                        </div>
+                        {% if conversations %} {# CONDITIONAL: Different guidance depending on whether inbox contains conversations. #}
 
+                            <h2> <!-- Heading for existing-conversation state. -->
+                                Select a Conversation <!-- User instruction. -->
+                            </h2> <!-- Ends heading. -->
 
-                        {% if conversations %}
-
-
-                            <h2>
-
-                                Select a Conversation
-
-                            </h2>
-
-
-                            <p>
-
+                            <p> <!-- Explanatory paragraph. -->
                                 Choose a conversation from the
                                 left to view the complete message
                                 history and continue chatting.
+                            </p> <!-- Ends explanation. -->
 
-                            </p>
+                            <div class="message-preview-features"> <!-- CSS Grid containing feature hints. -->
 
-
-                            <div class="message-preview-features">
-
-
-                                <div class="message-preview-feature">
-
+                                <div class="message-preview-feature"> <!-- Feature card 1. -->
                                     <i
                                         class="fa-solid fa-comments"
                                         aria-hidden="true"
-                                    ></i>
+                                    ></i> <!-- Decorative feature icon. -->
+                                    Complete message history <!-- Feature description. -->
+                                </div> <!-- Ends feature card 1. -->
 
-                                    Complete message history
-
-                                </div>
-
-
-                                <div class="message-preview-feature">
-
+                                <div class="message-preview-feature"> <!-- Feature card 2. -->
                                     <i
                                         class="fa-solid fa-reply"
                                         aria-hidden="true"
-                                    ></i>
+                                    ></i> <!-- Decorative reply icon. -->
+                                    Continue the conversation <!-- Feature description. -->
+                                </div> <!-- Ends feature card 2. -->
 
-                                    Continue the conversation
-
-                                </div>
-
-
-                                <div class="message-preview-feature">
-
+                                <div class="message-preview-feature"> <!-- Feature card 3. -->
                                     <i
                                         class="fa-solid fa-lock"
                                         aria-hidden="true"
-                                    ></i>
+                                    ></i> <!-- Decorative lock icon. -->
+                                    Participant-only access <!-- Feature description. -->
+                                </div> <!-- Ends feature card 3. -->
 
-                                    Participant-only access
+                            </div> <!-- Ends feature grid. -->
 
-                                </div>
+                        {% else %} {# ALTERNATIVE: Inbox has no conversations. #}
 
+                            <h2> <!-- Empty inbox right-panel heading. -->
+                                Start Your First Conversation <!-- Encourages user to begin messaging. -->
+                            </h2> <!-- Ends heading. -->
 
-                            </div>
-
-
-                        {% else %}
-
-
-                            <h2>
-
-                                Start Your First Conversation
-
-                            </h2>
-
-
-                            <p>
-
+                            <p> <!-- Empty-state explanation. -->
                                 Private MarketPulse conversations
                                 will appear here after you start
                                 messaging another registered user.
+                            </p> <!-- Ends explanation. -->
 
-                            </p>
-
-
-                        {% endif %}
-
+                        {% endif %} {# Ends conversations conditional. #}
 
                         <a
                             href="{% url 'community:new_conversation' %}"
                             class="btn btn-outline-primary"
-                        >
-
+                        > <!-- URL TAG: Generates new-conversation link; Bootstrap provides outline-button appearance. -->
                             <i
                                 class="fa-solid fa-pen me-2"
                                 aria-hidden="true"
-                            ></i>
+                            ></i> <!-- Decorative compose icon. -->
+                            Start a New Conversation <!-- Action text. -->
+                        </a> <!-- Ends action link. -->
 
-                            Start a New Conversation
+                    </div> <!-- Ends preview-empty wrapper. -->
+                </section> <!-- Ends right-side preview panel. -->
+            </div> <!-- Ends Bootstrap right-side column. -->
 
-                        </a>
-
-
-                    </div>
-
-
-                </section>
-
-
-            </div>
-
-
-        </div>
-
-
-    </div>
-
+        </div> <!-- Ends Bootstrap row. -->
+    </div> <!-- Ends messaging shell. -->
 
     <!-- ====================================================
          3. PRIVACY / EDUCATIONAL NOTE
+         BOOTSTRAP:
+         Flex, gap, margin and typography utilities.
     ===================================================== -->
 
     <div
@@ -1985,8 +1655,7 @@ Messages | MarketPulse
             small
             text-secondary
         "
-    >
-
+    > <!-- Combines custom styling with Bootstrap Flexbox/spacing/text utilities. -->
 
         <i
             class="
@@ -1996,14 +1665,12 @@ Messages | MarketPulse
                 mt-1
             "
             aria-hidden="true"
-        ></i>
+        ></i> <!-- Decorative lock icon with Bootstrap colour/margin utilities. -->
 
-
-        <p class="mb-0">
-
-            <strong class="text-body">
+        <p class="mb-0"> <!-- Paragraph with Bootstrap class removing bottom margin. -->
+            <strong class="text-body"> <!-- Semantic strong text with Bootstrap text colour. -->
                 Private messaging:
-            </strong>
+            </strong> <!-- Ends emphasized label. -->
 
             Conversations are available only to their
             participants.
@@ -2014,27 +1681,108 @@ Messages | MarketPulse
             Messages should not be interpreted as
             personalised financial, investment or trading
             advice.
+        </p> <!-- Ends privacy/education explanation. -->
 
-        </p>
+    </div> <!-- Ends privacy-note wrapper. -->
+</div> <!-- Ends messaging-workspace. -->
 
+{% endblock %} {# Ends main content block. #}
 
-    </div>
+{% block extra_js %} {# TEMPLATE BLOCK: Adds JavaScript belonging specifically to this page. #}
 
+<script> // HTML SCRIPT ELEMENT: Starts browser-side JavaScript.
 
-</div>
+/* ============================================================
+   JAVASCRIPT SECTION
+   ============================================================
 
+   PURPOSE:
 
-{% endblock %}
+   Filter conversations that are ALREADY on the page.
 
+   DATA FLOW:
 
-{% block extra_js %}
+   User types in search input
+       ↓
+   "input" browser event
+       ↓
+   JavaScript reads search text
+       ↓
+   JavaScript loops through conversationItems
+       ↓
+   JavaScript reads data-conversation-search
+       ↓
+   includes(query)
+       ↓
+   matching row = visible
+   non-matching row = d-none
+       ↓
+   zero matches = show empty-search message
 
-<script>
+   IMPORTANT:
 
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
+   No Django request happens here.
+   No database query happens here.
+   No REST request happens here.
 
+   ============================================================
+   LECTURE CONCEPTS USED IN JAVASCRIPT
+   ============================================================
+
+   Event-driven programming:
+       addEventListener()
+
+   Function:
+       function () { }
+
+   Variables:
+       const
+       let
+
+   Data structures:
+       Array
+
+   Selection:
+       if
+       ternary ? :
+
+   Iteration:
+       forEach()
+
+   Boolean operators:
+       !
+       ||
+       &&
+       ===
+
+   Assignment:
+       =
+       +=
+
+   Objects:
+       document
+       searchInput
+       item
+       style
+       dataset
+       classList
+
+   Methods:
+       getElementById()
+       querySelectorAll()
+       Array.from()
+       trim()
+       toLowerCase()
+       includes()
+       toggle()
+
+   Early exit:
+       return
+============================================================ */
+
+document.addEventListener( // METHOD CALL: Registers a function to run when a browser event occurs.
+    "DOMContentLoaded", // EVENT NAME: Runs after HTML has been parsed into the DOM.
+    function () { // ANONYMOUS FUNCTION: Code inside runs when DOMContentLoaded occurs.
 
         /* ====================================================
            CONVERSATION SEARCH
@@ -2059,132 +1807,135 @@ document.addEventListener(
 
            - username
            - latest message body
+
+           LECTURE CONCEPT:
+           Client-side processing manipulates the DOM after
+           server-side Django rendering has completed.
         ===================================================== */
 
+        const searchInput = // CONST VARIABLE: Stores reference to the search input; binding will not be reassigned.
+            document.getElementById( // DOM METHOD: Looks for one element using its unique id.
+                "conversationSearch" // STRING VALUE: ID of the search input.
+            ); // Ends getElementById() and assigns result to searchInput.
 
-        const searchInput =
-            document.getElementById(
-                "conversationSearch"
-            );
+        const searchEmpty = // CONST VARIABLE: Stores reference to zero-search-results message.
+            document.getElementById( // DOM METHOD: Retrieves element by unique ID.
+                "conversationSearchEmpty" // STRING: ID belonging to the hidden empty-search element.
+            ); // Ends method call and assignment.
 
-
-        const searchEmpty =
-            document.getElementById(
-                "conversationSearchEmpty"
-            );
-
-
-        const conversationItems =
-            Array.from(
-                document.querySelectorAll(
-                    ".conversation-item"
-                )
-            );
-
+        const conversationItems = // CONST VARIABLE: Stores all rendered conversation rows as an Array.
+            Array.from( // ARRAY METHOD: Converts array-like NodeList into a real JavaScript Array.
+                document.querySelectorAll( // DOM METHOD: Finds every element matching CSS selector.
+                    ".conversation-item" // STRING/CSS SELECTOR: Selects every conversation link.
+                ) // Ends querySelectorAll().
+            ); // Ends Array.from() and assignment.
 
         /* ----------------------------------------------------
            No conversations or search field
+
+           LECTURE CONCEPT:
+           Selection + Boolean operators + early return.
         ----------------------------------------------------- */
 
-        if (
-            !searchInput
-            ||
-            conversationItems.length === 0
+        if ( // CONDITIONAL: Executes block when its Boolean expression evaluates to true.
+            !searchInput // NOT OPERATOR: True if searchInput does not exist.
+            || // LOGICAL OR: Whole condition is true when either side is true.
+            conversationItems.length === 0 // STRICT EQUALITY: True when array contains zero items.
         ) {
-
-            return;
-
-        }
-
+            return; // CONTROL FLOW: Stops this function early because there is nothing to search.
+        } // Ends early-exit if statement.
 
         /* ====================================================
            FILTER CONVERSATIONS
+
+           LECTURE CONCEPTS:
+           Event
+           Function
+           Variables
+           Iteration
+           Boolean expressions
+           String methods
+           DOM manipulation
         ===================================================== */
 
-        searchInput.addEventListener(
-            "input",
-            function () {
+        searchInput.addEventListener( // METHOD: Watches search input for a particular event.
+            "input", // EVENT: Fires whenever user changes input value.
+            function () { // CALLBACK FUNCTION: Executes after every input change.
 
+                const query = // CONST VARIABLE: Stores normalised user search text.
+                    searchInput.value // PROPERTY: Current text entered into search field.
+                        .trim() // STRING METHOD: Removes leading/trailing whitespace.
+                        .toLowerCase(); // STRING METHOD: Converts text to lowercase for case-insensitive matching.
 
-                const query =
-                    searchInput.value
-                        .trim()
-                        .toLowerCase();
+                let visibleCount = // LET VARIABLE: This value changes as matching items are counted.
+                    0; // NUMBER: Starts match count at zero.
 
+                conversationItems.forEach( // ITERATION METHOD: Runs callback once for every conversation item.
+                    function (item) { // CALLBACK PARAMETER: item represents current conversation element.
 
-                let visibleCount =
-                    0;
-
-
-                conversationItems.forEach(
-                    function (item) {
-
-
-                        const searchableText =
+                        const searchableText = // CONST VARIABLE: Stores searchable username/message text for current row.
                             (
-                                item.dataset.conversationSearch
-                                ||
-                                ""
+                                item.dataset.conversationSearch // OBJECT PROPERTY: Reads data-conversation-search from HTML.
+                                || // LOGICAL OR: Uses right side if dataset value is missing/falsy.
+                                "" // EMPTY STRING: Safe fallback.
                             )
-                            .trim()
-                            .toLowerCase();
+                            .trim() // STRING METHOD: Removes unnecessary surrounding whitespace.
+                            .toLowerCase(); // STRING METHOD: Ensures comparison uses lowercase text.
 
-
-                        const isVisible =
+                        const isVisible = // CONST BOOLEAN: Represents whether this row should stay visible.
                             (
-                                query === ""
-                                ||
-                                searchableText.includes(
-                                    query
-                                )
-                            );
+                                query === "" // STRICT EQUALITY: True when search box is empty.
+                                || // LOGICAL OR: Either empty query or matching content makes row visible.
+                                searchableText.includes( // STRING METHOD: Checks whether search text occurs in row text.
+                                    query // ARGUMENT: Normalised user search query.
+                                ) // Ends includes().
+                            ); // Ends Boolean expression and assignment.
 
+                        item.classList.toggle( // DOM METHOD: Adds/removes a CSS class according to second argument.
+                            "d-none", // STRING: Bootstrap class that sets display:none.
+                            !isVisible // BOOLEAN: Hide row when isVisible is false.
+                        ); // Ends classList.toggle().
 
-                        item.classList.toggle(
-                            "d-none",
-                            !isVisible
-                        );
+                        if (isVisible) { // CONDITIONAL: Runs for each matching conversation.
+                            visibleCount += // COMPOUND ASSIGNMENT: Adds value to existing variable.
+                                1; // NUMBER: Increments visible conversation count by one.
+                        } // Ends matching-row conditional.
 
-
-                        if (isVisible) {
-
-                            visibleCount +=
-                                1;
-
-                        }
-
-
-                    }
-                );
-
+                    } // Ends forEach callback function.
+                ); // Ends forEach iteration.
 
                 /* --------------------------------------------
                    SHOW / HIDE SEARCH EMPTY MESSAGE
+
+                   LECTURE CONCEPTS:
+                   Nested conditional
+                   Logical AND
+                   Strict equality
+                   Ternary operator
+                   Object property assignment
                 --------------------------------------------- */
 
-                if (searchEmpty) {
+                if (searchEmpty) { // CONDITIONAL: Makes sure the empty-state DOM element exists.
 
-                    searchEmpty.style.display =
+                    searchEmpty.style.display = // PROPERTY ASSIGNMENT: Changes inline CSS display value.
                         (
-                            query !== ""
-                            &&
-                            visibleCount === 0
+                            query !== "" // STRICT INEQUALITY: Search must contain some text.
+                            && // LOGICAL AND: Both conditions must be true.
+                            visibleCount === 0 // STRICT EQUALITY: No conversation matched.
                         )
-                            ?
-                            "block"
-                            :
-                            "none";
+                            ? // TERNARY OPERATOR: Chooses value depending on Boolean condition.
+                            "block" // TRUE VALUE: Display empty-search message.
+                            : // TERNARY ELSE: Used when condition is false.
+                            "none"; // FALSE VALUE: Hide empty-search message.
 
-                }
+                } // Ends searchEmpty conditional.
 
+            } // Ends input-event callback function.
+        ); // Ends input addEventListener().
 
-            }
-        );
+    } // Ends DOMContentLoaded callback function.
+); // Ends document.addEventListener().
 
+</script> <!-- Ends browser-side JavaScript. -->
 
-    }
-);
-
-</script>
-
-{% endblock %}
+{% endblock %} {# Ends extra_js block. #}

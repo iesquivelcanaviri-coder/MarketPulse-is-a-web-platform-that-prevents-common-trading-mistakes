@@ -1,318 +1,116 @@
 """
-============================================================
 MARKETPULSE - STRATEGY BUILDER URLS
-============================================================
 
-Framework mapping:
+Purpose:
+Connect strategy-related URL paths to their Django views.
 
-/strategy/
-    ↓
-strategy_builder/urls.py
-    ↓
-strategy_builder/views.py
-    ↓
-templates/strategy_builder/
-    ↓
-analysis_tools.analyzers
-    ↓
-PostgreSQL
+Framework:
+Project URL configuration includes this file under /strategy/.
+Django matches a path and calls its view.
+The view renders a template, redirects, or calls backend services.
 
+Programming concepts:
+Imports, relative imports, variables, strings, lists,
+function calls, keyword arguments and integer URL converters.
 
-============================================================
-USER-FACING STRATEGY WORKFLOW
-============================================================
-
-/strategy/
-    -> Strategy & Model Research workspace
-
-    Shows:
-       - Strategy & Model Library
-       - 37 quantitative models
-       - 7 model categories
-       - Search and filtering
-       - Model comparison
-       - User-created strategies
-       - Backtest summaries
-       - Strategy validation tools
-
-
-/strategy/create/
-    -> Create a custom trading strategy
-
-
-/strategy/library/add/
-    -> Add another quantitative model or strategy
-       to the StrategyLibraryItem catalogue
-
-
-/strategy/robustness/
-    -> Strategy Robustness
-    -> User-friendly name for Overfitting Analysis
-
-    Answers the question:
-
-       "Does this strategy continue to behave reasonably
-        when tested on different historical periods?"
-
-
-/strategy/robustness/results/
-    -> View Strategy Robustness / Overfitting results
-
-
-/strategy/<strategy_id>/backtest/
-    -> Run a historical backtest for a
-       user-created strategy
-
-
-/strategy/results/<backtest_id>/
-    -> View saved backtest results
-
-
-============================================================
-IMPORTANT ARCHITECTURE
-============================================================
-
-The old public Analysis tab is being removed.
-
-However:
-
-analysis_tools/
-    models.py
-    analyzers.py
-    migrations/
-
-remain part of MarketPulse internally.
-
-For Strategy Robustness the architecture becomes:
-
-Strategies Tab
-    ↓
-strategy_builder.views
-    ↓
-analysis_tools.analyzers.detect_overfitting()
-    ↓
-analysis_tools.models.OverfittingTest
-    ↓
-PostgreSQL
-
-This gives the user a simpler interface while keeping
-the analytics implementation separated into a reusable
-backend analytics layer.
-
-============================================================
+Note:
+This file defines routes, not the number of library models.
+The robustness routes use the legacy redirect views.
 """
-
 
 # ============================================================
 # 1. IMPORTS
 # ============================================================
-
-from django.urls import path
-
-from . import views
-
+from django.urls import path  # Import: I bring in Django's function for defining URL patterns.
+from . import views  # Relative import: I import views from this same application package.
 
 # ============================================================
 # 2. APPLICATION NAMESPACE
 # ============================================================
-
-# This namespace allows templates and Python code to
-# reference routes using descriptive names instead of
-# hard-coded URLs.
-#
-# Examples:
-#
-# strategy_builder:list
-# strategy_builder:create
-# strategy_builder:library_add
-# strategy_builder:robustness
-# strategy_builder:robustness_results
-# strategy_builder:backtest
-# strategy_builder:results
-
-app_name = "strategy_builder"
-
+app_name = "strategy_builder"  # Variable assignment and string: I define the application namespace for named URLs.
 
 # ============================================================
 # 3. URL PATTERNS
 # ============================================================
+urlpatterns = [  # List assignment: I collect the URL patterns Django checks in order.
 
-urlpatterns = [
-
-    # ========================================================
+    # --------------------------------------------------------
     # 3.1 STRATEGY & MODEL RESEARCH WORKSPACE
-    # ========================================================
+    # Named URL: strategy_builder:list
+    # Full path: /strategy/ when included under that prefix.
+    # --------------------------------------------------------
+    path(  # Function call: I create the workspace URL pattern.
+        "",  # Empty string: I match the application's root path.
+        views.strategy_list,  # Function reference: I give Django the view to call without calling it here.
+        name="list",  # Keyword argument: I name this route for URL reversing.
+    ),  # Closing call and comma: I finish this pattern and separate it from the next list item.
 
-    # URL:
-    #
-    # /strategy/
-    #
-    # Purpose:
-    #
-    # Main Strategies page for MarketPulse.
-    #
-    # This page can contain:
-    #
-    # - StrategyLibraryItem catalogue
-    # - 37 quantitative models
-    # - Seven model categories
-    # - Search
-    # - Filtering
-    # - Model comparison
-    # - User-created strategies
-    # - Backtest summaries
-    # - Strategy Robustness access
+    # --------------------------------------------------------
+    # 3.2 CREATE A USER STRATEGY
+    # Named URL: strategy_builder:create
+    # Full path: /strategy/create/
+    # --------------------------------------------------------
+    path(  # Function call: I create the strategy-creation URL pattern.
+        "create/",  # String literal: I match the create/ path inside this application.
+        views.strategy_create,  # Function reference: I connect the route to the strategy-creation view.
+        name="create",  # Keyword argument: I assign the route its reusable name.
+    ),  # Closing call and comma: I finish the creation pattern.
 
-    path(
-        "",
-        views.strategy_list,
-        name="list",
-    ),
+    # --------------------------------------------------------
+    # 3.3 ADD A MODEL TO THE LIBRARY
+    # Named URL: strategy_builder:library_add
+    # Full path: /strategy/library/add/
+    # The view handles the form and the catalogued status.
+    # --------------------------------------------------------
+    path(  # Function call: I create the library-addition URL pattern.
+        "library/add/",  # String literal: I match the nested library/add/ path.
+        views.library_item_create,  # Function reference: I connect the route to the library-entry creation view.
+        name="library_add",  # Keyword argument: I name the route for templates and Python code.
+    ),  # Closing call and comma: I finish the library-addition pattern.
 
+    # --------------------------------------------------------
+    # 3.4 LEGACY STRATEGY ROBUSTNESS ROUTE
+    # Named URL: strategy_builder:robustness
+    # Full path: /strategy/robustness/
+    # The supplied view redirects to the workspace section.
+    # --------------------------------------------------------
+    path(  # Function call: I keep the robustness URL available for existing links.
+        "robustness/",  # String literal: I match the robustness/ path.
+        views.strategy_robustness,  # Function reference: I connect this route to the legacy redirect view.
+        name="robustness",  # Keyword argument: I preserve the existing named route.
+    ),  # Closing call and comma: I finish the robustness pattern.
 
-    # ========================================================
-    # 3.2 CREATE USER STRATEGY
-    # ========================================================
+    # --------------------------------------------------------
+    # 3.5 LEGACY STRATEGY ROBUSTNESS RESULTS ROUTE
+    # Named URL: strategy_builder:robustness_results
+    # Full path: /strategy/robustness/results/
+    # The supplied view redirects to the workspace section.
+    # --------------------------------------------------------
+    path(  # Function call: I keep the older robustness-results URL available.
+        "robustness/results/",  # String literal: I match the complete results path.
+        views.strategy_robustness_results,  # Function reference: I connect the route to its redirect view.
+        name="robustness_results",  # Keyword argument: I preserve the results route's name.
+    ),  # Closing call and comma: I finish the robustness-results pattern.
 
-    # URL:
-    #
-    # /strategy/create/
-    #
-    # Purpose:
-    #
-    # Allows an authenticated user to create a custom
-    # rule-based MarketPulse trading strategy.
+    # --------------------------------------------------------
+    # 3.6 BACKTEST A USER STRATEGY
+    # Named URL: strategy_builder:backtest
+    # Example full path: /strategy/4/backtest/
+    # --------------------------------------------------------
+    path(  # Function call: I create a URL pattern containing a strategy ID.
+        "<int:strategy_id>/backtest/",  # Integer converter: I capture a non-negative integer and pass it as strategy_id.
+        views.backtest_strategy,  # Function reference: I connect the route to the view that handles backtesting.
+        name="backtest",  # Keyword argument: I name the route so links can supply a strategy_id.
+    ),  # Closing call and comma: I finish the backtest pattern.
 
-    path(
-        "create/",
-        views.strategy_create,
-        name="create",
-    ),
-
-
-    # ========================================================
-    # 3.3 ADD MODEL TO STRATEGY LIBRARY
-    # ========================================================
-
-    # URL:
-    #
-    # /strategy/library/add/
-    #
-    # Purpose:
-    #
-    # Allows another quantitative model, strategy or
-    # analytical method to be added to StrategyLibraryItem.
-    #
-    # New entries should normally begin with:
-    #
-    # implementation_status = "catalogued"
-    #
-    # until an actual execution engine has been implemented
-    # and tested.
-
-    path(
-        "library/add/",
-        views.library_item_create,
-        name="library_add",
-    ),
-
-
-    # ========================================================
-    # 3.4 STRATEGY ROBUSTNESS
-    # ========================================================
-
-    # URL:
-    #
-    # /strategy/robustness/
-    #
-    # User-facing name:
-    #
-    # Strategy Robustness
-    #
-    # Technical method:
-    #
-    # Overfitting Analysis
-    #
-    # Purpose:
-    #
-    # Helps the user investigate whether apparently strong
-    # historical performance remains reasonably consistent
-    # when evaluated over different historical periods.
-    #
-    # The user should not need to understand the technical
-    # term "overfitting" before using this tool.
-    #
-    # Backend flow:
-    #
-    # strategy_robustness()
-    #       ↓
-    # analysis_tools.analyzers.detect_overfitting()
-    #       ↓
-    # OverfittingTest
-    #       ↓
-    # PostgreSQL
-
-    path(
-        "robustness/",
-        views.strategy_robustness,
-        name="robustness",
-    ),
-
-
-    # ========================================================
-    # 3.5 STRATEGY ROBUSTNESS RESULTS
-    # ========================================================
-
-    # URL:
-    #
-    # /strategy/robustness/results/
-    #
-    # Purpose:
-    #
-    # Displays saved Strategy Robustness / Overfitting
-    # analysis results in the Strategies area rather than
-    # under a separate Analysis navigation tab.
-
-    path(
-        "robustness/results/",
-        views.strategy_robustness_results,
-        name="robustness_results",
-    ),
-
-
-    # ========================================================
-    # 3.6 BACKTEST USER STRATEGY
-    # ========================================================
-
-    # Example:
-    #
-    # /strategy/4/backtest/
-    #
-    # strategy_id identifies the Strategy database record
-    # that should be tested using historical market data.
-
-    path(
-        "<int:strategy_id>/backtest/",
-        views.backtest_strategy,
-        name="backtest",
-    ),
-
-
-    # ========================================================
-    # 3.7 VIEW BACKTEST RESULTS
-    # ========================================================
-
-    # Example:
-    #
-    # /strategy/results/12/
-    #
-    # backtest_id identifies the saved Backtest record
-    # whose performance metrics should be displayed.
-
-    path(
-        "results/<int:backtest_id>/",
-        views.backtest_results,
-        name="results",
-    ),
-
-]
+    # --------------------------------------------------------
+    # 3.7 VIEW SAVED BACKTEST RESULTS
+    # Named URL: strategy_builder:results
+    # Example full path: /strategy/results/12/
+    # --------------------------------------------------------
+    path(  # Function call: I create a URL pattern containing a backtest ID.
+        "results/<int:backtest_id>/",  # Integer converter: I capture an integer and pass it to the view as backtest_id.
+        views.backtest_results,  # Function reference: I connect the route to the saved-results view.
+        name="results",  # Keyword argument: I name the route so links can supply a backtest_id.
+    ),  # Closing call and comma: I finish the final URL pattern.
+]  # Closing bracket: I finish the urlpatterns list.

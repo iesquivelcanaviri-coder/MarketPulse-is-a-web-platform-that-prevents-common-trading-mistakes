@@ -1,130 +1,89 @@
-{% extends "base.html" %}
-
-
-{% block title %}
-Add Model | MarketPulse
-{% endblock %}
-
-
-{% block content %}
-
-
-<div class="mb-4">
-
-    <h1 class="h2">
-        Add Strategy or Model
-    </h1>
-
-    <p class="text-muted">
-
-        Add another quantitative strategy, financial model
-        or analytical method to the MarketPulse library.
-
-    </p>
-
-</div>
-
-
-<div class="card shadow-sm">
-
-    <div class="card-body">
-
-
-        <div class="alert alert-info">
-
-            Newly added models are recorded as
-
-            <strong>
-                Catalogued
-            </strong>.
-
-            A model should only be marked as Ready to Run
-            after its numerical execution code has been
-            implemented and tested.
-
-        </div>
-
-
-        <form method="post">
-
-            {% csrf_token %}
-
-
-            {% for field in form %}
-
-
-                <div class="mb-3">
-
-
-                    <label
-                        for="{{ field.id_for_label }}"
-                        class="form-label fw-semibold"
-                    >
-
-                        {{ field.label }}
-
-                    </label>
-
-
-                    {{ field }}
-
-
-                    {% if field.help_text %}
-
-                        <div class="form-text">
-
-                            {{ field.help_text }}
-
-                        </div>
-
-                    {% endif %}
-
-
-                    {% for error in field.errors %}
-
-                        <div class="text-danger small">
-
-                            {{ error }}
-
-                        </div>
-
-                    {% endfor %}
-
-
-                </div>
-
-
-            {% endfor %}
-
-
-            <div class="d-flex gap-2">
-
-
-                <button
-                    type="submit"
-                    class="btn btn-primary"
-                >
-                    Add to Library
-                </button>
-
-
-                <a
-                    href="{% url 'strategy_builder:list' %}"
-                    class="btn btn-outline-secondary"
-                >
-                    Cancel
-                </a>
-
-
-            </div>
-
-
-        </form>
-
-
-    </div>
-
-</div>
-
-
-{% endblock %}
+{% extends "base.html" %} {# Template inheritance: I reuse the shared layout from base.html. #}
+
+{# ======================================================== #}
+{# 1. PAGE TITLE                                            #}
+{# ======================================================== #}
+{% block title %} {# Named block: I replace the base template's browser title. #}
+Add Model | MarketPulse {# Static text: I identify this page and the project. #}
+{% endblock %} {# Block boundary: I finish the title block. #}
+
+{# ======================================================== #}
+{# 2. PAGE HEADING AND DESCRIPTION                           #}
+{# ======================================================== #}
+{% block content %} {# Named block: I insert this page into the shared content area. #}
+<div class="mb-4"> {# HTML container and CSS class: I add bottom spacing below the introduction. #}
+    <h1 class="h2"> {# Heading element: I use a main heading with Bootstrap's h2 visual size. #}
+        Add Strategy or Model {# Static text: I display the page heading. #}
+    </h1> {# Closing tag: I finish the heading. #}
+    <p class="text-muted"> {# Paragraph and CSS class: I display supporting explanatory text. #}
+        Add another quantitative strategy, financial model {# Static text: I describe the types of library entries. #}
+        or analytical method to the MarketPulse library. {# Static text: I finish the description. #}
+    </p> {# Closing tag: I finish the paragraph. #}
+</div> {# Closing tag: I finish the introduction. #}
+
+{# ======================================================== #}
+{# 3. FORM CARD AND IMPLEMENTATION NOTICE                    #}
+{# ======================================================== #}
+<div class="card shadow-sm"> {# Container and CSS classes: I place the form inside a card with a small shadow. #}
+    <div class="card-body"> {# Nested container: I begin the card's main content. #}
+        <div class="alert alert-info"> {# Informational panel: I explain the difference between cataloguing and implementing a model. #}
+            Newly added models are recorded as {# Static text: I introduce the initial implementation status. #}
+            <strong> {# Semantic emphasis: I highlight the status name. #}
+                Catalogued {# Static text: I display the initial status described by the view. #}
+            </strong>. {# Closing tag and punctuation: I finish the emphasised status and sentence. #}
+            A model should only be marked as Ready to Run {# Static text: I explain when ready status is appropriate. #}
+            after its numerical execution code has been {# Static text: I identify the implementation requirement. #}
+            implemented and tested. {# Static text: I finish the notice. #}
+        </div> {# Closing tag: I finish the informational panel. #}
+
+        {# ======================================================== #}
+        {# 4. POST FORM AND CSRF PROTECTION                          #}
+        {# ======================================================== #}
+        <form method="post"> {# Form and HTTP method: I submit named inputs to the current URL using POST. #}
+            {% csrf_token %} {# Django template tag: I include a token for server-side CSRF checks. #}
+
+            {# ======================================================== #}
+            {# 5. LOOP THROUGH FORM FIELDS                              #}
+            {# ======================================================== #}
+            {% for field in form %} {# Iteration: I repeat this layout for each field supplied by the Django form. #}
+                <div class="mb-3"> {# Field container: I group the label, input, guidance and errors with bottom spacing. #}
+                    <label for="{{ field.id_for_label }}" class="form-label fw-semibold"> {# Attribute interpolation: I connect the label to its field's generated input ID. #}
+                        {{ field.label }} {# Variable lookup: I display the field's readable label. #}
+                    </label> {# Closing tag: I finish the field label. #}
+                    {{ field }} {# Form-field rendering: Django generates the input HTML using the field's configured widget. #}
+
+                    {# -------------------------------------------------------- #}
+                    {# 5.1 OPTIONAL HELP TEXT                                   #}
+                    {# -------------------------------------------------------- #}
+                    {% if field.help_text %} {# Conditional and truthiness: I show guidance only when help text exists. #}
+                        <div class="form-text"> {# CSS class: I style the field's supporting guidance. #}
+                            {{ field.help_text }} {# Variable lookup: I display the help text defined by the form. #}
+                        </div> {# Closing tag: I finish the guidance container. #}
+                    {% endif %} {# Conditional boundary: I finish the help-text check. #}
+
+                    {# -------------------------------------------------------- #}
+                    {# 5.2 FIELD VALIDATION ERRORS                              #}
+                    {# -------------------------------------------------------- #}
+                    {% for error in field.errors %} {# Nested iteration: I display each validation error belonging to this field. #}
+                        <div class="text-danger small"> {# CSS classes: I request small, danger-coloured error text. #}
+                            {{ error }} {# Variable interpolation: I display the validation message supplied by Django. #}
+                        </div> {# Closing tag: I finish this error message. #}
+                    {% endfor %} {# Loop boundary: I finish the field's error messages. #}
+                </div> {# Closing tag: I finish this field group. #}
+            {% endfor %} {# Loop boundary: I finish rendering all form fields. #}
+
+            {# ======================================================== #}
+            {# 6. SUBMIT AND CANCEL ACTIONS                             #}
+            {# ======================================================== #}
+            <div class="d-flex gap-2"> {# Flexbox utility classes: I arrange the actions with a gap. #}
+                <button type="submit" class="btn btn-primary"> {# Submit button: I send the completed form to the receiving view. #}
+                    Add to Library {# Static text: I label the save request. #}
+                </button> {# Closing tag: I finish the submit button. #}
+                <a href="{% url 'strategy_builder:list' %}" class="btn btn-outline-secondary"> {# Named URL: I return to the Strategies workspace without submitting the form. #}
+                    Cancel {# Static text: I label the navigation action. #}
+                </a> {# Closing tag: I finish the cancel link. #}
+            </div> {# Closing tag: I finish the action group. #}
+        </form> {# Closing tag: I finish the POST form. #}
+    </div> {# Closing tag: I finish the card body. #}
+</div> {# Closing tag: I finish the card. #}
+{% endblock %} {# Block boundary: I finish the page content. #}

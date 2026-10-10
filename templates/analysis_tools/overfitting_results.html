@@ -1,83 +1,116 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %} {# Template inheritance: I reuse the shared layout from base.html. #}
 
-{% block title %}Overfitting Detection Results{% endblock %}
+{# ======================================================== #}
+{# 1. PAGE TITLE                                            #}
+{# ======================================================== #}
+{% block title %}Overfitting Detection Results{% endblock %} {# Named block: I set the browser title for this page. #}
 
-{% block content %}
-<div class="row">
-    <div class="col-md-10 offset-md-1">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">Overfitting Detection Results</h4>
-            </div>
-            <div class="card-body">
-                {% if tests %}
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Strategy</th>
-                                <th>Symbol</th>
-                                <th>Test Period</th>
-                                <th>In-Sample Return</th>
-                                <th>Out-Sample Return</th>
-                                <th>Overfitting Score</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for test in tests %}
-                            <tr>
-                                <td>{{ test.strategy_name }}</td>
-                                <td>{{ test.symbol }}</td>
-                                <td>{{ test.test_period }}</td>
-                                <td>{{ test.in_sample_return|floatformat:4 }}</td>
-                                <td>{{ test.out_sample_return|floatformat:4 }}</td>
-                                <td>
-                                    <div class="progress" style="height: 20px;">
-                                        <div class="progress-bar {% if test.overfitting_score > 0.3 %}bg-danger{% elif test.overfitting_score > 0.1 %}bg-warning{% else %}bg-success{% endif %}" 
-                                             style="width: {{ test.overfitting_score|mul:100 }}%">
-                                            {{ test.overfitting_score|floatformat:2 }}
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    {% if test.is_overfitted %}
-                                    <span class="badge bg-danger">Overfitted</span>
-                                    {% else %}
-                                    <span class="badge bg-success">Robust</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#recommendationsModal{{ test.id }}">
-                                        View Recommendations
-                                    </button>
-                                </td>
-                            </tr>
-                            
+{# ======================================================== #}
+{# 2. PAGE CONTENT AND RESPONSIVE LAYOUT                     #}
+{# ======================================================== #}
+{% block content %} {# Named block: I insert this page into the base template's content area. #}
+<div class="row"> {# HTML container and CSS class: I begin a Bootstrap grid row. #}
+    <div class="col-md-10 offset-md-1"> {# Responsive layout: I centre a ten-column panel on medium and larger screens. #}
+        <div class="card"> {# HTML nesting: I group the results inside a card. #}
+            <div class="card-header bg-primary text-white"> {# CSS classes: I request a primary background and white header text. #}
+                <h4 class="mb-0">Overfitting Detection Results</h4> {# Heading: I display the section title without bottom margin. #}
+            </div> {# Closing tag: I finish the card header. #}
+            <div class="card-body"> {# Container: I begin the results area. #}
+
+                {# ======================================================== #}
+                {# 3. CHECK FOR RESULTS                                     #}
+                {# ======================================================== #}
+                {% if tests %} {# Conditional and truthiness: I display the table when tests contains results. #}
+                <div class="table-responsive"> {# Responsive wrapper: I allow horizontal table scrolling when needed. #}
+                    <table class="table table-striped"> {# Table element and CSS classes: I display results with striped rows. #}
+                        <thead> {# Table structure: I begin the column-heading group. #}
+                            <tr> {# Table row: I group the column headings. #}
+                                <th>Strategy</th> {# Header cell: I identify the strategy-name column. #}
+                                <th>Symbol</th> {# Header cell: I identify the asset-symbol column. #}
+                                <th>Test Period</th> {# Header cell: I identify the tested-period column. #}
+                                <th>In-Sample Return</th> {# Header cell: I label the return from the in-sample period. #}
+                                <th>Out-Sample Return</th> {# Header cell: I label the return from the out-of-sample period. #}
+                                <th>Overfitting Score</th> {# Header cell: I identify the score column. #}
+                                <th>Status</th> {# Header cell: I identify the result-status column. #}
+                                <th>Actions</th> {# Header cell: I identify the recommendation-button column. #}
+                            </tr> {# Closing tag: I finish the heading row. #}
+                        </thead> {# Closing tag: I finish the table headings. #}
+                        <tbody> {# Table structure: I begin the results-row group. #}
+
+                            {# ======================================================== #}
+                            {# 4. LOOP THROUGH TESTS AND DISPLAY VALUES                 #}
+                            {# ======================================================== #}
+                            {% for test in tests %} {# Iteration: I repeat the row and modal for each test supplied by Django. #}
+                            <tr> {# Table row: I begin one test's results. #}
+                                <td>{{ test.strategy_name }}</td> {# Variable lookup and interpolation: I display this test's strategy name. #}
+                                <td>{{ test.symbol }}</td> {# Variable lookup: I display the tested asset symbol. #}
+                                <td>{{ test.test_period }}</td> {# Variable lookup: I display the stored test-period value. #}
+                                <td>{{ test.in_sample_return|floatformat:4 }}</td> {# Filter and argument: I format the in-sample return to four decimal places. #}
+                                <td>{{ test.out_sample_return|floatformat:4 }}</td> {# Filter: I format the out-of-sample return without converting it to a percentage. #}
+
+                                {# ======================================================== #}
+                                {# 5. SCORE BAR: CONDITIONS AND NUMBER FORMATTING           #}
+                                {# ======================================================== #}
+                                <td> {# Table cell: I contain the score's visual indicator. #}
+                                    <div class="progress" style="height: 20px;"> {# CSS class and inline style: I create a progress track with a 20-pixel height. #}
+                                        <div class="progress-bar {% if test.overfitting_score > 0.3 %}bg-danger{% elif test.overfitting_score > 0.1 %}bg-warning{% else %}bg-success{% endif %}" {# Conditional branches and comparisons: I choose red above 0.3, yellow above 0.1, otherwise green. #}
+                                             style="width: {{ test.overfitting_score|mul:100 }}%"> {# Filter pipeline: I use mul to multiply the score by 100 for the percentage width. #}
+                                            {{ test.overfitting_score|floatformat:2 }} {# Number formatting: I display the score itself to two decimal places. #}
+                                        </div> {# Closing tag: I finish the coloured progress bar. #}
+                                    </div> {# Closing tag: I finish the progress track. #}
+                                </td> {# Closing tag: I finish the score cell. #}
+
+                                {# ======================================================== #}
+                                {# 6. STATUS: BOOLEAN CONDITION                             #}
+                                {# ======================================================== #}
+                                <td> {# Table cell: I contain the test-status badge. #}
+                                    {% if test.is_overfitted %} {# Boolean condition: I check the stored overfitting flag separately from the bar colour. #}
+                                    <span class="badge bg-danger">Overfitted</span> {# Inline element and CSS classes: I display a red Overfitted badge. #}
+                                    {% else %} {# Alternative branch: I handle a false overfitting flag. #}
+                                    <span class="badge bg-success">Robust</span> {# Display text: I preserve the original Robust label; it does not guarantee future performance. #}
+                                    {% endif %} {# Conditional boundary: I finish the status choice. #}
+                                </td> {# Closing tag: I finish the status cell. #}
+
+                                {# ======================================================== #}
+                                {# 7. RECOMMENDATION BUTTON                                 #}
+                                {# ======================================================== #}
+                                <td> {# Table cell: I contain the action button. #}
+                                    <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#recommendationsModal{{ test.id }}"> {# Data attributes and interpolation: Bootstrap opens the modal matching this test's ID. #}
+                                        View Recommendations {# Text content: I describe the button's action. #}
+                                    </button> {# Closing tag: I finish the recommendation button. #}
+                                </td> {# Closing tag: I finish the action cell. #}
+                            </tr> {# Closing tag: I finish this test's table row. #}
+
+                            {# ======================================================== #}
+                            {# 8. RECOMMENDATION MODAL FOR THE CURRENT TEST              #}
+                            {# ======================================================== #}
                             <!-- Modal for recommendations -->
-                            <div class="modal fade" id="recommendationsModal{{ test.id }}" tabindex="-1">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">Recommendations</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <pre>{{ test.recommendations }}</pre>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <p>No overfitting tests found. <a href="{% url 'analysis_tools:overfitting' %}">Run a test</a> to see results here.</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
+                            <div class="modal fade" id="recommendationsModal{{ test.id }}" tabindex="-1"> {# Dynamic ID: I match the button's target; tabindex allows programmatic focus. #}
+                                <div class="modal-dialog"> {# Bootstrap container: I define the modal dialog wrapper. #}
+                                    <div class="modal-content"> {# Container: I group the modal's header and body. #}
+                                        <div class="modal-header"> {# Container: I begin the modal heading area. #}
+                                            <h5 class="modal-title">Recommendations</h5> {# Heading: I label the recommendation dialog. #}
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button> {# Button attributes: I close the modal through Bootstrap without submitting a form. #}
+                                        </div> {# Closing tag: I finish the modal header. #}
+                                        <div class="modal-body"> {# Container: I begin the recommendation content area. #}
+                                            <pre>{{ test.recommendations }}</pre> {# Preformatted element and variable lookup: I display recommendations while preserving whitespace. #}
+                                        </div> {# Closing tag: I finish the modal body. #}
+                                    </div> {# Closing tag: I finish the modal content. #}
+                                </div> {# Closing tag: I finish the modal dialog wrapper. #}
+                            </div> {# Closing tag: I finish this test's modal. #}
+                            {% endfor %} {# Loop boundary: I finish generating all test rows and modals. #}
+                        </tbody> {# Closing tag: I finish the table body. #}
+                    </table> {# Closing tag: I finish the results table. #}
+                </div> {# Closing tag: I finish the responsive table wrapper. #}
+
+                {# ======================================================== #}
+                {# 9. EMPTY RESULTS AND NAMED URL                           #}
+                {# ======================================================== #}
+                {% else %} {# Alternative branch: I show this message when there are no tests. #}
+                <p>No overfitting tests found. <a href="{% url 'analysis_tools:overfitting' %}">Run a test</a> to see results here.</p> {# URL reversing: I generate the test-page link from its Django namespace and route name. #}
+                {% endif %} {# Conditional boundary: I finish the results-or-empty-state choice. #}
+            </div> {# Closing tag: I finish the card body. #}
+        </div> {# Closing tag: I finish the card. #}
+    </div> {# Closing tag: I finish the centred column. #}
+</div> {# Closing tag: I finish the outer row. #}
+{% endblock %} {# Block boundary: I finish the page content. #}

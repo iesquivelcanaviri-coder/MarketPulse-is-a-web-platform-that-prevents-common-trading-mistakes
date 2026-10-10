@@ -1,3376 +1,527 @@
-{% extends "base.html" %}
-
-
+{% extends "base.html" %} {# I inherit the shared page layout. #}
 {% comment %}
-============================================================
 MARKETPULSE - MARKET CONDITION ANALYSIS
-============================================================
-
-PURPOSE:
-
-Market Condition converts stored historical market data into
-a simple description of the recent historical environment.
-
-
-USER WORKFLOW:
-
-Data
-    ↓
-Open Market Condition Analysis
-    ↓
-Choose Stored Dataset
-    ↓
-Run Market Condition Analysis
-    ↓
-Understand the Result
-
-
-BACKEND / FRAMEWORK WORKFLOW:
-
-User selects symbol
-    ↓
-data_management.views.market_condition
-    ↓
-core.MarketData
-    ↓
-Check that sufficient observations exist
-    ↓
-analysis_tools/analyzers.py
-    ↓
-identify_market_regime()
-    ↓
-MarketRegime result
-    ↓
-PostgreSQL
-    ↓
-latest_regime
-    ↓
-Display classification and interpretation
-
-
-IMPORTANT:
-
-Market Condition is:
-
-    Historical classification
-
-It is NOT:
-
-    - A prediction
-    - A buy signal
-    - A sell signal
-    - Investment advice
-
-============================================================
+Purpose: display historical classification, dataset selection and interpretation.
+Expected context: symbols, selected_symbol, observation_count, earliest_record,
+latest_record and latest_regime.
+This template displays results; the backend performs and stores the analysis.
+Historical classification is not a prediction or trading recommendation.
 {% endcomment %}
-
-
-{% block title %}
-Market Condition | MarketPulse
-{% endblock %}
-
-
-{% block extra_css %}
-
-<style>
-
-/* =========================================================
-   MARKET CONDITION
-   ---------------------------------------------------------
-   Bootstrap handles:
-   - grid
-   - spacing
-   - buttons
-   - forms
-   - responsive columns
-
-   This CSS only supplies the MarketPulse workspace identity
-   and the specialist Market Condition components.
-   ========================================================= */
-
-
-/* =========================================================
-   1. WORKSPACE / THEME
-   ========================================================= */
-
-.market-condition-page {
-
-    --mc-bg:
-        var(--mp-bg, #0c1420);
-
-    --mc-nav:
-        var(--mp-nav, #111c2b);
-
-    --mc-panel:
-        var(--mp-panel, #152235);
-
-    --mc-panel-soft:
-        var(--mp-panel-soft, #18283a);
-
-    --mc-panel-dark:
-        var(--mp-panel-dark, #101a28);
-
-    --mc-border:
-        var(--mp-border, #314258);
-
-    --mc-border-soft:
-        var(--mp-border-soft, #26374b);
-
-    --mc-text:
-        var(--mp-text, #f1f5f9);
-
-    --mc-muted:
-        var(--mp-muted, #93a4b8);
-
-    --mc-primary:
-        var(--mp-primary, #4f86b6);
-
-    --mc-primary-hover:
-        var(--mp-primary-hover, #6095c2);
-
-    --mc-primary-soft:
-        var(
-            --mp-primary-soft,
-            rgba(79, 134, 182, .15)
-        );
-
-    --mc-success:
-        var(--mp-success, #32c98b);
-
-    --mc-success-soft:
-        rgba(50, 201, 139, .11);
-
-    --mc-danger:
-        var(--mp-danger, #dc6b75);
-
-    --mc-danger-soft:
-        rgba(220, 107, 117, .11);
-
-    --mc-warning:
-        var(--mp-warning, #d3a854);
-
-    --mc-warning-soft:
-        rgba(211, 168, 84, .11);
-
-    --mc-purple:
-        #b184d7;
-
-    --mc-purple-soft:
-        rgba(177, 132, 215, .12);
-
-
-    width:
-        min(
-            1500px,
-            calc(100vw - 48px)
-        );
-
-    max-width:
-        none;
-
-    margin-left:
-        50%;
-
-    transform:
-        translateX(-50%);
-
-    color:
-        var(--mc-text);
-}
-
-
-.market-condition-page a {
-    text-decoration: none;
-}
-
-
-/* =========================================================
-   2. PAGE HEADER
-   ========================================================= */
-
-.market-condition-header {
-
-    display: flex;
-
-    align-items: flex-start;
-
-    justify-content: space-between;
-
-    gap: 1rem;
-
-    margin-bottom: 1rem;
-}
-
-
-.market-condition-title {
-
-    margin:
-        .4rem
-        0
-        .2rem;
-
-    color:
-        var(--mc-text);
-
-    font-size:
-        1.65rem;
-
-    font-weight:
-        700;
-
-    letter-spacing:
-        -.02em;
-}
-
-
-.market-condition-subtitle {
-
-    max-width:
-        760px;
-
-    margin:
-        0;
-
-    color:
-        var(--mc-muted);
-
-    font-size:
-        .72rem;
-
-    line-height:
-        1.5;
-}
-
-
-.market-back-link {
-
-    display:
-        inline-flex;
-
-    align-items:
-        center;
-
-    gap:
-        .35rem;
-
-    color:
-        var(--mc-muted);
-
-    font-size:
-        .64rem;
-
-    font-weight:
-        600;
-}
-
-
-.market-back-link:hover {
-
-    color:
-        var(--mc-primary-hover);
-}
-
-
-.market-symbol-badge {
-
-    display:
-        inline-flex;
-
-    align-items:
-        center;
-
-    gap:
-        .35rem;
-
-    padding:
-        .42rem
-        .65rem;
-
-    color:
-        var(--mc-text);
-
-    background:
-        var(--mc-panel);
-
-    border:
-        1px solid
-        var(--mc-border);
-
-    border-radius:
-        7px;
-
-    font-size:
-        .64rem;
-
-    font-weight:
-        700;
-}
-
-
-/* =========================================================
-   3. THREE-STEP WORKFLOW
-   ========================================================= */
-
-.condition-workflow {
-
-    display:
-        grid;
-
-    grid-template-columns:
-        minmax(0, 1fr)
-        auto
-        minmax(0, 1fr)
-        auto
-        minmax(0, 1fr);
-
-    align-items:
-        center;
-
-    gap:
-        .75rem;
-
-    overflow:
-        hidden;
-
-    margin-bottom:
-        1rem;
-
-    padding:
-        .8rem
-        .9rem;
-
-    background:
-        var(--mc-panel);
-
-    border:
-        1px solid
-        var(--mc-border);
-
-    border-radius:
-        8px;
-}
-
-
-.condition-workflow-step {
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    gap:
-        .6rem;
-
-    min-width:
-        0;
-}
-
-
-.condition-step-number {
-
-    display:
-        inline-flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    flex:
-        0 0 auto;
-
-    width:
-        24px;
-
-    height:
-        24px;
-
-    color:
-        #ffffff;
-
-    background:
-        var(--mc-primary);
-
-    border-radius:
-        50%;
-
-    box-shadow:
-        0 0 0 3px
-        rgba(79, 134, 182, .08);
-
-    font-size:
-        .6rem;
-
-    font-weight:
-        800;
-}
-
-
-.condition-workflow-icon {
-
-    display:
-        inline-flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    flex:
-        0 0 auto;
-
-    width:
-        32px;
-
-    height:
-        32px;
-
-    color:
-        var(--mc-primary);
-
-    background:
-        var(--mc-primary-soft);
-
-    border:
-        1px solid
-        rgba(79, 134, 182, .18);
-
-    border-radius:
-        7px;
-
-    font-size:
-        .7rem;
-}
-
-
-.condition-workflow-copy strong {
-
-    display:
-        block;
-
-    margin-bottom:
-        .08rem;
-
-    color:
-        var(--mc-text);
-
-    font-size:
-        .67rem;
-}
-
-
-.condition-workflow-copy span {
-
-    display:
-        block;
-
-    color:
-        var(--mc-muted);
-
-    font-size:
-        .55rem;
-
-    line-height:
-        1.35;
-}
-
-
-.condition-workflow-arrow {
-
-    color:
-        #60738a;
-
-    font-size:
-        .62rem;
-}
-
-
-/* =========================================================
-   4. COMMON PANEL
-   ========================================================= */
-
-.condition-panel {
-
-    height:
-        100%;
-
-    padding:
-        .95rem;
-
-    background:
-        var(--mc-panel);
-
-    border:
-        1px solid
-        var(--mc-border);
-
-    border-radius:
-        8px;
-}
-
-
-.condition-panel-header {
-
-    display:
-        flex;
-
-    align-items:
-        flex-start;
-
-    gap:
-        .7rem;
-
-    margin-bottom:
-        .9rem;
-}
-
-
-.condition-panel-icon {
-
-    display:
-        inline-flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    flex:
-        0 0 auto;
-
-    width:
-        38px;
-
-    height:
-        38px;
-
-    color:
-        var(--mc-primary);
-
-    background:
-        var(--mc-primary-soft);
-
-    border:
-        1px solid
-        rgba(79, 134, 182, .18);
-
-    border-radius:
-        8px;
-}
-
-
-.condition-eyebrow,
-.mc-eyebrow {
-
-    margin-bottom:
-        .16rem;
-
-    color:
-        var(--mc-primary-hover);
-
-    font-size:
-        .52rem;
-
-    font-weight:
-        800;
-
-    letter-spacing:
-        .06em;
-
-    text-transform:
-        uppercase;
-}
-
-
-.condition-panel-header h2 {
-
-    margin:
-        0
-        0
-        .15rem;
-
-    color:
-        var(--mc-text);
-
-    font-size:
-        .9rem;
-
-    font-weight:
-        700;
-}
-
-
-.condition-panel-header p {
-
-    margin:
-        0;
-
-    color:
-        var(--mc-muted);
-
-    font-size:
-        .62rem;
-
-    line-height:
-        1.45;
-}
-
-
-/* =========================================================
-   5. FORM
-   ========================================================= */
-
-.condition-form .form-label {
-
-    margin-bottom:
-        .3rem;
-
-    color:
-        #d7e0eb;
-
-    font-size:
-        .6rem;
-
-    font-weight:
-        700;
-}
-
-
-.condition-form .form-select {
-
-    min-height:
-        36px;
-
-    color:
-        var(--mc-text);
-
-    background-color:
-        #142131;
-
-    border-color:
-        #3a4d64;
-
-    border-radius:
-        6px;
-
-    font-size:
-        .62rem;
-}
-
-
-.condition-form .form-select:focus {
-
-    color:
-        var(--mc-text);
-
-    background-color:
-        #142131;
-
-    border-color:
-        var(--mc-primary);
-
-    box-shadow:
-        0 0 0 2px
-        rgba(79, 134, 182, .14);
-}
-
-
-/* =========================================================
-   6. DATASET SUMMARY
-   ========================================================= */
-
-.condition-dataset-summary {
-
-    display:
-        grid;
-
-    grid-template-columns:
-        repeat(
-            3,
-            minmax(0, 1fr)
-        );
-
-    gap:
-        .45rem;
-
-    margin-top:
-        .7rem;
-}
-
-
-.condition-dataset-stat {
-
-    padding:
-        .55rem;
-
-    background:
-        var(--mc-panel-dark);
-
-    border:
-        1px solid
-        var(--mc-border-soft);
-
-    border-radius:
-        6px;
-}
-
-
-.condition-dataset-label {
-
-    display:
-        block;
-
-    margin-bottom:
-        .12rem;
-
-    color:
-        var(--mc-muted);
-
-    font-size:
-        .47rem;
-
-    text-transform:
-        uppercase;
-}
-
-
-.condition-dataset-value {
-
-    display:
-        block;
-
-    color:
-        var(--mc-text);
-
-    font-size:
-        .62rem;
-
-    font-weight:
-        700;
-}
-
-
-/* =========================================================
-   7. ANALYSIS CHECKS
-   ========================================================= */
-
-.analysis-checks {
-
-    margin:
-        .75rem
-        0;
-
-    padding:
-        .7rem;
-
-    background:
-        var(--mc-panel-soft);
-
-    border:
-        1px solid
-        var(--mc-border-soft);
-
-    border-radius:
-        7px;
-}
-
-
-.analysis-checks-title {
-
-    margin-bottom:
-        .5rem;
-
-    color:
-        var(--mc-text);
-
-    font-size:
-        .6rem;
-
-    font-weight:
-        700;
-}
-
-
-.analysis-check-list {
-
-    display:
-        grid;
-
-    grid-template-columns:
-        repeat(
-            2,
-            minmax(0, 1fr)
-        );
-
-    gap:
-        .4rem;
-
-    margin:
-        0;
-
-    padding:
-        0;
-
-    list-style:
-        none;
-}
-
-
-.analysis-check-list li {
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    gap:
-        .35rem;
-
-    color:
-        var(--mc-muted);
-
-    font-size:
-        .56rem;
-}
-
-
-.analysis-check-list i {
-
-    color:
-        var(--mc-success);
-
-    font-size:
-        .55rem;
-}
-
-
-/* =========================================================
-   8. DATA READINESS
-   ========================================================= */
-
-.data-readiness {
-
-    display:
-        flex;
-
-    align-items:
-        flex-start;
-
-    gap:
-        .5rem;
-
-    padding:
-        .6rem
-        .65rem;
-
-    border-radius:
-        6px;
-
-    font-size:
-        .57rem;
-
-    line-height:
-        1.45;
-}
-
-
-.data-readiness.is-ready {
-
-    color:
-        #a8f3d0;
-
-    background:
-        var(--mc-success-soft);
-
-    border:
-        1px solid
-        rgba(50, 201, 139, .24);
-}
-
-
-.data-readiness.is-limited {
-
-    color:
-        #ffe3a4;
-
-    background:
-        var(--mc-warning-soft);
-
-    border:
-        1px solid
-        rgba(211, 168, 84, .28);
-}
-
-
-.data-readiness i {
-
-    margin-top:
-        .08rem;
-}
-
-
-/* =========================================================
-   9. PRIMARY RESULT
-   ========================================================= */
-
-.condition-result-hero {
-
-    margin-bottom:
-        .75rem;
-
-    padding:
-        .85rem;
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(79, 134, 182, .16),
-            rgba(79, 134, 182, .05)
-        );
-
-    border:
-        1px solid
-        rgba(79, 134, 182, .30);
-
-    border-radius:
-        8px;
-}
-
-
-.condition-result-hero.result-uptrend {
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(50, 201, 139, .15),
-            rgba(50, 201, 139, .05)
-        );
-
-    border-color:
-        rgba(50, 201, 139, .28);
-}
-
-
-.condition-result-hero.result-downtrend {
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(220, 107, 117, .15),
-            rgba(220, 107, 117, .05)
-        );
-
-    border-color:
-        rgba(220, 107, 117, .28);
-}
-
-
-.condition-result-hero.result-sideways {
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(147, 164, 184, .12),
-            rgba(147, 164, 184, .04)
-        );
-
-    border-color:
-        rgba(147, 164, 184, .22);
-}
-
-
-.condition-result-hero.result-high-volatility {
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(177, 132, 215, .15),
-            rgba(177, 132, 215, .05)
-        );
-
-    border-color:
-        rgba(177, 132, 215, .26);
-}
-
-
-.condition-result-label {
-
-    display:
-        block;
-
-    margin-bottom:
-        .18rem;
-
-    color:
-        var(--mc-muted);
-
-    font-size:
-        .5rem;
-
-    font-weight:
-        700;
-
-    text-transform:
-        uppercase;
-}
-
-
-.condition-result-name {
-
-    display:
-        block;
-
-    margin-bottom:
-        .18rem;
-
-    color:
-        var(--mc-text);
-
-    font-size:
-        1.15rem;
-
-    font-weight:
-        800;
-
-    letter-spacing:
-        -.02em;
-}
-
-
-.condition-result-symbol {
-
-    display:
-        inline-flex;
-
-    align-items:
-        center;
-
-    gap:
-        .3rem;
-
-    color:
-        var(--mc-primary-hover);
-
-    font-size:
-        .57rem;
-
-    font-weight:
-        700;
-}
-
-
-/* =========================================================
-   10. RESULT STATISTICS
-   ========================================================= */
-
-.condition-stat-grid {
-
-    display:
-        grid;
-
-    grid-template-columns:
-        repeat(
-            2,
-            minmax(0, 1fr)
-        );
-
-    gap:
-        .55rem;
-
-    margin-bottom:
-        .75rem;
-}
-
-
-.condition-stat {
-
-    padding:
-        .65rem;
-
-    background:
-        var(--mc-panel-dark);
-
-    border:
-        1px solid
-        var(--mc-border-soft);
-
-    border-radius:
-        7px;
-}
-
-
-.condition-stat-label {
-
-    display:
-        block;
-
-    margin-bottom:
-        .16rem;
-
-    color:
-        var(--mc-muted);
-
-    font-size:
-        .52rem;
-}
-
-
-.condition-stat-value {
-
-    display:
-        block;
-
-    margin-bottom:
-        .15rem;
-
-    color:
-        var(--mc-text);
-
-    font-size:
-        .8rem;
-
-    font-weight:
-        800;
-}
-
-
-.condition-stat-help {
-
-    display:
-        block;
-
-    color:
-        var(--mc-muted);
-
-    font-size:
-        .51rem;
-
-    line-height:
-        1.4;
-}
-
-
-/* =========================================================
-   11. RESULT EXPLANATION
-   ========================================================= */
-
-.condition-explanation {
-
-    padding:
-        .7rem;
-
-    color:
-        #becbd8;
-
-    background:
-        var(--mc-panel-soft);
-
-    border:
-        1px solid
-        var(--mc-border-soft);
-
-    border-radius:
-        7px;
-
-    font-size:
-        .58rem;
-
-    line-height:
-        1.5;
-}
-
-
-.condition-explanation strong {
-
-    display:
-        block;
-
-    margin-bottom:
-        .25rem;
-
-    color:
-        var(--mc-text);
-}
-
-
-/* =========================================================
-   12. METHOD BOX
-   ========================================================= */
-
-.condition-method-box {
-
-    margin-top:
-        .6rem;
-
-    padding:
-        .7rem;
-
-    color:
-        var(--mc-muted);
-
-    background:
-        var(--mc-panel-dark);
-
-    border:
-        1px solid
-        var(--mc-border-soft);
-
-    border-radius:
-        7px;
-
-    font-size:
-        .55rem;
-
-    line-height:
-        1.5;
-}
-
-
-.condition-method-box strong {
-
-    color:
-        var(--mc-text);
-}
-
-
-/* =========================================================
-   13. EMPTY RESULT
-   ========================================================= */
-
-.condition-empty-result {
-
-    display:
-        flex;
-
-    flex-direction:
-        column;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    min-height:
-        280px;
-
-    padding:
-        1rem;
-
-    text-align:
-        center;
-}
-
-
-.condition-empty-icon {
-
-    display:
-        inline-flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    width:
-        50px;
-
-    height:
-        50px;
-
-    margin-bottom:
-        .75rem;
-
-    color:
-        var(--mc-primary);
-
-    background:
-        var(--mc-primary-soft);
-
-    border:
-        1px solid
-        rgba(79, 134, 182, .18);
-
-    border-radius:
-        11px;
-
-    font-size:
-        1rem;
-}
-
-
-.condition-empty-result h3 {
-
-    margin-bottom:
-        .25rem;
-
-    color:
-        var(--mc-text);
-
-    font-size:
-        .8rem;
-
-    font-weight:
-        700;
-}
-
-
-.condition-empty-result p {
-
-    max-width:
-        360px;
-
-    margin:
-        0;
-
-    color:
-        var(--mc-muted);
-
-    font-size:
-        .6rem;
-
-    line-height:
-        1.5;
-}
-
-
-/* =========================================================
-   14. EDUCATIONAL NOTICE
-   ========================================================= */
-
-.condition-notice {
-
-    display:
-        flex;
-
-    align-items:
-        flex-start;
-
-    gap:
-        .5rem;
-
-    margin-top:
-        .7rem;
-
-    padding:
-        .65rem;
-
-    color:
-        #dbc890;
-
-    background:
-        var(--mc-warning-soft);
-
-    border:
-        1px solid
-        rgba(211, 168, 84, .25);
-
-    border-radius:
-        7px;
-
-    font-size:
-        .55rem;
-
-    line-height:
-        1.5;
-}
-
-
-.condition-notice i {
-
-    margin-top:
-        .1rem;
-
-    color:
-        var(--mc-warning);
-}
-
-
-/* =========================================================
-   15. EXPLANATION PANELS
-   ========================================================= */
-
-.mc-explanation-panel {
-
-    margin-top:
-        1rem;
-
-    padding:
-        .9rem;
-
-    background:
-        var(--mc-panel);
-
-    border:
-        1px solid
-        var(--mc-border);
-
-    border-radius:
-        8px;
-}
-
-
-.mc-section-heading {
-
-    margin-bottom:
-        .75rem;
-}
-
-
-.mc-section-heading h2 {
-
-    margin:
-        0
-        0
-        .2rem;
-
-    color:
-        var(--mc-text);
-
-    font-size:
-        .9rem;
-
-    font-weight:
-        700;
-}
-
-
-.mc-section-heading p {
-
-    max-width:
-        790px;
-
-    margin:
-        0;
-
-    color:
-        var(--mc-muted);
-
-    font-size:
-        .58rem;
-
-    line-height:
-        1.5;
-}
-
-
-/* =========================================================
-   16. INTERNAL ANALYSIS FLOW
-   ========================================================= */
-
-.mc-analysis-flow {
-
-    display:
-        grid;
-
-    grid-template-columns:
-        minmax(0, 1fr)
-        auto
-        minmax(0, 1fr)
-        auto
-        minmax(0, 1fr)
-        auto
-        minmax(0, 1fr);
-
-    align-items:
-        stretch;
-
-    gap:
-        .5rem;
-}
-
-
-.mc-analysis-step {
-
-    position:
-        relative;
-
-    display:
-        grid;
-
-    grid-template-columns:
-        auto
-        minmax(0, 1fr);
-
-    align-items:
-        flex-start;
-
-    gap:
-        .5rem;
-
-    padding:
-        .65rem;
-
-    background:
-        var(--mc-panel-dark);
-
-    border:
-        1px solid
-        var(--mc-border-soft);
-
-    border-radius:
-        7px;
-}
-
-
-.mc-analysis-number {
-
-    position:
-        absolute;
-
-    top:
-        .4rem;
-
-    right:
-        .45rem;
-
-    display:
-        inline-flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    width:
-        19px;
-
-    height:
-        19px;
-
-    color:
-        #ffffff;
-
-    background:
-        var(--mc-primary);
-
-    border-radius:
-        50%;
-
-    font-size:
-        .5rem;
-
-    font-weight:
-        700;
-}
-
-
-.mc-analysis-icon {
-
-    display:
-        inline-flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    flex:
-        0 0 auto;
-
-    width:
-        31px;
-
-    height:
-        31px;
-
-    color:
-        var(--mc-primary);
-
-    background:
-        var(--mc-primary-soft);
-
-    border-radius:
-        7px;
-
-    font-size:
-        .65rem;
-}
-
-
-.mc-analysis-step strong {
-
-    display:
-        block;
-
-    margin-bottom:
-        .2rem;
-
-    padding-right:
-        1rem;
-
-    color:
-        var(--mc-text);
-
-    font-size:
-        .57rem;
-}
-
-
-.mc-analysis-step p {
-
-    margin:
-        0;
-
-    color:
-        var(--mc-muted);
-
-    font-size:
-        .51rem;
-
-    line-height:
-        1.45;
-}
-
-
-.mc-analysis-arrow {
-
-    align-self:
-        center;
-
-    color:
-        #60738a;
-
-    font-size:
-        .6rem;
-}
-
-
-/* =========================================================
-   17. BACKEND NOTE
-   ========================================================= */
-
-.mc-backend-note {
-
-    display:
-        flex;
-
-    align-items:
-        flex-start;
-
-    gap:
-        .6rem;
-
-    margin-top:
-        .7rem;
-
-    padding:
-        .7rem;
-
-    color:
-        var(--mc-muted);
-
-    background:
-        var(--mc-panel-soft);
-
-    border:
-        1px solid
-        var(--mc-border-soft);
-
-    border-radius:
-        7px;
-
-    font-size:
-        .53rem;
-}
-
-
-.mc-backend-note > i {
-
-    margin-top:
-        .1rem;
-
-    color:
-        var(--mc-primary);
-}
-
-
-.mc-backend-note strong {
-
-    display:
-        block;
-
-    margin-bottom:
-        .12rem;
-
-    color:
-        var(--mc-text);
-}
-
-
-.mc-backend-note p {
-
-    margin:
-        0;
-
-    line-height:
-        1.5;
-}
-
-
-.mc-backend-note code {
-
-    color:
-        #b9d5ed;
-
-    background:
-        rgba(79, 134, 182, .12);
-
-    padding:
-        .08rem
-        .22rem;
-
-    border:
-        1px solid
-        rgba(79, 134, 182, .14);
-
-    border-radius:
-        4px;
-}
-
-
-/* =========================================================
-   18. CONDITION CARDS
-   ========================================================= */
-
-.mc-condition-grid {
-
-    display:
-        grid;
-
-    grid-template-columns:
-        repeat(
-            4,
-            minmax(0, 1fr)
-        );
-
-    gap:
-        .55rem;
-}
-
-
-.mc-condition-card {
-
-    display:
-        flex;
-
-    align-items:
-        flex-start;
-
-    gap:
-        .55rem;
-
-    min-height:
-        100px;
-
-    padding:
-        .65rem;
-
-    background:
-        var(--mc-panel-dark);
-
-    border:
-        1px solid
-        var(--mc-border-soft);
-
-    border-radius:
-        7px;
-
-    transition:
-        border-color .15s ease,
-        background-color .15s ease,
-        transform .15s ease;
-}
-
-
-.mc-condition-card:hover {
-
-    transform:
-        translateY(-1px);
-
-    background:
-        var(--mc-panel-soft);
-
-    border-color:
-        var(--mc-border);
-}
-
-
-.mc-condition-card.mc-condition-active {
-
-    border-color:
-        var(--mc-primary);
-
-    box-shadow:
-        0 0 0 2px
-        rgba(79, 134, 182, .10);
-}
-
-
-.mc-condition-icon {
-
-    display:
-        inline-flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    flex:
-        0 0 auto;
-
-    width:
-        31px;
-
-    height:
-        31px;
-
-    border-radius:
-        7px;
-
-    font-size:
-        .65rem;
-}
-
-
-.mc-condition-card strong {
-
-    display:
-        block;
-
-    margin-bottom:
-        .16rem;
-
-    color:
-        var(--mc-text);
-
-    font-size:
-        .58rem;
-}
-
-
-.mc-condition-card p {
-
-    margin:
-        0;
-
-    color:
-        var(--mc-muted);
-
-    font-size:
-        .5rem;
-
-    line-height:
-        1.45;
-}
-
-
-.mc-condition-current {
-
-    display:
-        inline-block;
-
-    margin-top:
-        .35rem;
-
-    padding:
-        .16rem
-        .3rem;
-
-    color:
-        #c8e2f6;
-
-    background:
-        var(--mc-primary-soft);
-
-    border:
-        1px solid
-        rgba(79, 134, 182, .18);
-
-    border-radius:
-        4px;
-
-    font-size:
-        .46rem;
-
-    font-weight:
-        700;
-
-    text-transform:
-        uppercase;
-}
-
-
-.mc-condition-up .mc-condition-icon {
-
-    color:
-        var(--mc-success);
-
-    background:
-        var(--mc-success-soft);
-}
-
-
-.mc-condition-down .mc-condition-icon {
-
-    color:
-        var(--mc-danger);
-
-    background:
-        var(--mc-danger-soft);
-}
-
-
-.mc-condition-sideways .mc-condition-icon {
-
-    color:
-        #b7c4d2;
-
-    background:
-        rgba(147, 164, 184, .11);
-}
-
-
-.mc-condition-volatility .mc-condition-icon {
-
-    color:
-        var(--mc-purple);
-
-    background:
-        var(--mc-purple-soft);
-}
-
-
-/* =========================================================
-   19. INTERPRETATION NOTE
-   ========================================================= */
-
-.mc-interpretation-note {
-
-    display:
-        flex;
-
-    align-items:
-        flex-start;
-
-    gap:
-        .45rem;
-
-    margin-top:
-        .7rem;
-
-    padding:
-        .6rem;
-
-    color:
-        var(--mc-muted);
-
-    background:
-        var(--mc-panel-dark);
-
-    border:
-        1px solid
-        var(--mc-border-soft);
-
-    border-radius:
-        7px;
-
-    font-size:
-        .52rem;
-
-    line-height:
-        1.45;
-}
-
-
-/* =========================================================
-   20. BOOTSTRAP BUTTON ADJUSTMENTS
-   ========================================================= */
-
-.market-condition-page .btn {
-
-    border-radius:
-        6px;
-
-    font-size:
-        .62rem;
-
-    font-weight:
-        700;
-}
-
-
-.market-condition-page .btn-primary {
-
-    background:
-        #3f739e;
-
-    border-color:
-        #4c83af;
-}
-
-
-.market-condition-page .btn-primary:hover {
-
-    background:
-        var(--mc-primary-hover);
-
-    border-color:
-        #6a9fc9;
-}
-
-
-.market-condition-page .btn-primary:disabled {
-
-    background:
-        #33485d;
-
-    border-color:
-        #40566d;
-
-    color:
-        #8293a5;
-
-    opacity:
-        1;
-}
-
-
-/* =========================================================
-   21. RESPONSIVE
-   ========================================================= */
-
-@media (min-width: 1400px) {
-
-    .market-condition-page {
-
-        width:
-            min(
-                1480px,
-                calc(100vw - 64px)
-            );
-    }
-}
-
-
-@media (max-width: 1199.98px) {
-
-    .mc-analysis-flow {
-
-        grid-template-columns:
-            repeat(
-                2,
-                minmax(0, 1fr)
-            );
-    }
-
-
-    .mc-analysis-arrow {
-        display: none;
-    }
-}
-
-
-@media (max-width: 991.98px) {
-
-    .mc-condition-grid {
-
-        grid-template-columns:
-            repeat(
-                2,
-                minmax(0, 1fr)
-            );
-    }
-}
-
-
-@media (max-width: 767.98px) {
-
-    .market-condition-page {
-
-        width:
-            calc(100vw - 20px);
-
-        margin-left:
-            50%;
-
-        transform:
-            translateX(-50%);
-    }
-
-
-    .market-condition-header {
-        flex-direction: column;
-    }
-
-
-    .condition-workflow {
-        grid-template-columns: 1fr;
-    }
-
-
-    .condition-workflow-arrow {
-        display: none;
-    }
-
-
-    .analysis-check-list {
-        grid-template-columns: 1fr;
-    }
-
-
-    .condition-stat-grid,
-    .condition-dataset-summary,
-    .mc-analysis-flow,
-    .mc-condition-grid {
-
-        grid-template-columns:
-            1fr;
-    }
-}
-
-</style>
-
-{% endblock %}
-
-
-{% block content %}
-
-
-<div class="market-condition-page">
-
-
-    <!-- ================================================== -->
-    <!-- 1. PAGE HEADER                                     -->
-    <!-- ================================================== -->
-
-    <div class="market-condition-header">
-
-
-        <div>
-
-
-            <a
-                href="{% url 'data_management:import' %}{% if selected_symbol %}?symbol={{ selected_symbol }}{% endif %}"
-                class="market-back-link"
-            >
-
-                <i class="fa-solid fa-arrow-left"></i>
-
-                Back to Data
-
-            </a>
-
-
-            <h1 class="market-condition-title">
-
-                Market Condition
-
-            </h1>
-
-
-            <p class="market-condition-subtitle">
-
-                Analyse stored historical data to understand
-                whether an asset has recently been trending,
-                falling, moving sideways or experiencing
-                unusually high volatility.
-
-            </p>
-
-
-        </div>
-
-
-        {% if selected_symbol %}
-
-            <span class="market-symbol-badge">
-
-                <i class="fa-solid fa-chart-line"></i>
-
-                {{ selected_symbol }}
-
-            </span>
-
-        {% endif %}
-
-
-    </div>
-
-
-    <!-- ================================================== -->
-    <!-- 2. THREE-STEP USER WORKFLOW                        -->
-    <!-- ================================================== -->
-
-    <div class="condition-workflow">
-
-
-        <div class="condition-workflow-step">
-
-            <span class="condition-step-number">
-                1
-            </span>
-
-            <span class="condition-workflow-icon">
-                <i class="fa-solid fa-database"></i>
-            </span>
-
-            <div class="condition-workflow-copy">
-
-                <strong>
-                    Choose Stored Data
-                </strong>
-
-                <span>
-                    Select a historical dataset already
-                    imported into MarketPulse.
-                </span>
-
-            </div>
-
-        </div>
-
-
-        <i
-            class="
-                fa-solid
-                fa-chevron-right
-                condition-workflow-arrow
-            "
-        ></i>
-
-
-        <div class="condition-workflow-step">
-
-            <span class="condition-step-number">
-                2
-            </span>
-
-            <span class="condition-workflow-icon">
-                <i class="fa-solid fa-gears"></i>
-            </span>
-
-            <div class="condition-workflow-copy">
-
-                <strong>
-                    Run the Analysis
-                </strong>
-
-                <span>
-                    MarketPulse evaluates recent price behaviour,
-                    trend and historical volatility.
-                </span>
-
-            </div>
-
-        </div>
-
-
-        <i
-            class="
-                fa-solid
-                fa-chevron-right
-                condition-workflow-arrow
-            "
-        ></i>
-
-
-        <div class="condition-workflow-step">
-
-            <span class="condition-step-number">
-                3
-            </span>
-
-            <span class="condition-workflow-icon">
-                <i class="fa-solid fa-chart-column"></i>
-            </span>
-
-            <div class="condition-workflow-copy">
-
-                <strong>
-                    Understand the Result
-                </strong>
-
-                <span>
-                    Review the classification, confidence,
-                    volatility and interpretation.
-                </span>
-
-            </div>
-
-        </div>
-
-
-    </div>
-
-
-    <!-- ================================================== -->
-    <!-- 3. ANALYSIS WORKSPACE                              -->
-    <!-- ================================================== -->
-
-    <div class="row g-3">
-
-
-        <!-- ============================================== -->
-        <!-- LEFT: CHOOSE DATASET                           -->
-        <!-- ============================================== -->
-
-        <div class="col-lg-5">
-
-
-            <section class="condition-panel">
-
-
-                <div class="condition-panel-header">
-
-
-                    <span class="condition-panel-icon">
-
-                        <i class="fa-solid fa-magnifying-glass-chart"></i>
-
-                    </span>
-
-
-                    <div>
-
-                        <div class="condition-eyebrow">
-                            Step 1
-                        </div>
-
-                        <h2>
-                            Choose an Asset
-                        </h2>
-
-                        <p>
-                            Select one of the historical datasets
-                            already stored in MarketPulse.
-                        </p>
-
-                    </div>
-
-
-                </div>
-
-
-                {% if symbols %}
-
-
-                    <form
-                        method="post"
-                        class="condition-form"
-                    >
-
-                        {% csrf_token %}
-
-
-                        <label
-                            class="form-label"
-                            for="symbol"
-                        >
-                            Imported Dataset
-                        </label>
-
-
-                        <select
-                            class="form-select"
-                            id="symbol"
-                            name="symbol"
-                            required
-                        >
-
-                            {% for symbol in symbols %}
-
-                                <option
-                                    value="{{ symbol }}"
-                                    {% if symbol == selected_symbol %}
-                                        selected
-                                    {% endif %}
-                                >
-                                    {{ symbol }}
-                                </option>
-
-                            {% endfor %}
-
-                        </select>
-
-
-                        {% if selected_symbol %}
-
-                            <div class="condition-dataset-summary">
-
-
-                                <div class="condition-dataset-stat">
-
-                                    <span class="condition-dataset-label">
-                                        Observations
-                                    </span>
-
-                                    <span class="condition-dataset-value">
-                                        {{ observation_count }}
-                                    </span>
-
-                                </div>
-
-
-                                <div class="condition-dataset-stat">
-
-                                    <span class="condition-dataset-label">
-                                        Earliest
-                                    </span>
-
-                                    <span class="condition-dataset-value">
-
-                                        {% if earliest_record %}
-
-                                            {{ earliest_record.date|date:"d/m/Y" }}
-
-                                        {% else %}
-
-                                            —
-
-                                        {% endif %}
-
-                                    </span>
-
-                                </div>
-
-
-                                <div class="condition-dataset-stat">
-
-                                    <span class="condition-dataset-label">
-                                        Latest
-                                    </span>
-
-                                    <span class="condition-dataset-value">
-
-                                        {% if latest_record %}
-
-                                            {{ latest_record.date|date:"d/m/Y" }}
-
-                                        {% else %}
-
-                                            —
-
-                                        {% endif %}
-
-                                    </span>
-
-                                </div>
-
-
-                            </div>
-
-                        {% endif %}
-
-
-                        {% if observation_count >= 20 %}
-
-                            <div class="data-readiness is-ready mt-3">
-
-                                <i class="fa-solid fa-circle-check"></i>
-
-                                <div>
-
-                                    <strong>
-                                        Dataset ready for analysis.
-                                    </strong>
-
-                                    {{ observation_count }}
-                                    stored observations are available.
-
-                                </div>
-
-                            </div>
-
-
-                        {% else %}
-
-                            <div class="data-readiness is-limited mt-3">
-
-                                <i class="fa-solid fa-triangle-exclamation"></i>
-
-                                <div>
-
-                                    <strong>
-                                        More historical data required.
-                                    </strong>
-
-                                    MarketPulse requires at least
-                                    20 observations before running
-                                    Market Condition analysis.
-
-                                </div>
-
-                            </div>
-
-                        {% endif %}
-
-
-                        <div class="analysis-checks">
-
-                            <div class="analysis-checks-title">
-                                What does MarketPulse analyse?
-                            </div>
-
-
-                            <ul class="analysis-check-list">
-
-                                <li>
-                                    <i class="fa-solid fa-check"></i>
-                                    Recent price direction
-                                </li>
-
-                                <li>
-                                    <i class="fa-solid fa-check"></i>
-                                    Historical volatility
-                                </li>
-
-                                <li>
-                                    <i class="fa-solid fa-check"></i>
-                                    Moving-average trend
-                                </li>
-
-                                <li>
-                                    <i class="fa-solid fa-check"></i>
-                                    Condition strength
-                                </li>
-
-                            </ul>
-
-                        </div>
-
-
-                        <button
-                            type="submit"
-                            class="btn btn-primary w-100"
-                            {% if observation_count < 20 %}
-                                disabled
-                            {% endif %}
-                        >
-
-                            <i class="fa-solid fa-chart-line me-2"></i>
-
-                            Run Market Condition Analysis
-
-                        </button>
-
-
-                        <div class="text-muted small text-center mt-2">
-
-                            The analysis uses stored historical
-                            market data only.
-
-                        </div>
-
-
-                    </form>
-
-
-                {% else %}
-
-
-                    <div class="alert alert-warning">
-
-                        <i class="fa-solid fa-triangle-exclamation me-2"></i>
-
-                        No historical datasets are available yet.
-
-                    </div>
-
-
-                    <a
-                        href="{% url 'data_management:import' %}"
-                        class="btn btn-primary"
-                    >
-
-                        <i class="fa-solid fa-download me-2"></i>
-
-                        Import Market Data
-
-                    </a>
-
-
-                {% endif %}
-
-
-            </section>
-
-
-        </div>
-
-
-        <!-- ============================================== -->
-        <!-- RIGHT: ANALYSIS RESULT                         -->
-        <!-- ============================================== -->
-
-        <div class="col-lg-7">
-
-
-            <section class="condition-panel">
-
-
-                <div class="condition-panel-header">
-
-
-                    <span class="condition-panel-icon">
-
-                        <i class="fa-solid fa-chart-area"></i>
-
-                    </span>
-
-
-                    <div>
-
-                        <div class="condition-eyebrow">
-                            Steps 2 and 3
-                        </div>
-
-                        <h2>
-                            Analyse and Understand
-                        </h2>
-
-                        <p>
-                            MarketPulse converts the statistical
-                            analysis into a clear description of
-                            the recent historical market environment.
-                        </p>
-
-                    </div>
-
-
-                </div>
-
-
-                {% if latest_regime %}
-
-
-                    <div
-                        class="
-                            condition-result-hero
-
-                            {% if latest_regime.regime == 'uptrend' %}
-                                result-uptrend
-
-                            {% elif latest_regime.regime == 'downtrend' %}
-                                result-downtrend
-
-                            {% elif latest_regime.regime == 'sideways' %}
-                                result-sideways
-
-                            {% elif latest_regime.regime == 'high_volatility' %}
-                                result-high-volatility
-
-                            {% endif %}
-                        "
-                    >
-
-
-                        <span class="condition-result-label">
-                            Detected Market Condition
-                        </span>
-
-
-                        <span class="condition-result-name">
-
-                            {{ latest_regime.get_regime_display }}
-
-                        </span>
-
-
-                        <span class="condition-result-symbol">
-
-                            <i class="fa-solid fa-chart-line"></i>
-
-                            {{ selected_symbol }}
-
-                        </span>
-
-
-                    </div>
-
-
-                    <div class="condition-stat-grid">
-
-
-                        <div class="condition-stat">
-
-                            <span class="condition-stat-label">
-                                Classification Confidence
-                            </span>
-
-                            <span class="condition-stat-value">
-
-                                {{ latest_regime.confidence|floatformat:2 }}
-
-                            </span>
-
-                            <span class="condition-stat-help">
-
-                                Higher values indicate stronger
-                                support for the detected classification.
-
-                            </span>
-
-                        </div>
-
-
-                        <div class="condition-stat">
-
-                            <span class="condition-stat-label">
-                                Historical Volatility
-                            </span>
-
-                            <span class="condition-stat-value">
-
-                                {{ latest_regime.volatility|floatformat:2 }}
-
-                            </span>
-
-                            <span class="condition-stat-help">
-
-                                Describes the degree of historical
-                                price variation used by the analysis.
-
-                            </span>
-
-                        </div>
-
-
-                    </div>
-
-
-                    <div class="condition-explanation">
-
-
-                        <strong>
-                            What does this mean?
-                        </strong>
-
-
-                        {% if latest_regime.regime == "uptrend" %}
-
-                            During the analysed historical period,
-                            prices generally moved upward.
-
-                            MarketPulse therefore classified the
-                            recent historical environment as an
-                            Uptrend.
-
-
-                        {% elif latest_regime.regime == "downtrend" %}
-
-                            During the analysed historical period,
-                            prices generally moved downward.
-
-                            MarketPulse therefore classified the
-                            recent historical environment as a
-                            Downtrend.
-
-
-                        {% elif latest_regime.regime == "sideways" %}
-
-                            During the analysed historical period,
-                            prices showed limited sustained
-                            directional movement.
-
-                            MarketPulse therefore classified the
-                            environment as Sideways.
-
-
-                        {% elif latest_regime.regime == "high_volatility" %}
-
-                            Historical price movements were larger
-                            or more variable than the normal range
-                            identified by the analysis.
-
-                            MarketPulse therefore classified the
-                            recent environment as High Volatility.
-
-
-                        {% else %}
-
-                            MarketPulse classified the recent
-                            historical market environment using
-                            stored price behaviour, trend and
-                            volatility information.
-
-                        {% endif %}
-
-
-                    </div>
-
-
-                    <div class="condition-method-box">
-
-                        <strong>
-                            How was this produced?
-                        </strong>
-
-                        MarketPulse reads historical
-
-                        <strong>
-                            Open, High, Low, Close and Volume
-                        </strong>
-
-                        observations stored in PostgreSQL.
-
-                        The internal Market Regime Analysis engine
-                        examines recent price direction,
-                        moving-average behaviour and historical
-                        volatility before storing the resulting
-                        classification.
-
-                    </div>
-
-
-                    <div class="condition-notice">
-
-                        <i class="fa-solid fa-circle-info"></i>
-
-                        <div>
-
-                            <strong>
-                                Historical analysis only.
-                            </strong>
-
-                            This classification describes the
-                            historical behaviour of the selected
-                            dataset.
-
-                            It does not predict future prices,
-                            recommend a trade or provide
-                            investment advice.
-
-                        </div>
-
-                    </div>
-
-
-                {% else %}
-
-
-                    <div class="condition-empty-result">
-
-                        <span class="condition-empty-icon">
-
-                            <i class="fa-solid fa-chart-area"></i>
-
-                        </span>
-
-
-                        <h3>
-                            Ready to Analyse
-                        </h3>
-
-
-                        <p>
-
-                            Choose an imported dataset and select
-
-                            <strong>
-                                Run Market Condition Analysis
-                            </strong>.
-
-                            The detected condition, confidence,
-                            volatility and interpretation will
-                            appear here without leaving this page.
-
-                        </p>
-
-                    </div>
-
-
-                {% endif %}
-
-
-            </section>
-
-
-        </div>
-
-
-    </div>
-
-
-    <!-- ================================================== -->
-    <!-- 4. HOW MARKET CONDITION WORKS                      -->
-    <!-- ================================================== -->
-
-    <section class="mc-explanation-panel">
-
-
-        <div class="mc-section-heading">
-
-
-            <div class="mc-eyebrow">
-                How the Analysis Works
-            </div>
-
-
-            <h2>
-                How Market Condition Works
-            </h2>
-
-
-            <p>
-
-                MarketPulse takes the historical market observations
-                already stored for the selected asset, measures recent
-                behaviour and converts the statistical result into a
-                simpler historical market classification.
-
-            </p>
-
-
-        </div>
-
-
-        <div class="mc-analysis-flow">
-
-
-            <div class="mc-analysis-step">
-
-                <span class="mc-analysis-number">
-                    1
-                </span>
-
-                <span class="mc-analysis-icon">
-                    <i class="fa-solid fa-database"></i>
-                </span>
-
-                <div>
-
-                    <strong>
-                        Read Stored Market Data
-                    </strong>
-
-                    <p>
-
-                        MarketPulse retrieves the selected asset's
-                        historical Open, High, Low, Close and Volume
-                        observations from PostgreSQL.
-
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <i class="fa-solid fa-arrow-right mc-analysis-arrow"></i>
-
-
-            <div class="mc-analysis-step">
-
-                <span class="mc-analysis-number">
-                    2
-                </span>
-
-                <span class="mc-analysis-icon">
-                    <i class="fa-solid fa-arrow-trend-up"></i>
-                </span>
-
-                <div>
-
-                    <strong>
-                        Examine Price Direction
-                    </strong>
-
-                    <p>
-
-                        Recent price behaviour and moving-average
-                        information are examined to determine whether
-                        prices have generally been rising, falling
-                        or showing limited direction.
-
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <i class="fa-solid fa-arrow-right mc-analysis-arrow"></i>
-
-
-            <div class="mc-analysis-step">
-
-                <span class="mc-analysis-number">
-                    3
-                </span>
-
-                <span class="mc-analysis-icon">
-                    <i class="fa-solid fa-wave-square"></i>
-                </span>
-
-                <div>
-
-                    <strong>
-                        Measure Historical Volatility
-                    </strong>
-
-                    <p>
-
-                        The analysis measures how much historical
-                        prices varied during the analysed period
-                        and considers the strength of the condition.
-
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <i class="fa-solid fa-arrow-right mc-analysis-arrow"></i>
-
-
-            <div class="mc-analysis-step">
-
-                <span class="mc-analysis-number">
-                    4
-                </span>
-
-                <span class="mc-analysis-icon">
-                    <i class="fa-solid fa-tags"></i>
-                </span>
-
-                <div>
-
-                    <strong>
-                        Classify the Market Condition
-                    </strong>
-
-                    <p>
-
-                        The internal Market Regime Analysis combines
-                        the measurements and stores an easy-to-read
-                        historical classification for the user.
-
-                    </p>
-
-                </div>
-
-            </div>
-
-
-        </div>
-
-
-        <div class="mc-backend-note">
-
-            <i class="fa-solid fa-code"></i>
-
-
-            <div>
-
-                <strong>
-                    What happens in the backend?
-                </strong>
-
-
-                <p>
-
-                    The Django
-
-                    <code>
-                        market_condition()
-                    </code>
-
-                    view receives the selected symbol and checks the
-                    stored
-
-                    <code>
-                        MarketData
-                    </code>
-
-                    records.
-
-                    When sufficient data is available, it calls
-
-                    <code>
-                        identify_market_regime()
-                    </code>
-
-                    in
-
-                    <code>
-                        analysis_tools/analyzers.py
-                    </code>.
-
-                    The calculated result is stored as a
-
-                    <code>
-                        MarketRegime
-                    </code>
-
-                    record in PostgreSQL.
-
-                    Django then reloads this page and supplies the
-                    most recent result through
-
-                    <code>
-                        latest_regime
-                    </code>.
-
-                </p>
-
-            </div>
-
-
-        </div>
-
-
-    </section>
-
-
-    <!-- ================================================== -->
-    <!-- 5. UNDERSTANDING THE CONDITIONS                    -->
-    <!-- ================================================== -->
-
-    <section class="mc-explanation-panel">
-
-
-        <div class="mc-section-heading">
-
-
-            <div class="mc-eyebrow">
-                Understand the Classification
-            </div>
-
-
-            <h2>
-                What Do the Market Conditions Mean?
-            </h2>
-
-
-            <p>
-
-                MarketPulse presents the technical Market Regime
-                Analysis as four simple historical classifications
-                so that the result is easier to understand.
-
-            </p>
-
-
-        </div>
-
-
-        <div class="mc-condition-grid">
-
-
-            <div
-                class="
-                    mc-condition-card
-                    mc-condition-up
-
-                    {% if latest_regime and latest_regime.regime == 'uptrend' %}
-                        mc-condition-active
-                    {% endif %}
-                "
-            >
-
-                <span class="mc-condition-icon">
-                    <i class="fa-solid fa-arrow-trend-up"></i>
-                </span>
-
-
-                <div>
-
-                    <strong>
-                        Uptrend
-                    </strong>
-
-                    <p>
-
-                        Prices have generally been moving upward
-                        during the analysed historical period.
-
-                    </p>
-
-
-                    {% if latest_regime and latest_regime.regime == "uptrend" %}
-
-                        <span class="mc-condition-current">
-                            Current Result
-                        </span>
-
-                    {% endif %}
-
-                </div>
-
-
-            </div>
-
-
-            <div
-                class="
-                    mc-condition-card
-                    mc-condition-down
-
-                    {% if latest_regime and latest_regime.regime == 'downtrend' %}
-                        mc-condition-active
-                    {% endif %}
-                "
-            >
-
-                <span class="mc-condition-icon">
-                    <i class="fa-solid fa-arrow-trend-down"></i>
-                </span>
-
-
-                <div>
-
-                    <strong>
-                        Downtrend
-                    </strong>
-
-                    <p>
-
-                        Prices have generally been moving downward
-                        during the analysed historical period.
-
-                    </p>
-
-
-                    {% if latest_regime and latest_regime.regime == "downtrend" %}
-
-                        <span class="mc-condition-current">
-                            Current Result
-                        </span>
-
-                    {% endif %}
-
-                </div>
-
-
-            </div>
-
-
-            <div
-                class="
-                    mc-condition-card
-                    mc-condition-sideways
-
-                    {% if latest_regime and latest_regime.regime == 'sideways' %}
-                        mc-condition-active
-                    {% endif %}
-                "
-            >
-
-                <span class="mc-condition-icon">
-                    <i class="fa-solid fa-arrows-left-right"></i>
-                </span>
-
-
-                <div>
-
-                    <strong>
-                        Sideways
-                    </strong>
-
-                    <p>
-
-                        Prices have shown limited sustained
-                        directional movement during the analysed
-                        period.
-
-                    </p>
-
-
-                    {% if latest_regime and latest_regime.regime == "sideways" %}
-
-                        <span class="mc-condition-current">
-                            Current Result
-                        </span>
-
-                    {% endif %}
-
-                </div>
-
-
-            </div>
-
-
-            <div
-                class="
-                    mc-condition-card
-                    mc-condition-volatility
-
-                    {% if latest_regime and latest_regime.regime == 'high_volatility' %}
-                        mc-condition-active
-                    {% endif %}
-                "
-            >
-
-                <span class="mc-condition-icon">
-                    <i class="fa-solid fa-wave-square"></i>
-                </span>
-
-
-                <div>
-
-                    <strong>
-                        High Volatility
-                    </strong>
-
-                    <p>
-
-                        Historical price movements have been larger
-                        or more variable than the normal range
-                        identified by the analysis.
-
-                    </p>
-
-
-                    {% if latest_regime and latest_regime.regime == "high_volatility" %}
-
-                        <span class="mc-condition-current">
-                            Current Result
-                        </span>
-
-                    {% endif %}
-
-                </div>
-
-
-            </div>
-
-
-        </div>
-
-
-        <div class="mc-interpretation-note">
-
-            <i class="fa-solid fa-circle-info"></i>
-
-            <div>
-
-                These labels describe the behaviour found in the
-                selected historical dataset.
-
-                A detected condition does not mean that the same
-                condition will continue in the future.
-
-            </div>
-
-        </div>
-
-
-    </section>
-
-
-</div>
-
-
-{% endblock %}
+{# ============================================================ #}
+{# 1. PAGE TITLE #}
+{# ============================================================ #}
+{% block title %} {# I override the parent's title block. #}
+Market Condition | MarketPulse {# I supply the browser title. #}
+{% endblock %} {# I finish the title block. #}
+{# ============================================================ #}
+{# 2. PAGE STYLES #}
+{# ============================================================ #}
+{% block extra_css %} {# I supply additional CSS through the parent layout. #}
+<style> /* I start the page's CSS stylesheet. */
+/* 2.1 WORKSPACE AND THEME: custom properties reuse shared colours with fallbacks. */
+.market-condition-page { /* I select the workspace container. */
+    --mc-bg: var(--mp-bg, #0c1420); /* I define the background colour fallback. */
+    --mc-nav: var(--mp-nav, #111c2b); /* I define the navigation colour fallback. */
+    --mc-panel: var(--mp-panel, #152235); /* I define the panel colour. */
+    --mc-panel-soft: var(--mp-panel-soft, #18283a); /* I define a lighter panel colour. */
+    --mc-panel-dark: var(--mp-panel-dark, #101a28); /* I define a darker panel colour. */
+    --mc-border: var(--mp-border, #314258); /* I define the main border colour. */
+    --mc-border-soft: var(--mp-border-soft, #26374b); /* I define the softer border colour. */
+    --mc-text: var(--mp-text, #f1f5f9); /* I define the main text colour. */
+    --mc-muted: var(--mp-muted, #93a4b8); /* I define secondary text colour. */
+    --mc-primary: var(--mp-primary, #4f86b6); /* I define the primary accent colour. */
+    --mc-primary-hover: var(--mp-primary-hover, #6095c2); /* I define the hover accent colour. */
+    --mc-primary-soft: var(--mp-primary-soft, rgba(79, 134, 182, .15)); /* I define a translucent primary background. */
+    --mc-success: var(--mp-success, #32c98b); /* I define the success accent. */
+    --mc-success-soft: rgba(50, 201, 139, .11); /* I define a translucent success background. */
+    --mc-danger: var(--mp-danger, #dc6b75); /* I define the danger accent. */
+    --mc-danger-soft: rgba(220, 107, 117, .11); /* I define a translucent danger background. */
+    --mc-warning: var(--mp-warning, #d3a854); /* I define the warning accent. */
+    --mc-warning-soft: rgba(211, 168, 84, .11); /* I define a translucent warning background. */
+    --mc-purple: #b184d7; /* I define the volatility accent. */
+    --mc-purple-soft: rgba(177, 132, 215, .12); /* I define its translucent background. */
+    width: min(1500px, calc(100vw - 48px)); /* I use the smaller of the maximum width and viewport allowance. */
+    max-width: none; /* I remove a separate maximum-width restriction. */
+    margin-left: 50%; /* I move the left edge to the parent's midpoint. */
+    transform: translateX(-50%); /* I shift back by half the workspace width to centre it. */
+    color: var(--mc-text); /* I apply the workspace text colour. */
+} /* I finish the workspace rule. */
+.market-condition-page a { text-decoration: none; } /* I remove link underlines inside this workspace. */
+/* 2.2 PAGE HEADER */
+.market-condition-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; } /* I arrange the heading and badge with space between them. */
+.market-condition-title { margin: .4rem 0 .2rem; color: var(--mc-text); font-size: 1.65rem; font-weight: 700; letter-spacing: -.02em; } /* I style the main heading. */
+.market-condition-subtitle { max-width: 760px; margin: 0; color: var(--mc-muted); font-size: .72rem; line-height: 1.5; } /* I constrain and style the introductory text. */
+.market-back-link { display: inline-flex; align-items: center; gap: .35rem; color: var(--mc-muted); font-size: .64rem; font-weight: 600; } /* I align the back-link icon and text. */
+.market-back-link:hover { color: var(--mc-primary-hover); } /* I change the link colour on hover. */
+.market-symbol-badge { display: inline-flex; align-items: center; gap: .35rem; padding: .42rem .65rem; color: var(--mc-text); background: var(--mc-panel); border: 1px solid var(--mc-border); border-radius: 7px; font-size: .64rem; font-weight: 700; } /* I style the selected-symbol badge. */
+/* 2.3 THREE-STEP WORKFLOW */
+.condition-workflow { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: .75rem; overflow: hidden; margin-bottom: 1rem; padding: .8rem .9rem; background: var(--mc-panel); border: 1px solid var(--mc-border); border-radius: 8px; } /* I create three flexible step columns separated by arrow columns. */
+.condition-workflow-step { display: flex; align-items: center; gap: .6rem; min-width: 0; } /* I align each step's number, icon and description. */
+.condition-step-number { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 24px; height: 24px; color: #ffffff; background: var(--mc-primary); border-radius: 50%; box-shadow: 0 0 0 3px rgba(79, 134, 182, .08); font-size: .6rem; font-weight: 800; } /* I create a circular numbered badge. */
+.condition-workflow-icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 32px; height: 32px; color: var(--mc-primary); background: var(--mc-primary-soft); border: 1px solid rgba(79, 134, 182, .18); border-radius: 7px; font-size: .7rem; } /* I style each workflow icon box. */
+.condition-workflow-copy strong { display: block; margin-bottom: .08rem; color: var(--mc-text); font-size: .67rem; } /* I place each step title on its own line. */
+.condition-workflow-copy span { display: block; color: var(--mc-muted); font-size: .55rem; line-height: 1.35; } /* I style the step description. */
+.condition-workflow-arrow { color: #60738a; font-size: .62rem; } /* I style the arrows between steps. */
+/* 2.4 COMMON PANELS */
+.condition-panel { height: 100%; padding: .95rem; background: var(--mc-panel); border: 1px solid var(--mc-border); border-radius: 8px; } /* I style the full-height workspace panels. */
+.condition-panel-header { display: flex; align-items: flex-start; gap: .7rem; margin-bottom: .9rem; } /* I align a panel icon with its heading. */
+.condition-panel-icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 38px; height: 38px; color: var(--mc-primary); background: var(--mc-primary-soft); border: 1px solid rgba(79, 134, 182, .18); border-radius: 8px; } /* I style the larger panel icon box. */
+.condition-eyebrow, .mc-eyebrow { margin-bottom: .16rem; color: var(--mc-primary-hover); font-size: .52rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; } /* I style both kinds of small section labels. */
+.condition-panel-header h2 { margin: 0 0 .15rem; color: var(--mc-text); font-size: .9rem; font-weight: 700; } /* I style panel headings. */
+.condition-panel-header p { margin: 0; color: var(--mc-muted); font-size: .62rem; line-height: 1.45; } /* I style panel introductions. */
+/* 2.5 FORM */
+.condition-form .form-label { margin-bottom: .3rem; color: #d7e0eb; font-size: .6rem; font-weight: 700; } /* I style labels inside the analysis form. */
+.condition-form .form-select { min-height: 36px; color: var(--mc-text); background-color: #142131; border-color: #3a4d64; border-radius: 6px; font-size: .62rem; } /* I style the dataset dropdown. */
+.condition-form .form-select:focus { color: var(--mc-text); background-color: #142131; border-color: var(--mc-primary); box-shadow: 0 0 0 2px rgba(79, 134, 182, .14); } /* I add the dropdown's focus border and ring. */
+/* 2.6 DATASET SUMMARY */
+.condition-dataset-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .45rem; margin-top: .7rem; } /* I arrange three dataset statistics in equal columns. */
+.condition-dataset-stat { padding: .55rem; background: var(--mc-panel-dark); border: 1px solid var(--mc-border-soft); border-radius: 6px; } /* I style each statistic box. */
+.condition-dataset-label { display: block; margin-bottom: .12rem; color: var(--mc-muted); font-size: .47rem; text-transform: uppercase; } /* I style the statistic's label. */
+.condition-dataset-value { display: block; color: var(--mc-text); font-size: .62rem; font-weight: 700; } /* I style the statistic's value. */
+/* 2.7 ANALYSIS CHECKS */
+.analysis-checks { margin: .75rem 0; padding: .7rem; background: var(--mc-panel-soft); border: 1px solid var(--mc-border-soft); border-radius: 7px; } /* I style the explanatory checks panel. */
+.analysis-checks-title { margin-bottom: .5rem; color: var(--mc-text); font-size: .6rem; font-weight: 700; } /* I style its title. */
+.analysis-check-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; margin: 0; padding: 0; list-style: none; } /* I arrange the checks in two columns without bullets. */
+.analysis-check-list li { display: flex; align-items: center; gap: .35rem; color: var(--mc-muted); font-size: .56rem; } /* I align each check icon and description. */
+.analysis-check-list i { color: var(--mc-success); font-size: .55rem; } /* I colour the check icons green. */
+/* 2.8 DATA READINESS */
+.data-readiness { display: flex; align-items: flex-start; gap: .5rem; padding: .6rem .65rem; border-radius: 6px; font-size: .57rem; line-height: 1.45; } /* I define the common readiness-message layout. */
+.data-readiness.is-ready { color: #a8f3d0; background: var(--mc-success-soft); border: 1px solid rgba(50, 201, 139, .24); } /* I apply the ready-state colours. */
+.data-readiness.is-limited { color: #ffe3a4; background: var(--mc-warning-soft); border: 1px solid rgba(211, 168, 84, .28); } /* I apply the limited-data colours. */
+.data-readiness i { margin-top: .08rem; } /* I slightly lower the readiness icon. */
+/* 2.9 PRIMARY RESULT */
+.condition-result-hero { margin-bottom: .75rem; padding: .85rem; background: linear-gradient(145deg, rgba(79, 134, 182, .16), rgba(79, 134, 182, .05)); border: 1px solid rgba(79, 134, 182, .30); border-radius: 8px; } /* I define the default highlighted result panel. */
+.condition-result-hero.result-uptrend { background: linear-gradient(145deg, rgba(50, 201, 139, .15), rgba(50, 201, 139, .05)); border-color: rgba(50, 201, 139, .28); } /* I use green highlighting for an uptrend. */
+.condition-result-hero.result-downtrend { background: linear-gradient(145deg, rgba(220, 107, 117, .15), rgba(220, 107, 117, .05)); border-color: rgba(220, 107, 117, .28); } /* I use red highlighting for a downtrend. */
+.condition-result-hero.result-sideways { background: linear-gradient(145deg, rgba(147, 164, 184, .12), rgba(147, 164, 184, .04)); border-color: rgba(147, 164, 184, .22); } /* I use neutral highlighting for sideways movement. */
+.condition-result-hero.result-high-volatility { background: linear-gradient(145deg, rgba(177, 132, 215, .15), rgba(177, 132, 215, .05)); border-color: rgba(177, 132, 215, .26); } /* I use purple highlighting for high volatility. */
+.condition-result-label { display: block; margin-bottom: .18rem; color: var(--mc-muted); font-size: .5rem; font-weight: 700; text-transform: uppercase; } /* I style the result label. */
+.condition-result-name { display: block; margin-bottom: .18rem; color: var(--mc-text); font-size: 1.15rem; font-weight: 800; letter-spacing: -.02em; } /* I emphasize the detected classification. */
+.condition-result-symbol { display: inline-flex; align-items: center; gap: .3rem; color: var(--mc-primary-hover); font-size: .57rem; font-weight: 700; } /* I style the result's symbol and icon. */
+/* 2.10 RESULT STATISTICS */
+.condition-stat-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; margin-bottom: .75rem; } /* I arrange the two result statistics side by side. */
+.condition-stat { padding: .65rem; background: var(--mc-panel-dark); border: 1px solid var(--mc-border-soft); border-radius: 7px; } /* I style each result statistic box. */
+.condition-stat-label { display: block; margin-bottom: .16rem; color: var(--mc-muted); font-size: .52rem; } /* I style the statistic label. */
+.condition-stat-value { display: block; margin-bottom: .15rem; color: var(--mc-text); font-size: .8rem; font-weight: 800; } /* I emphasize the numeric value. */
+.condition-stat-help { display: block; color: var(--mc-muted); font-size: .51rem; line-height: 1.4; } /* I style supporting text below the value. */
+/* 2.11 RESULT EXPLANATION */
+.condition-explanation { padding: .7rem; color: #becbd8; background: var(--mc-panel-soft); border: 1px solid var(--mc-border-soft); border-radius: 7px; font-size: .58rem; line-height: 1.5; } /* I style the classification explanation. */
+.condition-explanation strong { display: block; margin-bottom: .25rem; color: var(--mc-text); } /* I place its heading on a separate line. */
+/* 2.12 METHOD BOX */
+.condition-method-box { margin-top: .6rem; padding: .7rem; color: var(--mc-muted); background: var(--mc-panel-dark); border: 1px solid var(--mc-border-soft); border-radius: 7px; font-size: .55rem; line-height: 1.5; } /* I style the method description. */
+.condition-method-box strong { color: var(--mc-text); } /* I emphasize selected method text. */
+/* 2.13 EMPTY RESULT */
+.condition-empty-result { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 280px; padding: 1rem; text-align: center; } /* I centre the placeholder content vertically and horizontally. */
+.condition-empty-icon { display: inline-flex; align-items: center; justify-content: center; width: 50px; height: 50px; margin-bottom: .75rem; color: var(--mc-primary); background: var(--mc-primary-soft); border: 1px solid rgba(79, 134, 182, .18); border-radius: 11px; font-size: 1rem; } /* I style the placeholder icon. */
+.condition-empty-result h3 { margin-bottom: .25rem; color: var(--mc-text); font-size: .8rem; font-weight: 700; } /* I style the placeholder heading. */
+.condition-empty-result p { max-width: 360px; margin: 0; color: var(--mc-muted); font-size: .6rem; line-height: 1.5; } /* I constrain and style its instructions. */
+/* 2.14 EDUCATIONAL NOTICE */
+.condition-notice { display: flex; align-items: flex-start; gap: .5rem; margin-top: .7rem; padding: .65rem; color: #dbc890; background: var(--mc-warning-soft); border: 1px solid rgba(211, 168, 84, .25); border-radius: 7px; font-size: .55rem; line-height: 1.5; } /* I style the historical-analysis notice. */
+.condition-notice i { margin-top: .1rem; color: var(--mc-warning); } /* I align and colour its icon. */
+/* 2.15 EXPLANATION PANELS */
+.mc-explanation-panel { margin-top: 1rem; padding: .9rem; background: var(--mc-panel); border: 1px solid var(--mc-border); border-radius: 8px; } /* I style the lower educational panels. */
+.mc-section-heading { margin-bottom: .75rem; } /* I separate a section heading from its content. */
+.mc-section-heading h2 { margin: 0 0 .2rem; color: var(--mc-text); font-size: .9rem; font-weight: 700; } /* I style educational section titles. */
+.mc-section-heading p { max-width: 790px; margin: 0; color: var(--mc-muted); font-size: .58rem; line-height: 1.5; } /* I style their introductions. */
+/* 2.16 INTERNAL ANALYSIS FLOW */
+.mc-analysis-flow { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr); align-items: stretch; gap: .5rem; } /* I arrange four analysis steps separated by arrows. */
+.mc-analysis-step { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: flex-start; gap: .5rem; padding: .65rem; background: var(--mc-panel-dark); border: 1px solid var(--mc-border-soft); border-radius: 7px; } /* I give each step an icon column and description column. */
+.mc-analysis-number { position: absolute; top: .4rem; right: .45rem; display: inline-flex; align-items: center; justify-content: center; width: 19px; height: 19px; color: #ffffff; background: var(--mc-primary); border-radius: 50%; font-size: .5rem; font-weight: 700; } /* I position the numbered circle in the step's upper-right corner. */
+.mc-analysis-icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 31px; height: 31px; color: var(--mc-primary); background: var(--mc-primary-soft); border-radius: 7px; font-size: .65rem; } /* I style each analysis-step icon. */
+.mc-analysis-step strong { display: block; margin-bottom: .2rem; padding-right: 1rem; color: var(--mc-text); font-size: .57rem; } /* I style the step title and allow space for its number. */
+.mc-analysis-step p { margin: 0; color: var(--mc-muted); font-size: .51rem; line-height: 1.45; } /* I style the step explanation. */
+.mc-analysis-arrow { align-self: center; color: #60738a; font-size: .6rem; } /* I centre and style each connecting arrow. */
+/* 2.17 BACKEND NOTE */
+.mc-backend-note { display: flex; align-items: flex-start; gap: .6rem; margin-top: .7rem; padding: .7rem; color: var(--mc-muted); background: var(--mc-panel-soft); border: 1px solid var(--mc-border-soft); border-radius: 7px; font-size: .53rem; } /* I style the backend explanation box. */
+.mc-backend-note > i { margin-top: .1rem; color: var(--mc-primary); } /* I style only its direct-child icon. */
+.mc-backend-note strong { display: block; margin-bottom: .12rem; color: var(--mc-text); } /* I place the backend heading on its own line. */
+.mc-backend-note p { margin: 0; line-height: 1.5; } /* I style its paragraph spacing. */
+.mc-backend-note code { color: #b9d5ed; background: rgba(79, 134, 182, .12); padding: .08rem .22rem; border: 1px solid rgba(79, 134, 182, .14); border-radius: 4px; } /* I highlight code names inside the explanation. */
+/* 2.18 CONDITION CARDS */
+.mc-condition-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .55rem; } /* I arrange four classification cards in equal columns. */
+.mc-condition-card { display: flex; align-items: flex-start; gap: .55rem; min-height: 100px; padding: .65rem; background: var(--mc-panel-dark); border: 1px solid var(--mc-border-soft); border-radius: 7px; transition: border-color .15s ease, background-color .15s ease, transform .15s ease; } /* I style each card and animate its hover changes. */
+.mc-condition-card:hover { transform: translateY(-1px); background: var(--mc-panel-soft); border-color: var(--mc-border); } /* I lift and highlight the card slightly on hover. */
+.mc-condition-card.mc-condition-active { border-color: var(--mc-primary); box-shadow: 0 0 0 2px rgba(79, 134, 182, .10); } /* I highlight the card matching the saved classification. */
+.mc-condition-icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 31px; height: 31px; border-radius: 7px; font-size: .65rem; } /* I define the common classification icon box. */
+.mc-condition-card strong { display: block; margin-bottom: .16rem; color: var(--mc-text); font-size: .58rem; } /* I style classification names. */
+.mc-condition-card p { margin: 0; color: var(--mc-muted); font-size: .5rem; line-height: 1.45; } /* I style classification descriptions. */
+.mc-condition-current { display: inline-block; margin-top: .35rem; padding: .16rem .3rem; color: #c8e2f6; background: var(--mc-primary-soft); border: 1px solid rgba(79, 134, 182, .18); border-radius: 4px; font-size: .46rem; font-weight: 700; text-transform: uppercase; } /* I style the Current Result marker. */
+.mc-condition-up .mc-condition-icon { color: var(--mc-success); background: var(--mc-success-soft); } /* I colour the uptrend icon green. */
+.mc-condition-down .mc-condition-icon { color: var(--mc-danger); background: var(--mc-danger-soft); } /* I colour the downtrend icon red. */
+.mc-condition-sideways .mc-condition-icon { color: #b7c4d2; background: rgba(147, 164, 184, .11); } /* I give the sideways icon neutral colours. */
+.mc-condition-volatility .mc-condition-icon { color: var(--mc-purple); background: var(--mc-purple-soft); } /* I colour the volatility icon purple. */
+/* 2.19 INTERPRETATION NOTE */
+.mc-interpretation-note { display: flex; align-items: flex-start; gap: .45rem; margin-top: .7rem; padding: .6rem; color: var(--mc-muted); background: var(--mc-panel-dark); border: 1px solid var(--mc-border-soft); border-radius: 7px; font-size: .52rem; line-height: 1.45; } /* I style the final interpretation note. */
+/* 2.20 BOOTSTRAP BUTTON ADJUSTMENTS */
+.market-condition-page .btn { border-radius: 6px; font-size: .62rem; font-weight: 700; } /* I customize buttons only inside this workspace. */
+.market-condition-page .btn-primary { background: #3f739e; border-color: #4c83af; } /* I set the primary button colours. */
+.market-condition-page .btn-primary:hover { background: var(--mc-primary-hover); border-color: #6a9fc9; } /* I set the primary hover colours. */
+.market-condition-page .btn-primary:disabled { background: #33485d; border-color: #40566d; color: #8293a5; opacity: 1; } /* I style disabled primary buttons. */
+/* 2.21 RESPONSIVE RULES */
+@media (min-width: 1400px) { /* I apply these rules to large viewports. */
+    .market-condition-page { width: min(1480px, calc(100vw - 64px)); } /* I adjust the large-screen workspace width. */
+} /* I finish the large-screen query. */
+@media (max-width: 1199.98px) { /* I apply these rules below the desktop breakpoint. */
+    .mc-analysis-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } /* I arrange analysis steps in two columns. */
+    .mc-analysis-arrow { display: none; } /* I hide the connecting arrows. */
+} /* I finish this breakpoint. */
+@media (max-width: 991.98px) { /* I apply these rules to narrower viewports. */
+    .mc-condition-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } /* I arrange classification cards in two columns. */
+} /* I finish this breakpoint. */
+@media (max-width: 767.98px) { /* I apply the mobile layout rules. */
+    .market-condition-page { width: calc(100vw - 20px); margin-left: 50%; transform: translateX(-50%); } /* I retain centring with a smaller viewport allowance. */
+    .market-condition-header { flex-direction: column; } /* I stack the heading and badge. */
+    .condition-workflow { grid-template-columns: 1fr; } /* I stack the workflow steps. */
+    .condition-workflow-arrow { display: none; } /* I hide workflow arrows. */
+    .analysis-check-list { grid-template-columns: 1fr; } /* I stack analysis checks. */
+    .condition-stat-grid, .condition-dataset-summary, .mc-analysis-flow, .mc-condition-grid { grid-template-columns: 1fr; } /* I stack all listed grids into one column. */
+} /* I finish the mobile query. */
+</style> {# I finish the stylesheet. #}
+{% endblock %} {# I finish the extra CSS block. #}
+{# ============================================================ #}
+{# 3. PAGE CONTENT AND HEADER #}
+{# ============================================================ #}
+{% block content %} {# I override the parent's main content block. #}
+<div class="market-condition-page"> {# I start the themed workspace. #}
+    <div class="market-condition-header"> {# I start the header layout. #}
+        <div> {# I group the back link, heading and introduction. #}
+            <a href="{% url 'data_management:import' %}{% if selected_symbol %}?symbol={{ selected_symbol }}{% endif %}" class="market-back-link"> {# I link to Data and preserve the selected symbol when present. #}
+                <i class="fa-solid fa-arrow-left"></i> {# I display the back-arrow icon. #}
+                Back to Data {# I display the link text. #}
+            </a> {# I close the back link. #}
+            <h1 class="market-condition-title">Market Condition</h1> {# I display the page heading. #}
+            <p class="market-condition-subtitle">Analyse stored historical data to understand whether an asset has recently been trending, falling, moving sideways or experiencing unusually high volatility.</p> {# I display the original introduction. #}
+        </div> {# I close the heading group. #}
+        {% if selected_symbol %} {# I show the symbol badge only when a symbol exists. #}
+            <span class="market-symbol-badge"> {# I start the symbol badge. #}
+                <i class="fa-solid fa-chart-line"></i> {# I display its chart icon. #}
+                {{ selected_symbol }} {# I insert the symbol supplied by the view. #}
+            </span> {# I close the badge. #}
+        {% endif %} {# I finish the symbol condition. #}
+    </div> {# I close the header. #}
+    {# ======================================================== #}
+    {# 4. THREE-STEP USER WORKFLOW #}
+    {# ======================================================== #}
+    <div class="condition-workflow"> {# I start the workflow grid. #}
+        <div class="condition-workflow-step"> {# I start step one. #}
+            <span class="condition-step-number">1</span> {# I display its number. #}
+            <span class="condition-workflow-icon"><i class="fa-solid fa-database"></i></span> {# I display the database icon. #}
+            <div class="condition-workflow-copy"> {# I group the step's description. #}
+                <strong>Choose Stored Data</strong> {# I display the step title. #}
+                <span>Select a historical dataset already imported into MarketPulse.</span> {# I explain dataset selection. #}
+            </div> {# I close the description. #}
+        </div> {# I close step one. #}
+        <i class="fa-solid fa-chevron-right condition-workflow-arrow"></i> {# I display the next-step arrow. #}
+        <div class="condition-workflow-step"> {# I start step two. #}
+            <span class="condition-step-number">2</span> {# I display its number. #}
+            <span class="condition-workflow-icon"><i class="fa-solid fa-gears"></i></span> {# I display the processing icon. #}
+            <div class="condition-workflow-copy"> {# I group the step's description. #}
+                <strong>Run the Analysis</strong> {# I display the step title. #}
+                <span>MarketPulse evaluates recent price behaviour, trend and historical volatility.</span> {# I describe the analysis. #}
+            </div> {# I close the description. #}
+        </div> {# I close step two. #}
+        <i class="fa-solid fa-chevron-right condition-workflow-arrow"></i> {# I display the next-step arrow. #}
+        <div class="condition-workflow-step"> {# I start step three. #}
+            <span class="condition-step-number">3</span> {# I display its number. #}
+            <span class="condition-workflow-icon"><i class="fa-solid fa-chart-column"></i></span> {# I display the results icon. #}
+            <div class="condition-workflow-copy"> {# I group the step's description. #}
+                <strong>Understand the Result</strong> {# I display the step title. #}
+                <span>Review the classification, confidence, volatility and interpretation.</span> {# I describe result review. #}
+            </div> {# I close the description. #}
+        </div> {# I close step three. #}
+    </div> {# I close the workflow grid. #}
+    {# ======================================================== #}
+    {# 5. ANALYSIS WORKSPACE: DATASET FORM #}
+    {# ======================================================== #}
+    <div class="row g-3"> {# I start a Bootstrap row with spacing. #}
+        <div class="col-lg-5"> {# I allocate five of twelve columns on large screens. #}
+            <section class="condition-panel"> {# I start the dataset panel. #}
+                <div class="condition-panel-header"> {# I start its heading group. #}
+                    <span class="condition-panel-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></span> {# I display the analysis icon. #}
+                    <div> {# I group the heading text. #}
+                        <div class="condition-eyebrow">Step 1</div> {# I display the step label. #}
+                        <h2>Choose an Asset</h2> {# I display the panel heading. #}
+                        <p>Select one of the historical datasets already stored in MarketPulse.</p> {# I display selection instructions. #}
+                    </div> {# I close the text group. #}
+                </div> {# I close the panel header. #}
+                {% if symbols %} {# I show the form when dataset symbols are available. #}
+                    <form method="post" class="condition-form"> {# I submit to the current URL because no action attribute is specified. #}
+                        {% csrf_token %} {# I include Django's CSRF protection token. #}
+                        <label class="form-label" for="symbol">Imported Dataset</label> {# I label the dropdown with the matching ID. #}
+                        <select class="form-select" id="symbol" name="symbol" required> {# I create a required symbol dropdown. #}
+                            {% for symbol in symbols %} {# I iterate through the supplied dataset symbols. #}
+                                <option value="{{ symbol }}" {% if symbol == selected_symbol %}selected{% endif %}>{{ symbol }}</option> {# I create an option and select it when it matches the current symbol. #}
+                            {% endfor %} {# I finish the symbol loop. #}
+                        </select> {# I close the dropdown. #}
+                        {% if selected_symbol %} {# I display dataset statistics when a symbol is selected. #}
+                            <div class="condition-dataset-summary"> {# I start the three-statistic grid. #}
+                                <div class="condition-dataset-stat"> {# I start the observation-count box. #}
+                                    <span class="condition-dataset-label">Observations</span> {# I display its label. #}
+                                    <span class="condition-dataset-value">{{ observation_count }}</span> {# I display the supplied count. #}
+                                </div> {# I close the count box. #}
+                                <div class="condition-dataset-stat"> {# I start the earliest-date box. #}
+                                    <span class="condition-dataset-label">Earliest</span> {# I display its label. #}
+                                    <span class="condition-dataset-value"> {# I start its value. #}
+                                        {% if earliest_record %} {# I check whether an earliest record exists. #}
+                                            {{ earliest_record.date|date:"d/m/Y" }} {# I format its date as day/month/year. #}
+                                        {% else %} {# I handle a missing record. #}
+                                            — {# I display the placeholder. #}
+                                        {% endif %} {# I finish the earliest-record condition. #}
+                                    </span> {# I close its value. #}
+                                </div> {# I close the earliest-date box. #}
+                                <div class="condition-dataset-stat"> {# I start the latest-date box. #}
+                                    <span class="condition-dataset-label">Latest</span> {# I display its label. #}
+                                    <span class="condition-dataset-value"> {# I start its value. #}
+                                        {% if latest_record %} {# I check whether a latest record exists. #}
+                                            {{ latest_record.date|date:"d/m/Y" }} {# I format its date as day/month/year. #}
+                                        {% else %} {# I handle a missing record. #}
+                                            — {# I display the placeholder. #}
+                                        {% endif %} {# I finish the latest-record condition. #}
+                                    </span> {# I close its value. #}
+                                </div> {# I close the latest-date box. #}
+                            </div> {# I close the summary grid. #}
+                        {% endif %} {# I finish the selected-symbol condition. #}
+                        {% if observation_count >= 20 %} {# I preserve this template's existing 20-row readiness threshold. #}
+                            <div class="data-readiness is-ready mt-3"> {# I start the ready-state message. #}
+                                <i class="fa-solid fa-circle-check"></i> {# I display the success icon. #}
+                                <div> {# I group the message text. #}
+                                    <strong>Dataset ready for analysis.</strong> {# I display the original readiness statement. #}
+                                    {{ observation_count }} stored observations are available. {# I display the count and its explanation. #}
+                                </div> {# I close the text group. #}
+                            </div> {# I close the ready message. #}
+                        {% else %} {# I handle counts below the existing threshold. #}
+                            <div class="data-readiness is-limited mt-3"> {# I start the limited-data message. #}
+                                <i class="fa-solid fa-triangle-exclamation"></i> {# I display the warning icon. #}
+                                <div> {# I group the warning text. #}
+                                    <strong>More historical data required.</strong> {# I display the warning heading. #}
+                                    MarketPulse requires at least 20 observations before running Market Condition analysis. {# I preserve the original 20-observation text. #}
+                                </div> {# I close the warning text. #}
+                            </div> {# I close the limited-data message. #}
+                        {% endif %} {# I finish the readiness condition. #}
+                        <div class="analysis-checks"> {# I start the analysis explanation box. #}
+                            <div class="analysis-checks-title">What does MarketPulse analyse?</div> {# I display its title. #}
+                            <ul class="analysis-check-list"> {# I start the list of analysis topics. #}
+                                <li><i class="fa-solid fa-check"></i> Recent price direction</li> {# I display the first topic. #}
+                                <li><i class="fa-solid fa-check"></i> Historical volatility</li> {# I display the second topic. #}
+                                <li><i class="fa-solid fa-check"></i> Moving-average trend</li> {# I display the third topic. #}
+                                <li><i class="fa-solid fa-check"></i> Condition strength</li> {# I display the fourth topic. #}
+                            </ul> {# I close the topic list. #}
+                        </div> {# I close the explanation box. #}
+                        <button type="submit" class="btn btn-primary w-100" {% if observation_count < 20 %}disabled{% endif %}> {# I disable submission below the original 20-row threshold. #}
+                            <i class="fa-solid fa-chart-line me-2"></i> {# I display the button icon. #}
+                            Run Market Condition Analysis {# I display the button text. #}
+                        </button> {# I close the submit button. #}
+                        <div class="text-muted small text-center mt-2">The analysis uses stored historical market data only.</div> {# I display the original explanatory text. #}
+                    </form> {# I close the form. #}
+                {% else %} {# I handle an absence of dataset symbols. #}
+                    <div class="alert alert-warning"> {# I start the empty-dataset alert. #}
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i> {# I display the warning icon. #}
+                        No historical datasets are available yet. {# I explain the missing data. #}
+                    </div> {# I close the alert. #}
+                    <a href="{% url 'data_management:import' %}" class="btn btn-primary"> {# I link to the import workspace using its named route. #}
+                        <i class="fa-solid fa-download me-2"></i> {# I display the import icon. #}
+                        Import Market Data {# I display the link text. #}
+                    </a> {# I close the import link. #}
+                {% endif %} {# I finish the symbols condition. #}
+            </section> {# I close the dataset panel. #}
+        </div> {# I close the left column. #}
+        {# ==================================================== #}
+        {# 6. ANALYSIS RESULT #}
+        {# ==================================================== #}
+        <div class="col-lg-7"> {# I allocate seven of twelve columns on large screens. #}
+            <section class="condition-panel"> {# I start the result panel. #}
+                <div class="condition-panel-header"> {# I start its header. #}
+                    <span class="condition-panel-icon"><i class="fa-solid fa-chart-area"></i></span> {# I display the result icon. #}
+                    <div> {# I group the header text. #}
+                        <div class="condition-eyebrow">Steps 2 and 3</div> {# I display the step label. #}
+                        <h2>Analyse and Understand</h2> {# I display the panel heading. #}
+                        <p>MarketPulse converts the statistical analysis into a clear description of the recent historical market environment.</p> {# I display the original introduction. #}
+                    </div> {# I close the text group. #}
+                </div> {# I close the panel header. #}
+                {% if latest_regime %} {# I display a result when the view supplies a saved classification. #}
+                    <div class="condition-result-hero {% if latest_regime.regime == 'uptrend' %}result-uptrend{% elif latest_regime.regime == 'downtrend' %}result-downtrend{% elif latest_regime.regime == 'sideways' %}result-sideways{% elif latest_regime.regime == 'high_volatility' %}result-high-volatility{% endif %}"> {# I select the colour class corresponding to the regime code. #}
+                        <span class="condition-result-label">Detected Market Condition</span> {# I display the result label. #}
+                        <span class="condition-result-name">{{ latest_regime.get_regime_display }}</span> {# I display the readable label for the model's regime choice. #}
+                        <span class="condition-result-symbol"> {# I start the result symbol label. #}
+                            <i class="fa-solid fa-chart-line"></i> {# I display its icon. #}
+                            {{ selected_symbol }} {# I display the selected symbol. #}
+                        </span> {# I close the symbol label. #}
+                    </div> {# I close the highlighted result. #}
+                    <div class="condition-stat-grid"> {# I start the result-statistics grid. #}
+                        <div class="condition-stat"> {# I start the confidence statistic. #}
+                            <span class="condition-stat-label">Classification Confidence</span> {# I display its label. #}
+                            <span class="condition-stat-value">{{ latest_regime.confidence|floatformat:2 }}</span> {# I format confidence to two decimal places without converting it to a percentage. #}
+                            <span class="condition-stat-help">Higher values indicate stronger support for the detected classification.</span> {# I preserve the original confidence explanation. #}
+                        </div> {# I close the confidence box. #}
+                        <div class="condition-stat"> {# I start the volatility statistic. #}
+                            <span class="condition-stat-label">Historical Volatility</span> {# I display its label. #}
+                            <span class="condition-stat-value">{{ latest_regime.volatility|floatformat:2 }}</span> {# I format the supplied volatility to two decimal places. #}
+                            <span class="condition-stat-help">Describes the degree of historical price variation used by the analysis.</span> {# I display its explanation. #}
+                        </div> {# I close the volatility box. #}
+                    </div> {# I close the statistics grid. #}
+                    <div class="condition-explanation"> {# I start the regime-specific explanation. #}
+                        <strong>What does this mean?</strong> {# I display its heading. #}
+                        {% if latest_regime.regime == "uptrend" %} {# I choose the uptrend explanation. #}
+                            During the analysed historical period, prices generally moved upward. MarketPulse therefore classified the recent historical environment as an Uptrend. {# I preserve the uptrend text. #}
+                        {% elif latest_regime.regime == "downtrend" %} {# I choose the downtrend explanation. #}
+                            During the analysed historical period, prices generally moved downward. MarketPulse therefore classified the recent historical environment as a Downtrend. {# I preserve the downtrend text. #}
+                        {% elif latest_regime.regime == "sideways" %} {# I choose the sideways explanation. #}
+                            During the analysed historical period, prices showed limited sustained directional movement. MarketPulse therefore classified the environment as Sideways. {# I preserve the sideways text. #}
+                        {% elif latest_regime.regime == "high_volatility" %} {# I choose the high-volatility explanation. #}
+                            Historical price movements were larger or more variable than the normal range identified by the analysis. MarketPulse therefore classified the recent environment as High Volatility. {# I preserve the volatility text. #}
+                        {% else %} {# I use a general explanation for other values. #}
+                            MarketPulse classified the recent historical market environment using stored price behaviour, trend and volatility information. {# I preserve the fallback text. #}
+                        {% endif %} {# I finish choosing the explanation. #}
+                    </div> {# I close the explanation box. #}
+                    <div class="condition-method-box"> {# I start the method description. #}
+                        <strong>How was this produced?</strong> {# I display its heading. #}
+                        MarketPulse reads historical {# I start the original explanation. #}
+                        <strong>Open, High, Low, Close and Volume</strong> {# I emphasize the OHLCV field names. #}
+                        observations stored in PostgreSQL. The internal Market Regime Analysis engine examines recent price direction, moving-average behaviour and historical volatility before storing the resulting classification. {# I preserve the method description. #}
+                    </div> {# I close the method box. #}
+                    <div class="condition-notice"> {# I start the educational notice. #}
+                        <i class="fa-solid fa-circle-info"></i> {# I display the information icon. #}
+                        <div> {# I group the notice text. #}
+                            <strong>Historical analysis only.</strong> {# I display its emphasis. #}
+                            This classification describes the historical behaviour of the selected dataset. It does not predict future prices, recommend a trade or provide investment advice. {# I preserve the original notice. #}
+                        </div> {# I close the notice text. #}
+                    </div> {# I close the notice. #}
+                {% else %} {# I display a placeholder when no saved result exists. #}
+                    <div class="condition-empty-result"> {# I start the centred placeholder. #}
+                        <span class="condition-empty-icon"><i class="fa-solid fa-chart-area"></i></span> {# I display its icon. #}
+                        <h3>Ready to Analyse</h3> {# I display its heading. #}
+                        <p> {# I start the instructions. #}
+                            Choose an imported dataset and select {# I explain the selection step. #}
+                            <strong>Run Market Condition Analysis</strong>. {# I emphasize the action name and retain the period. #}
+                            The detected condition, confidence, volatility and interpretation will appear here without leaving this page. {# I preserve the original result-location statement. #}
+                        </p> {# I close the instructions. #}
+                    </div> {# I close the placeholder. #}
+                {% endif %} {# I finish the saved-result condition. #}
+            </section> {# I close the result panel. #}
+        </div> {# I close the right column. #}
+    </div> {# I close the analysis workspace row. #}
+    {# ======================================================== #}
+    {# 7. HOW MARKET CONDITION WORKS #}
+    {# ======================================================== #}
+    <section class="mc-explanation-panel"> {# I start the analysis-process section. #}
+        <div class="mc-section-heading"> {# I group its heading and introduction. #}
+            <div class="mc-eyebrow">How the Analysis Works</div> {# I display its section label. #}
+            <h2>How Market Condition Works</h2> {# I display its heading. #}
+            <p>MarketPulse takes the historical market observations already stored for the selected asset, measures recent behaviour and converts the statistical result into a simpler historical market classification.</p> {# I preserve the introduction. #}
+        </div> {# I close the heading group. #}
+        <div class="mc-analysis-flow"> {# I start the four-step explanation grid. #}
+            <div class="mc-analysis-step"> {# I start the first analysis step. #}
+                <span class="mc-analysis-number">1</span> {# I display its number. #}
+                <span class="mc-analysis-icon"><i class="fa-solid fa-database"></i></span> {# I display the storage icon. #}
+                <div> {# I group the step text. #}
+                    <strong>Read Stored Market Data</strong> {# I display the title. #}
+                    <p>MarketPulse retrieves the selected asset's historical Open, High, Low, Close and Volume observations from PostgreSQL.</p> {# I preserve the explanation. #}
+                </div> {# I close the text group. #}
+            </div> {# I close step one. #}
+            <i class="fa-solid fa-arrow-right mc-analysis-arrow"></i> {# I display the connecting arrow. #}
+            <div class="mc-analysis-step"> {# I start step two. #}
+                <span class="mc-analysis-number">2</span> {# I display its number. #}
+                <span class="mc-analysis-icon"><i class="fa-solid fa-arrow-trend-up"></i></span> {# I display the trend icon. #}
+                <div> {# I group the step text. #}
+                    <strong>Examine Price Direction</strong> {# I display the title. #}
+                    <p>Recent price behaviour and moving-average information are examined to determine whether prices have generally been rising, falling or showing limited direction.</p> {# I preserve the explanation. #}
+                </div> {# I close the text group. #}
+            </div> {# I close step two. #}
+            <i class="fa-solid fa-arrow-right mc-analysis-arrow"></i> {# I display the connecting arrow. #}
+            <div class="mc-analysis-step"> {# I start step three. #}
+                <span class="mc-analysis-number">3</span> {# I display its number. #}
+                <span class="mc-analysis-icon"><i class="fa-solid fa-wave-square"></i></span> {# I display the volatility icon. #}
+                <div> {# I group the step text. #}
+                    <strong>Measure Historical Volatility</strong> {# I display the title. #}
+                    <p>The analysis measures how much historical prices varied during the analysed period and considers the strength of the condition.</p> {# I preserve the explanation. #}
+                </div> {# I close the text group. #}
+            </div> {# I close step three. #}
+            <i class="fa-solid fa-arrow-right mc-analysis-arrow"></i> {# I display the connecting arrow. #}
+            <div class="mc-analysis-step"> {# I start step four. #}
+                <span class="mc-analysis-number">4</span> {# I display its number. #}
+                <span class="mc-analysis-icon"><i class="fa-solid fa-tags"></i></span> {# I display the classification icon. #}
+                <div> {# I group the step text. #}
+                    <strong>Classify the Market Condition</strong> {# I display the title. #}
+                    <p>The internal Market Regime Analysis combines the measurements and stores an easy-to-read historical classification for the user.</p> {# I preserve the explanation. #}
+                </div> {# I close the text group. #}
+            </div> {# I close step four. #}
+        </div> {# I close the analysis grid. #}
+        <div class="mc-backend-note"> {# I start the backend explanation. #}
+            <i class="fa-solid fa-code"></i> {# I display the code icon. #}
+            <div> {# I group its heading and paragraph. #}
+                <strong>What happens in the backend?</strong> {# I display its heading. #}
+                <p> {# I start the original backend description. #}
+                    The Django {# I introduce the view name. #}
+                    <code>market_condition()</code> {# I display the view name as code, without executing it. #}
+                    view receives the selected symbol and checks the stored {# I describe its input and data check. #}
+                    <code>MarketData</code> {# I display the model name. #}
+                    records. When sufficient data is available, it calls {# I introduce the analyzer. #}
+                    <code>identify_market_regime()</code> {# I display the analyzer's name. #}
+                    in {# I introduce its module. #}
+                    <code>analysis_tools/analyzers.py</code>. {# I display its location and retain the punctuation. #}
+                    The calculated result is stored as a {# I introduce the result model. #}
+                    <code>MarketRegime</code> {# I display the result model's name. #}
+                    record in PostgreSQL. Django then reloads this page and supplies the most recent result through {# I preserve the original workflow description. #}
+                    <code>latest_regime</code>. {# I display the template variable name and retain the punctuation. #}
+                </p> {# I close the backend paragraph. #}
+            </div> {# I close the text group. #}
+        </div> {# I close the backend note. #}
+    </section> {# I close the process explanation section. #}
+    {# ======================================================== #}
+    {# 8. UNDERSTANDING THE CLASSIFICATIONS #}
+    {# ======================================================== #}
+    <section class="mc-explanation-panel"> {# I start the classification explanation section. #}
+        <div class="mc-section-heading"> {# I group its heading and introduction. #}
+            <div class="mc-eyebrow">Understand the Classification</div> {# I display its section label. #}
+            <h2>What Do the Market Conditions Mean?</h2> {# I display its heading. #}
+            <p>MarketPulse presents the technical Market Regime Analysis as four simple historical classifications so that the result is easier to understand.</p> {# I preserve the introduction. #}
+        </div> {# I close the heading group. #}
+        <div class="mc-condition-grid"> {# I start the classification-card grid. #}
+            <div class="mc-condition-card mc-condition-up {% if latest_regime and latest_regime.regime == 'uptrend' %}mc-condition-active{% endif %}"> {# I highlight this card only when the saved classification is uptrend. #}
+                <span class="mc-condition-icon"><i class="fa-solid fa-arrow-trend-up"></i></span> {# I display its icon. #}
+                <div> {# I group its description and current-result marker. #}
+                    <strong>Uptrend</strong> {# I display the classification name. #}
+                    <p>Prices have generally been moving upward during the analysed historical period.</p> {# I preserve its meaning. #}
+                    {% if latest_regime and latest_regime.regime == "uptrend" %} {# I check whether this is the saved result. #}
+                        <span class="mc-condition-current">Current Result</span> {# I display the matching-result marker. #}
+                    {% endif %} {# I finish the uptrend condition. #}
+                </div> {# I close the description group. #}
+            </div> {# I close the uptrend card. #}
+            <div class="mc-condition-card mc-condition-down {% if latest_regime and latest_regime.regime == 'downtrend' %}mc-condition-active{% endif %}"> {# I highlight this card only when the saved classification is downtrend. #}
+                <span class="mc-condition-icon"><i class="fa-solid fa-arrow-trend-down"></i></span> {# I display its icon. #}
+                <div> {# I group its description and result marker. #}
+                    <strong>Downtrend</strong> {# I display the classification name. #}
+                    <p>Prices have generally been moving downward during the analysed historical period.</p> {# I preserve its meaning. #}
+                    {% if latest_regime and latest_regime.regime == "downtrend" %} {# I check whether this is the saved result. #}
+                        <span class="mc-condition-current">Current Result</span> {# I display the matching-result marker. #}
+                    {% endif %} {# I finish the downtrend condition. #}
+                </div> {# I close the description group. #}
+            </div> {# I close the downtrend card. #}
+            <div class="mc-condition-card mc-condition-sideways {% if latest_regime and latest_regime.regime == 'sideways' %}mc-condition-active{% endif %}"> {# I highlight this card only when the saved classification is sideways. #}
+                <span class="mc-condition-icon"><i class="fa-solid fa-arrows-left-right"></i></span> {# I display its icon. #}
+                <div> {# I group its description and result marker. #}
+                    <strong>Sideways</strong> {# I display the classification name. #}
+                    <p>Prices have shown limited sustained directional movement during the analysed period.</p> {# I preserve its meaning. #}
+                    {% if latest_regime and latest_regime.regime == "sideways" %} {# I check whether this is the saved result. #}
+                        <span class="mc-condition-current">Current Result</span> {# I display the matching-result marker. #}
+                    {% endif %} {# I finish the sideways condition. #}
+                </div> {# I close the description group. #}
+            </div> {# I close the sideways card. #}
+            <div class="mc-condition-card mc-condition-volatility {% if latest_regime and latest_regime.regime == 'high_volatility' %}mc-condition-active{% endif %}"> {# I highlight this card only when the saved classification is high volatility. #}
+                <span class="mc-condition-icon"><i class="fa-solid fa-wave-square"></i></span> {# I display its icon. #}
+                <div> {# I group its description and result marker. #}
+                    <strong>High Volatility</strong> {# I display the classification name. #}
+                    <p>Historical price movements have been larger or more variable than the normal range identified by the analysis.</p> {# I preserve its meaning. #}
+                    {% if latest_regime and latest_regime.regime == "high_volatility" %} {# I check whether this is the saved result. #}
+                        <span class="mc-condition-current">Current Result</span> {# I display the matching-result marker. #}
+                    {% endif %} {# I finish the volatility condition. #}
+                </div> {# I close the description group. #}
+            </div> {# I close the volatility card. #}
+        </div> {# I close the classification grid. #}
+        <div class="mc-interpretation-note"> {# I start the final interpretation note. #}
+            <i class="fa-solid fa-circle-info"></i> {# I display its information icon. #}
+            <div>These labels describe the behaviour found in the selected historical dataset. A detected condition does not mean that the same condition will continue in the future.</div> {# I preserve the original interpretation guidance. #}
+        </div> {# I close the interpretation note. #}
+    </section> {# I close the classification explanation section. #}
+</div> {# I close the themed workspace. #}
+{% endblock %} {# I finish the main content block. #}

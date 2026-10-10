@@ -1,2 +1,14 @@
-/* ========================================================== REACT STYLES: imported by main.jsx after Bootstrap. ========================================================== */
-body{background:#f6f8fb}.card{border:0}
+/* ========================================================== */
+/* REACT STYLES: imported by main.jsx after Bootstrap. */
+/* ========================================================== */
+/* 1. PAGE BACKGROUND */
+/* ========================================================== */
+body { /* I select the HTML body element. */
+    background: #f6f8fb; /* I set the background to a pale blue-grey hexadecimal colour. */
+} /* I finish the body styling rule. */
+/* ========================================================== */
+/* 2. CARD BORDERS */
+/* ========================================================== */
+.card { /* I select every element with the card class, including Bootstrap cards. */
+    border: 0; /* I remove the border using the border shorthand property. */
+} /* I finish the card styling rule. */

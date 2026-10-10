@@ -1,17 +1,56 @@
-{% extends "base.html" %}
-{% load django_bootstrap5 %}
-
+{% extends "base.html" %} {# TEMPLATE INHERITANCE: This login page reuses the main MarketPulse base.html structure. #}
+{% load django_bootstrap5 %} {# LIBRARY/REUSE: Loads django-bootstrap5 template tags so Bootstrap can render the Django form. #}
 
 {% comment %}
 ============================================================
 MARKETPULSE - LOGIN PAGE
 ============================================================
 
+FILE:
+accounts/templates/accounts/login.html
+
 PURPOSE:
 
 This page allows an existing MarketPulse user to sign in.
 
-Framework workflow:
+It is the PRESENTATION / TEMPLATE layer of the login process.
+
+The template displays the interface, but it does not check
+the username and password itself.
+
+============================================================
+FRAMEWORK - HOW THIS FILE FITS INTO MARKETPULSE
+============================================================
+
+Browser / User
+    ↓
+Django URL
+    ↓
+Django LoginView
+    ↓
+AuthenticationForm
+    ↓
+accounts/templates/accounts/login.html
+    ↓
+User enters username + password
+    ↓
+POST request
+    ↓
+Django authentication framework
+    ↓
+Authentication backend
+    ↓
+User database record
+    ↓
+Successful login
+    ↓
+Session created
+    ↓
+Dashboard / next requested page
+
+============================================================
+LOGIN WORKFLOW
+============================================================
 
 User
     ↓
@@ -25,8 +64,9 @@ Successful Login
     ↓
 MarketPulse Dashboard
 
-
-PASSWORD RECOVERY WORKFLOW:
+============================================================
+PASSWORD RECOVERY WORKFLOW
+============================================================
 
 User
     ↓
@@ -44,17 +84,175 @@ User receives password-reset link
     ↓
 User creates a new password
 
-
-REGISTRATION WORKFLOW:
+============================================================
+REGISTRATION WORKFLOW
+============================================================
 
 User
     ↓
 Create Account
     ↓
 accounts:register
+    ↓
+Registration View
+    ↓
+User account created
+    ↓
+PostgreSQL / configured database
 
+============================================================
+HOW THIS CONNECTS TO PROGRAMMING LANGUAGE CONCEPTS
+============================================================
 
-IMPORTANT:
+1. TEMPLATE INHERITANCE
+   {% extends "base.html" %}
+
+   The login page inherits the common structure from base.html.
+
+   Programming concept:
+   - inheritance
+   - reuse
+   - abstraction
+   - avoiding duplicated code
+
+2. LIBRARIES / MODULES
+   {% load django_bootstrap5 %}
+
+   Loads additional Django template functionality.
+
+   Programming concept:
+   - libraries
+   - modules
+   - reusable functionality
+
+3. BLOCKS
+   {% block title %}
+   {% block content %}
+
+   The child template supplies content to predefined areas
+   created by base.html.
+
+   Programming concept:
+   - modularity
+   - encapsulation
+   - separation of concerns
+
+4. VARIABLES
+   {{ error }}
+   {{ next }}
+
+   Django replaces these variables with values supplied by
+   the backend.
+
+   Programming concept:
+   - variables
+   - values
+   - data
+   - runtime state
+
+5. CONDITIONAL STATEMENTS
+   {% if form.non_field_errors %}
+   {% if next %}
+
+   Code only runs when a condition evaluates as true.
+
+   Programming concept:
+   - Boolean logic
+   - selection
+   - control flow
+
+6. LOOPS / ITERATION
+   {% for error in form.non_field_errors %}
+
+   Repeats code once for every validation error.
+
+   Programming concept:
+   - iteration
+   - collections
+   - loops
+
+7. URL RESOLUTION
+   {% url 'password_reset' %}
+   {% url 'accounts:register' %}
+
+   Django converts a named URL into its real URL path.
+
+   Programming concept:
+   - function-like operations
+   - abstraction
+   - named references
+
+8. FORM INPUT / OUTPUT
+   <form method="post">
+
+   The browser collects user input and sends it to Django.
+
+   Programming concept:
+   - input
+   - processing
+   - output
+   - client/server communication
+
+9. SECURITY
+   {% csrf_token %}
+
+   Adds Django's CSRF protection token to the POST request.
+
+   Programming concept:
+   - security
+   - state validation
+   - trusted data exchange
+
+10. HIDDEN STATE
+    <input type="hidden" name="next" value="{{ next }}">
+
+    Stores information that the user does not need to edit.
+
+    Programming concept:
+    - state
+    - variables
+    - data transfer
+
+11. TEMPLATE CONTEXT
+    form
+    form.non_field_errors
+    error
+    next
+
+    These values come from the Django backend and are made
+    available to this template.
+
+    Programming concept:
+    - data passing
+    - objects
+    - properties
+    - scope
+
+12. FRONTEND FRAMEWORK
+    Bootstrap 5 classes such as:
+
+    row
+    col-12
+    card
+    btn
+    alert
+    d-flex
+
+    control layout and presentation.
+
+13. ICON LIBRARY
+    Font Awesome classes such as:
+
+    fa-user-lock
+    fa-key
+    fa-right-to-bracket
+    fa-shield-halved
+
+    provide reusable interface icons.
+
+============================================================
+IMPORTANT
+============================================================
 
 The login template does not authenticate the user itself.
 
@@ -63,16 +261,21 @@ Django handles authentication on the backend.
 This template is responsible for:
 
 - displaying the login form
+- submitting login information
 - displaying validation errors
 - linking to registration
 - linking to password recovery
+- preserving the requested redirect using "next"
 
-STYLING:
+============================================================
+STYLING
+============================================================
 
 Bootstrap 5 provides:
 
 - layout
-- card
+- responsive grid
+- cards
 - form controls
 - buttons
 - spacing
@@ -92,353 +295,163 @@ No page-specific light-theme CSS is required.
 ============================================================
 {% endcomment %}
 
+{# ========================================================== #}
+{# 1. PAGE TITLE                                              #}
+{# ========================================================== #}
 
-{% block title %}
-Login | MarketPulse
-{% endblock %}
+{% block title %} {# BLOCK: Replaces the title block defined inside base.html. #}
+Login | MarketPulse {# OUTPUT: Text that appears as this page's browser/page title. #}
+{% endblock %} {# CONTROL STRUCTURE: Ends the title block. #}
 
+{# ========================================================== #}
+{# 2. PAGE CONTENT                                            #}
+{# ========================================================== #}
 
-{% block content %}
-
+{% block content %} {# BLOCK: Starts the login page content inserted into base.html. #}
 
 <!-- ====================================================== -->
-<!-- 1. LOGIN WORKSPACE                                     -->
+<!-- 3. LOGIN WORKSPACE                                     -->
 <!-- ====================================================== -->
 
-<div
-    class="
-        row
-        justify-content-center
-        align-items-center
-        py-4
-        py-md-5
-    "
->
+<div class="row justify-content-center align-items-center py-4 py-md-5"> {# HTML ELEMENT + BOOTSTRAP: Creates a responsive centred row for the login workspace. #}
 
-
-    <div
-        class="
-            col-12
-            col-sm-10
-            col-md-8
-            col-lg-6
-            col-xl-5
-        "
-    >
-
+    <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5"> {# RESPONSIVE GRID: Changes the width of the login area according to screen size. #}
 
         <!-- ================================================== -->
-        <!-- LOGIN CARD                                         -->
+        <!-- 4. LOGIN CARD                                      -->
         <!-- ================================================== -->
 
-        <div
-            class="
-                card
-                border
-                shadow-sm
-            "
-        >
+        <div class="card border shadow-sm"> {# COMPONENT: Creates the Bootstrap card containing the complete login interface. #}
 
-
-            <div
-                class="
-                    card-body
-                    p-4
-                    p-md-5
-                "
-            >
-
+            <div class="card-body p-4 p-md-5"> {# COMPONENT CONTENT: Adds the card body and responsive internal padding. #}
 
                 <!-- ========================================== -->
-                <!-- PAGE HEADER                               -->
+                <!-- 5. PAGE HEADER                            -->
                 <!-- ========================================== -->
 
-                <div class="text-center mb-4">
+                <div class="text-center mb-4"> {# LAYOUT: Centres the login heading and adds spacing below it. #}
 
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-3 border bg-primary-subtle text-primary-emphasis fs-4 p-3 mb-3"> {# BOOTSTRAP: Creates the styled container around the login icon. #}
+                        <i class="fa-solid fa-user-lock"></i> {# FONT AWESOME: Displays a user-lock icon representing secure login. #}
+                    </div> {# HTML STRUCTURE: Ends the login icon container. #}
 
-                    <div
-                        class="
-                            d-inline-flex
-                            align-items-center
-                            justify-content-center
-                            rounded-3
-                            border
-                            bg-primary-subtle
-                            text-primary-emphasis
-                            fs-4
-                            p-3
-                            mb-3
-                        "
-                    >
+                    <h1 class="h3 fw-bold mb-2"> {# SEMANTIC HTML: Creates the main heading and Bootstrap controls its size and weight. #}
+                        Welcome Back {# STATIC OUTPUT: Displays the login page welcome message. #}
+                    </h1> {# HTML STRUCTURE: Ends the main page heading. #}
 
-                        <i class="fa-solid fa-user-lock"></i>
-
-                    </div>
-
-
-                    <h1 class="h3 fw-bold mb-2">
-
-                        Welcome Back
-
-                    </h1>
-
-
-                    <p
-                        class="
-                            text-body-secondary
-                            small
-                            mb-0
-                        "
-                    >
-
+                    <p class="text-body-secondary small mb-0"> {# TEXT STYLING: Creates supporting information below the heading. #}
                         Sign in to access your MarketPulse
                         dashboard, market data, strategies
                         and risk-management tools.
+                    </p> {# HTML STRUCTURE: Ends the supporting login description. #}
 
-                    </p>
-
-
-                </div>
-
+                </div> {# HTML STRUCTURE: Ends the complete login-page header. #}
 
                 <!-- ========================================== -->
-                <!-- LOGIN ERRORS                              -->
+                <!-- 6. LOGIN ERRORS                            -->
                 <!-- ========================================== -->
 
-                {% if form.non_field_errors %}
+                {% if form.non_field_errors %} {# CONDITIONAL: Only displays this section when Django's form contains general login errors. #}
 
+                    <div class="alert alert-danger d-flex align-items-start gap-2" role="alert"> {# FEEDBACK COMPONENT: Creates a Bootstrap danger alert for authentication errors. #}
 
-                    <div
-                        class="
-                            alert
-                            alert-danger
-                            d-flex
-                            align-items-start
-                            gap-2
-                        "
-                        role="alert"
-                    >
+                        <i class="fa-solid fa-circle-exclamation mt-1"></i> {# ICON: Visually indicates that something went wrong. #}
 
+                        <div> {# CONTAINER: Groups all error messages together. #}
 
-                        <i
-                            class="
-                                fa-solid
-                                fa-circle-exclamation
-                                mt-1
-                            "
-                        >
-                        </i>
+                            {% for error in form.non_field_errors %} {# LOOP: Repeats once for each general error contained in the Django form. #}
 
+                                <div> {# HTML STRUCTURE: Gives each error its own display container. #}
+                                    {{ error }} {# VARIABLE OUTPUT: Displays the current error value from the loop. #}
+                                </div> {# HTML STRUCTURE: Ends the individual error container. #}
 
-                        <div>
+                            {% endfor %} {# LOOP CONTROL: Ends iteration through the form errors. #}
 
+                        </div> {# HTML STRUCTURE: Ends the group of error messages. #}
 
-                            {% for error in form.non_field_errors %}
+                    </div> {# HTML STRUCTURE: Ends the Bootstrap error alert. #}
 
-                                <div>
-                                    {{ error }}
-                                </div>
-
-                            {% endfor %}
-
-
-                        </div>
-
-
-                    </div>
-
-
-                {% endif %}
-
+                {% endif %} {# CONDITIONAL CONTROL: Ends the error condition. #}
 
                 <!-- ========================================== -->
-                <!-- LOGIN FORM                                -->
+                <!-- 7. LOGIN FORM                              -->
                 <!-- ========================================== -->
 
-                <form method="post">
+                <form method="post"> {# FORM + HTTP: Sends entered login data to Django using an HTTP POST request. #}
 
-
-                    {% csrf_token %}
-
+                    {% csrf_token %} {# SECURITY: Inserts Django's CSRF token so the POST request can be validated safely. #}
 
                     <!-- ====================================== -->
-                    <!-- BOOTSTRAP LOGIN FIELDS                 -->
+                    <!-- 8. BOOTSTRAP LOGIN FIELDS              -->
                     <!-- ====================================== -->
 
-                    {% bootstrap_form form %}
-
-
-                    <!-- ====================================== -->
-                    <!-- FORGOT PASSWORD                       -->
-                    <!-- ====================================== -->
-
-                    <div
-                        class="
-                            d-flex
-                            justify-content-end
-                            mb-3
-                        "
-                    >
-
-
-                        <a
-                            href="{% url 'password_reset' %}"
-                            class="
-                                small
-                                text-decoration-none
-                            "
-                        >
-
-                            <i class="fa-solid fa-key me-1"></i>
-
-                            Forgot your password?
-
-                        </a>
-
-
-                    </div>
-
+                    {% bootstrap_form form %} {# REUSABLE TEMPLATE TAG: Renders Django's authentication form using Bootstrap-compatible markup. #}
 
                     <!-- ====================================== -->
-                    <!-- LOGIN BUTTON                          -->
+                    <!-- 9. FORGOT PASSWORD                     -->
                     <!-- ====================================== -->
 
-                    <button
-                        type="submit"
-                        class="
-                            btn
-                            btn-primary
-                            w-100
-                            py-2
-                            fw-semibold
-                        "
-                    >
+                    <div class="d-flex justify-content-end mb-3"> {# LAYOUT: Places the password-recovery link on the right side. #}
 
-                        <i
-                            class="
-                                fa-solid
-                                fa-right-to-bracket
-                                me-2
-                            "
-                        >
-                        </i>
+                        <a href="{% url 'password_reset' %}" class="small text-decoration-none"> {# URL RESOLUTION: Django finds the URL whose name is password_reset. #}
+                            <i class="fa-solid fa-key me-1"></i> {# ICON: Displays a key icon beside the password-reset action. #}
+                            Forgot your password? {# LINK TEXT: Tells the user this link starts password recovery. #}
+                        </a> {# HTML STRUCTURE: Ends the password-reset hyperlink. #}
 
-                        Login
-
-                    </button>
-
+                    </div> {# HTML STRUCTURE: Ends the forgot-password layout container. #}
 
                     <!-- ====================================== -->
-                    <!-- REDIRECT TARGET                       -->
+                    <!-- 10. LOGIN BUTTON                       -->
                     <!-- ====================================== -->
 
-                    {% if next %}
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold"> {# USER INPUT/ACTION: Submits the completed login form to Django. #}
+                        <i class="fa-solid fa-right-to-bracket me-2"></i> {# ICON: Displays the login/action symbol inside the button. #}
+                        Login {# BUTTON LABEL: Tells the user what action the button performs. #}
+                    </button> {# HTML STRUCTURE: Ends the login submit button. #}
 
-                        <input
-                            type="hidden"
-                            name="next"
-                            value="{{ next }}"
-                        >
+                    <!-- ====================================== -->
+                    <!-- 11. REDIRECT TARGET                    -->
+                    <!-- ====================================== -->
 
-                    {% endif %}
+                    {% if next %} {# CONDITIONAL: Checks whether Django supplied a page to return to after login. #}
 
+                        <input type="hidden" name="next" value="{{ next }}"> {# STATE: Sends the next-page value back to Django without showing an editable field to the user. #}
 
-                </form>
+                    {% endif %} {# CONDITIONAL CONTROL: Ends the next-page condition. #}
 
+                </form> {# HTML STRUCTURE: Ends the login form and its POST data collection area. #}
 
                 <!-- ========================================== -->
-                <!-- REGISTRATION                              -->
+                <!-- 12. REGISTRATION                           -->
                 <!-- ========================================== -->
 
-                <div
-                    class="
-                        text-center
-                        border-top
-                        mt-4
-                        pt-4
-                    "
-                >
+                <div class="text-center border-top mt-4 pt-4"> {# LAYOUT: Creates a separated registration section underneath the login form. #}
 
+                    <p class="small text-body-secondary mb-0"> {# TEXT: Displays supporting registration information. #}
 
-                    <p
-                        class="
-                            small
-                            text-body-secondary
-                            mb-0
-                        "
-                    >
+                        Don't have a MarketPulse account? {# STATIC OUTPUT: Asks whether the visitor needs a new account. #}
 
-                        Don't have a MarketPulse account?
+                        <a href="{% url 'accounts:register' %}" class="fw-semibold text-decoration-none"> {# URL RESOLUTION + NAMESPACE: Finds the register URL belonging to the accounts application. #}
+                            Create an account {# LINK LABEL: Gives the user access to the registration workflow. #}
+                        </a> {# HTML STRUCTURE: Ends the account-registration hyperlink. #}
 
+                    </p> {# HTML STRUCTURE: Ends the registration text. #}
 
-                        <a
-                            href="{% url 'accounts:register' %}"
-                            class="
-                                fw-semibold
-                                text-decoration-none
-                            "
-                        >
-
-                            Create an account
-
-                        </a>
-
-
-                    </p>
-
-
-                </div>
-
+                </div> {# HTML STRUCTURE: Ends the registration section. #}
 
                 <!-- ========================================== -->
-                <!-- SECURITY EXPLANATION                      -->
+                <!-- 13. SECURITY EXPLANATION                   -->
                 <!-- ========================================== -->
 
-                <div
-                    class="
-                        d-flex
-                        align-items-start
-                        gap-2
-                        bg-body-tertiary
-                        border
-                        rounded-3
-                        p-3
-                        mt-4
-                    "
-                >
+                <div class="d-flex align-items-start gap-2 bg-body-tertiary border rounded-3 p-3 mt-4"> {# COMPONENT: Creates the informational security panel at the bottom of the card. #}
 
+                    <i class="fa-solid fa-shield-halved text-success mt-1"></i> {# ICON: Displays a shield to represent account security. #}
 
-                    <i
-                        class="
-                            fa-solid
-                            fa-shield-halved
-                            text-success
-                            mt-1
-                        "
-                    >
-                    </i>
+                    <div class="small text-body-secondary"> {# TEXT CONTAINER: Holds the explanatory security message. #}
 
-
-                    <div
-                        class="
-                            small
-                            text-body-secondary
-                        "
-                    >
-
-
-                        <strong
-                            class="
-                                text-body
-                                d-block
-                                mb-1
-                            "
-                        >
-
-                            Secure authentication
-
-                        </strong>
-
+                        <strong class="text-body d-block mb-1"> {# SEMANTIC HTML: Emphasises the title of the security message. #}
+                            Secure authentication {# STATIC OUTPUT: Names the security feature being explained. #}
+                        </strong> {# HTML STRUCTURE: Ends the emphasised security heading. #}
 
                         MarketPulse uses Django's authentication
                         framework to validate your account.
@@ -447,23 +460,16 @@ Login | MarketPulse
                         password-recovery link above rather than
                         creating another account.
 
+                    </div> {# HTML STRUCTURE: Ends the security explanation text container. #}
 
-                    </div>
+                </div> {# HTML STRUCTURE: Ends the security explanation component. #}
 
+            </div> {# HTML STRUCTURE: Ends the Bootstrap card body. #}
 
-                </div>
+        </div> {# HTML STRUCTURE: Ends the login card. #}
 
+    </div> {# RESPONSIVE GRID: Ends the column containing the login card. #}
 
-            </div>
+</div> {# BOOTSTRAP GRID: Ends the main login workspace row. #}
 
-
-        </div>
-
-
-    </div>
-
-
-</div>
-
-
-{% endblock %}
+{% endblock %} {# TEMPLATE INHERITANCE: Ends the content supplied to base.html. #}

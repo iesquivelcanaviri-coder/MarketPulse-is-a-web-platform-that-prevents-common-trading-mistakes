@@ -1,31 +1,47 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %} {# Template inheritance: I reuse the shared layout from base.html. #}
 
-{% block title %}Market Regime Analysis{% endblock %}
+{# ======================================================== #}
+{# 1. PAGE TITLE                                            #}
+{# ======================================================== #}
+{% block title %}Market Regime Analysis{% endblock %} {# Named block: I replace the base template's default browser title. #}
 
-{% block content %}
-<div class="row">
-    <div class="col-md-8 offset-md-2">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">Market Regime Analysis</h4>
-            </div>
-            <div class="card-body">
-                <p class="card-text">
-                    Market regimes are distinct market conditions that require different trading strategies.
-                    Our tool analyzes market data to identify the current regime and helps you adjust your strategy accordingly.
-                </p>
-                
-                <form method="post">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="symbol" class="form-label">Symbol</label>
-                        <input type="text" class="form-control" id="symbol" name="symbol" placeholder="AAPL" required>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary">Analyze Market Regime</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
+{# ======================================================== #}
+{# 2. PAGE CONTENT AND RESPONSIVE LAYOUT                     #}
+{# ======================================================== #}
+{% block content %} {# Named block: I insert this page into the base template's content area. #}
+<div class="row"> {# HTML container and CSS class: I begin a Bootstrap grid row. #}
+    <div class="col-md-8 offset-md-2"> {# Responsive grid: I centre an eight-column panel on medium and larger screens. #}
+        <div class="card"> {# HTML nesting: I group the heading, explanation and form inside a card. #}
+
+            {# ======================================================== #}
+            {# 3. CARD HEADING                                          #}
+            {# ======================================================== #}
+            <div class="card-header bg-primary text-white"> {# Class attribute: I apply Bootstrap header, background and text styling. #}
+                <h4 class="mb-0">Market Regime Analysis</h4> {# Heading element: I display the section title without bottom margin. #}
+            </div> {# Closing tag: I finish the card header. #}
+
+            {# ======================================================== #}
+            {# 4. EXPLANATION                                           #}
+            {# ======================================================== #}
+            <div class="card-body"> {# Container: I begin the card's main content area. #}
+                <p class="card-text"> {# Paragraph element: I introduce the purpose of the analysis. #}
+                    Market regimes are distinct market conditions that require different trading strategies. {# Static text: I display the original explanation of market regimes. #}
+                    Our tool analyzes market data to identify the current regime and helps you adjust your strategy accordingly. {# Static text: I describe the tool; the calculation happens in the backend. #}
+                </p> {# Closing tag: I finish the explanatory paragraph. #}
+
+                {# ======================================================== #}
+                {# 5. SYMBOL INPUT AND FORM SUBMISSION                      #}
+                {# ======================================================== #}
+                <form method="post"> {# Form and HTTP method: I submit the fields to the current URL using POST. #}
+                    {% csrf_token %} {# Django template tag: I include a token for the server's CSRF protection. #}
+                    <div class="mb-3"> {# Field container: I add bottom spacing around the symbol input. #}
+                        <label for="symbol" class="form-label">Symbol</label> {# Label association: for matches the input's id to identify the field. #}
+                        <input type="text" class="form-control" id="symbol" name="symbol" placeholder="AAPL" required> {# Attributes: id identifies the element, name sets the POST key, AAPL is a hint, and required enables browser validation. #}
+                    </div> {# Closing tag: I finish the symbol field group. #}
+                    <button type="submit" class="btn btn-primary">Analyze Market Regime</button> {# Submit button: I send the entered symbol to the receiving view. #}
+                </form> {# Closing tag: I finish the form. #}
+            </div> {# Closing tag: I finish the card body. #}
+        </div> {# Closing tag: I finish the card. #}
+    </div> {# Closing tag: I finish the centred column. #}
+</div> {# Closing tag: I finish the grid row. #}
+{% endblock %} {# Block boundary: I finish this page's content block. #}

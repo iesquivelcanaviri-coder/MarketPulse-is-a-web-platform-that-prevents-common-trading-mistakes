@@ -1,56 +1,411 @@
+# ============================================================
+# MARKETPULSE - PYTHON PROJECT DEPENDENCIES
+# ============================================================
+#
+# 1. WHAT THIS FILE IS FOR
+# ------------------------------------------------------------
+# This file records the Python packages that pip should install
+# for my project's environment.
+#
+# Installation command:
+# python -m pip install -r requirements.txt
+#
+# This file supports local setup and deployment. It does not
+# contain my Django views, database models, or trading logic.
+#
+# Lines starting with # are explanatory comments.
+# pip ignores these comments when installing the packages.
+#
+#
+# 2. HOW TO READ EACH REQUIREMENT
+# ------------------------------------------------------------
+# Example: Django==5.2.17
+#
+# Django   : the package name.
+# ==       : requires the exact version written after it.
+# 5.2.17   : the package version.
+#
+# Here, == is dependency-version syntax. It is not a Python
+# comparison between variables.
+#
+# Example: django-anymail[brevo]==15.2
+#
+# [brevo] requests the package's optional Brevo dependencies.
+# It is package-installation syntax, not a Python list.
+#
+# Exact versions help recreate the environment, but successful
+# installation still depends on Python/platform compatibility
+# and the packages being available from the package index.
+#
+#
+# 3. HOW THIS FILE CONNECTS TO MY PROJECT
+# ------------------------------------------------------------
+# requirements.txt
+#   -> pip installs packages in the Python environment.
+#   -> My Python modules can import those installed packages.
+#   -> Django settings configure the integrations I want to use.
+#   -> Views, models, services, and tasks use those integrations.
+#
+# Installing a package does not automatically enable its feature.
+# For example:
+# - Celery needs task and worker configuration.
+# - Email delivery needs provider settings and credentials.
+# - Database access needs Django DATABASES configuration.
+# - JWT authentication needs explicit authentication setup.
+#
+#
+# 4. MY DJANGO FRAMEWORK CONNECTIONS
+# ------------------------------------------------------------
+# Django uses a Model-Template-View architecture:
+#
+# URL configuration:
+# Matches a requested address to a view.
+#
+# View:
+# Handles the request and coordinates application logic.
+#
+# Model and ORM:
+# Represent stored data and query the configured database.
+#
+# Template:
+# Produces HTML using the context supplied by a view.
+#
+# Typical interaction:
+# Browser request -> URL -> View -> Model/Service
+#                            -> Template -> HTML response
+#
+# API interaction:
+# Frontend request -> API URL -> DRF View -> Model/Service
+#                                        -> JSON response
+#
+# These interactions are implemented in other project files.
+# requirements.txt supplies the packages that support them.
+#
+#
+# 5. LEARNING CONCEPTS RELEVANT TO THIS FILE
+# ------------------------------------------------------------
+# Modules and packages:
+# pip installs third-party packages that Python can import.
+# Installation names can differ from Python import names.
+#
+# Networking:
+# HTTP clients and API libraries support external data access.
+#
+# Databases:
+# Database drivers allow Django to communicate with PostgreSQL.
+#
+# Deployment:
+# Server and static-file packages support hosting the application.
+#
+# Python features such as variables, loops, classes, functions,
+# and exception handling belong in my .py files. They are not
+# implemented by the dependency lines in this file.
+#
+# Some packages are direct dependencies used by project code.
+# Others are supporting dependencies used by those packages.
+# I would check imports and settings to confirm actual usage.
+#
+#
+# ============================================================
+# 6. PACKAGE NOTES - ORIGINAL ORDER PRESERVED
+# ============================================================
+
+# AMQP messaging library used within the Celery ecosystem.
+# Supports communication with AMQP brokers such as RabbitMQ.
+# Its presence does not mean my project uses RabbitMQ.
 amqp==5.3.1
+
+# Provides ASGI utilities, including sync/async adapters.
+# Django uses these utilities when connecting synchronous and
+# asynchronous parts of its request-handling infrastructure.
 asgiref==3.12.1
+
+# Parses HTML/XML into objects that Python can inspect.
+# Commonly used by data-retrieval libraries.
+# Installation name: beautifulsoup4; import name: bs4.
 beautifulsoup4==4.15.0
+
+# Provides multiprocessing facilities used by Celery.
+# Supports worker process pools for executing background tasks.
 billiard==4.2.4
+
+# Background-task framework.
+# A configured Django view can submit a task to a broker;
+# a separately running Celery worker executes that task.
+# Useful for long-running imports if my project enables it.
 celery==5.6.3
+
+# Supplies a collection of trusted root certificates.
+# HTTP libraries can use these to verify HTTPS server certificates.
+# It does not configure HTTPS for my own deployed website.
 certifi==2026.7.22
+
+# C Foreign Function Interface.
+# Allows Python packages to interact with native C libraries.
 cffi==2.1.1
+
+# Helps detect and normalize text encodings.
+# HTTP libraries use encoding information to interpret responses.
 charset-normalizer==3.5.1
+
+# Toolkit for creating command-line interfaces.
+# Used by Celery's command-line tooling.
 click==8.5.0
+
+# Click extension that suggests commands after typing mistakes.
 click-didyoumean==0.3.1
+
+# Click extension for adding commands through package entry points.
 click-plugins==1.1.1.2
+
+# Click extension for an interactive command-line environment.
+# REPL means Read-Evaluate-Print Loop.
 click-repl==0.3.0
+
+# Python bindings for curl with browser-impersonation support.
+# Can support HTTP requests made by data-retrieval libraries.
+# This is separate from the requests package listed below.
 curl_cffi==0.16.2
+
+# Converts a database connection URL into Django database settings.
+# Connection pattern:
+# DATABASE_URL -> dj-database-url -> Django DATABASES setting.
+# It does not create or host the database.
 dj-database-url==2.3.0
+
+# Main Python web framework for MarketPulse.
+# Provides models, ORM, views, templates, forms, authentication,
+# sessions, middleware, migrations, and the administration site.
+#
+# My application code defines how these features are used.
 Django==5.2.17
+
+# Connects Django's email system to supported email providers.
+# The [brevo] extra requests Brevo integration dependencies.
+#
+# Possible interaction:
+# Password-reset view -> Django email backend -> Brevo.
+#
+# Actual delivery requires the backend and credentials to be
+# configured. This requirement does not configure Mailjet.
 django-anymail[brevo]==15.2
+
+# Django template helpers for Bootstrap 5 forms and components.
+# Supports presenting form fields and validation errors.
+# My templates and CSS still control the application's design.
 django-bootstrap5==26.3
+
+# Provides middleware for Cross-Origin Resource Sharing (CORS).
+# Can allow a separately hosted frontend to call Django APIs
+# when the relevant origins are explicitly configured.
+# CORS does not replace authentication or CSRF protection.
 django-cors-headers==4.9.0
+
+# Django REST Framework, commonly abbreviated to DRF.
+# Supports serializers, API views, permissions, and responses.
+#
+# Possible interaction:
+# React/JavaScript -> DRF endpoint -> Django ORM -> JSON.
+#
+# Installing it alone does not create API endpoints.
 djangorestframework==3.18.0
+
+# Provides an immutable dictionary implementation.
+# Unlike a normal dict, its entries cannot be changed in place.
 frozendict==2.4.7
+
+# Production WSGI HTTP server.
+# A typical Django deployment uses Gunicorn to load
+# marketpulse.wsgi:application and serve application requests.
+# The startup command is configured elsewhere.
 gunicorn==26.2.0
+
+# Handles internationalized domain names.
+# Supports encoding domain names containing non-ASCII characters.
 idna==3.19
+
+# Messaging library used by Celery.
+# Helps publish and receive task messages through supported brokers.
+# Celery uses it between task submission and worker execution.
 kombu==5.6.2
+
+# Library for parsing and processing XML and HTML.
+# Can support data-extraction tools; it is not Django's template
+# engine and does not render my Django pages.
 lxml==6.1.2
+
+# Lightweight support for running work in background threads.
+# Can be used by data-retrieval packages for concurrent operations.
+# Threads are different from Celery's separately running workers.
 multitasking==0.0.13
+
+# Compatibility layer for working with different dataframe tools.
+# Can support packages that accept data from multiple dataframe
+# libraries. It does not replace my database models.
 narwhals==2.25.0
+
+# Numerical computing library providing arrays and calculations.
+# My analysis code can use arrays to process prices and returns.
+# The actual financial formulas are defined in my project code.
 numpy==2.5.2
+
+# Utilities for interpreting package versions and requirements.
+# Helps Python tooling evaluate dependency metadata.
 packaging==26.3
+
+# Data-analysis library providing Series and DataFrame objects.
+# Useful for tabular OHLCV data, dates, filtering, and statistics.
+#
+# Possible interaction:
+# Stored/API data -> DataFrame -> analysis -> results.
+#
+# A DataFrame is an in-memory data structure, not a database.
 pandas==2.3.3
+
+# A separate, lightweight Python ORM.
+# May be installed for another package's storage needs.
+# Its presence does not mean MarketPulse replaces Django's ORM.
 peewee==4.4.0
+
+# Finds suitable cache, configuration, and data directories
+# for the operating system running Python.
 platformdirs==4.11.5
+
+# Interactive charting library.
+# Python can create figures for display in web pages.
+# Its presence does not establish that my templates use Plotly;
+# JavaScript charts may use a separate frontend library.
 plotly==6.9.0
+
+# Toolkit for interactive terminal input, prompts, and completion.
+# Supports command-line tools rather than website form fields.
 prompt_toolkit==3.0.53
+
+# Protocol Buffers runtime for structured-data serialization.
+# Supporting libraries can use it to encode/decode messages.
+# Protocol Buffers and JSON are different serialization formats.
 protobuf==7.36.0
+
+# Psycopg 3 PostgreSQL adapter.
+# Allows compatible Django database backends to communicate
+# with PostgreSQL.
+# Installation name and Python import name: psycopg.
 psycopg==3.3.4
+
+# Binary implementation package for Psycopg 3.
+# Supplies compiled components for supported platforms.
+# This supports psycopg; it is not a PostgreSQL database server.
 psycopg-binary==3.3.4
+
+# Binary distribution of the older Psycopg 2 adapter.
+# Python import name: psycopg2.
+# Both adapter generations are listed here; Django's backend
+# determines which supported adapter it loads.
+# Listing both does not mean each query uses both.
 psycopg2-binary==2.9.12
+
+# C-language parser used by tools such as CFFI.
+# Supports native-library integration.
 pycparser==3.0
+
+# Library for encoding and decoding JSON Web Tokens (JWTs).
+# JWT validation requires appropriate keys and validation options.
+# Installation name: PyJWT; Python import name: jwt.
+# Its presence does not enable JWT authentication in Django.
 PyJWT==2.13.0
+
+# Date/time utilities, including parsing and relative dates.
+# Can help data libraries interpret market-data timestamps.
+# Installation name: python-dateutil; import name: dateutil.
 python-dateutil==2.9.0.post0
+
+# Reads configuration from environment variables/config files.
+# Commonly imported using: from decouple import config.
+#
+# Possible interaction:
+# Environment/.env -> config(...) -> Django settings.
+#
+# Useful for separating credentials from source code.
+# This does not encrypt secrets or stop .env being committed.
 python-decouple==3.8
+
+# Time-zone library used by some Python/data-analysis packages.
+# Time zones help interpret timestamps consistently.
 pytz==2026.3.post1
+
+# Python client for a Redis server.
+# Celery can use Redis as a broker or result backend.
+# Other code may use Redis for caching.
+# Installing this client does not start a Redis server.
 redis==5.3.1
+
+# HTTP client for calling external services.
+# Project services can use it to send requests, handle responses,
+# and read JSON returned by APIs such as Alpaca.
+# Authentication, timeouts, and error handling belong in the
+# calling code; this requirement does not configure them.
 requests==2.34.2
+
+# Compatibility utilities for Python 2 and Python 3 code.
+# Can remain a dependency of third-party packages even when
+# my own project runs exclusively on Python 3.
 six==1.17.0
+
+# CSS selector support used by Beautiful Soup.
+# Helps locate elements in parsed HTML.
+# CSS selectors here are for searching document elements;
+# this package does not style my website.
 soupsieve==2.9.2
+
+# SQL parsing and formatting utilities used by Django tooling.
+# This is not a database server or database driver.
 sqlparse==0.6.0
+
+# Provides typing features across supported Python versions.
+# Helps packages use type hints and related typing constructs.
+# Type hints describe expected types; they do not automatically
+# validate user input at runtime.
 typing_extensions==4.16.0
+
+# Provides IANA time-zone data for Python's zoneinfo module
+# when suitable system time-zone data is unavailable.
 tzdata==2026.3
+
+# Detects the operating system's local time zone.
+# Useful to libraries that need local-time-zone information.
 tzlocal==5.4.4
+
+# HTTP connection library used by requests and other packages.
+# Supports connection pooling and HTTP transport features.
 urllib3==2.7.0
+
+# Promise and callback utilities used in the Celery ecosystem.
+# Supports coordination of asynchronous operations internally.
 vine==5.1.0
+
+# Calculates the display width of text in terminal columns.
+# Helps command-line tools align text correctly.
 wcwidth==0.8.3
+
+# Library for WebSocket clients and servers.
+# WebSockets support an ongoing, two-way network connection.
+# This differs from individual HTTP request/response calls.
+# Installing it does not automatically make my application's
+# messaging or market-data pages update in real time.
 websockets==17.1
+
+# Serves static assets through a configured Python web application.
+# Commonly used with Django's production static-file setup.
+#
+# Typical interaction:
+# collectstatic gathers assets -> configured WhiteNoise serves
+# CSS, JavaScript, and images to the browser.
+#
+# It does not replace Django views or a user-upload storage system.
 whitenoise==6.12.0
+
+# Library for retrieving financial data from Yahoo Finance.
+# It is a different data source from Alpaca.
+# Listing it here does not prove my import workflow uses it;
+# that depends on imports and calls in my service modules.
 yfinance==1.7.0

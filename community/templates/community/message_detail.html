@@ -1,81 +1,167 @@
-{% extends 'base.html' %}
+{% comment %}
+============================================================
+MARKETPULSE - COMMUNITY MESSAGE DETAIL
+============================================================
 
-{% block title %}
-Message | MarketPulse
-{% endblock %}
+FILE:
+community/templates/community/message_detail.html
 
+PURPOSE:
+Displays one private/community message to the logged-in user.
 
-{% block content %}
+MAIN FRAMEWORK FLOW:
 
-<div class="container py-4">
+Browser
+    ↓
+community/urls.py
+    ↓
+community/views.py
+    ↓
+Message object from database
+    ↓
+message_object
+    ↓
+community/templates/community/message_detail.html
+    ↓
+base.html
+    ↓
+Rendered HTML page
 
-    <div class="row justify-content-center">
+DATA USED BY THIS TEMPLATE:
 
-        <div class="col-lg-8">
+message_object
+    ↓
+subject
+sender.username
+created_at
+body
 
-            <div class="card shadow-sm">
+PROGRAMMING LANGUAGE CONCEPTS:
 
-                <div class="card-header bg-white">
+- Template inheritance
+- Blocks
+- Variables
+- Object attribute access
+- Filters
+- Template tags
+- URL routing
+- HTML structure
+- CSS classes
+- Separation of concerns
 
-                    <h5 class="mb-0">
+============================================================
+{% endcomment %}
 
-                        {{ message_object.subject }}
+{% comment %}
+============================================================
+1. TEMPLATE INHERITANCE
+Programming concept: Inheritance / code reuse
+============================================================
+{% endcomment %}
+{% extends 'base.html' %} {# Inheritance: reuse the shared MarketPulse base template instead of repeating the whole page layout. #}
 
-                    </h5>
+{% comment %}
+============================================================
+2. PAGE TITLE
+Programming concept: Blocks / template structure
+============================================================
+{% endcomment %}
+{% block title %} {# Block: starts the section that supplies this page's browser title to base.html. #}
+Message | MarketPulse {# Text value: this becomes the title for the message detail page. #}
+{% endblock %} {# Block ending: finishes the title section. #}
 
-                </div>
+{% comment %}
+============================================================
+3. MAIN PAGE CONTENT
+Programming concept: Blocks / presentation layer
+============================================================
+{% endcomment %}
+{% block content %} {# Block: starts the main content that will be inserted into base.html. #}
 
+{% comment %}
+------------------------------------------------------------
+3.1 PAGE CONTAINER
+Programming concept: HTML structure / Bootstrap classes
+------------------------------------------------------------
+{% endcomment %}
+<div class="container py-4"> {# HTML element: Bootstrap container keeps the content aligned and py-4 adds vertical padding. #}
+    <div class="row justify-content-center"> {# HTML nesting: creates a Bootstrap row and centres its column horizontally. #}
+        <div class="col-lg-8"> {# Bootstrap grid: gives the message area a maximum width of 8 columns on large screens. #}
 
-                <div class="card-body">
+{% comment %}
+------------------------------------------------------------
+3.2 MESSAGE CARD
+Programming concept: Component structure / CSS classes
+------------------------------------------------------------
+{% endcomment %}
+            <div class="card shadow-sm"> {# HTML component: creates a Bootstrap card with a small shadow. #}
 
-                    <p>
+{% comment %}
+------------------------------------------------------------
+3.3 MESSAGE SUBJECT
+Programming concept: Variable interpolation / object access
+------------------------------------------------------------
+{% endcomment %}
+                <div class="card-header bg-white"> {# HTML structure: starts the card header and gives it a white background. #}
+                    <h5 class="mb-0"> {# Heading element: displays the message subject and removes the default bottom margin. #}
+                        {{ message_object.subject }} {# Variable access: reads the subject attribute from the message_object supplied by the Django view. #}
+                    </h5> {# HTML closing tag: finishes the subject heading. #}
+                </div> {# HTML closing tag: finishes the card header. #}
 
-                        <strong>
-                            From:
-                        </strong>
+{% comment %}
+------------------------------------------------------------
+3.4 MESSAGE INFORMATION
+Programming concept: Object attributes / nested object access
+------------------------------------------------------------
+{% endcomment %}
+                <div class="card-body"> {# HTML structure: starts the main body of the message card. #}
+                    <p> {# Paragraph element: starts the sender information. #}
+                        <strong> {# Semantic HTML: makes the label visually important. #}
+                            From: {# Text value: labels who sent the message. #}
+                        </strong> {# HTML closing tag: finishes the strong label. #}
+                        {{ message_object.sender.username }} {# Chained object access: gets sender from the message, then gets that user's username. #}
+                    </p> {# HTML closing tag: finishes the sender paragraph. #}
 
-                        {{ message_object.sender.username }}
+                    <p> {# Paragraph element: starts the received-date information. #}
+                        <strong> {# Semantic HTML: makes the Received label bold. #}
+                            Received: {# Text value: identifies the message date and time. #}
+                        </strong> {# HTML closing tag: finishes the strong label. #}
+                        {{ message_object.created_at|date:"d M Y H:i" }} {# Filter: gets created_at and transforms the datetime into day, month, year, hour and minute format. #}
+                    </p> {# HTML closing tag: finishes the received-date paragraph. #}
 
-                    </p>
+{% comment %}
+------------------------------------------------------------
+3.5 VISUAL SEPARATOR
+Programming concept: HTML document structure
+------------------------------------------------------------
+{% endcomment %}
+                    <hr> {# HTML element: draws a horizontal line between message information and the message body. #}
 
+{% comment %}
+------------------------------------------------------------
+3.6 MESSAGE BODY
+Programming concept: Variable output / template filters
+------------------------------------------------------------
+{% endcomment %}
+                    <p> {# Paragraph element: starts the main message text area. #}
+                        {{ message_object.body|linebreaksbr }} {# Filter: outputs the message body and converts line breaks into HTML br elements. #}
+                    </p> {# HTML closing tag: finishes the message body paragraph. #}
 
-                    <p>
+{% comment %}
+------------------------------------------------------------
+3.7 BACK TO INBOX BUTTON
+Programming concept: URL routing / template tags
+------------------------------------------------------------
+{% endcomment %}
+                    <a {# HTML anchor: starts a link that acts as the Back to Inbox button. #}
+                        href="{% url 'community:inbox' %}" {# Template tag: asks Django to generate the URL for the inbox route in the community namespace. #}
+                        class="btn btn-outline-secondary"> {# Bootstrap classes: styles the link so it looks like an outlined secondary button. #}
+                        Back to Inbox {# Link text: tells the user that this returns to the inbox. #}
+                    </a> {# HTML closing tag: finishes the Back to Inbox link. #}
+                </div> {# HTML closing tag: finishes the card body. #}
+            </div> {# HTML closing tag: finishes the Bootstrap card. #}
+        </div> {# HTML closing tag: finishes the Bootstrap column. #}
+    </div> {# HTML closing tag: finishes the Bootstrap row. #}
+</div> {# HTML closing tag: finishes the main Bootstrap container. #}
 
-                        <strong>
-                            Received:
-                        </strong>
-
-                        {{ message_object.created_at|date:"d M Y H:i" }}
-
-                    </p>
-
-
-                    <hr>
-
-
-                    <p>
-
-                        {{ message_object.body|linebreaksbr }}
-
-                    </p>
-
-
-                    <a
-                        href="{% url 'community:inbox' %}"
-                        class="btn btn-outline-secondary">
-
-                        Back to Inbox
-
-                    </a>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-
-{% endblock %}
+{% endblock %} {# Block ending: finishes this page's content section for base.html. #}

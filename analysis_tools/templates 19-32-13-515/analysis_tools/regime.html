@@ -1,2 +1,174 @@
-{% extends 'base.html' %}<!-- ======================================================== REGIME ANALYSIS: symbol → bull/bear/sideways/volatile classification. -->
-{% block title %}Market Regime | MarketPulse{% endblock %}{% block content %}<h1 class="h3">Market Change Detection</h1><form method="post" class="input-group mb-4">{% csrf_token %}<input class="form-control" name="symbol" value="AAPL"><button class="btn btn-primary">Analyze</button></form>{% if regime %}<div class="alert alert-info">{{ regime.symbol }}: <strong>{{ regime.get_regime_display }}</strong> | volatility {{ regime.volatility }}{% if suggestion %}<hr><strong>Adjustment suggestion:</strong> {{ suggestion }}{% endif %}</div>{% endif %}<ul>{% for x in recent %}<li>{{ x.date }} — {{ x.symbol }} — {{ x.get_regime_display }}</li>{% empty %}<li>No previous results.</li>{% endfor %}</ul>{% endblock %}
+{% extends 'base.html' %}{# TEMPLATE INHERITANCE: Reuses the common MarketPulse layout from base.html. #}
+
+{% comment %}
+============================================================
+MARKETPULSE - MARKET REGIME ANALYSIS
+============================================================
+
+FILE:
+analysis_tools/templates 19-32-13-515/analysis_tools/regime.html
+
+PURPOSE:
+This template displays the Market Change Detection page.
+
+It allows the user to:
+1. Enter a market symbol.
+2. Submit the symbol for analysis.
+3. Display the detected market regime.
+4. Display volatility information.
+5. Display an adjustment suggestion when available.
+6. Display previous regime-analysis results.
+
+============================================================
+DJANGO FRAMEWORK FLOW
+============================================================
+
+Browser / User
+    ↓
+Django URL
+    ↓
+analysis_tools view
+    ↓
+Market-regime analysis
+    ↓
+Template context
+    ↓
+regime
+suggestion
+recent
+    ↓
+regime.html
+    ↓
+base.html
+    ↓
+Rendered MarketPulse webpage
+
+============================================================
+PROGRAMMING LANGUAGE FEATURES / CONCEPTS
+============================================================
+
+Template inheritance
+    → {% extends %}
+
+Modularity
+    → {% block %}
+
+Variables / object attributes
+    → {{ regime.symbol }}
+    → {{ regime.volatility }}
+
+Conditional selection
+    → {% if regime %}
+    → {% if suggestion %}
+
+Iteration / loops
+    → {% for x in recent %}
+
+Alternative branch
+    → {% empty %}
+
+Object / model behaviour
+    → get_regime_display
+
+Input
+    → <input>
+
+HTTP request
+    → method="post"
+
+Security
+    → {% csrf_token %}
+
+Presentation
+    → HTML + Bootstrap CSS classes
+
+============================================================
+{% endcomment %}
+
+{# ============================================================ #}
+{# 1. PAGE TITLE BLOCK                                           #}
+{# Programming concept: Template inheritance and modularity.     #}
+{# ============================================================ #}
+
+{% block title %}Market Regime | MarketPulse{% endblock %}{# Replaces the title block defined inside base.html. #}
+
+{# ============================================================ #}
+{# 2. MAIN PAGE CONTENT BLOCK                                    #}
+{# Programming concept: A reusable block of page content.        #}
+{# ============================================================ #}
+
+{% block content %}{# Starts the main content that will be inserted into base.html. #}
+
+<h1 class="h3">Market Change Detection</h1>{# HTML heading that tells the user what this page does. #}
+
+{# ============================================================ #}
+{# 3. SYMBOL INPUT FORM                                          #}
+{# Programming concepts: Input, HTTP POST and web security.      #}
+{# ============================================================ #}
+
+<form method="post" class="input-group mb-4">{# Creates a POST form and uses Bootstrap classes for layout and spacing. #}
+
+{% csrf_token %}{# SECURITY: Adds Django's CSRF token so the POST request can be safely accepted. #}
+
+<input class="form-control" name="symbol" value="AAPL">{# INPUT: Creates the symbol field; AAPL is the original default value. #}
+
+<button class="btn btn-primary">Analyze</button>{# Creates the original Analyze submit button using Bootstrap button classes. #}
+
+</form>{# Ends the symbol-analysis form. #}
+
+{# ============================================================ #}
+{# 4. CURRENT REGIME RESULT                                      #}
+{# Programming concept: Conditional / selection statement.       #}
+{# ============================================================ #}
+
+{% if regime %}{# CONDITIONAL: Runs this section only when the view supplied a regime object. #}
+
+<div class="alert alert-info">{# Creates a Bootstrap information box for the analysis result. #}
+
+{{ regime.symbol }}:{# VARIABLE / ATTRIBUTE ACCESS: Displays the symbol stored on the regime object. #}
+
+<strong>{{ regime.get_regime_display }}</strong>{# OBJECT/MODEL BEHAVIOUR: Displays the readable name of the stored regime choice. #}
+
+| volatility {{ regime.volatility }}{# VARIABLE / ATTRIBUTE ACCESS: Displays the volatility value from the regime object. #}
+
+{# ============================================================ #}
+{# 5. OPTIONAL ADJUSTMENT SUGGESTION                             #}
+{# Programming concept: Nested conditional selection.            #}
+{# ============================================================ #}
+
+{% if suggestion %}{# NESTED CONDITIONAL: Only displays this section when a suggestion exists. #}
+
+<hr>{# Adds a horizontal line between the regime result and its suggestion. #}
+
+<strong>Adjustment suggestion:</strong> {{ suggestion }}{# VARIABLE OUTPUT: Displays the suggestion supplied by the Django view. #}
+
+{% endif %}{# Ends the suggestion conditional block. #}
+
+</div>{# Ends the Bootstrap information box. #}
+
+{% endif %}{# Ends the main regime conditional block. #}
+
+{# ============================================================ #}
+{# 6. PREVIOUS REGIME RESULTS                                    #}
+{# Programming concepts: Collection, loop and iteration.         #}
+{# ============================================================ #}
+
+<ul>{# Starts an unordered HTML list for previous analysis results. #}
+
+{% for x in recent %}{# LOOP / ITERATION: Goes through every object contained in the recent collection. #}
+
+<li>{{ x.date }} — {{ x.symbol }} — {{ x.get_regime_display }}</li>{# Displays the date, symbol and readable regime for the current loop object x. #}
+
+{% empty %}{# ALTERNATIVE LOOP BRANCH: Runs when the recent collection contains no items. #}
+
+<li>No previous results.</li>{# Displays a message when there are no previous regime-analysis records. #}
+
+{% endfor %}{# Ends the loop through recent results. #}
+
+</ul>{# Ends the unordered list. #}
+
+{# ============================================================ #}
+{# 7. END MAIN CONTENT                                           #}
+{# ============================================================ #}
+
+{% endblock %}{# Ends the content block that is inserted into base.html. #}

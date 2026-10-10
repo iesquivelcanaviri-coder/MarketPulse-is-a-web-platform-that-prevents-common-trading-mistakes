@@ -1,2 +1,203 @@
-{% extends 'base.html' %}{% load math_tags %}<!-- ======================================================== OVERFITTING RESULTS: persisted tests → comparison table. -->
-{% block title %}Overfitting Results | MarketPulse{% endblock %}{% block content %}<h1 class="h3">Overfitting Results</h1><table class="table table-striped"><thead><tr><th>Strategy</th><th>Period</th><th>In</th><th>Out</th><th>Score</th><th>Status</th></tr></thead><tbody>{% for x in tests %}<tr><td>{{ x.strategy.name }}</td><td>{{ x.test_period }}</td><td>{{ x.in_sample_return }}</td><td>{{ x.out_sample_return }}</td><td>{{ x.overfitting_score|percentage|floatformat:1 }}%</td><td>{{ x.is_overfitted|yesno:'Warning,Stable' }}</td></tr><tr><td colspan="6"><small>{{ x.recommendations }}</small></td></tr>{% empty %}<tr><td colspan="6">No tests.</td></tr>{% endfor %}</tbody></table>{% endblock %}
+{% extends 'base.html' %} {# TEMPLATE INHERITANCE: Reuses the main MarketPulse layout from base.html. #}
+{% load math_tags %} {# MODULE / LIBRARY CONCEPT: Loads my custom Django template filters from math_tags. #}
+
+{% comment %}
+============================================================
+MARKETPULSE - OVERFITTING RESULTS
+============================================================
+
+FILE:
+analysis_tools/templates/analysis_tools/overfitting_results.html
+
+PURPOSE:
+Displays saved overfitting-test results in a table.
+
+This template does not perform the overfitting calculation.
+The Python/Django backend performs or retrieves the analysis,
+then sends the results to this template through the "tests"
+context variable.
+
+============================================================
+FRAMEWORK
+============================================================
+
+Django
+    ↓
+Django Template Language
+    ↓
+HTML
+    ↓
+Bootstrap CSS
+    ↓
+Browser
+
+Django Template Language is used for:
+- Template inheritance
+- Loading custom filters
+- Variables
+- Object/property access
+- Loops
+- Empty-result handling
+- Filters
+- Formatting
+
+HTML is used for:
+- Headings
+- Tables
+- Rows
+- Cells
+- Text structure
+
+Bootstrap is used for:
+- Heading styling
+- Table styling
+- Striped table rows
+
+============================================================
+MARKETPULSE DATA FLOW
+============================================================
+
+PostgreSQL
+    ↓
+Overfitting-related Django model
+    ↓
+analysis_tools/views.py
+    ↓
+QuerySet / overfitting test records
+    ↓
+tests
+    ↓
+overfitting_results.html
+    ↓
+{% for x in tests %}
+    ↓
+HTML table
+    ↓
+User sees overfitting results
+
+============================================================
+LECTURE CONNECTION
+PROGRAMMING LANGUAGE FEATURES / CONCEPTS
+============================================================
+
+1. VARIABLES
+   {{ x.test_period }}
+
+2. OBJECT / PROPERTY ACCESS
+   {{ x.strategy.name }}
+
+3. ITERATION / LOOPS
+   {% for x in tests %}
+
+4. CONTROL FLOW
+   {% empty %}
+
+5. FUNCTIONS / DATA TRANSFORMATION
+   Django filters:
+   |percentage
+   |floatformat
+   |yesno
+
+6. MODULES / REUSABILITY
+   {% load math_tags %}
+
+7. INHERITANCE
+   {% extends 'base.html' %}
+
+8. BLOCKS / OVERRIDING
+   {% block title %}
+   {% block content %}
+
+============================================================
+OVERFITTING RESULT FLOW
+============================================================
+
+tests
+    ↓
+One test becomes "x"
+    ↓
+x.strategy.name
+x.test_period
+x.in_sample_return
+x.out_sample_return
+x.overfitting_score
+x.is_overfitted
+x.recommendations
+    ↓
+HTML table row
+
+============================================================
+{% endcomment %}
+
+{# ============================================================ #}
+{# 1. PAGE TITLE #}
+{# ============================================================ #}
+
+{% block title %}Overfitting Results | MarketPulse{% endblock %} {# BLOCK / INHERITANCE: Replaces the title block defined inside base.html. #}
+
+{# ============================================================ #}
+{# 2. PAGE CONTENT #}
+{# ============================================================ #}
+
+{% block content %} {# BLOCK: Starts the main page content that is inserted into base.html. #}
+
+<h1 class="h3">Overfitting Results</h1> {# HTML + BOOTSTRAP: Displays the page heading using Bootstrap's h3-sized heading class. #}
+
+{# ============================================================ #}
+{# 3. OVERFITTING RESULTS TABLE #}
+{# ============================================================ #}
+
+<table class="table table-striped"> {# HTML + BOOTSTRAP: Creates a table and adds Bootstrap table and striped-row styling. #}
+    <thead> {# HTML STRUCTURE: Starts the table-header section. #}
+        <tr> {# HTML STRUCTURE: Starts one table-header row. #}
+            <th>Strategy</th> {# TABLE HEADER: Column for the strategy name. #}
+            <th>Period</th> {# TABLE HEADER: Column for the period used in the overfitting test. #}
+            <th>In</th> {# TABLE HEADER: Column for the in-sample return. #}
+            <th>Out</th> {# TABLE HEADER: Column for the out-of-sample return. #}
+            <th>Score</th> {# TABLE HEADER: Column for the calculated overfitting score. #}
+            <th>Status</th> {# TABLE HEADER: Column showing whether the strategy appears overfitted. #}
+        </tr> {# HTML STRUCTURE: Ends the table-header row. #}
+    </thead> {# HTML STRUCTURE: Ends the table-header section. #}
+    <tbody> {# HTML STRUCTURE: Starts the main table body containing the test records. #}
+
+        {# ============================================================ #}
+        {# 4. LOOP THROUGH SAVED OVERFITTING TESTS #}
+        {# ============================================================ #}
+
+        {% for x in tests %} {# LOOP / ITERATION: Goes through every overfitting test stored inside the tests collection. #}
+
+        <tr> {# HTML STRUCTURE: Starts a row for one overfitting-test result. #}
+            <td>{{ x.strategy.name }}</td> {# VARIABLE + PROPERTY ACCESS: Reads the related strategy object and displays its name. #}
+            <td>{{ x.test_period }}</td> {# VARIABLE: Displays the test period stored for this test. #}
+            <td>{{ x.in_sample_return }}</td> {# VARIABLE: Displays the return produced using the in-sample data. #}
+            <td>{{ x.out_sample_return }}</td> {# VARIABLE: Displays the return produced using unseen out-of-sample data. #}
+            <td>{{ x.overfitting_score|percentage|floatformat:1 }}%</td> {# FILTER PIPELINE: Converts the score to a percentage and formats it to one decimal place. #}
+            <td>{{ x.is_overfitted|yesno:'Warning,Stable' }}</td> {# BOOLEAN + FILTER: Converts True/False into the user-friendly words Warning or Stable. #}
+        </tr> {# HTML STRUCTURE: Ends the main result row. #}
+
+        {# ============================================================ #}
+        {# 5. RECOMMENDATION FOR THE CURRENT TEST #}
+        {# ============================================================ #}
+
+        <tr> {# HTML STRUCTURE: Creates another row below the result for its recommendation. #}
+            <td colspan="6"> {# HTML ATTRIBUTE: Makes this cell stretch across all six table columns. #}
+                <small>{{ x.recommendations }}</small> {# VARIABLE: Displays the recommendation stored for this overfitting test in smaller text. #}
+            </td> {# HTML STRUCTURE: Ends the recommendation cell. #}
+        </tr> {# HTML STRUCTURE: Ends the recommendation row. #}
+
+        {# ============================================================ #}
+        {# 6. EMPTY RESULT HANDLING #}
+        {# ============================================================ #}
+
+        {% empty %} {# CONTROL FLOW: Runs when the tests collection contains no records. #}
+
+        <tr> {# HTML STRUCTURE: Creates a fallback table row when there are no tests. #}
+            <td colspan="6">No tests.</td> {# FALLBACK OUTPUT: Shows a message across all six columns when no results exist. #}
+        </tr> {# HTML STRUCTURE: Ends the fallback row. #}
+
+        {% endfor %} {# LOOP: Ends the for loop after all tests have been displayed. #}
+
+    </tbody> {# HTML STRUCTURE: Ends the table body. #}
+</table> {# HTML STRUCTURE: Ends the overfitting-results table. #}
+
+{% endblock %} {# BLOCK: Ends the content that is inserted into the content block of base.html. #}

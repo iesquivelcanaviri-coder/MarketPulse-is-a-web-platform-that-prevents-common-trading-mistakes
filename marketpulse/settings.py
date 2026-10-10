@@ -2,1566 +2,426 @@
 ============================================================
 MARKETPULSE - DJANGO SETTINGS
 ============================================================
-
-Framework mapping:
-
-This file is the central configuration file for MarketPulse.
-
-It connects:
-
-- Django applications
-- PostgreSQL / Neon database
-- Local SQLite fallback
-- Django REST Framework
-- React / CORS configuration
-- Bootstrap 5
-- Static files and WhiteNoise
-- Optional Celery and Redis
-- Optional MATLAB execution
-- Alpaca market-data integration
-- Authentication
-- Password recovery email delivery
-- Render production deployment
-- Security settings
-
-
-PROJECT ROUTING:
-
-marketpulse/urls.py
-        ↓
-Django applications
-
-
-CUSTOM USER MODEL:
-
-accounts/models.py
-
-
-AUTHENTICATION FLOW:
-
-Guest
-    ↓
-Login
-    ↓
-Django validates credentials
-    ↓
-Authenticated session created
-    ↓
-MarketPulse Home
-    ↓
-Dashboard / Data / Strategies / Risk
-
-
+PURPOSE:
+Configure Django and the services used by MarketPulse.
+FRAMEWORK:
+Settings → Apps, middleware, URLs, templates and database.
+INTEGRATIONS:
+Django REST Framework, CORS, Bootstrap, WhiteNoise,
+optional Celery/Redis, optional MATLAB, Alpaca and Brevo.
+AUTHENTICATION:
+Login → Authenticated session → Home or requested next page.
 PASSWORD RECOVERY:
-
-Login
-    ↓
-Forgot Password
-    ↓
-Django PasswordResetView
-    ↓
-Django-Anymail
-    ↓
-Brevo HTTPS API
-    ↓
-Reset Email
-    ↓
-Secure Django Reset Token
-    ↓
-New Password
-
-
-ENVIRONMENT VARIABLES:
-
-Local development:
-    .env
-
-Production:
-    Render Environment Variables
-
-
-IMPORTANT SECURITY RULE:
-
-Real credentials must never be stored directly
-inside this file or committed to GitHub.
-
+Django reset views → Email backend → Reset link → New password.
+CONFIGURATION:
+Local values can come from .env; deployment values can come
+from environment variables.
+LECTURE:
+Imports, variables, strings, Booleans, lists, dictionaries,
+tuples, conditions, comprehensions, lambdas and function calls.
+SECURITY:
+Keep real credentials outside source code.
 ============================================================
 """
-
-
 # ============================================================
 # 1. IMPORTS
 # ============================================================
-
-# os is used to read environment variables automatically
-# supplied by Render, including RENDER_EXTERNAL_HOSTNAME.
-import os
-
-from pathlib import Path
-
-import dj_database_url
-from decouple import config
-
-
+import os  # I import operating-system tools for reading process environment variables.
+from pathlib import Path  # I import a class for constructing filesystem paths.
+import dj_database_url  # I import a package that converts database URLs into Django configuration.
+from decouple import config  # I import the configuration reader for environment and file-based values.
 # ============================================================
 # 2. BASE DIRECTORY
 # ============================================================
-
-# BASE_DIR points to the main MarketPulse project folder.
-#
-# Example structure:
-#
-# MarketPulse/
-#     manage.py
-#     marketpulse/
-#     templates/
-#     static/
-#     accounts/
-#     data_management/
-#     strategy_builder/
-#     risk_management/
-#
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-
+BASE_DIR = Path(__file__).resolve().parent.parent  # I find the project directory two levels above this settings file.
 # ============================================================
 # 3. SECURITY SETTINGS
 # ============================================================
-
-
-# ============================================================
 # 3.1 DJANGO SECRET KEY
-# ============================================================
-
-# Django uses SECRET_KEY for:
-#
-# - cryptographic signing
-# - sessions
-# - CSRF protection
-# - password-reset security
-# - other security functionality
-#
-#
-# LOCAL:
-#
-# Store it inside:
-#
-# .env
-#
-#
-# PRODUCTION:
-#
-# Store it inside:
-#
-# Render
-#     ↓
-# Environment
-#     ↓
-# Environment Variables
-#
-#
-# IMPORTANT:
-#
-# This is NOT the Alpaca API secret.
-#
-# It is also NOT the Brevo API key.
-SECRET_KEY = config(
-    "SECRET_KEY",
-    default="django-insecure-local-only-change-me",
-)
-
-
-# ============================================================
+SECRET_KEY = config(  # I read Django's cryptographic signing key.
+    "SECRET_KEY",  # I identify the configuration variable.
+    default="django-insecure-local-only-change-me",  # I preserve the existing local-only fallback.
+)  # I finish reading the secret key.
 # 3.2 DEBUG MODE
-# ============================================================
-
-# Local development:
-#
-# DEBUG=True
-#
-# Render production:
-#
-# DEBUG=False
-#
-#
-# DEBUG must be False in production because otherwise
-# Django can expose detailed application information
-# through error pages.
-DEBUG = config(
-    "DEBUG",
-    default=False,
-    cast=bool,
-)
-
-
-# ============================================================
+DEBUG = config(  # I read whether detailed debugging is enabled.
+    "DEBUG",  # I identify the configuration variable.
+    default=False,  # I default to debugging being disabled.
+    cast=bool,  # I ask decouple to convert the configured value into a Boolean.
+)  # I finish reading debug mode.
 # 3.3 ALLOWED HOSTS
-# ============================================================
-
-# ALLOWED_HOSTS tells Django which hostnames are allowed
-# to send requests to MarketPulse.
-#
-#
-# LOCAL EXAMPLES:
-#
-# localhost
-# 127.0.0.1
-#
-#
-# RENDER EXAMPLE:
-#
-# marketpulse-is-a-web-platform-that.onrender.com
-#
-#
-# IMPORTANT:
-#
-# ALLOWED_HOSTS contains hostnames only.
-#
-# Correct:
-#
-# marketpulse-is-a-web-platform-that.onrender.com
-#
-# Incorrect:
-#
-# https://marketpulse-is-a-web-platform-that.onrender.com
-#
-ALLOWED_HOSTS = config(
-    "ALLOWED_HOSTS",
-    default="localhost,127.0.0.1",
-    cast=lambda value: [
-        host.strip()
-        for host in value.split(",")
-        if host.strip()
-    ],
-)
-
-
-# ============================================================
+ALLOWED_HOSTS = config(  # I read the hostnames Django may serve.
+    "ALLOWED_HOSTS",  # I identify the hostname configuration variable.
+    default="localhost,127.0.0.1",  # I preserve the default local hostnames.
+    cast=lambda value: [  # I use an anonymous function to convert comma-separated text into a list.
+        host.strip()  # I remove spaces around each retained hostname.
+        for host in value.split(",")  # I loop over the comma-separated hostname entries.
+        if host.strip()  # I exclude entries that become empty after trimming.
+    ],  # I finish the list comprehension and cast argument.
+)  # I finish reading allowed hosts.
 # 3.4 CSRF TRUSTED ORIGINS
-# ============================================================
-
-# CSRF_TRUSTED_ORIGINS tells Django which web origins are
-# trusted when forms send POST requests.
-#
-#
-# Unlike ALLOWED_HOSTS, these values MUST include:
-#
-# http://
-#
-# or:
-#
-# https://
-#
-#
-# LOCAL:
-#
-# http://localhost:8000
-# http://127.0.0.1:8000
-#
-#
-# RENDER:
-#
-# https://marketpulse-is-a-web-platform-that.onrender.com
-#
-CSRF_TRUSTED_ORIGINS = config(
-    "CSRF_TRUSTED_ORIGINS",
-    default=(
-        "http://localhost:8000,"
-        "http://127.0.0.1:8000"
-    ),
-    cast=lambda value: [
-        origin.strip()
-        for origin in value.split(",")
-        if origin.strip()
-    ],
-)
-
-
-# ============================================================
+CSRF_TRUSTED_ORIGINS = config(  # I read origins trusted for Django's CSRF origin checks.
+    "CSRF_TRUSTED_ORIGINS",  # I identify the configuration variable.
+    default=(  # I begin the default origin string.
+        "http://localhost:8000,"  # I include the localhost origin with its scheme and port.
+        "http://127.0.0.1:8000"  # I join this adjacent string to include the loopback origin.
+    ),  # I finish the combined default string.
+    cast=lambda value: [  # I define a conversion from comma-separated text to a list.
+        origin.strip()  # I trim spaces around each retained origin.
+        for origin in value.split(",")  # I loop over the configured origins.
+        if origin.strip()  # I discard empty entries.
+    ],  # I finish the origin list comprehension.
+)  # I finish reading trusted origins.
 # 3.5 RENDER PRODUCTION HOST CONFIGURATION
-# ============================================================
-
-# Render automatically provides:
-#
-# RENDER_EXTERNAL_HOSTNAME
-#
-# when the application is deployed.
-#
-#
-# Example:
-#
-# marketpulse-is-a-web-platform-that.onrender.com
-#
-#
-# This section automatically adds that hostname to:
-#
-# ALLOWED_HOSTS
-#
-# and automatically adds the HTTPS origin to:
-#
-# CSRF_TRUSTED_ORIGINS
-#
-#
-# This helps prevent:
-#
-# Bad Request (400)
-#
-# caused by Django rejecting the Render hostname.
-
-RENDER_EXTERNAL_HOSTNAME = os.environ.get(
-    "RENDER_EXTERNAL_HOSTNAME",
-    "",
-).strip()
-
-
-if RENDER_EXTERNAL_HOSTNAME:
-
-    # --------------------------------------------------------
-    # Add Render hostname to ALLOWED_HOSTS
-    # --------------------------------------------------------
-
-    if (
-        RENDER_EXTERNAL_HOSTNAME
-        not in ALLOWED_HOSTS
-    ):
-
-        ALLOWED_HOSTS.append(
-            RENDER_EXTERNAL_HOSTNAME
-        )
-
-
-    # --------------------------------------------------------
-    # Build HTTPS origin for CSRF protection
-    # --------------------------------------------------------
-
-    render_origin = (
-        f"https://{RENDER_EXTERNAL_HOSTNAME}"
-    )
-
-
-    # --------------------------------------------------------
-    # Add Render origin to trusted CSRF origins
-    # --------------------------------------------------------
-
-    if (
-        render_origin
-        not in CSRF_TRUSTED_ORIGINS
-    ):
-
-        CSRF_TRUSTED_ORIGINS.append(
-            render_origin
-        )
-
-
-# ============================================================
-# 3.6 RENDER HTTPS PROXY
-# ============================================================
-
-# Render terminates HTTPS before forwarding the request
-# to the Django application.
-#
-# This setting tells Django to trust Render's
-# X-Forwarded-Proto header when determining whether
-# the original browser request used HTTPS.
-#
-# This is also important when Django creates absolute
-# password-reset links for email messages.
-SECURE_PROXY_SSL_HEADER = (
-    "HTTP_X_FORWARDED_PROTO",
-    "https",
-)
-
-
-# ============================================================
-# 3.7 PRODUCTION COOKIE SECURITY
-# ============================================================
-
-# Secure cookies should be enabled in production.
-#
-# They remain disabled during local DEBUG=True development
-# so localhost still works normally.
-SESSION_COOKIE_SECURE = not DEBUG
-
-CSRF_COOKIE_SECURE = not DEBUG
-
-
-# ============================================================
+RENDER_EXTERNAL_HOSTNAME = os.environ.get(  # I read the hostname directly from the process environment.
+    "RENDER_EXTERNAL_HOSTNAME",  # I identify the environment variable.
+    "",  # I use an empty string when it is absent.
+).strip()  # I remove surrounding spaces from the hostname.
+if RENDER_EXTERNAL_HOSTNAME:  # I continue only when the hostname is nonempty.
+    if (RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS):  # I check whether the hostname is already allowed.
+        ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)  # I add the hostname without duplicating it.
+    render_origin = (f"https://{RENDER_EXTERNAL_HOSTNAME}")  # I use an f-string to build its HTTPS origin.
+    if (render_origin not in CSRF_TRUSTED_ORIGINS):  # I check whether the HTTPS origin is already trusted.
+        CSRF_TRUSTED_ORIGINS.append(render_origin)  # I add the origin without duplicating it.
+# 3.6 HTTPS PROXY HEADER
+SECURE_PROXY_SSL_HEADER = (  # I define the proxy header and value Django uses to recognise HTTPS.
+    "HTTP_X_FORWARDED_PROTO",  # I specify the request metadata key for the forwarded protocol.
+    "https",  # I specify the value that indicates an HTTPS request.
+)  # I finish the two-item tuple.
+# 3.7 COOKIE SECURITY
+SESSION_COOKIE_SECURE = not DEBUG  # I require HTTPS for session cookies when debugging is disabled.
+CSRF_COOKIE_SECURE = not DEBUG  # I require HTTPS for CSRF cookies when debugging is disabled.
 # 3.8 BASIC BROWSER SECURITY
-# ============================================================
-
-SECURE_CONTENT_TYPE_NOSNIFF = True
-
-X_FRAME_OPTIONS = "DENY"
-
-
+SECURE_CONTENT_TYPE_NOSNIFF = True  # I enable the response header that discourages content-type sniffing.
+X_FRAME_OPTIONS = "DENY"  # I configure the clickjacking header to prevent framing.
 # ============================================================
 # 4. INSTALLED DJANGO APPLICATIONS
 # ============================================================
-
-# INSTALLED_APPS tells Django which applications form
-# part of MarketPulse.
-#
-#
-# accounts
-#     ↓
-# Registration
-# Login
-# Logout
-# User profile
-# Password recovery
-#
-#
-# core
-#     ↓
-# Shared MarketData
-# Alerts
-# Alert rules
-# Dashboard data
-#
-#
-# community
-#     ↓
-# Community posts
-# Private messages
-# Inbox
-#
-#
-# data_management
-#     ↓
-# Alpaca historical imports
-# Historical OHLCV storage
-# Market Condition workflow
-#
-#
-# strategy_builder
-#     ↓
-# Strategy & Model Library
-# User strategies
-# Backtesting
-# Strategy robustness
-#
-#
-# risk_management
-#     ↓
-# Trade risk planning
-# Position sizing
-# Stop-loss calculations
-#
-#
-# analysis_tools
-#     ↓
-# Internal analytics engine
-# Market regime analysis
-# Robustness / overfitting analysis
-#
-#
-# api
-#     ↓
-# Django REST Framework API
-# Dashboard market information
-# Alpaca integration
-#
-#
-# anymail
-#     ↓
-# Connects Django's email framework to Brevo
-# through an HTTPS API.
-#
-INSTALLED_APPS = [
-
-    # --------------------------------------------------------
-    # Django built-in applications
-    # --------------------------------------------------------
-
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-
-
-    # --------------------------------------------------------
-    # Third-party applications
-    # --------------------------------------------------------
-
-    "rest_framework",
-
-    "corsheaders",
-
-    "django_bootstrap5",
-
-    # Django-Anymail connects Django's normal email system
-    # to transactional email providers such as Brevo.
-    "anymail",
-
-
-    # --------------------------------------------------------
-    # MarketPulse applications
-    # --------------------------------------------------------
-
-    "accounts",
-
-    "core",
-
-    "community",
-
-    "data_management",
-
-    "strategy_builder",
-
-    "risk_management",
-
-    "analysis_tools",
-
-    "api",
-]
-
-
+INSTALLED_APPS = [  # I begin the ordered list of registered applications.
+    # 4.1 DJANGO BUILT-IN APPLICATIONS
+    "django.contrib.admin",  # I enable Django's administration application.
+    "django.contrib.auth",  # I enable authentication and permissions.
+    "django.contrib.contenttypes",  # I enable model content-type records.
+    "django.contrib.sessions",  # I enable session support.
+    "django.contrib.messages",  # I enable temporary user messages.
+    "django.contrib.staticfiles",  # I enable static-file discovery and collection.
+    # 4.2 THIRD-PARTY APPLICATIONS
+    "rest_framework",  # I register Django REST Framework.
+    "corsheaders",  # I register cross-origin request support.
+    "django_bootstrap5",  # I register Bootstrap template helpers.
+    "anymail",  # I register the transactional email integration.
+    # 4.3 MARKETPULSE APPLICATIONS
+    "accounts",  # I register the custom account application.
+    "core",  # I register shared models and dashboard functionality.
+    "community",  # I register community and messaging functionality.
+    "data_management",  # I register historical market-data functionality.
+    "strategy_builder",  # I register strategy research functionality.
+    "risk_management",  # I register risk-planning functionality.
+    "analysis_tools",  # I register the internal analytics application.
+    "api",  # I register MarketPulse's API application.
+]  # I finish the application list.
 # ============================================================
 # 5. DJANGO MIDDLEWARE
 # ============================================================
-
-# Middleware handles requests before they reach a Django view
-# and responses before they return to the browser.
-MIDDLEWARE = [
-
-    # --------------------------------------------------------
-    # Security
-    # --------------------------------------------------------
-
-    "django.middleware.security.SecurityMiddleware",
-
-
-    # --------------------------------------------------------
-    # Production static files
-    # --------------------------------------------------------
-
-    "whitenoise.middleware.WhiteNoiseMiddleware",
-
-
-    # --------------------------------------------------------
-    # React / API CORS support
-    # --------------------------------------------------------
-
-    # Must appear before CommonMiddleware.
-    "corsheaders.middleware.CorsMiddleware",
-
-
-    # --------------------------------------------------------
-    # Sessions
-    # --------------------------------------------------------
-
-    "django.contrib.sessions.middleware.SessionMiddleware",
-
-
-    # --------------------------------------------------------
-    # General Django request processing
-    # --------------------------------------------------------
-
-    "django.middleware.common.CommonMiddleware",
-
-
-    # --------------------------------------------------------
-    # Cross-Site Request Forgery protection
-    # --------------------------------------------------------
-
-    "django.middleware.csrf.CsrfViewMiddleware",
-
-
-    # --------------------------------------------------------
-    # Authentication
-    # --------------------------------------------------------
-
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-
-
-    # --------------------------------------------------------
-    # Django messages
-    # --------------------------------------------------------
-
-    "django.contrib.messages.middleware.MessageMiddleware",
-
-
-    # --------------------------------------------------------
-    # Clickjacking protection
-    # --------------------------------------------------------
-
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
-]
-
-
+MIDDLEWARE = [  # I define request middleware in its processing order.
+    "django.middleware.security.SecurityMiddleware",  # I enable Django's security-related request and response handling.
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # I enable serving collected static files through WhiteNoise.
+    "corsheaders.middleware.CorsMiddleware",  # I add CORS handling before CommonMiddleware.
+    "django.contrib.sessions.middleware.SessionMiddleware",  # I attach session support to requests.
+    "django.middleware.common.CommonMiddleware",  # I enable common URL and request processing.
+    "django.middleware.csrf.CsrfViewMiddleware",  # I enable CSRF checks for applicable requests.
+    "django.contrib.auth.middleware.AuthenticationMiddleware",  # I associate the session's user with each request.
+    "django.contrib.messages.middleware.MessageMiddleware",  # I enable request-based user messages.
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",  # I apply the configured framing-protection header.
+]  # I finish the middleware list.
 # ============================================================
 # 6. ROOT URL CONFIGURATION
 # ============================================================
-
-# All incoming Django URLs begin routing from:
-#
-# marketpulse/urls.py
-ROOT_URLCONF = "marketpulse.urls"
-
-
+ROOT_URLCONF = "marketpulse.urls"  # I identify the project's main URL-routing module.
 # ============================================================
 # 7. TEMPLATE CONFIGURATION
 # ============================================================
-
-TEMPLATES = [
-
-    {
-
-        "BACKEND":
-            "django.template.backends.django.DjangoTemplates",
-
-
-        # ----------------------------------------------------
-        # Main project templates directory
-        # ----------------------------------------------------
-
-        "DIRS": [
-
-            BASE_DIR / "templates",
-
-        ],
-
-
-        # ----------------------------------------------------
-        # Also search application templates directories
-        # ----------------------------------------------------
-
-        "APP_DIRS":
-            True,
-
-
-        # ----------------------------------------------------
-        # Template context processors
-        # ----------------------------------------------------
-
-        "OPTIONS": {
-
-            "context_processors": [
-
-                "django.template.context_processors.request",
-
-                "django.contrib.auth.context_processors.auth",
-
-                "django.contrib.messages.context_processors.messages",
-
-            ],
-
-        },
-
-    },
-
-]
-
-
+TEMPLATES = [  # I begin the list of template-engine configurations.
+    {  # I begin the Django template engine's dictionary.
+        "BACKEND": "django.template.backends.django.DjangoTemplates",  # I select Django's template engine.
+        "DIRS": [  # I begin the project-level template search directories.
+            BASE_DIR / "templates",  # I use Path's slash operator to construct the templates directory.
+        ],  # I finish the directory list.
+        "APP_DIRS": True,  # I also search installed applications' template directories.
+        "OPTIONS": {  # I begin additional template-engine options.
+            "context_processors": [  # I list functions that add shared template context.
+                "django.template.context_processors.request",  # I make the request available in templates.
+                "django.contrib.auth.context_processors.auth",  # I provide the user and permission helpers.
+                "django.contrib.messages.context_processors.messages",  # I provide user messages.
+            ],  # I finish the context-processor list.
+        },  # I finish the engine options.
+    },  # I finish this template-engine configuration.
+]  # I finish the template configurations.
 # ============================================================
 # 8. WSGI AND ASGI CONFIGURATION
 # ============================================================
-
-# Render / Gunicorn uses WSGI.
-WSGI_APPLICATION = "marketpulse.wsgi.application"
-
-
-# ASGI remains available for future asynchronous
-# functionality such as WebSockets.
-ASGI_APPLICATION = "marketpulse.asgi.application"
-
-
+WSGI_APPLICATION = "marketpulse.wsgi.application"  # I identify the callable used by the WSGI server.
+ASGI_APPLICATION = "marketpulse.asgi.application"  # I identify the project's ASGI callable.
 # ============================================================
 # 9. DATABASE CONFIGURATION
 # ============================================================
-
-# DATABASE_URL is supplied from:
-#
-# Local:
-#     .env
-#
-# Production:
-#     Render Environment Variables
-#
-#
-# When DATABASE_URL exists:
-#
-#     Neon PostgreSQL
-#
-#
-# When DATABASE_URL does not exist:
-#
-#     Local SQLite fallback
-#
-#
-# The production database password must never be stored
-# directly inside settings.py.
-
-DATABASE_URL = config(
-    "DATABASE_URL",
-    default="",
-).strip()
-
-
-if DATABASE_URL:
-
-    # ========================================================
-    # NEON / POSTGRESQL
-    # ========================================================
-
-    DATABASES = {
-
-        "default":
-            dj_database_url.parse(
-
-                DATABASE_URL,
-
-                # Reuse database connections.
-                conn_max_age=600,
-
-                # Test whether reused connections remain valid.
-                conn_health_checks=True,
-
-            )
-
-    }
-
-
-else:
-
-    # ========================================================
-    # LOCAL SQLITE FALLBACK
-    # ========================================================
-
-    DATABASES = {
-
-        "default": {
-
-            "ENGINE":
-                "django.db.backends.sqlite3",
-
-            "NAME":
-                BASE_DIR / "db.sqlite3",
-
-        }
-
-    }
-
-
+DATABASE_URL = config(  # I read an optional database connection URL.
+    "DATABASE_URL",  # I identify its configuration variable.
+    default="",  # I default to no external database URL.
+).strip()  # I remove surrounding spaces.
+if DATABASE_URL:  # I select URL-based database configuration when a URL exists.
+    # 9.1 DATABASE CONFIGURED BY URL
+    DATABASES = {  # I begin Django's database configuration dictionary.
+        "default": dj_database_url.parse(  # I parse the URL into the default database's settings.
+            DATABASE_URL,  # I supply the configured connection URL.
+            conn_max_age=600,  # I allow persistent connections to be reused for up to 600 seconds.
+            conn_health_checks=True,  # I enable health checks when reusing connections.
+        )  # I finish parsing the database URL.
+    }  # I finish the URL-based database configuration.
+else:  # I select SQLite when no database URL exists.
+    # 9.2 LOCAL SQLITE FALLBACK
+    DATABASES = {  # I begin the fallback database dictionary.
+        "default": {  # I configure the default connection.
+            "ENGINE": "django.db.backends.sqlite3",  # I select Django's SQLite backend.
+            "NAME": BASE_DIR / "db.sqlite3",  # I specify the SQLite database file path.
+        }  # I finish the default connection settings.
+    }  # I finish the fallback database configuration.
 # ============================================================
 # 10. CUSTOM USER MODEL
 # ============================================================
-
-# MarketPulse's custom user model lives inside:
-#
-# accounts/models.py
-AUTH_USER_MODEL = "accounts.User"
-
-
+AUTH_USER_MODEL = "accounts.User"  # I select the User model from the accounts application.
 # ============================================================
 # 11. PASSWORD VALIDATION
 # ============================================================
-
-AUTH_PASSWORD_VALIDATORS = [
-
-    {
-
-        "NAME":
-            "django.contrib.auth.password_validation."
-            "UserAttributeSimilarityValidator",
-
-    },
-
-    {
-
-        "NAME":
-            "django.contrib.auth.password_validation."
-            "MinimumLengthValidator",
-
-    },
-
-    {
-
-        "NAME":
-            "django.contrib.auth.password_validation."
-            "CommonPasswordValidator",
-
-    },
-
-    {
-
-        "NAME":
-            "django.contrib.auth.password_validation."
-            "NumericPasswordValidator",
-
-    },
-
-]
-
-
+AUTH_PASSWORD_VALIDATORS = [  # I begin the configured password-validator list.
+    {  # I begin the similarity validator configuration.
+        "NAME": "django.contrib.auth.password_validation." "UserAttributeSimilarityValidator",  # I join adjacent strings to identify the user-attribute similarity validator.
+    },  # I finish the similarity validator configuration.
+    {  # I begin the minimum-length validator configuration.
+        "NAME": "django.contrib.auth.password_validation." "MinimumLengthValidator",  # I identify the password-length validator.
+    },  # I finish the length validator configuration.
+    {  # I begin the common-password validator configuration.
+        "NAME": "django.contrib.auth.password_validation." "CommonPasswordValidator",  # I identify the validator that rejects common passwords.
+    },  # I finish the common-password validator configuration.
+    {  # I begin the numeric-password validator configuration.
+        "NAME": "django.contrib.auth.password_validation." "NumericPasswordValidator",  # I identify the validator that rejects entirely numeric passwords.
+    },  # I finish the numeric-password validator configuration.
+]  # I finish the validator list.
 # ============================================================
 # 12. LOGIN AND LOGOUT CONFIGURATION
 # ============================================================
-
-# LOGIN_URL is used by Django when an unauthenticated user
-# tries to open a view protected by @login_required.
-#
-# Example:
-#
-# User tries to open Risk while logged out
-#     ↓
-# Django redirects to:
-#
-# accounts:login
-#
-#     ↓
-# The requested URL is normally preserved in ?next=...
-LOGIN_URL = "accounts:login"
-
-
-# ------------------------------------------------------------
-# SUCCESSFUL NORMAL LOGIN
-# ------------------------------------------------------------
-#
-# When a user opens the Login page normally and signs in
-# successfully, Django redirects them to the MarketPulse
-# Home page.
-#
-#
-# Previous behaviour:
-#
-# Login
-#     ↓
-# Dashboard
-#
-#
-# Current behaviour:
-#
-# Login
-#     ↓
-# Home
-#     ↓
-# User can choose Dashboard / Data / Strategies / Risk
-#
-#
-# IMPORTANT:
-#
-# If Django sent the user to Login because they originally
-# attempted to access a protected page, the "next" parameter
-# takes priority.
-#
-# Example:
-#
-# User requests:
-#     /risk/
-#
-# while logged out:
-#
-# /risk/
-#     ↓
-# /accounts/login/?next=/risk/
-#     ↓
-# Successful login
-#     ↓
-# /risk/
-#
-# This behaviour should be preserved because it returns the
-# user to the page they originally requested.
-LOGIN_REDIRECT_URL = "home"
-
-
-# ------------------------------------------------------------
-# SUCCESSFUL LOGOUT
-# ------------------------------------------------------------
-#
-# After logout the authenticated session ends and the user
-# returns to the public MarketPulse Home page.
-LOGOUT_REDIRECT_URL = "home"
-
-
+LOGIN_URL = "accounts:login"  # I identify the login route used when authentication is required.
+LOGIN_REDIRECT_URL = "home"  # I set the standard successful-login destination when no valid next destination takes priority.
+LOGOUT_REDIRECT_URL = "home"  # I set the standard destination after logout.
 # ============================================================
 # 13. LANGUAGE AND TIMEZONE
 # ============================================================
-
-LANGUAGE_CODE = "en-us"
-
-
-TIME_ZONE = "Europe/Zurich"
-
-
-USE_I18N = True
-
-
-USE_TZ = True
-
-
+LANGUAGE_CODE = "en-us"  # I select US English as the default language.
+TIME_ZONE = "Europe/Zurich"  # I select Zurich as the project's default timezone.
+USE_I18N = True  # I enable Django's internationalisation support.
+USE_TZ = True  # I enable timezone-aware datetime handling.
 # ============================================================
 # 14. STATIC FILE CONFIGURATION
 # ============================================================
-
-# URL used by the browser.
-STATIC_URL = "/static/"
-
-
-# Render collectstatic output directory.
-STATIC_ROOT = BASE_DIR / "staticfiles"
-
-
-# Main development static directory.
-STATICFILES_DIRS = [
-
-    BASE_DIR / "static",
-
-]
-
-
-# ============================================================
+STATIC_URL = "/static/"  # I define the URL prefix for static assets.
+STATIC_ROOT = BASE_DIR / "staticfiles"  # I define where collectstatic places deployment assets.
+STATICFILES_DIRS = [  # I begin additional development static-file directories.
+    BASE_DIR / "static",  # I include the project's static directory.
+]  # I finish the directory list.
 # 14.1 STORAGE / WHITENOISE
-# ============================================================
-
-STORAGES = {
-
-    # --------------------------------------------------------
-    # Normal uploaded/local files
-    # --------------------------------------------------------
-
-    "default": {
-
-        "BACKEND":
-            "django.core.files.storage.FileSystemStorage",
-
-    },
-
-
-    # --------------------------------------------------------
-    # Production static assets
-    # --------------------------------------------------------
-
-    "staticfiles": {
-
-        "BACKEND":
-            "whitenoise.storage."
-            "CompressedManifestStaticFilesStorage",
-
-    },
-
-}
-
-
+STORAGES = {  # I configure file-storage backends by alias.
+    "default": {  # I begin normal file-storage configuration.
+        "BACKEND": "django.core.files.storage.FileSystemStorage",  # I select local filesystem storage.
+    },  # I finish normal file-storage configuration.
+    "staticfiles": {  # I begin collected static-file storage configuration.
+        "BACKEND": "whitenoise.storage." "CompressedManifestStaticFilesStorage",  # I select compressed static assets with hashed manifest filenames.
+    },  # I finish static-file storage configuration.
+}  # I finish the storage dictionary.
 # ============================================================
 # 15. DEFAULT DATABASE PRIMARY KEY
 # ============================================================
-
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"  # I select automatic 64-bit integer primary keys when models do not specify another type.
 # ============================================================
 # 16. DJANGO REST FRAMEWORK
 # ============================================================
-
-REST_FRAMEWORK = {
-
-    # --------------------------------------------------------
-    # Authentication
-    # --------------------------------------------------------
-
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-
-        "rest_framework.authentication."
-        "SessionAuthentication",
-
-        "rest_framework.authentication."
-        "BasicAuthentication",
-
-    ],
-
-
-    # --------------------------------------------------------
-    # Permissions
-    # --------------------------------------------------------
-
-    "DEFAULT_PERMISSION_CLASSES": [
-
-        "rest_framework.permissions."
-        "IsAuthenticatedOrReadOnly",
-
-    ],
-
-}
-
-
+REST_FRAMEWORK = {  # I begin global REST Framework settings.
+    "DEFAULT_AUTHENTICATION_CLASSES": [  # I list default API authentication mechanisms in order.
+        "rest_framework.authentication." "SessionAuthentication",  # I allow authentication through Django sessions.
+        "rest_framework.authentication." "BasicAuthentication",  # I also allow HTTP Basic authentication.
+    ],  # I finish the authentication-class list.
+    "DEFAULT_PERMISSION_CLASSES": [  # I list default API permission policies.
+        "rest_framework.permissions." "IsAuthenticatedOrReadOnly",  # I allow anonymous safe-method requests and require authentication for other methods.
+    ],  # I finish the permission-class list.
+}  # I finish REST Framework configuration.
 # ============================================================
 # 17. REACT / CORS CONFIGURATION
 # ============================================================
-
-# React / Vite normally runs locally on:
-#
-# http://localhost:5173
-#
-#
-# This configuration allows the React frontend to communicate
-# with the Django API during development.
-CORS_ALLOWED_ORIGINS = config(
-    "CORS_ALLOWED_ORIGINS",
-    default="http://localhost:5173",
-    cast=lambda value: [
-        origin.strip()
-        for origin in value.split(",")
-        if origin.strip()
-    ],
-)
-
-
-# Allows session cookies / authenticated requests.
-CORS_ALLOW_CREDENTIALS = True
-
-
+CORS_ALLOWED_ORIGINS = config(  # I read frontend origins allowed by the CORS middleware.
+    "CORS_ALLOWED_ORIGINS",  # I identify the configuration variable.
+    default="http://localhost:5173",  # I preserve the local frontend origin.
+    cast=lambda value: [  # I define a text-to-list conversion.
+        origin.strip()  # I trim each retained origin.
+        for origin in value.split(",")  # I loop over comma-separated origin entries.
+        if origin.strip()  # I discard empty entries.
+    ],  # I finish the list comprehension.
+)  # I finish reading CORS origins.
+CORS_ALLOW_CREDENTIALS = True  # I allow credentialed CORS responses; client and cookie settings still affect cookie delivery.
 # ============================================================
 # 18. CELERY AND REDIS CONFIGURATION
 # ============================================================
-
-# Celery is currently optional.
-#
-# When:
-#
-# USE_CELERY=False
-#
-# MarketPulse performs supported jobs synchronously.
-#
-#
-# Possible future uses:
-#
-# - automated monitoring
-# - long-running market-data jobs
-# - scheduled strategy analysis
-
-USE_CELERY = config(
-    "USE_CELERY",
-    default=False,
-    cast=bool,
-)
-
-
-# Redis message broker.
-CELERY_BROKER_URL = config(
-    "REDIS_URL",
-    default="redis://localhost:6379/0",
-)
-
-
-# Celery result backend.
-CELERY_RESULT_BACKEND = (
-    CELERY_BROKER_URL
-)
-
-
-# JSON task messages.
-CELERY_ACCEPT_CONTENT = [
-    "json",
-]
-
-
-CELERY_TASK_SERIALIZER = "json"
-
-
-CELERY_RESULT_SERIALIZER = "json"
-
-
-CELERY_TIMEZONE = TIME_ZONE
-
-
+USE_CELERY = config(  # I read the project's optional Celery feature flag.
+    "USE_CELERY",  # I identify the configuration variable.
+    default=False,  # I default the feature flag to disabled.
+    cast=bool,  # I convert the configured text into a Boolean.
+)  # I finish reading the flag.
+CELERY_BROKER_URL = config(  # I read the message-broker connection URL.
+    "REDIS_URL",  # I use the Redis configuration variable.
+    default="redis://localhost:6379/0",  # I preserve the local Redis database-zero fallback.
+)  # I finish reading the broker URL.
+CELERY_RESULT_BACKEND = (CELERY_BROKER_URL)  # I use the same URL for storing task results; these parentheses do not create a tuple.
+CELERY_ACCEPT_CONTENT = [  # I begin the accepted task-message format list.
+    "json",  # I accept JSON task messages.
+]  # I finish the accepted-format list.
+CELERY_TASK_SERIALIZER = "json"  # I select JSON for serialising task messages.
+CELERY_RESULT_SERIALIZER = "json"  # I select JSON for serialising task results.
+CELERY_TIMEZONE = TIME_ZONE  # I reuse the project's timezone for Celery.
 # ============================================================
 # 19. CELERY BEAT SCHEDULE
 # ============================================================
-
-# This schedule has no effect unless Celery Beat and
-# USE_CELERY are enabled.
-CELERY_BEAT_SCHEDULE = {
-
-    "monitor-strategies-hourly": {
-
-        "task":
-            "strategy_builder.tasks."
-            "monitor_active_strategies",
-
-        "schedule":
-            3600.0,
-
-    },
-
-}
-
-
+# Scheduling requires a running Beat process and worker.
+# USE_CELERY is a project flag whose effect depends on calling code.
+CELERY_BEAT_SCHEDULE = {  # I begin the periodic-task schedule dictionary.
+    "monitor-strategies-hourly": {  # I give this schedule entry a descriptive key.
+        "task": "strategy_builder.tasks." "monitor_active_strategies",  # I identify the registered task using adjacent joined strings.
+        "schedule": 3600.0,  # I specify an interval of 3600 seconds, or one hour.
+    },  # I finish the hourly task entry.
+}  # I finish the Beat schedule.
 # ============================================================
 # 20. MATLAB CONFIGURATION
 # ============================================================
-
-# MATLAB integration remains optional.
-MATLAB_ENABLED = config(
-    "MATLAB_ENABLED",
-    default=False,
-    cast=bool,
-)
-
-
-MATLAB_COMMAND = config(
-    "MATLAB_COMMAND",
-    default="matlab",
-)
-
-
-MATLAB_DIR = BASE_DIR / "matlab"
-
-
+MATLAB_ENABLED = config(  # I read the project's optional MATLAB feature flag.
+    "MATLAB_ENABLED",  # I identify the configuration variable.
+    default=False,  # I default MATLAB integration to disabled.
+    cast=bool,  # I convert the configured value into a Boolean.
+)  # I finish reading the MATLAB flag.
+MATLAB_COMMAND = config(  # I read the command used to invoke MATLAB.
+    "MATLAB_COMMAND",  # I identify the configuration variable.
+    default="matlab",  # I preserve the default executable name.
+)  # I finish reading the MATLAB command.
+MATLAB_DIR = BASE_DIR / "matlab"  # I construct the configured directory for MATLAB files.
 # ============================================================
 # 21. EMAIL / PASSWORD RECOVERY CONFIGURATION
 # ============================================================
-
-# ============================================================
-# EMAIL ARCHITECTURE
-# ============================================================
-#
-# MarketPulse password recovery works as follows:
-#
-# User
-#     ↓
-# Login Page
-#     ↓
-# Forgot Password
-#     ↓
-# Django PasswordResetView
-#     ↓
-# Django Email Framework
-#     ↓
-# Django-Anymail
-#     ↓
-# Brevo HTTPS API
-#     ↓
-# Password Reset Email
-#     ↓
-# Secure Django Reset Link
-#     ↓
-# User Creates New Password
-#
-#
-# IMPORTANT:
-#
-# Django is responsible for:
-#
-# - finding the user
-# - generating the reset token
-# - validating the reset token
-# - changing the password
-#
-#
-# Brevo is responsible only for:
-#
-# - delivering the email
-#
-#
-# No passwords or API credentials are sent to templates,
-# JavaScript or the browser.
-#
-#
-# LOCAL DEVELOPMENT:
-#
-# Credentials are stored in:
-#
-#     .env
-#
-#
-# PRODUCTION:
-#
-# Credentials are stored in:
-#
-#     Render
-#         ↓
-#     Environment
-#         ↓
-#     Environment Variables
-#
-#
-# Required production variables:
-#
-# BREVO_API_KEY
-# DEFAULT_FROM_EMAIL
-#
-# ============================================================
-
-
-# ============================================================
+# Django handles reset tokens and password changes.
+# The selected email backend handles delivery or console output.
 # 21.1 BREVO API KEY
-# ============================================================
-
-# Brevo v3 API key from the Brevo "API keys & MCP" page.
-#
-# The value normally begins with "xkeysib-". Use the API key,
-# not the SMTP key shown on Brevo's separate SMTP tab.
-#
-# Django-Anymail's Brevo backend needs only this one API key.
-# There is no BREVO_SECRET_KEY setting.
-#
-# Never place the real key directly in settings.py.
-BREVO_API_KEY = config(
-    "BREVO_API_KEY",
-    default="",
-).strip()
-
-
-# ============================================================
+BREVO_API_KEY = config(  # I read the server-side Brevo API credential.
+    "BREVO_API_KEY",  # I identify the configuration variable.
+    default="",  # I default to no configured key.
+).strip()  # I remove surrounding spaces from the key.
 # 21.2 BREVO CONFIGURATION STATUS
-# ============================================================
-
-# True only when the Brevo API key exists.
-#
-# This boolean can safely be used internally because it does not
-# expose the API key itself.
-BREVO_CONFIGURED = bool(
-    BREVO_API_KEY
-)
-
-
-# ============================================================
+BREVO_CONFIGURED = bool(BREVO_API_KEY)  # I record whether a nonempty key exists; this does not verify that the key works.
 # 21.3 DJANGO-ANYMAIL CONFIGURATION
-# ============================================================
-
-# Django-Anymail provides the connection between Django's
-# standard email framework and Brevo's HTTPS API.
-#
-# Django password-reset views therefore continue using
-# Django's normal email system.
-ANYMAIL = {
-
-    "BREVO_API_KEY":
-        BREVO_API_KEY,
-
-}
-
-
-# ============================================================
+ANYMAIL = {  # I begin Anymail's provider configuration dictionary.
+    "BREVO_API_KEY": BREVO_API_KEY,  # I pass the configured credential to Anymail.
+}  # I finish the Anymail settings.
 # 21.4 EMAIL BACKEND
-# ============================================================
-
-# ------------------------------------------------------------
-# BREVO CONFIGURED
-# ------------------------------------------------------------
-#
-# When the Brevo API key exists:
-#
-# Django
-#     ↓
-# Anymail
-#     ↓
-# Brevo API over HTTPS
-#     ↓
-# Real email inbox
-#
-#
-# ------------------------------------------------------------
-# BREVO NOT CONFIGURED
-# ------------------------------------------------------------
-#
-# During local development, if the credentials are absent:
-#
-# Django
-#     ↓
-# Console backend
-#     ↓
-# Password-reset email printed in Terminal
-#
-#
-# This means the complete Django password-reset workflow can
-# be tested locally before sending real emails.
-
-if BREVO_CONFIGURED:
-
-    EMAIL_BACKEND = (
-        "anymail.backends.brevo."
-        "EmailBackend"
-    )
-
-else:
-
-    EMAIL_BACKEND = (
-        "django.core.mail.backends."
-        "console.EmailBackend"
-    )
-
-
-# ============================================================
+if BREVO_CONFIGURED:  # I select Brevo whenever a nonempty key is configured.
+    EMAIL_BACKEND = (  # I begin the provider backend path.
+        "anymail.backends.brevo."  # I specify the Brevo backend module.
+        "EmailBackend"  # I join this adjacent string to identify its backend class.
+    )  # I finish assigning the Brevo backend.
+else:  # I select console output whenever the key is absent, regardless of DEBUG.
+    EMAIL_BACKEND = (  # I begin the fallback backend path.
+        "django.core.mail.backends."  # I specify Django's email-backend package.
+        "console.EmailBackend"  # I select the backend that prints emails to the console.
+    )  # I finish assigning the console backend.
 # 21.5 DEFAULT SENDER EMAIL
-# ============================================================
-
-# IMPORTANT:
-#
-# This email address must be registered and verified as a sender
-# inside the same Brevo account that owns BREVO_API_KEY.
-#
-# Example Render environment variable:
-#
-# DEFAULT_FROM_EMAIL=MarketPulse <your-verified-email@example.com>
-#
-#
-# Do not leave no-reply@example.com as the production value.
-DEFAULT_FROM_EMAIL = config(
-    "DEFAULT_FROM_EMAIL",
-    default="MarketPulse <testforpass7@gmail.com>",
-).strip()
-
-
-# Django system messages can use the same verified sender.
-SERVER_EMAIL = DEFAULT_FROM_EMAIL
-
-
-# ============================================================
+DEFAULT_FROM_EMAIL = config(  # I read the sender used by default for outgoing email.
+    "DEFAULT_FROM_EMAIL",  # I identify the configuration variable.
+    default="MarketPulse <testforpass7@gmail.com>",  # I preserve the existing sender fallback exactly.
+).strip()  # I remove surrounding spaces from the sender value.
+SERVER_EMAIL = DEFAULT_FROM_EMAIL  # I use the same address for Django's server-generated email.
 # 21.6 PASSWORD RESET TOKEN LIFETIME
-# ============================================================
-
-# Django password-reset links will remain valid for:
-#
-# 3600 seconds = 1 hour.
-PASSWORD_RESET_TIMEOUT = config(
-    "PASSWORD_RESET_TIMEOUT",
-    default=3600,
-    cast=int,
-)
-
-
-# ============================================================
+PASSWORD_RESET_TIMEOUT = config(  # I read the maximum password-reset token age in seconds.
+    "PASSWORD_RESET_TIMEOUT",  # I identify the configuration variable.
+    default=3600,  # I preserve the one-hour default.
+    cast=int,  # I convert the configured value into an integer.
+)  # I finish reading the reset timeout.
 # 21.7 EMAIL CONNECTION TIMEOUT
-# ============================================================
-
-# Prevent an external email request from hanging indefinitely.
-EMAIL_TIMEOUT = config(
-    "EMAIL_TIMEOUT",
-    default=15,
-    cast=int,
-)
-
-
-# ============================================================
+EMAIL_TIMEOUT = config(  # I read Django's email timeout setting; backend support determines how it is used.
+    "EMAIL_TIMEOUT",  # I identify the configuration variable.
+    default=15,  # I preserve the configured default of 15 seconds.
+    cast=int,  # I convert the configured value into an integer.
+)  # I finish reading the email timeout.
 # 21.8 PASSWORD RESET SECURITY
-# ============================================================
-
-# Django password-reset emails contain a temporary URL such as:
-#
-# https://your-marketpulse-site.onrender.com/
-# accounts/password-reset-confirm/<uid>/<token>/
-#
-#
-# The message does NOT contain:
-#
-# - the user's existing password
-# - the user's new password
-# - Django SECRET_KEY
-# - Brevo credentials
-# - Alpaca credentials
-#
-#
-# Django validates the UID and token when the user opens the
-# link and then allows the user to create a new password.
-#
-#
-# The password itself is stored by Django as a secure hash.
-
-
+# Reset emails contain a temporary reset URL, not the password.
+# Django validates the reset token and stores passwords as hashes.
 # ============================================================
 # 22. DJANGO-BOOTSTRAP5 CONFIGURATION
 # ============================================================
-
-BOOTSTRAP5 = {
-
-    "css_url":
-        "https://cdn.jsdelivr.net/npm/"
-        "bootstrap@5.3.3/dist/css/"
-        "bootstrap.min.css",
-
-
-    "javascript_url":
-        "https://cdn.jsdelivr.net/npm/"
-        "bootstrap@5.3.3/dist/js/"
-        "bootstrap.bundle.min.js",
-
-}
-
-
+BOOTSTRAP5 = {  # I begin Bootstrap template-helper configuration.
+    "css_url": (  # I begin the Bootstrap stylesheet URL.
+        "https://cdn.jsdelivr.net/npm/"  # I specify the CDN package prefix.
+        "bootstrap@5.3.3/dist/css/"  # I specify the preserved Bootstrap version and CSS directory.
+        "bootstrap.min.css"  # I join the final stylesheet filename.
+    ),  # I finish the stylesheet URL.
+    "javascript_url": (  # I begin the Bootstrap JavaScript URL.
+        "https://cdn.jsdelivr.net/npm/"  # I specify the CDN package prefix.
+        "bootstrap@5.3.3/dist/js/"  # I specify the same preserved version and JavaScript directory.
+        "bootstrap.bundle.min.js"  # I select the JavaScript bundle.
+    ),  # I finish the JavaScript URL.
+}  # I finish Bootstrap configuration.
 # ============================================================
 # 23. ALPACA MARKET DATA CONFIGURATION
 # ============================================================
-
-# MarketPulse uses Alpaca as the external market-data
-# provider.
-#
-#
-# ARCHITECTURE:
-#
-# Browser
-#     ↓
-# Django Template / JavaScript
-#     ↓
-# MarketPulse API
-#     ↓
-# data_management/services/alpaca.py
-#     ↓
-# Alpaca REST API
-#
-#
-# The browser NEVER receives Alpaca credentials.
-#
-#
-# Alpaca provides:
-#
-# - Asset search
-# - Company information
-# - Exchange information
-# - Tradability information
-# - Fractional-trading information
-# - Shortability information
-# - Latest trade information
-# - Bid / ask information
-# - Daily market snapshot
-# - Historical market bars
-#
-#
-# CREDENTIAL LOCATION:
-#
-# Local:
-#     .env
-#
-# Production:
-#     Render Environment Variables
-#
-#
-# NEVER:
-#
-# - settings.py
-# - HTML templates
-# - JavaScript
-# - React source code
-# - GitHub repository
-# - API responses
-
-
-# ============================================================
+# Intended flow: Browser → MarketPulse API → Alpaca service.
+# Credentials are configuration for server-side service code.
 # 23.1 ALPACA API KEY ID
-# ============================================================
-
-ALPACA_API_KEY_ID = config(
-    "ALPACA_API_KEY_ID",
-    default="",
-).strip()
-
-
-# ============================================================
+ALPACA_API_KEY_ID = config(  # I read the Alpaca API key identifier.
+    "ALPACA_API_KEY_ID",  # I identify the configuration variable.
+    default="",  # I default to no key identifier.
+).strip()  # I remove surrounding spaces.
 # 23.2 ALPACA API SECRET KEY
-# ============================================================
-
-ALPACA_API_SECRET_KEY = config(
-    "ALPACA_API_SECRET_KEY",
-    default="",
-).strip()
-
-
-# ============================================================
+ALPACA_API_SECRET_KEY = config(  # I read the Alpaca API secret.
+    "ALPACA_API_SECRET_KEY",  # I identify the configuration variable.
+    default="",  # I default to no secret.
+).strip()  # I remove surrounding spaces.
 # 23.3 ALPACA CONFIGURATION STATUS
-# ============================================================
-
-# True only when both credentials are available.
-#
-# The boolean can safely be used by backend code.
-#
-# It does not expose the credentials.
-ALPACA_CONFIGURED = bool(
-
-    ALPACA_API_KEY_ID
-
-    and
-
-    ALPACA_API_SECRET_KEY
-
-)
-
-
-# ============================================================
+ALPACA_CONFIGURED = bool(  # I convert credential presence into a Boolean.
+    ALPACA_API_KEY_ID  # I require a nonempty key identifier.
+    and  # I use logical AND to require both credentials.
+    ALPACA_API_SECRET_KEY  # I also require a nonempty secret; this does not verify authentication.
+)  # I finish the configuration-status calculation.
 # 23.4 ALPACA PAPER TRADING BASE URL
-# ============================================================
-
-# Do NOT add /v2 here.
-#
-# Correct:
-#
-# https://paper-api.alpaca.markets
-#
-#
-# The service layer adds endpoints such as:
-#
-# /v2/assets
-#
-# /v2/account
-#
-ALPACA_TRADING_BASE_URL = config(
-    "ALPACA_TRADING_BASE_URL",
-    default="https://paper-api.alpaca.markets",
-).rstrip("/")
-
-
-# ============================================================
+ALPACA_TRADING_BASE_URL = config(  # I read the trading API's base URL.
+    "ALPACA_TRADING_BASE_URL",  # I identify the configuration variable.
+    default="https://paper-api.alpaca.markets",  # I preserve the paper-trading endpoint without an added /v2 path.
+).rstrip("/")  # I remove trailing slashes before service code adds endpoint paths.
 # 23.5 ALPACA MARKET DATA BASE URL
-# ============================================================
-
-# Historical and current market-data endpoints use:
-#
-# https://data.alpaca.markets
-ALPACA_DATA_BASE_URL = config(
-    "ALPACA_DATA_BASE_URL",
-    default="https://data.alpaca.markets",
-).rstrip("/")
-
-
-# ============================================================
+ALPACA_DATA_BASE_URL = config(  # I read the market-data API's base URL.
+    "ALPACA_DATA_BASE_URL",  # I identify the configuration variable.
+    default="https://data.alpaca.markets",  # I preserve the market-data endpoint.
+).rstrip("/")  # I remove trailing slashes.
 # 23.6 ALPACA MARKET DATA FEED
-# ============================================================
-
-# MarketPulse currently uses IEX by default.
-ALPACA_DATA_FEED = config(
-    "ALPACA_DATA_FEED",
-    default="iex",
-).strip().lower()
-
-
-# ============================================================
+ALPACA_DATA_FEED = config(  # I read the selected market-data feed.
+    "ALPACA_DATA_FEED",  # I identify the configuration variable.
+    default="iex",  # I preserve IEX as the default feed.
+).strip().lower()  # I trim spaces and normalise the feed name to lowercase.
 # 23.7 ALPACA REQUEST TIMEOUT
-# ============================================================
-
-# External requests should not wait indefinitely.
-ALPACA_REQUEST_TIMEOUT = config(
-    "ALPACA_REQUEST_TIMEOUT",
-    default=8,
-    cast=int,
-)
-
-
-# ============================================================
+ALPACA_REQUEST_TIMEOUT = config(  # I read the timeout value for Alpaca service code to use.
+    "ALPACA_REQUEST_TIMEOUT",  # I identify the configuration variable.
+    default=8,  # I preserve the eight-second default.
+    cast=int,  # I convert the configured value into an integer.
+)  # I finish reading the request timeout.
 # 23.8 ALPACA ASSET CACHE
-# ============================================================
-
-# Asset metadata changes relatively slowly.
-#
-# 1800 seconds = 30 minutes.
-ALPACA_ASSET_CACHE_SECONDS = config(
-    "ALPACA_ASSET_CACHE_SECONDS",
-    default=1800,
-    cast=int,
-)
-
-
-# ============================================================
+ALPACA_ASSET_CACHE_SECONDS = config(  # I read the asset-metadata cache duration for service code.
+    "ALPACA_ASSET_CACHE_SECONDS",  # I identify the configuration variable.
+    default=1800,  # I preserve the 30-minute default.
+    cast=int,  # I convert the configured duration into an integer.
+)  # I finish reading the asset cache duration.
 # 23.9 ALPACA SNAPSHOT CACHE
-# ============================================================
-
-# Current market snapshots are more time-sensitive.
-#
-# 15 seconds provides a small cache while still giving the
-# Dashboard and Risk workspace reasonably current values.
-ALPACA_SNAPSHOT_CACHE_SECONDS = config(
-    "ALPACA_SNAPSHOT_CACHE_SECONDS",
-    default=15,
-    cast=int,
-)
+ALPACA_SNAPSHOT_CACHE_SECONDS = config(  # I read the snapshot cache duration for service code.
+    "ALPACA_SNAPSHOT_CACHE_SECONDS",  # I identify the configuration variable.
+    default=15,  # I preserve the 15-second default.
+    cast=int,  # I convert the configured duration into an integer.
+)  # I finish reading the snapshot cache duration.

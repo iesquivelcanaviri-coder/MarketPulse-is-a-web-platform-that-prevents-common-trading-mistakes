@@ -1,98 +1,167 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %} {# TEMPLATE INHERITANCE: This page reuses the main MarketPulse base template. #}
 
-{% block title %}
-New Message | MarketPulse
-{% endblock %}
+{% comment %}
+============================================================
+MARKETPULSE - COMMUNITY NEW MESSAGE TEMPLATE
+============================================================
 
+FILE:
+community/templates/community/compose_messages.html
 
-{% block content %}
+PURPOSE:
 
-<div class="container py-4">
+This template displays the form used to compose and send
+a new private/community message inside MarketPulse.
 
-    <div class="row justify-content-center">
+FRAMEWORK FLOW:
 
-        <div class="col-lg-7">
+Browser
+    ↓
+community/urls.py
+    ↓
+community/views.py
+    ↓
+community/forms.py
+    ↓
+compose_messages.html
+    ↓
+User completes the form
+    ↓
+HTTP POST request
+    ↓
+community/views.py
+    ↓
+community/models.py
+    ↓
+PostgreSQL
+    ↓
+Community Inbox
 
-            <div class="card shadow-sm">
+DJANGO RESPONSIBILITIES:
 
-                <div class="card-header bg-white">
+Python / Django backend
+    ↓
+Creates the form
+    ↓
+Passes "form" into this template
+    ↓
+Template displays each field
+    ↓
+User submits the form
+    ↓
+Django validates the submitted data
+    ↓
+Valid data can be saved to the database
 
-                    <h5 class="mb-0">
-                        New Message
-                    </h5>
+PROGRAMMING LANGUAGE CONCEPTS:
 
-                </div>
+1. Template inheritance
+2. Blocks
+3. Variables
+4. Objects and properties
+5. Iteration / loops
+6. Nested loops
+7. HTTP POST
+8. CSRF security
+9. URL routing
+10. Separation of concerns
+11. Dynamic rendering
+12. Form validation
+============================================================
+{% endcomment %}
 
+{# ============================================================ #}
+{# 1. PAGE TITLE BLOCK                                       #}
+{# Programming concept: template blocks and inheritance.     #}
+{# ============================================================ #}
+{% block title %} {# BLOCK: Starts the title section defined by base.html. #}
+New Message | MarketPulse {# STRING/TEXT: Sets the browser page title for this page. #}
+{% endblock %} {# BLOCK END: Finishes the title section. #}
 
-                <div class="card-body">
+{# ============================================================ #}
+{# 2. MAIN PAGE CONTENT                                      #}
+{# Programming concept: template block overriding.            #}
+{# ============================================================ #}
+{% block content %} {# BLOCK: Starts the main page content inherited from base.html. #}
+<div class="container py-4"> {# HTML ELEMENT: Bootstrap container keeps the page content aligned and adds vertical padding. #}
+    <div class="row justify-content-center"> {# HTML + BOOTSTRAP: Creates a row and centres its column horizontally. #}
+        <div class="col-lg-7"> {# RESPONSIVE DESIGN: Uses seven Bootstrap columns on large screens. #}
 
-                    <form method="post">
+            {# ============================================================ #}
+            {# 3. MESSAGE CARD                                             #}
+            {# Programming concept: presentation / user interface layer.  #}
+            {# ============================================================ #}
+            <div class="card shadow-sm"> {# HTML + BOOTSTRAP: Creates the message form card with a small shadow. #}
+                <div class="card-header bg-white"> {# HTML + BOOTSTRAP: Creates the white heading area of the card. #}
+                    <h5 class="mb-0"> {# HTML: Displays a level-five heading and removes its bottom margin. #}
+                        New Message {# TEXT: Tells the user that they are composing a new message. #}
+                    </h5> {# HTML CLOSING TAG: Finishes the heading element. #}
+                </div> {# HTML CLOSING TAG: Finishes the card header. #}
 
-                        {% csrf_token %}
+                {# ============================================================ #}
+                {# 4. MESSAGE FORM                                             #}
+                {# Programming concept: HTTP request / form submission.       #}
+                {# ============================================================ #}
+                <div class="card-body"> {# HTML + BOOTSTRAP: Creates the main content area inside the card. #}
+                    <form method="post"> {# HTTP CONCEPT: Sends the user's form data to Django using an HTTP POST request. #}
 
+                        {# ============================================================ #}
+                        {# 5. CSRF SECURITY                                            #}
+                        {# Programming concept: web application security.             #}
+                        {# ============================================================ #}
+                        {% csrf_token %} {# DJANGO SECURITY: Adds a CSRF token so Django can verify that the POST request came from this website. #}
 
-                        {% for field in form %}
+                        {# ============================================================ #}
+                        {# 6. LOOP THROUGH DJANGO FORM FIELDS                          #}
+                        {# Programming concept: iteration, variables and objects.     #}
+                        {# ============================================================ #}
+                        {% for field in form %} {# LOOP: Goes through every field object contained inside the Django form. #}
+                            <div class="mb-3"> {# HTML + BOOTSTRAP: Groups one form field and adds spacing below it. #}
+                                <label {# HTML ELEMENT: Starts the label connected to the current form field. #}
+                                    class="form-label" {# ATTRIBUTE: Applies Bootstrap styling to the field label. #}
+                                    for="{{ field.id_for_label }}"> {# VARIABLE/PROPERTY: Uses the field object's generated HTML ID to connect this label to the input. #}
+                                    {{ field.label }} {# VARIABLE OUTPUT: Displays the human-readable label stored on the current field object. #}
+                                </label> {# HTML CLOSING TAG: Finishes the field label. #}
 
-                            <div class="mb-3">
+                                {{ field }} {# OBJECT RENDERING: Django converts the current form field object into its HTML input element. #}
 
-                                <label
-                                    class="form-label"
-                                    for="{{ field.id_for_label }}">
+                                {# ============================================================ #}
+                                {# 7. FORM VALIDATION ERRORS                                   #}
+                                {# Programming concept: nested iteration and error handling.  #}
+                                {# ============================================================ #}
+                                {% for error in field.errors %} {# NESTED LOOP: Goes through every validation error belonging to the current field. #}
+                                    <div class="text-danger small"> {# HTML + BOOTSTRAP: Displays validation feedback in small red text. #}
+                                        {{ error }} {# VARIABLE OUTPUT: Displays the current validation error message returned by Django. #}
+                                    </div> {# HTML CLOSING TAG: Finishes the validation-error container. #}
+                                {% endfor %} {# LOOP END: Finishes checking the current field's validation errors. #}
+                            </div> {# HTML CLOSING TAG: Finishes the current form-field group. #}
+                        {% endfor %} {# LOOP END: Finishes looping through all fields in the Django form. #}
 
-                                    {{ field.label }}
+                        {# ============================================================ #}
+                        {# 8. FORM ACTION BUTTONS                                      #}
+                        {# Programming concept: user actions and control flow.        #}
+                        {# ============================================================ #}
+                        <div class="d-flex gap-2"> {# HTML + BOOTSTRAP: Places the buttons beside each other with spacing between them. #}
+                            <button {# HTML ELEMENT: Starts the button used to submit the message form. #}
+                                type="submit" {# FORM ATTRIBUTE: Tells the browser that clicking this button submits the form. #}
+                                class="btn btn-primary"> {# BOOTSTRAP: Gives the submit button the primary button appearance. #}
+                                Send Message {# TEXT: Tells the user that this button sends the new message. #}
+                            </button> {# HTML CLOSING TAG: Finishes the form submission button. #}
 
-                                </label>
-
-
-                                {{ field }}
-
-
-                                {% for error in field.errors %}
-
-                                    <div class="text-danger small">
-
-                                        {{ error }}
-
-                                    </div>
-
-                                {% endfor %}
-
-                            </div>
-
-                        {% endfor %}
-
-
-                        <div class="d-flex gap-2">
-
-                            <button
-                                type="submit"
-                                class="btn btn-primary">
-
-                                Send Message
-
-                            </button>
-
-
-                            <a
-                                href="{% url 'community:inbox' %}"
-                                class="btn btn-outline-secondary">
-
-                                Cancel
-
-                            </a>
-
-                        </div>
-
-                    </form>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-
-{% endblock %}
+                            {# ============================================================ #}
+                            {# 9. CANCEL / DJANGO URL ROUTING                              #}
+                            {# Programming concept: named routes and navigation.          #}
+                            {# ============================================================ #}
+                            <a {# HTML ELEMENT: Starts a hyperlink used to cancel composing the message. #}
+                                href="{% url 'community:inbox' %}" {# DJANGO URL TAG: Looks up the named community inbox route instead of hard-coding its URL. #}
+                                class="btn btn-outline-secondary"> {# BOOTSTRAP: Styles the link so it looks like a secondary outline button. #}
+                                Cancel {# TEXT: Tells the user that this action returns without submitting the form. #}
+                            </a> {# HTML CLOSING TAG: Finishes the Cancel link. #}
+                        </div> {# HTML CLOSING TAG: Finishes the button layout container. #}
+                    </form> {# HTML CLOSING TAG: Finishes the POST form. #}
+                </div> {# HTML CLOSING TAG: Finishes the card body. #}
+            </div> {# HTML CLOSING TAG: Finishes the message card. #}
+        </div> {# HTML CLOSING TAG: Finishes the responsive Bootstrap column. #}
+    </div> {# HTML CLOSING TAG: Finishes the centred Bootstrap row. #}
+</div> {# HTML CLOSING TAG: Finishes the main Bootstrap container. #}
+{% endblock %} {# BLOCK END: Finishes this page's main content section. #}

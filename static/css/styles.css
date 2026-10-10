@@ -1,2270 +1,956 @@
 /* ============================================================
    MARKETPULSE - GLOBAL DARK THEME
-   ============================================================
-
-   FRONT-END ARCHITECTURE
-
-   Bootstrap 5
-       ↓
-   templates/base.html
-       ↓
-   static/css/styles.css
-       ↓
-   ONE shared MarketPulse visual system
-
-   PURPOSE
-
-   Bootstrap remains responsible for:
-   - responsive layout
-   - grid
-   - cards
-   - buttons
-   - forms
-   - tables
-   - alerts
-   - modals
-   - accordions
-   - navigation
-   - utility classes
-
-   This stylesheet supplies:
-   - MarketPulse dark colours
-   - shared page background
-   - shared navigation appearance
-   - shared panel/card colours
-   - shared form colours
-   - shared tables
-   - shared alerts and badges
-   - compatibility overrides for older page-specific light CSS
-
-   IMPORTANT
-
-   All main user-facing pages should use the same application
-   background:
-
-       --mp-bg: #0c1420
-
+   Purpose: provide shared colours and component appearance.
+   Framework: base.html loads Bootstrap and this stylesheet.
+   Templates provide HTML; the browser applies matching rules.
+   Later page/base styles also participate in the CSS cascade.
    ============================================================ */
-
 
 /* ============================================================
-   1. MARKETPULSE DESIGN TOKENS
+   1. DESIGN TOKENS AND BOOTSTRAP VARIABLES
    ============================================================ */
+:root, /* Pseudo-class selector: I target the document root. */
+[data-bs-theme="dark"] { /* Attribute selector: I also define variables on dark-theme elements. */
+    /* Application backgrounds */
+    --mp-bg: #0c1420; /* Custom property and hex colour: I define the page background. */
+    --mp-nav: #111c2b; /* Custom property: I define the navigation background. */
+    --mp-panel: #152235; /* Custom property: I define the main panel colour. */
+    --mp-panel-soft: #18283a; /* Custom property: I define a softer panel colour. */
+    --mp-panel-dark: #101a28; /* Custom property: I define a darker panel colour. */
 
-:root,
-[data-bs-theme="dark"] {
+    /* Borders */
+    --mp-border: #314258; /* Custom property: I define the main border colour. */
+    --mp-border-soft: #26374b; /* Custom property: I define a subtler border colour. */
 
-    /* --------------------------------------------------------
-       APPLICATION BACKGROUNDS
-       -------------------------------------------------------- */
+    /* Typography */
+    --mp-text: #f1f5f9; /* Custom property: I define the main text colour. */
+    --mp-text-soft: #d8e1eb; /* Custom property: I define secondary foreground text. */
+    --mp-muted: #93a4b8; /* Custom property: I define supporting text colour. */
 
-    --mp-bg: #0c1420;
+    /* Brand and status colours */
+    --mp-primary: #4f86b6; /* Custom property: I define the primary brand colour. */
+    --mp-primary-hover: #6095c2; /* Custom property: I define its hover colour. */
+    --mp-primary-soft: rgba(79, 134, 182, 0.15); /* Colour function: I define translucent primary shading. */
+    --mp-success: #32c98b; /* Custom property: I define the success colour. */
+    --mp-success-soft: rgba(50, 201, 139, 0.14); /* Alpha channel: I define a translucent success background. */
+    --mp-warning: #d3a854; /* Custom property: I define the warning colour. */
+    --mp-warning-soft: rgba(211, 168, 84, 0.14); /* Colour function: I define translucent warning shading. */
+    --mp-danger: #dc6b75; /* Custom property: I define the danger colour. */
+    --mp-danger-soft: rgba(220, 107, 117, 0.14); /* Colour function: I define translucent danger shading. */
+    --mp-info: #67a8d8; /* Custom property: I define the information colour. */
+    --mp-info-soft: rgba(103, 168, 216, 0.14); /* Colour function: I define translucent information shading. */
 
-    --mp-nav: #111c2b;
-
-    --mp-panel: #152235;
-
-    --mp-panel-soft: #18283a;
-
-    --mp-panel-dark: #101a28;
-
-
-    /* --------------------------------------------------------
-       BORDERS
-       -------------------------------------------------------- */
-
-    --mp-border: #314258;
-
-    --mp-border-soft: #26374b;
-
-
-    /* --------------------------------------------------------
-       TYPOGRAPHY
-       -------------------------------------------------------- */
-
-    --mp-text: #f1f5f9;
-
-    --mp-text-soft: #d8e1eb;
-
-    --mp-muted: #93a4b8;
-
-
-    /* --------------------------------------------------------
-       BRAND / STATUS COLOURS
-       -------------------------------------------------------- */
-
-    --mp-primary: #4f86b6;
-
-    --mp-primary-hover: #6095c2;
-
-    --mp-primary-soft: rgba(79, 134, 182, 0.15);
-
-    --mp-success: #32c98b;
-
-    --mp-success-soft: rgba(50, 201, 139, 0.14);
-
-    --mp-warning: #d3a854;
-
-    --mp-warning-soft: rgba(211, 168, 84, 0.14);
-
-    --mp-danger: #dc6b75;
-
-    --mp-danger-soft: rgba(220, 107, 117, 0.14);
-
-    --mp-info: #67a8d8;
-
-    --mp-info-soft: rgba(103, 168, 216, 0.14);
-
-
-    /* --------------------------------------------------------
-       BOOTSTRAP VARIABLES
-
-       These allow Bootstrap components to naturally inherit
-       the MarketPulse design.
-       -------------------------------------------------------- */
-
-    --bs-body-bg: var(--mp-bg);
-
-    --bs-body-color: var(--mp-text);
-
-    --bs-emphasis-color: var(--mp-text);
-
-    --bs-secondary-color: var(--mp-muted);
-
-    --bs-tertiary-color: var(--mp-muted);
-
-    --bs-secondary-bg: var(--mp-panel-soft);
-
-    --bs-tertiary-bg: var(--mp-panel-dark);
-
-    --bs-border-color: var(--mp-border);
-
-    --bs-border-color-translucent:
-        rgba(147, 164, 184, 0.18);
-
-    --bs-primary: var(--mp-primary);
-
-    --bs-primary-rgb: 79, 134, 182;
-
-    --bs-success: var(--mp-success);
-
-    --bs-success-rgb: 50, 201, 139;
-
-    --bs-warning: var(--mp-warning);
-
-    --bs-warning-rgb: 211, 168, 84;
-
-    --bs-danger: var(--mp-danger);
-
-    --bs-danger-rgb: 220, 107, 117;
-
-    --bs-info: var(--mp-info);
-
-    --bs-info-rgb: 103, 168, 216;
-
-    --bs-link-color: #7ba8ce;
-
-    --bs-link-hover-color: #9abbd7;
-}
-
+    /* Bootstrap variable mapping */
+    --bs-body-bg: var(--mp-bg); /* Variable lookup: I map Bootstrap's body background to my theme. */
+    --bs-body-color: var(--mp-text); /* Variable lookup: I map Bootstrap's body text colour. */
+    --bs-emphasis-color: var(--mp-text); /* Variable lookup: I map emphasised text. */
+    --bs-secondary-color: var(--mp-muted); /* Variable lookup: I map secondary text. */
+    --bs-tertiary-color: var(--mp-muted); /* Variable lookup: I map tertiary text. */
+    --bs-secondary-bg: var(--mp-panel-soft); /* Variable lookup: I map secondary backgrounds. */
+    --bs-tertiary-bg: var(--mp-panel-dark); /* Variable lookup: I map tertiary backgrounds. */
+    --bs-border-color: var(--mp-border); /* Variable lookup: I map Bootstrap borders. */
+    --bs-border-color-translucent: rgba(147, 164, 184, 0.18); /* Colour function: I set translucent borders. */
+    --bs-primary: var(--mp-primary); /* Variable lookup: I map the primary colour. */
+    --bs-primary-rgb: 79, 134, 182; /* RGB components: I supply values for Bootstrap colour utilities. */
+    --bs-success: var(--mp-success); /* Variable lookup: I map success colour. */
+    --bs-success-rgb: 50, 201, 139; /* RGB components: I supply the success channels. */
+    --bs-warning: var(--mp-warning); /* Variable lookup: I map warning colour. */
+    --bs-warning-rgb: 211, 168, 84; /* RGB components: I supply the warning channels. */
+    --bs-danger: var(--mp-danger); /* Variable lookup: I map danger colour. */
+    --bs-danger-rgb: 220, 107, 117; /* RGB components: I supply the danger channels. */
+    --bs-info: var(--mp-info); /* Variable lookup: I map information colour. */
+    --bs-info-rgb: 103, 168, 216; /* RGB components: I supply the information channels. */
+    --bs-link-color: #7ba8ce; /* Custom property: I define the normal link colour. */
+    --bs-link-hover-color: #9abbd7; /* Custom property: I define the hovered link colour. */
+} /* I finish the theme-variable rule. */
 
 /* ============================================================
-   2. DOCUMENT / APPLICATION BACKGROUND
+   2. DOCUMENT AND APPLICATION BACKGROUND
    ============================================================ */
-
-/*
-   This is the most important section for visual consistency.
-
-   Home
-   Dashboard
-   Data
-   Strategies
-   Risk
-   Accounts
-   Community
-
-   all receive exactly the same outer page background.
-*/
-
-html {
-
-    min-height: 100%;
-
-    background-color: var(--mp-bg) !important;
-
-    color-scheme: dark;
-}
-
-
-body,
-body.marketpulse-body {
-
-    min-height: 100vh;
-
-    margin: 0;
-
-    color: var(--mp-text) !important;
-
-    background-color: var(--mp-bg) !important;
-}
-
-
-/*
-   Main application content must NEVER introduce a second
-   page-level background.
-*/
-
-main,
-.marketpulse-main,
-main.marketpulse-main,
-main.container,
-main.container-fluid {
-
-    color: var(--mp-text);
-
-    background-color: var(--mp-bg) !important;
-}
-
+html { /* Element selector: I style the document's root element. */
+    min-height: 100%; /* Percentage: I set a minimum height relative to its containing block. */
+    background-color: var(--mp-bg) !important; /* Important declaration: I prioritise the shared background. */
+    color-scheme: dark; /* Browser hint: I request dark native controls and browser surfaces. */
+} /* I finish the html rule. */
+body, body.marketpulse-body { /* Grouped selectors: I cover the body and its application class. */
+    min-height: 100vh; /* Viewport unit: I make the body at least one viewport tall. */
+    margin: 0; /* Box model: I remove the body's default outer spacing. */
+    color: var(--mp-text) !important; /* Text colour: I prioritise the shared foreground. */
+    background-color: var(--mp-bg) !important; /* Background: I prioritise the shared page colour. */
+} /* I finish the body rule. */
+main, .marketpulse-main, main.marketpulse-main, main.container, main.container-fluid { /* Grouped selectors: I cover the main application containers. */
+    color: var(--mp-text); /* Inheritable property: I set the main text colour. */
+    background-color: var(--mp-bg) !important; /* Background: I keep the application canvas dark. */
+} /* I finish the main-container rule. */
 
 /* ============================================================
-   3. PAGE WORKSPACES
+   3. PAGE WORKSPACE BACKGROUNDS
    ============================================================ */
-
-/*
-   Several older MarketPulse templates define their own root
-   workspace and sometimes assign a white/light background.
-
-   These selectors force the user-facing workspaces back onto
-   the shared application background.
-
-   !important is intentional here because page-specific CSS is
-   loaded after this global stylesheet.
-*/
-
-.data-workspace,
-.strategy-workspace,
-.risk-workspace,
-.condition-workspace,
-.market-condition-workspace,
-.dashboard-workspace,
-.analysis-workspace,
-.login-page,
-.register-page {
-
-    color: var(--mp-text) !important;
-
-    background-color: var(--mp-bg) !important;
-}
-
+.data-workspace, .strategy-workspace, .risk-workspace, .condition-workspace, .market-condition-workspace, .dashboard-workspace, .analysis-workspace, .login-page, .register-page { /* Class selectors: I target the named page workspaces. */
+    color: var(--mp-text) !important; /* Important declaration: I prioritise shared workspace text. */
+    background-color: var(--mp-bg) !important; /* Important declaration: I override normal conflicting backgrounds. */
+} /* I finish workspace background styling. */
 
 /* ============================================================
    4. SHARED WIDE WORKSPACE
    ============================================================ */
-
-.mp-workspace {
-
-    width: min(
-        1480px,
-        calc(100vw - 64px)
-    );
-
-    max-width: none;
-
-    margin-inline: auto;
-}
-
-
-@media (max-width: 767.98px) {
-
-    .mp-workspace {
-
-        width: calc(100vw - 20px);
-    }
-}
-
+.mp-workspace { /* Class selector: I style the shared wide container. */
+    width: min(1480px, calc(100vw - 64px)); /* Functions: I choose the smaller of the maximum width and viewport-based width. */
+    max-width: none; /* Size constraint: I remove a separate maximum-width restriction. */
+    margin-inline: auto; /* Logical property: I centre the container along the inline axis. */
+} /* I finish the wide-workspace rule. */
+@media (max-width: 767.98px) { /* Media query: I apply this rule at this viewport width and below. */
+    .mp-workspace { /* Class selector: I adjust the shared workspace. */
+        width: calc(100vw - 20px); /* Calculation: I leave twenty pixels outside the workspace width. */
+    } /* I finish the mobile workspace rule. */
+} /* I finish the media query. */
 
 /* ============================================================
-   5. TYPOGRAPHY
+   5. TYPOGRAPHY AND LINKS
    ============================================================ */
-
-body {
-
-    font-family:
-        system-ui,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-
-    font-size: 0.92rem;
-
-    line-height: 1.5;
-}
-
-
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-
-    color: var(--mp-text);
-}
-
-
-p,
-li,
-dd,
-dt {
-
-    border-color: var(--mp-border-soft);
-}
-
-
-.text-muted,
-.text-secondary,
-.form-text {
-
-    color: var(--mp-muted) !important;
-}
-
-
-.text-dark {
-
-    color: var(--mp-text) !important;
-}
-
-
-small,
-.small {
-
-    color: inherit;
-}
-
-
-a {
-
-    color: var(--bs-link-color);
-}
-
-
-a:hover {
-
-    color: var(--bs-link-hover-color);
-}
-
+body { /* Element selector: I set the document's base typography. */
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; /* Fallback list: I prefer available system fonts. */
+    font-size: 0.92rem; /* Relative unit: I size text against the root font size. */
+    line-height: 1.5; /* Unitless value: I set line spacing relative to each font size. */
+} /* I finish base typography. */
+h1, h2, h3, h4, h5, h6 { /* Grouped selectors: I style all heading levels. */
+    color: var(--mp-text); /* Variable lookup: I use the shared heading colour. */
+} /* I finish heading styling. */
+p, li, dd, dt { /* Grouped selectors: I target paragraphs and list-related elements. */
+    border-color: var(--mp-border-soft); /* Border colour: This affects borders if another rule supplies them. */
+} /* I finish this text-element rule. */
+.text-muted, .text-secondary, .form-text { /* Class selectors: I target supporting text. */
+    color: var(--mp-muted) !important; /* Important declaration: I prioritise the muted colour. */
+} /* I finish supporting-text styling. */
+.text-dark { /* Class selector: I adapt the legacy dark-text utility. */
+    color: var(--mp-text) !important; /* Override: I use light text on the dark theme. */
+} /* I finish the text-dark override. */
+small, .small { /* Grouped selectors: I target small text elements and utility classes. */
+    color: inherit; /* Inheritance: I reuse the parent element's text colour. */
+} /* I finish small-text colour styling. */
+a { /* Element selector: I style links. */
+    color: var(--bs-link-color); /* Variable lookup: I use the shared link colour. */
+} /* I finish normal links. */
+a:hover { /* Pseudo-class: I target links under pointer hover. */
+    color: var(--bs-link-hover-color); /* Variable lookup: I use the hovered link colour. */
+} /* I finish link hover styling. */
 
 /* ============================================================
-   6. ACCESSIBILITY
+   6. ACCESSIBILITY: SKIP LINK
    ============================================================ */
-
-.skip-link {
-
-    position: fixed;
-
-    top: 0.75rem;
-    left: 0.75rem;
-
-    z-index: 1100;
-
-    padding: 0.65rem 0.85rem;
-
-    color: #ffffff;
-
-    background: var(--mp-primary);
-
-    border-radius: 0.4rem;
-
-    transform: translateY(-160%);
-
-    transition: transform 0.15s ease;
-}
-
-
-.skip-link:focus {
-
-    transform: translateY(0);
-}
-
+.skip-link { /* Class selector: I style the main-content shortcut. */
+    position: fixed; /* Positioning: I anchor the link to the viewport. */
+    top: 0.75rem; /* Offset: I position it below the top edge. */
+    left: 0.75rem; /* Offset: I position it from the left edge. */
+    z-index: 1100; /* Stacking: I place it above lower-stacked content. */
+    padding: 0.65rem 0.85rem; /* Shorthand: I set vertical and horizontal inner spacing. */
+    color: #ffffff; /* Colour: I use white link text. */
+    background: var(--mp-primary); /* Background: I use the primary theme colour. */
+    border-radius: 0.4rem; /* Shape: I round the corners. */
+    transform: translateY(-160%); /* Transform: I move the link above its normal position. */
+    transition: transform 0.15s ease; /* Transition: I animate position changes. */
+} /* I finish the skip-link rule. */
+.skip-link:focus { /* Pseudo-class: I target the link when it receives focus. */
+    transform: translateY(0); /* Transform: I bring the link into view. */
+} /* I finish focused skip-link styling. */
 
 /* ============================================================
    7. NAVIGATION
    ============================================================ */
-
-.navbar,
-.marketpulse-navbar,
-.navbar.bg-primary,
-nav.navbar.bg-primary {
-
-    color: var(--mp-text);
-
-    background-color: var(--mp-nav) !important;
-
-    border-bottom:
-        1px solid
-        var(--mp-border-soft);
-
-    box-shadow:
-        0 4px 16px
-        rgba(0, 0, 0, 0.18) !important;
-}
-
-
-.navbar .navbar-brand {
-
-    color: var(--mp-text) !important;
-
-    letter-spacing: -0.015em;
-}
-
-
-.navbar .navbar-brand:hover,
-.navbar .navbar-brand:focus {
-
-    color: #ffffff !important;
-}
-
-
-.navbar .navbar-brand i {
-
-    color: #79a9d1;
-}
-
-
-.navbar .nav-link {
-
-    color: #b7c4d2 !important;
-
-    border-radius: 0.4rem;
-
-    transition:
-        color 0.15s ease,
-        background-color 0.15s ease;
-}
-
-
-.navbar .nav-link:hover,
-.navbar .nav-link:focus {
-
-    color: #ffffff !important;
-
-    background-color:
-        rgba(255, 255, 255, 0.06);
-}
-
-
-.navbar .nav-link.active {
-
-    color: #ffffff !important;
-
-    background-color: var(--mp-primary-soft);
-}
-
-
-.navbar .navbar-toggler {
-
-    border-color: var(--mp-border);
-}
-
-
-.navbar .navbar-toggler:focus {
-
-    box-shadow:
-        0 0 0 0.15rem
-        rgba(79, 134, 182, 0.25);
-}
-
+.navbar, .marketpulse-navbar, .navbar.bg-primary, nav.navbar.bg-primary { /* Grouped selectors: I theme navigation and its primary-background variants. */
+    color: var(--mp-text); /* Colour: I set navigation text. */
+    background-color: var(--mp-nav) !important; /* Override: I prioritise the shared navigation background. */
+    border-bottom: 1px solid var(--mp-border-soft); /* Border shorthand: I add a subtle bottom separator. */
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18) !important; /* Shadow: I add depth below the navigation. */
+} /* I finish navigation surfaces. */
+.navbar .navbar-brand { /* Descendant selector: I style the brand inside navigation. */
+    color: var(--mp-text) !important; /* Colour: I prioritise readable brand text. */
+    letter-spacing: -0.015em; /* Relative spacing: I slightly tighten brand lettering. */
+} /* I finish brand styling. */
+.navbar .navbar-brand:hover, .navbar .navbar-brand:focus { /* Interaction states: I style hovered or focused brand links. */
+    color: #ffffff !important; /* Colour: I brighten the brand text. */
+} /* I finish brand interaction styling. */
+.navbar .navbar-brand i { /* Descendant selector: I target the brand icon. */
+    color: #79a9d1; /* Colour: I tint the icon blue. */
+} /* I finish the brand icon. */
+.navbar .nav-link { /* Descendant selector: I style navigation links. */
+    color: #b7c4d2 !important; /* Colour: I set normal navigation text. */
+    border-radius: 0.4rem; /* Shape: I round link backgrounds. */
+    transition: color 0.15s ease, background-color 0.15s ease; /* Transition list: I animate text and background changes. */
+} /* I finish normal navigation links. */
+.navbar .nav-link:hover, .navbar .nav-link:focus { /* Pseudo-classes: I target hovered or focused links. */
+    color: #ffffff !important; /* Colour: I brighten the text. */
+    background-color: rgba(255, 255, 255, 0.06); /* Alpha colour: I add a subtle interaction background. */
+} /* I finish navigation interaction states. */
+.navbar .nav-link.active { /* Combined selector: I target links marked active. */
+    color: #ffffff !important; /* Colour: I emphasise the active link. */
+    background-color: var(--mp-primary-soft); /* Background: I show a soft primary highlight. */
+} /* I finish active links. */
+.navbar .navbar-toggler { /* Descendant selector: I target the mobile navigation button. */
+    border-color: var(--mp-border); /* Border colour: I match the theme. */
+} /* I finish the navigation toggle. */
+.navbar .navbar-toggler:focus { /* Focus state: I highlight the focused navigation toggle. */
+    box-shadow: 0 0 0 0.15rem rgba(79, 134, 182, 0.25); /* Shadow: I draw a translucent focus ring. */
+} /* I finish toggle focus styling. */
 
 /* ============================================================
    8. FOOTER
    ============================================================ */
-
-.marketpulse-footer {
-
-    color: var(--mp-muted);
-
-    background: var(--mp-nav);
-
-    border-top:
-        1px solid
-        var(--mp-border-soft);
-}
-
+.marketpulse-footer { /* Class selector: I style the shared footer. */
+    color: var(--mp-muted); /* Colour: I use supporting text. */
+    background: var(--mp-nav); /* Background: I match the navigation surface. */
+    border-top: 1px solid var(--mp-border-soft); /* Border: I separate the footer from page content. */
+} /* I finish the footer. */
 
 /* ============================================================
-   9. CARDS
+   9. CARDS AND LEGACY LIGHT BACKGROUNDS
    ============================================================ */
-
-.card {
-
-    color: var(--mp-text) !important;
-
-    background-color: var(--mp-panel) !important;
-
-    border-color: var(--mp-border) !important;
-
-    box-shadow:
-        0 5px 18px
-        rgba(0, 0, 0, 0.12);
-}
-
-
-.card-header,
-.card-footer {
-
-    color: var(--mp-text) !important;
-
-    background-color: var(--mp-panel-soft) !important;
-
-    border-color: var(--mp-border) !important;
-}
-
-
-/*
-   Older templates use Bootstrap's explicit light utilities.
-
-   They must not create white areas inside the dark application.
-*/
-
-.card-header.bg-white,
-.card-header.bg-light,
-.card-footer.bg-white,
-.card-footer.bg-light {
-
-    color: var(--mp-text) !important;
-
-    background-color: var(--mp-panel-soft) !important;
-}
-
-
-.bg-white {
-
-    background-color: var(--mp-panel) !important;
-}
-
-
-.bg-light {
-
-    background-color: var(--mp-panel-soft) !important;
-}
-
+.card { /* Class selector: I style Bootstrap cards. */
+    color: var(--mp-text) !important; /* Colour: I prioritise shared foreground text. */
+    background-color: var(--mp-panel) !important; /* Background: I prioritise the main panel colour. */
+    border-color: var(--mp-border) !important; /* Border colour: I match the theme. */
+    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.12); /* Shadow: I add subtle card depth. */
+} /* I finish card styling. */
+.card-header, .card-footer { /* Grouped selectors: I style both card edge sections. */
+    color: var(--mp-text) !important; /* Colour: I use shared text. */
+    background-color: var(--mp-panel-soft) !important; /* Background: I distinguish headers and footers. */
+    border-color: var(--mp-border) !important; /* Border colour: I preserve theme consistency. */
+} /* I finish card headers and footers. */
+.card-header.bg-white, .card-header.bg-light, .card-footer.bg-white, .card-footer.bg-light { /* Combined selectors: I adapt explicitly light card sections. */
+    color: var(--mp-text) !important; /* Override: I use light foreground text. */
+    background-color: var(--mp-panel-soft) !important; /* Override: I replace light backgrounds with a dark surface. */
+} /* I finish legacy card overrides. */
+.bg-white { /* Class selector: I adapt the white-background utility. */
+    background-color: var(--mp-panel) !important; /* Override: I use the main panel colour. */
+} /* I finish the white-background override. */
+.bg-light { /* Class selector: I adapt the light-background utility. */
+    background-color: var(--mp-panel-soft) !important; /* Override: I use the softer panel colour. */
+} /* I finish the light-background override. */
 
 /* ============================================================
    10. BUTTONS
    ============================================================ */
-
-.btn {
-
-    border-radius: 0.45rem;
-
-    font-weight: 600;
-
-    transition:
-        color 0.15s ease,
-        background-color 0.15s ease,
-        border-color 0.15s ease,
-        box-shadow 0.15s ease;
-}
-
-
-/* ------------------------------------------------------------
-   PRIMARY
-   ------------------------------------------------------------ */
-
-.btn-primary {
-
-    --bs-btn-color: #ffffff;
-
-    --bs-btn-bg: #3f739e;
-
-    --bs-btn-border-color: #4c83af;
-
-    --bs-btn-hover-color: #ffffff;
-
-    --bs-btn-hover-bg: var(--mp-primary-hover);
-
-    --bs-btn-hover-border-color: #6a9fc9;
-
-    --bs-btn-active-color: #ffffff;
-
-    --bs-btn-active-bg: #3c6f99;
-
-    --bs-btn-active-border-color: #4c83af;
-
-    --bs-btn-disabled-color: #d9e3ed;
-
-    --bs-btn-disabled-bg: #3d5f7b;
-
-    --bs-btn-disabled-border-color: #496983;
-}
-
-
-/* ------------------------------------------------------------
-   OUTLINE PRIMARY
-   ------------------------------------------------------------ */
-
-.btn-outline-primary {
-
-    --bs-btn-color: #7ba8ce;
-
-    --bs-btn-border-color: #527da3;
-
-    --bs-btn-hover-color: #ffffff;
-
-    --bs-btn-hover-bg: #3f739e;
-
-    --bs-btn-hover-border-color: #6095c2;
-
-    --bs-btn-active-color: #ffffff;
-
-    --bs-btn-active-bg: #3f739e;
-
-    --bs-btn-active-border-color: #6095c2;
-}
-
-
-/* ------------------------------------------------------------
-   SECONDARY
-   ------------------------------------------------------------ */
-
-.btn-secondary {
-
-    --bs-btn-bg: #34475d;
-
-    --bs-btn-border-color: #425872;
-
-    --bs-btn-hover-bg: #40556d;
-
-    --bs-btn-hover-border-color: #526a84;
-}
-
-
-.btn-outline-secondary {
-
-    --bs-btn-color: #a7b5c5;
-
-    --bs-btn-border-color: #4b6078;
-
-    --bs-btn-hover-color: #ffffff;
-
-    --bs-btn-hover-bg: #35495f;
-
-    --bs-btn-hover-border-color: #526a84;
-}
-
-
-/* ------------------------------------------------------------
-   DARK / LIGHT LEGACY BUTTONS
-   ------------------------------------------------------------ */
-
-.btn-outline-dark {
-
-    color: #a9b8c7 !important;
-
-    border-color: var(--mp-border) !important;
-}
-
-
-.btn-outline-dark:hover {
-
-    color: #ffffff !important;
-
-    background: #314258 !important;
-
-    border-color: #42566e !important;
-}
-
-
-.btn-light {
-
-    color: var(--mp-text) !important;
-
-    background-color: var(--mp-panel-soft) !important;
-
-    border-color: var(--mp-border) !important;
-}
-
-
-.btn-light:hover {
-
-    color: #ffffff !important;
-
-    background-color: #22344a !important;
-
-    border-color: #42566e !important;
-}
-
-
-/* ------------------------------------------------------------
-   SUCCESS / WARNING / DANGER
-   ------------------------------------------------------------ */
-
-.btn-success {
-
-    --bs-btn-bg: #268b66;
-
-    --bs-btn-border-color: #32a879;
-
-    --bs-btn-hover-bg: #2e9d73;
-
-    --bs-btn-hover-border-color: #3bb989;
-}
-
-
-.btn-danger {
-
-    --bs-btn-bg: #a94f59;
-
-    --bs-btn-border-color: #c45e68;
-
-    --bs-btn-hover-bg: #ba5964;
-
-    --bs-btn-hover-border-color: #d26a74;
-}
-
+.btn { /* Class selector: I style shared buttons. */
+    border-radius: 0.45rem; /* Shape: I round button corners. */
+    font-weight: 600; /* Typography: I use semibold button text. */
+    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease; /* Transition list: I animate interaction changes. */
+} /* I finish shared button styling. */
+
+/* 10.1 Primary buttons */
+.btn-primary { /* Class selector: I configure Bootstrap's primary-button variables. */
+    --bs-btn-color: #ffffff; /* Variable: I set normal text colour. */
+    --bs-btn-bg: #3f739e; /* Variable: I set normal background. */
+    --bs-btn-border-color: #4c83af; /* Variable: I set normal border colour. */
+    --bs-btn-hover-color: #ffffff; /* Variable: I set hover text colour. */
+    --bs-btn-hover-bg: var(--mp-primary-hover); /* Variable lookup: I set hover background. */
+    --bs-btn-hover-border-color: #6a9fc9; /* Variable: I set hover border colour. */
+    --bs-btn-active-color: #ffffff; /* Variable: I set active-state text. */
+    --bs-btn-active-bg: #3c6f99; /* Variable: I set active-state background. */
+    --bs-btn-active-border-color: #4c83af; /* Variable: I set active-state border. */
+    --bs-btn-disabled-color: #d9e3ed; /* Variable: I set disabled text colour. */
+    --bs-btn-disabled-bg: #3d5f7b; /* Variable: I set disabled background. */
+    --bs-btn-disabled-border-color: #496983; /* Variable: I set disabled border colour. */
+} /* I finish primary-button variables. */
+
+/* 10.2 Outline primary buttons */
+.btn-outline-primary { /* Class selector: I configure outlined primary buttons. */
+    --bs-btn-color: #7ba8ce; /* Variable: I set normal text colour. */
+    --bs-btn-border-color: #527da3; /* Variable: I set normal outline colour. */
+    --bs-btn-hover-color: #ffffff; /* Variable: I set hover text. */
+    --bs-btn-hover-bg: #3f739e; /* Variable: I set hover fill. */
+    --bs-btn-hover-border-color: #6095c2; /* Variable: I set hover border. */
+    --bs-btn-active-color: #ffffff; /* Variable: I set active text. */
+    --bs-btn-active-bg: #3f739e; /* Variable: I set active fill. */
+    --bs-btn-active-border-color: #6095c2; /* Variable: I set active border. */
+} /* I finish outline-primary variables. */
+
+/* 10.3 Secondary buttons */
+.btn-secondary { /* Class selector: I configure secondary button surfaces. */
+    --bs-btn-bg: #34475d; /* Variable: I set normal background. */
+    --bs-btn-border-color: #425872; /* Variable: I set normal border. */
+    --bs-btn-hover-bg: #40556d; /* Variable: I set hover background. */
+    --bs-btn-hover-border-color: #526a84; /* Variable: I set hover border. */
+} /* I finish secondary-button variables. */
+.btn-outline-secondary { /* Class selector: I configure outlined secondary buttons. */
+    --bs-btn-color: #a7b5c5; /* Variable: I set normal text. */
+    --bs-btn-border-color: #4b6078; /* Variable: I set the outline. */
+    --bs-btn-hover-color: #ffffff; /* Variable: I set hover text. */
+    --bs-btn-hover-bg: #35495f; /* Variable: I set hover fill. */
+    --bs-btn-hover-border-color: #526a84; /* Variable: I set hover border. */
+} /* I finish outline-secondary variables. */
+
+/* 10.4 Legacy dark and light buttons */
+.btn-outline-dark { /* Class selector: I adapt the dark-outline button for the theme. */
+    color: #a9b8c7 !important; /* Override: I use readable text. */
+    border-color: var(--mp-border) !important; /* Override: I use the shared border. */
+} /* I finish the dark-outline button. */
+.btn-outline-dark:hover { /* Hover state: I style pointer interaction. */
+    color: #ffffff !important; /* Colour: I brighten text. */
+    background: #314258 !important; /* Background: I fill the button. */
+    border-color: #42566e !important; /* Border colour: I distinguish the hover state. */
+} /* I finish dark-outline hover styling. */
+.btn-light { /* Class selector: I adapt light buttons. */
+    color: var(--mp-text) !important; /* Override: I use theme text. */
+    background-color: var(--mp-panel-soft) !important; /* Override: I use a dark background. */
+    border-color: var(--mp-border) !important; /* Override: I use the shared border. */
+} /* I finish light-button styling. */
+.btn-light:hover { /* Hover state: I style light-button interaction. */
+    color: #ffffff !important; /* Colour: I brighten text. */
+    background-color: #22344a !important; /* Background: I distinguish hover. */
+    border-color: #42566e !important; /* Border colour: I emphasise the edge. */
+} /* I finish light-button hover styling. */
+
+/* 10.5 Success and danger buttons */
+.btn-success { /* Class selector: I configure success-button surfaces. */
+    --bs-btn-bg: #268b66; /* Variable: I set normal background. */
+    --bs-btn-border-color: #32a879; /* Variable: I set normal border. */
+    --bs-btn-hover-bg: #2e9d73; /* Variable: I set hover background. */
+    --bs-btn-hover-border-color: #3bb989; /* Variable: I set hover border. */
+} /* I finish success-button variables. */
+.btn-danger { /* Class selector: I configure danger-button surfaces. */
+    --bs-btn-bg: #a94f59; /* Variable: I set normal background. */
+    --bs-btn-border-color: #c45e68; /* Variable: I set normal border. */
+    --bs-btn-hover-bg: #ba5964; /* Variable: I set hover background. */
+    --bs-btn-hover-border-color: #d26a74; /* Variable: I set hover border. */
+} /* I finish danger-button variables. */
 
 /* ============================================================
-   11. FORMS
+   11. FORMS AND AUTOFILL
    ============================================================ */
-
-.form-label {
-
-    color: var(--mp-text-soft);
-
-    font-weight: 600;
-}
-
-
-.form-control,
-.form-select {
-
-    color: var(--mp-text) !important;
-
-    background-color: #142131 !important;
-
-    border-color: #3a4d64 !important;
-}
-
-
-.form-control:hover,
-.form-select:hover {
-
-    border-color: #4b6078 !important;
-}
-
-
-.form-control:focus,
-.form-select:focus {
-
-    color: var(--mp-text) !important;
-
-    background-color: #142131 !important;
-
-    border-color: var(--mp-primary) !important;
-
-    box-shadow:
-        0 0 0 0.15rem
-        rgba(79, 134, 182, 0.18) !important;
-}
-
-
-.form-control::placeholder {
-
-    color: #788a9e;
-
-    opacity: 1;
-}
-
-
-.form-control:disabled,
-.form-select:disabled,
-.form-control[readonly] {
-
-    color: #8393a6 !important;
-
-    background-color: var(--mp-panel-dark) !important;
-
-    border-color: var(--mp-border-soft) !important;
-}
-
-
-.form-select {
-
-    --bs-form-select-bg-img:
-        url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2393a4b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
-}
-
-
-.form-check-input {
-
-    background-color: #142131;
-
-    border-color: #4a6078;
-}
-
-
-.form-check-input:checked {
-
-    background-color: var(--mp-primary);
-
-    border-color: var(--mp-primary);
-}
-
-
-.form-check-input:focus {
-
-    border-color: var(--mp-primary);
-
-    box-shadow:
-        0 0 0 0.15rem
-        rgba(79, 134, 182, 0.18);
-}
-
-
-.input-group-text {
-
-    color: var(--mp-muted) !important;
-
-    background-color: var(--mp-panel-dark) !important;
-
-    border-color: #3a4d64 !important;
-}
-
-
-/* ------------------------------------------------------------
-   BROWSER AUTOFILL
-   ------------------------------------------------------------ */
-
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-textarea:-webkit-autofill,
-select:-webkit-autofill {
-
-    -webkit-text-fill-color:
-        var(--mp-text) !important;
-
-    -webkit-box-shadow:
-        0 0 0 1000px
-        #142131 inset !important;
-
-    transition:
-        background-color
-        5000s ease-in-out 0s;
-}
-
+.form-label { /* Class selector: I style input labels. */
+    color: var(--mp-text-soft); /* Colour: I use the softer foreground. */
+    font-weight: 600; /* Typography: I emphasise labels. */
+} /* I finish form labels. */
+.form-control, .form-select { /* Grouped selectors: I style inputs and dropdowns. */
+    color: var(--mp-text) !important; /* Colour: I prioritise readable input text. */
+    background-color: #142131 !important; /* Background: I use a dark input surface. */
+    border-color: #3a4d64 !important; /* Border colour: I define input edges. */
+} /* I finish normal form controls. */
+.form-control:hover, .form-select:hover { /* Hover states: I target hovered controls. */
+    border-color: #4b6078 !important; /* Border colour: I brighten the input edge. */
+} /* I finish form hover styling. */
+.form-control:focus, .form-select:focus { /* Focus states: I highlight the active control. */
+    color: var(--mp-text) !important; /* Colour: I retain readable text. */
+    background-color: #142131 !important; /* Background: I retain the dark input surface. */
+    border-color: var(--mp-primary) !important; /* Border colour: I use the primary highlight. */
+    box-shadow: 0 0 0 0.15rem rgba(79, 134, 182, 0.18) !important; /* Shadow: I draw a focus ring. */
+} /* I finish focused controls. */
+.form-control::placeholder { /* Pseudo-element: I target input hint text. */
+    color: #788a9e; /* Colour: I make the hint visually distinct. */
+    opacity: 1; /* Transparency: I keep the chosen hint colour fully opaque. */
+} /* I finish placeholder styling. */
+.form-control:disabled, .form-select:disabled, .form-control[readonly] { /* State and attribute selectors: I style unavailable or read-only controls. */
+    color: #8393a6 !important; /* Colour: I use subdued text. */
+    background-color: var(--mp-panel-dark) !important; /* Background: I distinguish the control state. */
+    border-color: var(--mp-border-soft) !important; /* Border colour: I use a subtler edge. */
+} /* I finish disabled and read-only controls. */
+.form-select { /* Class selector: I customise Bootstrap's dropdown indicator. */
+    --bs-form-select-bg-img: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2393a4b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e"); /* URL function: I embed an encoded SVG arrow as an image. */
+} /* I finish the dropdown indicator. */
+.form-check-input { /* Class selector: I style checkboxes and radio inputs. */
+    background-color: #142131; /* Background: I use the input surface colour. */
+    border-color: #4a6078; /* Border colour: I define the unchecked edge. */
+} /* I finish normal check inputs. */
+.form-check-input:checked { /* Pseudo-class: I target selected check inputs. */
+    background-color: var(--mp-primary); /* Background: I show the selected state. */
+    border-color: var(--mp-primary); /* Border colour: I match the selected fill. */
+} /* I finish checked-input styling. */
+.form-check-input:focus { /* Focus state: I target focused check inputs. */
+    border-color: var(--mp-primary); /* Border colour: I highlight focus. */
+    box-shadow: 0 0 0 0.15rem rgba(79, 134, 182, 0.18); /* Shadow: I add a focus ring. */
+} /* I finish check-input focus styling. */
+.input-group-text { /* Class selector: I style input prefixes and suffixes. */
+    color: var(--mp-muted) !important; /* Colour: I use supporting text. */
+    background-color: var(--mp-panel-dark) !important; /* Background: I use the darker surface. */
+    border-color: #3a4d64 !important; /* Border colour: I match adjacent controls. */
+} /* I finish input-group additions. */
+input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, textarea:-webkit-autofill, select:-webkit-autofill { /* Browser-specific pseudo-classes: I target supported autofilled controls. */
+    -webkit-text-fill-color: var(--mp-text) !important; /* Browser-specific property: I set autofilled text colour. */
+    -webkit-box-shadow: 0 0 0 1000px #142131 inset !important; /* Inset shadow: I cover the autofill background with the input colour. */
+    transition: background-color 5000s ease-in-out 0s; /* Transition: I preserve the original long autofill-background transition. */
+} /* I finish autofill styling. */
 
 /* ============================================================
    12. TABLES
    ============================================================ */
-
-.table {
-
-    --bs-table-color:
-        var(--mp-text);
-
-    --bs-table-bg:
-        transparent;
-
-    --bs-table-border-color:
-        var(--mp-border-soft);
-
-    --bs-table-striped-color:
-        var(--mp-text);
-
-    --bs-table-striped-bg:
-        rgba(255, 255, 255, 0.025);
-
-    --bs-table-active-color:
-        var(--mp-text);
-
-    --bs-table-active-bg:
-        rgba(79, 134, 182, 0.10);
-
-    --bs-table-hover-color:
-        var(--mp-text);
-
-    --bs-table-hover-bg:
-        rgba(79, 134, 182, 0.075);
-
-    color: var(--mp-text);
-}
-
-
-.table > :not(caption) > * > * {
-
-    color: inherit;
-
-    background-color: inherit;
-
-    border-bottom-color:
-        var(--mp-border-soft);
-}
-
-
-.table thead th {
-
-    color: #cbd6e2;
-
-    background-color:
-        var(--mp-panel-dark);
-
-    border-color:
-        var(--mp-border);
-}
-
-
-.table-light {
-
-    --bs-table-color:
-        var(--mp-text);
-
-    --bs-table-bg:
-        var(--mp-panel-dark);
-
-    --bs-table-border-color:
-        var(--mp-border);
-
-    color: var(--mp-text) !important;
-}
-
-
-.table-responsive {
-
-    border-radius: 0.5rem;
-}
-
+.table { /* Class selector: I configure Bootstrap table colours. */
+    --bs-table-color: var(--mp-text); /* Variable: I set table text. */
+    --bs-table-bg: transparent; /* Variable: I allow the surrounding background to show. */
+    --bs-table-border-color: var(--mp-border-soft); /* Variable: I set table borders. */
+    --bs-table-striped-color: var(--mp-text); /* Variable: I set striped-row text. */
+    --bs-table-striped-bg: rgba(255, 255, 255, 0.025); /* Variable: I set subtle striping. */
+    --bs-table-active-color: var(--mp-text); /* Variable: I set active-row text. */
+    --bs-table-active-bg: rgba(79, 134, 182, 0.10); /* Variable: I set active-row shading. */
+    --bs-table-hover-color: var(--mp-text); /* Variable: I set hovered-row text. */
+    --bs-table-hover-bg: rgba(79, 134, 182, 0.075); /* Variable: I set hovered-row shading. */
+    color: var(--mp-text); /* Colour: I set the table's foreground. */
+} /* I finish table variables. */
+.table > :not(caption) > * > * { /* Child combinators and negation: I target table cells below non-caption sections. */
+    color: inherit; /* Inheritance: I reuse the containing text colour. */
+    background-color: inherit; /* Inheritance: I reuse the containing background colour. */
+    border-bottom-color: var(--mp-border-soft); /* Border colour: I set cell separators. */
+} /* I finish table-cell styling. */
+.table thead th { /* Descendant selector: I target table header cells. */
+    color: #cbd6e2; /* Colour: I distinguish header text. */
+    background-color: var(--mp-panel-dark); /* Background: I shade the header. */
+    border-color: var(--mp-border); /* Border colour: I define header edges. */
+} /* I finish table headings. */
+.table-light { /* Class selector: I adapt the light-table variant. */
+    --bs-table-color: var(--mp-text); /* Variable: I set readable table text. */
+    --bs-table-bg: var(--mp-panel-dark); /* Variable: I replace the light surface. */
+    --bs-table-border-color: var(--mp-border); /* Variable: I set theme borders. */
+    color: var(--mp-text) !important; /* Override: I prioritise theme text. */
+} /* I finish the light-table override. */
+.table-responsive { /* Class selector: I style table wrappers. */
+    border-radius: 0.5rem; /* Shape: I round the wrapper's corners. */
+} /* I finish the wrapper rule. */
 
 /* ============================================================
    13. LIST GROUPS
    ============================================================ */
-
-.list-group {
-
-    --bs-list-group-color:
-        var(--mp-text);
-
-    --bs-list-group-bg:
-        var(--mp-panel);
-
-    --bs-list-group-border-color:
-        var(--mp-border-soft);
-
-    --bs-list-group-action-color:
-        var(--mp-text);
-
-    --bs-list-group-action-hover-color:
-        #ffffff;
-
-    --bs-list-group-action-hover-bg:
-        var(--mp-panel-soft);
-
-    --bs-list-group-active-color:
-        #ffffff;
-
-    --bs-list-group-active-bg:
-        #3f739e;
-
-    --bs-list-group-active-border-color:
-        var(--mp-primary);
-}
-
-
-.list-group-item {
-
-    color: var(--mp-text);
-
-    background-color: var(--mp-panel);
-
-    border-color: var(--mp-border-soft);
-}
-
+.list-group { /* Class selector: I configure Bootstrap list-group variables. */
+    --bs-list-group-color: var(--mp-text); /* Variable: I set list text. */
+    --bs-list-group-bg: var(--mp-panel); /* Variable: I set list surfaces. */
+    --bs-list-group-border-color: var(--mp-border-soft); /* Variable: I set separators. */
+    --bs-list-group-action-color: var(--mp-text); /* Variable: I set action-item text. */
+    --bs-list-group-action-hover-color: #ffffff; /* Variable: I set hovered action text. */
+    --bs-list-group-action-hover-bg: var(--mp-panel-soft); /* Variable: I set hovered action surfaces. */
+    --bs-list-group-active-color: #ffffff; /* Variable: I set active-item text. */
+    --bs-list-group-active-bg: #3f739e; /* Variable: I set active-item background. */
+    --bs-list-group-active-border-color: var(--mp-primary); /* Variable: I set active-item borders. */
+} /* I finish list-group variables. */
+.list-group-item { /* Class selector: I style individual list entries. */
+    color: var(--mp-text); /* Colour: I set item text. */
+    background-color: var(--mp-panel); /* Background: I set item surfaces. */
+    border-color: var(--mp-border-soft); /* Border colour: I set item separators. */
+} /* I finish list items. */
 
 /* ============================================================
    14. ALERTS
    ============================================================ */
-
-.alert {
-
-    border-width: 1px;
-
-    border-style: solid;
-}
-
-
-/* ------------------------------------------------------------
-   INFORMATION
-   ------------------------------------------------------------ */
-
-.alert-info {
-
-    color: #c3e1f5 !important;
-
-    background-color:
-        var(--mp-info-soft) !important;
-
-    border-color:
-        rgba(103, 168, 216, 0.38) !important;
-}
-
-
-/* ------------------------------------------------------------
-   SUCCESS
-   ------------------------------------------------------------ */
-
-.alert-success {
-
-    color: #b9ead5 !important;
-
-    background-color:
-        var(--mp-success-soft) !important;
-
-    border-color:
-        rgba(50, 201, 139, 0.36) !important;
-}
-
-
-/* ------------------------------------------------------------
-   WARNING
-   ------------------------------------------------------------ */
-
-.alert-warning {
-
-    color: #ead7aa !important;
-
-    background-color:
-        var(--mp-warning-soft) !important;
-
-    border-color:
-        rgba(211, 168, 84, 0.38) !important;
-}
-
-
-/* ------------------------------------------------------------
-   DANGER
-   ------------------------------------------------------------ */
-
-.alert-danger {
-
-    color: #f1c3c8 !important;
-
-    background-color:
-        var(--mp-danger-soft) !important;
-
-    border-color:
-        rgba(220, 107, 117, 0.38) !important;
-}
-
-
-/* ------------------------------------------------------------
-   LEGACY LIGHT ALERT
-   ------------------------------------------------------------ */
-
-.alert-light {
-
-    color: var(--mp-text-soft) !important;
-
-    background-color: var(--mp-panel-soft) !important;
-
-    border-color: var(--mp-border) !important;
-}
-
+.alert { /* Class selector: I define shared alert borders. */
+    border-width: 1px; /* Border size: I use a one-pixel edge. */
+    border-style: solid; /* Border style: I use a continuous line. */
+} /* I finish shared alerts. */
+.alert-info { /* Modifier class: I style information alerts. */
+    color: #c3e1f5 !important; /* Colour: I use a pale information foreground. */
+    background-color: var(--mp-info-soft) !important; /* Background: I use translucent information shading. */
+    border-color: rgba(103, 168, 216, 0.38) !important; /* Border colour: I define the information edge. */
+} /* I finish information alerts. */
+.alert-success { /* Modifier class: I style success alerts. */
+    color: #b9ead5 !important; /* Colour: I use a pale success foreground. */
+    background-color: var(--mp-success-soft) !important; /* Background: I use translucent success shading. */
+    border-color: rgba(50, 201, 139, 0.36) !important; /* Border colour: I define the success edge. */
+} /* I finish success alerts. */
+.alert-warning { /* Modifier class: I style warning alerts. */
+    color: #ead7aa !important; /* Colour: I use a pale warning foreground. */
+    background-color: var(--mp-warning-soft) !important; /* Background: I use translucent warning shading. */
+    border-color: rgba(211, 168, 84, 0.38) !important; /* Border colour: I define the warning edge. */
+} /* I finish warning alerts. */
+.alert-danger { /* Modifier class: I style danger alerts. */
+    color: #f1c3c8 !important; /* Colour: I use a pale danger foreground. */
+    background-color: var(--mp-danger-soft) !important; /* Background: I use translucent danger shading. */
+    border-color: rgba(220, 107, 117, 0.38) !important; /* Border colour: I define the danger edge. */
+} /* I finish danger alerts. */
+.alert-light { /* Modifier class: I adapt legacy light alerts. */
+    color: var(--mp-text-soft) !important; /* Colour: I use shared supporting text. */
+    background-color: var(--mp-panel-soft) !important; /* Background: I replace the light surface. */
+    border-color: var(--mp-border) !important; /* Border colour: I use the shared edge. */
+} /* I finish light-alert compatibility. */
 
 /* ============================================================
    15. BADGES
    ============================================================ */
-
-.badge {
-
-    font-weight: 600;
-}
-
-
-.badge.bg-light,
-.bg-light.badge {
-
-    color: var(--mp-text) !important;
-
-    background-color: #273a50 !important;
-
-    border-color: #40546b !important;
-}
-
-
-.badge.bg-secondary {
-
-    background-color: #43566d !important;
-}
-
-
-.badge.bg-primary {
-
-    background-color: #3f739e !important;
-}
-
-
-.badge.bg-success {
-
-    background-color: #23835f !important;
-}
-
-
-.badge.bg-warning {
-
-    color: #172033 !important;
-
-    background-color: var(--mp-warning) !important;
-}
-
-
-.badge.bg-danger {
-
-    background-color: #ad515b !important;
-}
-
+.badge { /* Class selector: I style shared badge text. */
+    font-weight: 600; /* Typography: I use semibold labels. */
+} /* I finish shared badges. */
+.badge.bg-light, .bg-light.badge { /* Combined selectors: I target badges with the light-background class. */
+    color: var(--mp-text) !important; /* Colour: I use readable light text. */
+    background-color: #273a50 !important; /* Background: I replace the light badge surface. */
+    border-color: #40546b !important; /* Border colour: I theme any existing border. */
+} /* I finish light badges. */
+.badge.bg-secondary { /* Combined selector: I target secondary badges. */
+    background-color: #43566d !important; /* Background: I set the secondary fill. */
+} /* I finish secondary badges. */
+.badge.bg-primary { /* Combined selector: I target primary badges. */
+    background-color: #3f739e !important; /* Background: I set the primary fill. */
+} /* I finish primary badges. */
+.badge.bg-success { /* Combined selector: I target success badges. */
+    background-color: #23835f !important; /* Background: I set the success fill. */
+} /* I finish success badges. */
+.badge.bg-warning { /* Combined selector: I target warning badges. */
+    color: #172033 !important; /* Colour: I use dark text on the warning fill. */
+    background-color: var(--mp-warning) !important; /* Background: I use the warning colour. */
+} /* I finish warning badges. */
+.badge.bg-danger { /* Combined selector: I target danger badges. */
+    background-color: #ad515b !important; /* Background: I set the danger fill. */
+} /* I finish danger badges. */
 
 /* ============================================================
-   16. MODALS
+   16. MODALS AND CLOSE BUTTONS
    ============================================================ */
-
-.modal-content {
-
-    color: var(--mp-text);
-
-    background-color: var(--mp-panel) !important;
-
-    border-color: var(--mp-border) !important;
-
-    box-shadow:
-        0 18px 55px
-        rgba(0, 0, 0, 0.38);
-}
-
-
-.modal-header,
-.modal-footer {
-
-    border-color: var(--mp-border-soft);
-}
-
-
-.modal-title {
-
-    color: var(--mp-text);
-}
-
-
-.btn-close {
-
-    filter:
-        invert(1)
-        grayscale(100%)
-        brightness(180%);
-}
-
+.modal-content { /* Class selector: I style modal surfaces. */
+    color: var(--mp-text); /* Colour: I set modal text. */
+    background-color: var(--mp-panel) !important; /* Background: I use the shared panel colour. */
+    border-color: var(--mp-border) !important; /* Border colour: I use the shared edge. */
+    box-shadow: 0 18px 55px rgba(0, 0, 0, 0.38); /* Shadow: I emphasise the raised dialog. */
+} /* I finish modal content. */
+.modal-header, .modal-footer { /* Grouped selectors: I style modal edge sections. */
+    border-color: var(--mp-border-soft); /* Border colour: I use subtle separators. */
+} /* I finish modal headers and footers. */
+.modal-title { /* Class selector: I style dialog headings. */
+    color: var(--mp-text); /* Colour: I use the main foreground. */
+} /* I finish modal titles. */
+.btn-close { /* Class selector: I adjust close-button imagery. */
+    filter: invert(1) grayscale(100%) brightness(180%); /* Filter functions: I transform the rendered icon's appearance. */
+} /* I finish close buttons. */
 
 /* ============================================================
    17. DROPDOWNS
    ============================================================ */
-
-.dropdown-menu {
-
-    --bs-dropdown-color:
-        var(--mp-text);
-
-    --bs-dropdown-bg:
-        var(--mp-panel);
-
-    --bs-dropdown-border-color:
-        var(--mp-border);
-
-    --bs-dropdown-link-color:
-        var(--mp-text);
-
-    --bs-dropdown-link-hover-color:
-        #ffffff;
-
-    --bs-dropdown-link-hover-bg:
-        var(--mp-panel-soft);
-
-    --bs-dropdown-link-active-color:
-        #ffffff;
-
-    --bs-dropdown-link-active-bg:
-        #3f739e;
-
-    box-shadow:
-        0 10px 30px
-        rgba(0, 0, 0, 0.25);
-}
-
+.dropdown-menu { /* Class selector: I configure dropdown menu variables. */
+    --bs-dropdown-color: var(--mp-text); /* Variable: I set menu text. */
+    --bs-dropdown-bg: var(--mp-panel); /* Variable: I set menu background. */
+    --bs-dropdown-border-color: var(--mp-border); /* Variable: I set menu borders. */
+    --bs-dropdown-link-color: var(--mp-text); /* Variable: I set normal item text. */
+    --bs-dropdown-link-hover-color: #ffffff; /* Variable: I set hovered item text. */
+    --bs-dropdown-link-hover-bg: var(--mp-panel-soft); /* Variable: I set hovered item background. */
+    --bs-dropdown-link-active-color: #ffffff; /* Variable: I set active item text. */
+    --bs-dropdown-link-active-bg: #3f739e; /* Variable: I set active item background. */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); /* Shadow: I add depth to the menu. */
+} /* I finish dropdown styling. */
 
 /* ============================================================
    18. ACCORDIONS
    ============================================================ */
-
-.accordion {
-
-    --bs-accordion-color:
-        var(--mp-text);
-
-    --bs-accordion-bg:
-        var(--mp-panel);
-
-    --bs-accordion-border-color:
-        var(--mp-border);
-
-    --bs-accordion-btn-color:
-        var(--mp-text);
-
-    --bs-accordion-btn-bg:
-        var(--mp-panel-soft);
-
-    --bs-accordion-active-color:
-        #ffffff;
-
-    --bs-accordion-active-bg:
-        #1c3046;
-}
-
-
-.accordion-item {
-
-    color: var(--mp-text);
-
-    background-color: var(--mp-panel);
-
-    border-color: var(--mp-border);
-}
-
-
-.accordion-button {
-
-    color: var(--mp-text);
-
-    background-color: var(--mp-panel-soft);
-}
-
-
-.accordion-button:not(.collapsed) {
-
-    color: #ffffff;
-
-    background-color: #1c3046;
-
-    box-shadow:
-        inset 0 -1px 0
-        var(--mp-border);
-}
-
-
-.accordion-button:focus {
-
-    border-color: var(--mp-primary);
-
-    box-shadow:
-        0 0 0 0.15rem
-        rgba(79, 134, 182, 0.16);
-}
-
+.accordion { /* Class selector: I configure Bootstrap accordion variables. */
+    --bs-accordion-color: var(--mp-text); /* Variable: I set accordion text. */
+    --bs-accordion-bg: var(--mp-panel); /* Variable: I set accordion background. */
+    --bs-accordion-border-color: var(--mp-border); /* Variable: I set accordion borders. */
+    --bs-accordion-btn-color: var(--mp-text); /* Variable: I set control text. */
+    --bs-accordion-btn-bg: var(--mp-panel-soft); /* Variable: I set control background. */
+    --bs-accordion-active-color: #ffffff; /* Variable: I set expanded-control text. */
+    --bs-accordion-active-bg: #1c3046; /* Variable: I set expanded-control background. */
+} /* I finish accordion variables. */
+.accordion-item { /* Class selector: I style individual panels. */
+    color: var(--mp-text); /* Colour: I use main text. */
+    background-color: var(--mp-panel); /* Background: I use the shared panel colour. */
+    border-color: var(--mp-border); /* Border colour: I use the shared edge. */
+} /* I finish accordion items. */
+.accordion-button { /* Class selector: I style accordion controls. */
+    color: var(--mp-text); /* Colour: I set control text. */
+    background-color: var(--mp-panel-soft); /* Background: I distinguish the control surface. */
+} /* I finish accordion buttons. */
+.accordion-button:not(.collapsed) { /* Negation pseudo-class: I target expanded controls. */
+    color: #ffffff; /* Colour: I emphasise expanded text. */
+    background-color: #1c3046; /* Background: I indicate the expanded state. */
+    box-shadow: inset 0 -1px 0 var(--mp-border); /* Inset shadow: I draw an internal bottom separator. */
+} /* I finish expanded controls. */
+.accordion-button:focus { /* Focus state: I highlight the focused control. */
+    border-color: var(--mp-primary); /* Border colour: I use the primary highlight. */
+    box-shadow: 0 0 0 0.15rem rgba(79, 134, 182, 0.16); /* Shadow: I add a focus ring. */
+} /* I finish accordion focus styling. */
 
 /* ============================================================
-   19. NATIVE DETAILS / SUMMARY
+   19. NATIVE DETAILS AND SUMMARY
    ============================================================ */
-
-details {
-
-    color: var(--mp-text);
-}
-
-
-details > summary {
-
-    color: var(--mp-text-soft);
-}
-
-
-details > summary:hover {
-
-    color: #ffffff;
-}
-
+details { /* Element selector: I style native disclosure containers. */
+    color: var(--mp-text); /* Colour: I set disclosure text. */
+} /* I finish details styling. */
+details > summary { /* Child selector: I target the disclosure heading. */
+    color: var(--mp-text-soft); /* Colour: I use the softer foreground. */
+} /* I finish summary styling. */
+details > summary:hover { /* Hover state: I target hovered disclosure headings. */
+    color: #ffffff; /* Colour: I brighten the heading. */
+} /* I finish summary hover styling. */
 
 /* ============================================================
-   20. BORDERS / HORIZONTAL RULES
+   20. BORDERS AND HORIZONTAL RULES
    ============================================================ */
-
-.border,
-.border-top,
-.border-end,
-.border-bottom,
-.border-start {
-
-    border-color: var(--mp-border) !important;
-}
-
-
-hr {
-
-    color: var(--mp-border);
-
-    opacity: 1;
-}
-
+.border, .border-top, .border-end, .border-bottom, .border-start { /* Grouped classes: I theme Bootstrap border utilities. */
+    border-color: var(--mp-border) !important; /* Override: I prioritise the shared border colour. */
+} /* I finish border utilities. */
+hr { /* Element selector: I style horizontal separators. */
+    color: var(--mp-border); /* Colour: I use the border token. */
+    opacity: 1; /* Transparency: I keep separators fully opaque. */
+} /* I finish horizontal rules. */
 
 /* ============================================================
-   21. HERO / HOME SHARED COMPONENTS
+   21. HERO AND GLASS CARDS
    ============================================================ */
-
-.hero {
-
-    color: var(--mp-text) !important;
-
-    background:
-        linear-gradient(
-            135deg,
-            #172b43 0%,
-            #101a28 100%
-        ) !important;
-
-    border:
-        1px solid
-        var(--mp-border);
-
-    box-shadow:
-        0 8px 28px
-        rgba(0, 0, 0, 0.16);
-}
-
-
-.hero .text-muted {
-
-    color: #aab8c8 !important;
-}
-
-
-.glass-card {
-
-    color: var(--mp-text);
-
-    background:
-        rgba(255, 255, 255, 0.035) !important;
-
-    border:
-        1px solid
-        var(--mp-border) !important;
-
-    box-shadow:
-        0 6px 20px
-        rgba(0, 0, 0, 0.12);
-}
-
+.hero { /* Class selector: I style the homepage introduction panel. */
+    color: var(--mp-text) !important; /* Colour: I use shared foreground text. */
+    background: linear-gradient(135deg, #172b43 0%, #101a28 100%) !important; /* Gradient function: I blend two dark colours diagonally. */
+    border: 1px solid var(--mp-border); /* Border shorthand: I outline the hero panel. */
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16); /* Shadow: I add panel depth. */
+} /* I finish the hero. */
+.hero .text-muted { /* Descendant selector: I target muted hero text. */
+    color: #aab8c8 !important; /* Colour: I use a lighter supporting shade. */
+} /* I finish hero supporting text. */
+.glass-card { /* Class selector: I style translucent cards. */
+    color: var(--mp-text); /* Colour: I use shared text. */
+    background: rgba(255, 255, 255, 0.035) !important; /* Alpha colour: I add a subtle translucent surface. */
+    border: 1px solid var(--mp-border) !important; /* Border shorthand: I define the card edge. */
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12); /* Shadow: I add depth. */
+} /* I finish glass cards. */
 
 /* ============================================================
-   22. METRIC / SUMMARY CARDS
+   22. METRIC AND SUMMARY CARDS
    ============================================================ */
-
-.metric-card {
-
-    color: var(--mp-text) !important;
-
-    background:
-        var(--mp-panel) !important;
-
-    border:
-        1px solid
-        var(--mp-border) !important;
-}
-
-
-.metric-card .metric-label,
-.metric-card small {
-
-    color: var(--mp-muted);
-}
-
+.metric-card { /* Class selector: I style shared metric containers. */
+    color: var(--mp-text) !important; /* Colour: I use main text. */
+    background: var(--mp-panel) !important; /* Background: I use the shared panel. */
+    border: 1px solid var(--mp-border) !important; /* Border shorthand: I define the metric-card edge. */
+} /* I finish metric cards. */
+.metric-card .metric-label, .metric-card small { /* Descendant selectors: I target supporting metric text. */
+    color: var(--mp-muted); /* Colour: I distinguish labels from values. */
+} /* I finish metric labels. */
 
 /* ============================================================
-   23. DATA WORKSPACE COMPATIBILITY
+   23. DATA WORKSPACE VARIABLE ALIASES
    ============================================================ */
-
-/*
-   The Data page is the visual reference.
-
-   These rules do not replace its specialised layout. They only
-   make sure its shared surfaces remain tied to the same global
-   theme variables.
-*/
-
-.data-workspace {
-
-    --data-background:
-        var(--mp-bg);
-
-    --data-nav:
-        var(--mp-nav);
-
-    --data-panel:
-        var(--mp-panel);
-
-    --data-panel-soft:
-        var(--mp-panel-soft);
-
-    --data-panel-dark:
-        var(--mp-panel-dark);
-
-    --data-border:
-        var(--mp-border);
-
-    --data-border-soft:
-        var(--mp-border-soft);
-
-    --data-text:
-        var(--mp-text);
-
-    --data-muted:
-        var(--mp-muted);
-
-    --data-blue:
-        var(--mp-primary);
-
-    --data-blue-hover:
-        var(--mp-primary-hover);
-
-    --data-blue-soft:
-        var(--mp-primary-soft);
-
-    --data-green:
-        var(--mp-success);
-
-    --data-yellow:
-        var(--mp-warning);
-
-    --data-danger:
-        var(--mp-danger);
-}
-
+.data-workspace { /* Class selector: I connect Data-specific names to shared tokens. */
+    --data-background: var(--mp-bg); /* Alias: I reuse the page background. */
+    --data-nav: var(--mp-nav); /* Alias: I reuse navigation colour. */
+    --data-panel: var(--mp-panel); /* Alias: I reuse the main panel colour. */
+    --data-panel-soft: var(--mp-panel-soft); /* Alias: I reuse the softer panel colour. */
+    --data-panel-dark: var(--mp-panel-dark); /* Alias: I reuse the darker panel colour. */
+    --data-border: var(--mp-border); /* Alias: I reuse the main border colour. */
+    --data-border-soft: var(--mp-border-soft); /* Alias: I reuse subtle borders. */
+    --data-text: var(--mp-text); /* Alias: I reuse main text. */
+    --data-muted: var(--mp-muted); /* Alias: I reuse supporting text. */
+    --data-blue: var(--mp-primary); /* Alias: I reuse the primary colour. */
+    --data-blue-hover: var(--mp-primary-hover); /* Alias: I reuse its hover colour. */
+    --data-blue-soft: var(--mp-primary-soft); /* Alias: I reuse translucent primary shading. */
+    --data-green: var(--mp-success); /* Alias: I reuse success colour. */
+    --data-yellow: var(--mp-warning); /* Alias: I reuse warning colour. */
+    --data-danger: var(--mp-danger); /* Alias: I reuse danger colour. */
+} /* I finish Data aliases. */
 
 /* ============================================================
-   24. STRATEGIES - DARK THEME COMPATIBILITY
+   24. STRATEGIES THEME COMPATIBILITY
    ============================================================ */
-
-/*
-   strategy_builder/list.html currently contains its own
-   page-specific light palette.
-
-   The following global aliases force that existing structure
-   to use the same MarketPulse colour system.
-*/
-
-.strategy-workspace {
-
-    --strategy-blue:
-        var(--mp-primary) !important;
-
-    --strategy-blue-dark:
-        #3b6f9b !important;
-
-    --strategy-blue-soft:
-        var(--mp-primary-soft) !important;
-
-    --strategy-text:
-        var(--mp-text) !important;
-
-    --strategy-muted:
-        var(--mp-muted) !important;
-
-    --strategy-border:
-        var(--mp-border) !important;
-
-    --strategy-surface:
-        var(--mp-panel) !important;
-
-    --strategy-soft:
-        var(--mp-panel-dark) !important;
-
-    --strategy-success:
-        var(--mp-success) !important;
-
-    --strategy-success-soft:
-        var(--mp-success-soft) !important;
-}
-
-
-/*
-   Older light Strategy surfaces.
-*/
-
-.strategy-workspace .strategy-panel,
-.strategy-workspace .strategy-workflow,
-.strategy-workspace .strategy-summary,
-.strategy-workspace .strategy-library,
-.strategy-workspace .strategy-model-row,
-.strategy-workspace .strategy-category-item,
-.strategy-workspace .strategy-comparison,
-.strategy-workspace .my-strategy-item,
-.strategy-workspace .my-strategy-details,
-.strategy-workspace .my-strategy-detail-body {
-
-    color: var(--mp-text) !important;
-
-    background:
-        var(--mp-panel) !important;
-
-    border-color:
-        var(--mp-border) !important;
-}
-
-
-.strategy-workspace .strategy-model-row:hover,
-.strategy-workspace .strategy-category-item:hover {
-
-    background:
-        var(--mp-panel-soft) !important;
-}
-
-
-.strategy-workspace .my-strategy-metric,
-.strategy-workspace .strategy-model-meta,
-.strategy-workspace .strategy-detail-block {
-
-    background:
-        var(--mp-panel-dark) !important;
-
-    border-color:
-        var(--mp-border-soft) !important;
-}
-
+.strategy-workspace { /* Class selector: I define Strategy-specific theme aliases. */
+    --strategy-blue: var(--mp-primary) !important; /* Alias: I prioritise shared primary colour. */
+    --strategy-blue-dark: #3b6f9b !important; /* Variable: I retain the darker blue shade. */
+    --strategy-blue-soft: var(--mp-primary-soft) !important; /* Alias: I reuse primary shading. */
+    --strategy-text: var(--mp-text) !important; /* Alias: I reuse main text. */
+    --strategy-muted: var(--mp-muted) !important; /* Alias: I reuse supporting text. */
+    --strategy-border: var(--mp-border) !important; /* Alias: I reuse borders. */
+    --strategy-surface: var(--mp-panel) !important; /* Alias: I reuse the panel surface. */
+    --strategy-soft: var(--mp-panel-dark) !important; /* Alias: I reuse darker surfaces. */
+    --strategy-success: var(--mp-success) !important; /* Alias: I reuse success colour. */
+    --strategy-success-soft: var(--mp-success-soft) !important; /* Alias: I reuse success shading. */
+} /* I finish Strategy aliases. */
+.strategy-workspace .strategy-panel, .strategy-workspace .strategy-workflow, .strategy-workspace .strategy-summary, .strategy-workspace .strategy-library, .strategy-workspace .strategy-model-row, .strategy-workspace .strategy-category-item, .strategy-workspace .strategy-comparison, .strategy-workspace .my-strategy-item, .strategy-workspace .my-strategy-details, .strategy-workspace .my-strategy-detail-body { /* Scoped selectors: I theme the listed Strategy surfaces. */
+    color: var(--mp-text) !important; /* Colour: I prioritise shared text. */
+    background: var(--mp-panel) !important; /* Background: I prioritise the main panel surface. */
+    border-color: var(--mp-border) !important; /* Border colour: I prioritise shared borders. */
+} /* I finish Strategy surface overrides. */
+.strategy-workspace .strategy-model-row:hover, .strategy-workspace .strategy-category-item:hover { /* Hover states: I target model rows and categories. */
+    background: var(--mp-panel-soft) !important; /* Background: I add hover shading. */
+} /* I finish Strategy hover styling. */
+.strategy-workspace .my-strategy-metric, .strategy-workspace .strategy-model-meta, .strategy-workspace .strategy-detail-block { /* Scoped selectors: I target secondary Strategy blocks. */
+    background: var(--mp-panel-dark) !important; /* Background: I use the darker surface. */
+    border-color: var(--mp-border-soft) !important; /* Border colour: I use subtler edges. */
+} /* I finish secondary Strategy blocks. */
 
 /* ============================================================
-   25. RISK - DARK THEME COMPATIBILITY
+   25. RISK THEME COMPATIBILITY
    ============================================================ */
-
-.risk-workspace {
-
-    --risk-blue:
-        var(--mp-primary) !important;
-
-    --risk-blue-dark:
-        #3b6f9b !important;
-
-    --risk-blue-soft:
-        var(--mp-primary-soft) !important;
-
-    --risk-text:
-        var(--mp-text) !important;
-
-    --risk-muted:
-        var(--mp-muted) !important;
-
-    --risk-border:
-        var(--mp-border) !important;
-
-    --risk-soft:
-        var(--mp-panel-dark) !important;
-
-    --risk-success:
-        var(--mp-success) !important;
-
-    --risk-success-soft:
-        var(--mp-success-soft) !important;
-
-    --risk-danger:
-        var(--mp-danger) !important;
-
-    --risk-danger-soft:
-        var(--mp-danger-soft) !important;
-
-    --risk-warning:
-        var(--mp-warning) !important;
-
-    --risk-warning-soft:
-        var(--mp-warning-soft) !important;
-}
-
-
-/*
-   Main Risk panels.
-*/
-
-.risk-workspace .risk-panel,
-.risk-workspace .risk-workflow-panel,
-.risk-workspace .risk-source-strip,
-.risk-workspace .risk-snapshot-panel {
-
-    color:
-        var(--mp-text) !important;
-
-    background:
-        var(--mp-panel) !important;
-
-    border-color:
-        var(--mp-border) !important;
-
-    box-shadow:
-        0 6px 20px
-        rgba(0, 0, 0, 0.14) !important;
-}
-
-
-/*
-   Risk secondary information blocks.
-*/
-
-.risk-workspace .risk-mini-stat,
-.risk-workspace .risk-plan-snapshot-item,
-.risk-workspace .risk-scenario,
-.risk-workspace .risk-help > summary,
-.risk-workspace .market-detail-stat {
-
-    color:
-        var(--mp-text) !important;
-
-    background:
-        var(--mp-panel-dark) !important;
-
-    border-color:
-        var(--mp-border-soft) !important;
-}
-
-
-.risk-workspace .risk-current-price,
-.risk-workspace .risk-budget-preview {
-
-    color:
-        var(--mp-text) !important;
-
-    background:
-        var(--mp-primary-soft) !important;
-
-    border-color:
-        rgba(79, 134, 182, 0.34) !important;
-}
-
-
-.risk-workspace .risk-plan-hero {
-
-    color:
-        var(--mp-text) !important;
-
-    background:
-        linear-gradient(
-            145deg,
-            #16263a,
-            #101b29
-        ) !important;
-
-    border-color:
-        var(--mp-border) !important;
-}
-
-
-.risk-workspace .risk-plan-primary,
-.risk-workspace .risk-plan-grid > div {
-
-    border-color:
-        var(--mp-border-soft) !important;
-}
-
-
-.risk-workspace .risk-symbol-badge {
-
-    color:
-        var(--mp-text) !important;
-
-    background:
-        #26394e !important;
-}
-
-
-.risk-workspace .risk-stress-action {
-
-    color:
-        var(--mp-danger) !important;
-
-    background:
-        var(--mp-panel-dark) !important;
-}
-
-
-.risk-workspace .risk-educational-notice {
-
-    color:
-        #d7c69c !important;
-
-    background:
-        var(--mp-warning-soft) !important;
-
-    border-color:
-        rgba(211, 168, 84, 0.33) !important;
-}
-
+.risk-workspace { /* Class selector: I define Risk-specific theme aliases. */
+    --risk-blue: var(--mp-primary) !important; /* Alias: I reuse primary colour. */
+    --risk-blue-dark: #3b6f9b !important; /* Variable: I retain darker blue. */
+    --risk-blue-soft: var(--mp-primary-soft) !important; /* Alias: I reuse primary shading. */
+    --risk-text: var(--mp-text) !important; /* Alias: I reuse main text. */
+    --risk-muted: var(--mp-muted) !important; /* Alias: I reuse supporting text. */
+    --risk-border: var(--mp-border) !important; /* Alias: I reuse borders. */
+    --risk-soft: var(--mp-panel-dark) !important; /* Alias: I reuse darker surfaces. */
+    --risk-success: var(--mp-success) !important; /* Alias: I reuse success colour. */
+    --risk-success-soft: var(--mp-success-soft) !important; /* Alias: I reuse success shading. */
+    --risk-danger: var(--mp-danger) !important; /* Alias: I reuse danger colour. */
+    --risk-danger-soft: var(--mp-danger-soft) !important; /* Alias: I reuse danger shading. */
+    --risk-warning: var(--mp-warning) !important; /* Alias: I reuse warning colour. */
+    --risk-warning-soft: var(--mp-warning-soft) !important; /* Alias: I reuse warning shading. */
+} /* I finish Risk aliases. */
+.risk-workspace .risk-panel, .risk-workspace .risk-workflow-panel, .risk-workspace .risk-source-strip, .risk-workspace .risk-snapshot-panel { /* Scoped selectors: I target main Risk panels. */
+    color: var(--mp-text) !important; /* Colour: I use shared text. */
+    background: var(--mp-panel) !important; /* Background: I use the main panel surface. */
+    border-color: var(--mp-border) !important; /* Border colour: I use shared borders. */
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14) !important; /* Shadow: I add panel depth. */
+} /* I finish main Risk panels. */
+.risk-workspace .risk-mini-stat, .risk-workspace .risk-plan-snapshot-item, .risk-workspace .risk-scenario, .risk-workspace .risk-help > summary, .risk-workspace .market-detail-stat { /* Scoped selectors: I target secondary information blocks. */
+    color: var(--mp-text) !important; /* Colour: I use main text. */
+    background: var(--mp-panel-dark) !important; /* Background: I use darker surfaces. */
+    border-color: var(--mp-border-soft) !important; /* Border colour: I use subtle edges. */
+} /* I finish secondary Risk blocks. */
+.risk-workspace .risk-current-price, .risk-workspace .risk-budget-preview { /* Scoped selectors: I target highlighted price and budget information. */
+    color: var(--mp-text) !important; /* Colour: I use main text. */
+    background: var(--mp-primary-soft) !important; /* Background: I highlight these values with primary shading. */
+    border-color: rgba(79, 134, 182, 0.34) !important; /* Border colour: I use a matching translucent edge. */
+} /* I finish Risk highlights. */
+.risk-workspace .risk-plan-hero { /* Descendant selector: I target the plan introduction. */
+    color: var(--mp-text) !important; /* Colour: I use main text. */
+    background: linear-gradient(145deg, #16263a, #101b29) !important; /* Gradient: I blend two dark surfaces. */
+    border-color: var(--mp-border) !important; /* Border colour: I use the shared edge. */
+} /* I finish the Risk hero. */
+.risk-workspace .risk-plan-primary, .risk-workspace .risk-plan-grid > div { /* Scoped and child selectors: I target plan sections. */
+    border-color: var(--mp-border-soft) !important; /* Border colour: I use subtle separators. */
+} /* I finish plan borders. */
+.risk-workspace .risk-symbol-badge { /* Descendant selector: I target the asset badge. */
+    color: var(--mp-text) !important; /* Colour: I use main text. */
+    background: #26394e !important; /* Background: I distinguish the symbol badge. */
+} /* I finish the Risk symbol badge. */
+.risk-workspace .risk-stress-action { /* Descendant selector: I target the stress action. */
+    color: var(--mp-danger) !important; /* Colour: I use the danger token. */
+    background: var(--mp-panel-dark) !important; /* Background: I use a darker surface. */
+} /* I finish the Risk stress action. */
+.risk-workspace .risk-educational-notice { /* Descendant selector: I target the educational notice. */
+    color: #d7c69c !important; /* Colour: I use warning-toned text. */
+    background: var(--mp-warning-soft) !important; /* Background: I use warning shading. */
+    border-color: rgba(211, 168, 84, 0.33) !important; /* Border colour: I add a matching warning edge. */
+} /* I finish the Risk notice. */
 
 /* ============================================================
-   26. MARKET CONDITION - DARK THEME COMPATIBILITY
+   26. MARKET-CONDITION THEME COMPATIBILITY
    ============================================================ */
-
-.condition-workspace,
-.market-condition-workspace {
-
-    --mc-blue:
-        var(--mp-primary) !important;
-
-    --mc-blue-dark:
-        #3b6f9b !important;
-
-    --mc-blue-soft:
-        var(--mp-primary-soft) !important;
-
-    --mc-text:
-        var(--mp-text) !important;
-
-    --mc-muted:
-        var(--mp-muted) !important;
-
-    --mc-border:
-        var(--mp-border) !important;
-
-    --mc-soft:
-        var(--mp-panel-dark) !important;
-}
-
-
-.condition-workspace .condition-panel,
-.condition-workspace .condition-workflow,
-.market-condition-workspace .condition-panel,
-.market-condition-workspace .condition-workflow {
-
-    color:
-        var(--mp-text) !important;
-
-    background:
-        var(--mp-panel) !important;
-
-    border-color:
-        var(--mp-border) !important;
-
-    box-shadow:
-        0 6px 20px
-        rgba(0, 0, 0, 0.14) !important;
-}
-
+.condition-workspace, .market-condition-workspace { /* Grouped classes: I support both workspace names. */
+    --mc-blue: var(--mp-primary) !important; /* Alias: I reuse primary colour. */
+    --mc-blue-dark: #3b6f9b !important; /* Variable: I retain darker blue. */
+    --mc-blue-soft: var(--mp-primary-soft) !important; /* Alias: I reuse primary shading. */
+    --mc-text: var(--mp-text) !important; /* Alias: I reuse main text. */
+    --mc-muted: var(--mp-muted) !important; /* Alias: I reuse supporting text. */
+    --mc-border: var(--mp-border) !important; /* Alias: I reuse shared borders. */
+    --mc-soft: var(--mp-panel-dark) !important; /* Alias: I reuse darker surfaces. */
+} /* I finish market-condition aliases. */
+.condition-workspace .condition-panel, .condition-workspace .condition-workflow, .market-condition-workspace .condition-panel, .market-condition-workspace .condition-workflow { /* Scoped selectors: I theme condition panels and workflows. */
+    color: var(--mp-text) !important; /* Colour: I use shared text. */
+    background: var(--mp-panel) !important; /* Background: I use the main panel surface. */
+    border-color: var(--mp-border) !important; /* Border colour: I use shared edges. */
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14) !important; /* Shadow: I add panel depth. */
+} /* I finish market-condition surfaces. */
 
 /* ============================================================
-   27. LOGIN - DARK THEME COMPATIBILITY
+   27. LOGIN THEME COMPATIBILITY
    ============================================================ */
-
-.login-card {
-
-    color:
-        var(--mp-text) !important;
-
-    background:
-        var(--mp-panel) !important;
-
-    border-color:
-        var(--mp-border) !important;
-
-    box-shadow:
-        0 12px 35px
-        rgba(0, 0, 0, 0.24) !important;
-}
-
-
-.login-title {
-
-    color:
-        var(--mp-text) !important;
-}
-
-
-.login-subtitle,
-.login-register-text {
-
-    color:
-        var(--mp-muted) !important;
-}
-
-
-.login-icon {
-
-    color:
-        #7ba8ce !important;
-
-    background:
-        var(--mp-primary-soft) !important;
-}
-
-
-.login-form label {
-
-    color:
-        var(--mp-text-soft) !important;
-}
-
-
-.login-form input {
-
-    color:
-        var(--mp-text) !important;
-
-    background:
-        #142131 !important;
-
-    border-color:
-        #3a4d64 !important;
-}
-
-
-.login-form input:focus {
-
-    border-color:
-        var(--mp-primary) !important;
-
-    box-shadow:
-        0 0 0 0.15rem
-        rgba(79, 134, 182, 0.18) !important;
-}
-
-
-.login-forgot-link,
-.login-register-link {
-
-    color:
-        #7ba8ce !important;
-}
-
-
-.login-forgot-link:hover,
-.login-register-link:hover {
-
-    color:
-        #9abbd7 !important;
-}
-
-
-.login-register {
-
-    border-color:
-        var(--mp-border-soft) !important;
-}
-
-
-.login-security-note {
-
-    color:
-        var(--mp-muted) !important;
-
-    background:
-        var(--mp-panel-dark) !important;
-
-    border-color:
-        var(--mp-border-soft) !important;
-}
-
-
-.login-error {
-
-    color:
-        #f1c3c8 !important;
-
-    background:
-        var(--mp-danger-soft) !important;
-
-    border-color:
-        rgba(220, 107, 117, 0.38) !important;
-}
-
+.login-card { /* Class selector: I style the login card. */
+    color: var(--mp-text) !important; /* Colour: I use main text. */
+    background: var(--mp-panel) !important; /* Background: I use the shared panel. */
+    border-color: var(--mp-border) !important; /* Border colour: I use shared edges. */
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.24) !important; /* Shadow: I emphasise the login panel. */
+} /* I finish the login card. */
+.login-title { /* Class selector: I style the login heading. */
+    color: var(--mp-text) !important; /* Colour: I use main text. */
+} /* I finish the login title. */
+.login-subtitle, .login-register-text { /* Grouped selectors: I style supporting login text. */
+    color: var(--mp-muted) !important; /* Colour: I use the muted token. */
+} /* I finish supporting login text. */
+.login-icon { /* Class selector: I style the login icon container. */
+    color: #7ba8ce !important; /* Colour: I use the link-like blue shade. */
+    background: var(--mp-primary-soft) !important; /* Background: I use primary shading. */
+} /* I finish the login icon. */
+.login-form label { /* Descendant selector: I style login labels. */
+    color: var(--mp-text-soft) !important; /* Colour: I use softer foreground text. */
+} /* I finish login labels. */
+.login-form input { /* Descendant selector: I style login inputs. */
+    color: var(--mp-text) !important; /* Colour: I use main text. */
+    background: #142131 !important; /* Background: I use the input surface. */
+    border-color: #3a4d64 !important; /* Border colour: I match other form controls. */
+} /* I finish login inputs. */
+.login-form input:focus { /* Focus state: I highlight active login inputs. */
+    border-color: var(--mp-primary) !important; /* Border colour: I use the primary highlight. */
+    box-shadow: 0 0 0 0.15rem rgba(79, 134, 182, 0.18) !important; /* Shadow: I add the shared focus ring. */
+} /* I finish focused login inputs. */
+.login-forgot-link, .login-register-link { /* Grouped selectors: I style login-related links. */
+    color: #7ba8ce !important; /* Colour: I use the normal link shade. */
+} /* I finish login links. */
+.login-forgot-link:hover, .login-register-link:hover { /* Hover states: I target login-related links. */
+    color: #9abbd7 !important; /* Colour: I brighten hovered links. */
+} /* I finish login link hover styling. */
+.login-register { /* Class selector: I target the registration prompt area. */
+    border-color: var(--mp-border-soft) !important; /* Border colour: I theme its separator. */
+} /* I finish the registration prompt. */
+.login-security-note { /* Class selector: I style supporting security information. */
+    color: var(--mp-muted) !important; /* Colour: I use supporting text. */
+    background: var(--mp-panel-dark) !important; /* Background: I use a darker surface. */
+    border-color: var(--mp-border-soft) !important; /* Border colour: I use subtle edges. */
+} /* I finish the login security note. */
+.login-error { /* Class selector: I style login error messages. */
+    color: #f1c3c8 !important; /* Colour: I use pale danger text. */
+    background: var(--mp-danger-soft) !important; /* Background: I use danger shading. */
+    border-color: rgba(220, 107, 117, 0.38) !important; /* Border colour: I use a matching danger edge. */
+} /* I finish login errors. */
 
 /* ============================================================
-   28. REGISTRATION - DARK THEME COMPATIBILITY
+   28. REGISTRATION THEME COMPATIBILITY
    ============================================================ */
-
-.register-card {
-
-    color:
-        var(--mp-text) !important;
-
-    background:
-        var(--mp-panel) !important;
-
-    border-color:
-        var(--mp-border) !important;
-
-    box-shadow:
-        0 12px 35px
-        rgba(0, 0, 0, 0.24) !important;
-}
-
-
-.register-card-header {
-
-    border-color:
-        var(--mp-border-soft) !important;
-}
-
-
-.register-brand {
-
-    color:
-        #7ba8ce !important;
-}
-
-
-.register-title {
-
-    color:
-        var(--mp-text) !important;
-}
-
-
-.register-subtitle,
-.register-help,
-.register-login,
-.register-security {
-
-    color:
-        var(--mp-muted) !important;
-}
-
-
-.register-section-title,
-.register-field label,
-.password-information strong {
-
-    color:
-        var(--mp-text-soft) !important;
-}
-
-
-.register-field input {
-
-    color:
-        var(--mp-text) !important;
-
-    background:
-        #142131 !important;
-
-    border-color:
-        #3a4d64 !important;
-}
-
-
-.register-field input:focus {
-
-    border-color:
-        var(--mp-primary) !important;
-
-    box-shadow:
-        0 0 0 0.15rem
-        rgba(79, 134, 182, 0.18) !important;
-}
-
-
-.password-information {
-
-    color:
-        var(--mp-text) !important;
-
-    background:
-        var(--mp-panel-dark) !important;
-
-    border-color:
-        var(--mp-border-soft) !important;
-}
-
-
-.password-information ul {
-
-    color:
-        var(--mp-muted) !important;
-}
-
-
-.register-login a {
-
-    color:
-        #7ba8ce !important;
-}
-
-
-.register-security {
-
-    border-color:
-        var(--mp-border-soft) !important;
-}
-
-
-.register-error-summary {
-
-    color:
-        #f1c3c8 !important;
-
-    background:
-        var(--mp-danger-soft) !important;
-
-    border-color:
-        rgba(220, 107, 117, 0.38) !important;
-}
-
-
-.register-error {
-
-    color:
-        #ef9ba4 !important;
-}
-
+.register-card { /* Class selector: I style the registration card. */
+    color: var(--mp-text) !important; /* Colour: I use main text. */
+    background: var(--mp-panel) !important; /* Background: I use the shared panel. */
+    border-color: var(--mp-border) !important; /* Border colour: I use shared edges. */
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.24) !important; /* Shadow: I emphasise the panel. */
+} /* I finish the registration card. */
+.register-card-header { /* Class selector: I target its header. */
+    border-color: var(--mp-border-soft) !important; /* Border colour: I theme the separator. */
+} /* I finish the registration header. */
+.register-brand { /* Class selector: I target registration branding. */
+    color: #7ba8ce !important; /* Colour: I use the blue brand shade. */
+} /* I finish registration branding. */
+.register-title { /* Class selector: I target the main heading. */
+    color: var(--mp-text) !important; /* Colour: I use main text. */
+} /* I finish the registration title. */
+.register-subtitle, .register-help, .register-login, .register-security { /* Grouped selectors: I target supporting registration text. */
+    color: var(--mp-muted) !important; /* Colour: I use the muted token. */
+} /* I finish supporting registration text. */
+.register-section-title, .register-field label, .password-information strong { /* Grouped selectors: I target section headings and labels. */
+    color: var(--mp-text-soft) !important; /* Colour: I use softer foreground text. */
+} /* I finish registration labels. */
+.register-field input { /* Descendant selector: I style registration inputs. */
+    color: var(--mp-text) !important; /* Colour: I use main text. */
+    background: #142131 !important; /* Background: I use the shared input surface. */
+    border-color: #3a4d64 !important; /* Border colour: I match other controls. */
+} /* I finish registration inputs. */
+.register-field input:focus { /* Focus state: I highlight active registration inputs. */
+    border-color: var(--mp-primary) !important; /* Border colour: I use the primary highlight. */
+    box-shadow: 0 0 0 0.15rem rgba(79, 134, 182, 0.18) !important; /* Shadow: I add a focus ring. */
+} /* I finish focused registration inputs. */
+.password-information { /* Class selector: I style password guidance. */
+    color: var(--mp-text) !important; /* Colour: I use main text. */
+    background: var(--mp-panel-dark) !important; /* Background: I use a darker surface. */
+    border-color: var(--mp-border-soft) !important; /* Border colour: I use subtle edges. */
+} /* I finish password guidance. */
+.password-information ul { /* Descendant selector: I target the password-guidance list. */
+    color: var(--mp-muted) !important; /* Colour: I use supporting text. */
+} /* I finish password-guidance lists. */
+.register-login a { /* Descendant selector: I style the link to login. */
+    color: #7ba8ce !important; /* Colour: I use the normal link shade. */
+} /* I finish the registration login link. */
+.register-security { /* Class selector: I target security information. */
+    border-color: var(--mp-border-soft) !important; /* Border colour: I theme its separator. */
+} /* I finish the registration security border. */
+.register-error-summary { /* Class selector: I style the error summary. */
+    color: #f1c3c8 !important; /* Colour: I use pale danger text. */
+    background: var(--mp-danger-soft) !important; /* Background: I use danger shading. */
+    border-color: rgba(220, 107, 117, 0.38) !important; /* Border colour: I use a matching danger edge. */
+} /* I finish the error summary. */
+.register-error { /* Class selector: I target individual registration errors. */
+    color: #ef9ba4 !important; /* Colour: I use danger-toned text. */
+} /* I finish individual errors. */
 
 /* ============================================================
    29. PROFILE COMPATIBILITY
    ============================================================ */
-
-.marketpulse-main .card-header.bg-white {
-
-    color:
-        var(--mp-text) !important;
-
-    background:
-        var(--mp-panel-soft) !important;
-}
-
+.marketpulse-main .card-header.bg-white { /* Scoped combined selector: I adapt white card headers inside main content. */
+    color: var(--mp-text) !important; /* Colour: I use main text. */
+    background: var(--mp-panel-soft) !important; /* Background: I replace the white surface. */
+} /* I finish profile compatibility. */
 
 /* ============================================================
    30. GENERIC LEGACY LIGHT SURFACES
    ============================================================ */
-
-/*
-   These selectors protect against older templates containing
-   explicit Bootstrap light classes.
-*/
-
-.marketpulse-main .bg-white {
-
-    background-color:
-        var(--mp-panel) !important;
-}
-
-
-.marketpulse-main .bg-light {
-
-    background-color:
-        var(--mp-panel-soft) !important;
-}
-
-
-.marketpulse-main .text-dark {
-
-    color:
-        var(--mp-text) !important;
-}
-
+.marketpulse-main .bg-white { /* Descendant selector: I target white-background content. */
+    background-color: var(--mp-panel) !important; /* Override: I use the main dark panel. */
+} /* I finish scoped white backgrounds. */
+.marketpulse-main .bg-light { /* Descendant selector: I target light-background content. */
+    background-color: var(--mp-panel-soft) !important; /* Override: I use the softer dark panel. */
+} /* I finish scoped light backgrounds. */
+.marketpulse-main .text-dark { /* Descendant selector: I target legacy dark-text content. */
+    color: var(--mp-text) !important; /* Override: I use light theme text. */
+} /* I finish scoped text compatibility. */
 
 /* ============================================================
-   31. CODE / PRE / TECHNICAL VALUES
+   31. CODE AND PREFORMATTED TEXT
    ============================================================ */
-
-code {
-
-    color: #9ec7e7;
-
-    background:
-        rgba(79, 134, 182, 0.09);
-
-    padding:
-        0.12rem
-        0.28rem;
-
-    border-radius:
-        0.25rem;
-}
-
-
-pre {
-
-    color:
-        #d9e3ed;
-
-    background:
-        var(--mp-panel-dark);
-
-    border:
-        1px solid
-        var(--mp-border-soft);
-
-    border-radius:
-        0.5rem;
-}
-
+code { /* Element selector: I style inline technical text. */
+    color: #9ec7e7; /* Colour: I distinguish code text. */
+    background: rgba(79, 134, 182, 0.09); /* Background: I add subtle primary shading. */
+    padding: 0.12rem 0.28rem; /* Shorthand: I set vertical and horizontal inner spacing. */
+    border-radius: 0.25rem; /* Shape: I round the inline box. */
+} /* I finish inline code styling. */
+pre { /* Element selector: I style preformatted blocks. */
+    color: #d9e3ed; /* Colour: I set technical text. */
+    background: var(--mp-panel-dark); /* Background: I use a darker surface. */
+    border: 1px solid var(--mp-border-soft); /* Border shorthand: I outline the block. */
+    border-radius: 0.5rem; /* Shape: I round the block corners. */
+} /* I finish preformatted blocks. */
 
 /* ============================================================
    32. SCROLLBARS
    ============================================================ */
-
-* {
-
-    scrollbar-width: thin;
-
-    scrollbar-color:
-        #435871
-        var(--mp-panel-dark);
-}
-
-
-*::-webkit-scrollbar {
-
-    width: 10px;
-    height: 10px;
-}
-
-
-*::-webkit-scrollbar-track {
-
-    background:
-        var(--mp-panel-dark);
-}
-
-
-*::-webkit-scrollbar-thumb {
-
-    background:
-        #435871;
-
-    border:
-        2px solid
-        var(--mp-panel-dark);
-
-    border-radius:
-        999px;
-}
-
-
-*::-webkit-scrollbar-thumb:hover {
-
-    background:
-        #536a84;
-}
-
+* { /* Universal selector: I apply supported scrollbar styling to all elements. */
+    scrollbar-width: thin; /* Scrollbar property: I request a thinner scrollbar. */
+    scrollbar-color: #435871 var(--mp-panel-dark); /* Colour pair: I set thumb and track colours. */
+} /* I finish standard scrollbar properties. */
+*::-webkit-scrollbar { /* Browser-specific pseudo-element: I target supported scrollbar surfaces. */
+    width: 10px; /* Size: I set vertical scrollbar width. */
+    height: 10px; /* Size: I set horizontal scrollbar height. */
+} /* I finish scrollbar dimensions. */
+*::-webkit-scrollbar-track { /* Pseudo-element: I target the scrollbar track. */
+    background: var(--mp-panel-dark); /* Background: I use a dark track. */
+} /* I finish the track. */
+*::-webkit-scrollbar-thumb { /* Pseudo-element: I target the draggable thumb. */
+    background: #435871; /* Background: I set the thumb colour. */
+    border: 2px solid var(--mp-panel-dark); /* Border shorthand: I separate the thumb from the track. */
+    border-radius: 999px; /* Shape: I create highly rounded thumb ends. */
+} /* I finish the scrollbar thumb. */
+*::-webkit-scrollbar-thumb:hover { /* Hover state: I target the hovered thumb. */
+    background: #536a84; /* Background: I brighten the thumb. */
+} /* I finish scrollbar hover styling. */
 
 /* ============================================================
-   33. SELECTION
+   33. TEXT SELECTION
    ============================================================ */
-
-::selection {
-
-    color:
-        #ffffff;
-
-    background:
-        rgba(79, 134, 182, 0.7);
-}
-
+::selection { /* Pseudo-element: I style selected text. */
+    color: #ffffff; /* Colour: I use white selected text. */
+    background: rgba(79, 134, 182, 0.7); /* Background: I highlight selection with translucent primary colour. */
+} /* I finish text-selection styling. */
 
 /* ============================================================
    34. RESPONSIVE ADJUSTMENTS
    ============================================================ */
-
-@media (max-width: 991.98px) {
-
-    .marketpulse-main {
-
-        padding-left:
-            1rem !important;
-
-        padding-right:
-            1rem !important;
-    }
-
-
-    .navbar-collapse {
-
-        padding-top:
-            0.75rem;
-
-        padding-bottom:
-            0.5rem;
-    }
-
-
-    .navbar .nav-link {
-
-        padding-left:
-            0.65rem;
-
-        padding-right:
-            0.65rem;
-    }
-}
-
-
-@media (max-width: 575.98px) {
-
-    body {
-
-        font-size:
-            0.9rem;
-    }
-
-
-    .marketpulse-main {
-
-        padding-left:
-            0.625rem !important;
-
-        padding-right:
-            0.625rem !important;
-
-        padding-top:
-            1rem !important;
-    }
-
-
-    .card-body {
-
-        padding:
-            1rem;
-    }
-}
-
+@media (max-width: 991.98px) { /* Media query: I apply these changes at tablet-sized widths and below. */
+    .marketpulse-main { /* Class selector: I adjust the main content spacing. */
+        padding-left: 1rem !important; /* Spacing: I set the left inner margin. */
+        padding-right: 1rem !important; /* Spacing: I set the right inner margin. */
+    } /* I finish main-content spacing. */
+    .navbar-collapse { /* Class selector: I target the collapsible navigation area. */
+        padding-top: 0.75rem; /* Spacing: I add room above the links. */
+        padding-bottom: 0.5rem; /* Spacing: I add room below the links. */
+    } /* I finish collapse spacing. */
+    .navbar .nav-link { /* Descendant selector: I adjust navigation links. */
+        padding-left: 0.65rem; /* Spacing: I add left inner spacing. */
+        padding-right: 0.65rem; /* Spacing: I add right inner spacing. */
+    } /* I finish navigation-link spacing. */
+} /* I finish the tablet media query. */
+@media (max-width: 575.98px) { /* Media query: I apply the smallest-screen adjustments. */
+    body { /* Element selector: I adjust base text. */
+        font-size: 0.9rem; /* Typography: I slightly reduce the base font size. */
+    } /* I finish small-screen typography. */
+    .marketpulse-main { /* Class selector: I adjust main-content spacing. */
+        padding-left: 0.625rem !important; /* Spacing: I reduce left padding. */
+        padding-right: 0.625rem !important; /* Spacing: I reduce right padding. */
+        padding-top: 1rem !important; /* Spacing: I set top padding. */
+    } /* I finish small-screen main content. */
+    .card-body { /* Class selector: I adjust card content spacing. */
+        padding: 1rem; /* Shorthand: I set equal padding on all sides. */
+    } /* I finish small-screen card spacing. */
+} /* I finish the small-screen media query. */
 
 /* ============================================================
-   35. PRINT
+   35. PRINT STYLES
    ============================================================ */
-
-@media print {
-
-    body,
-    body.marketpulse-body,
-    .marketpulse-main {
-
-        color:
-            #111111 !important;
-
-        background:
-            #ffffff !important;
-    }
-
-
-    .marketpulse-navbar,
-    .marketpulse-footer {
-
-        display:
-            none !important;
-    }
-
-
-    .card {
-
-        color:
-            #111111 !important;
-
-        background:
-            #ffffff !important;
-
-        border-color:
-            #cccccc !important;
-
-        box-shadow:
-            none !important;
-    }
-}
+@media print { /* Media query: I apply these rules when printing. */
+    body, body.marketpulse-body, .marketpulse-main { /* Grouped selectors: I target the printed page canvas. */
+        color: #111111 !important; /* Colour: I use dark text for print. */
+        background: #ffffff !important; /* Background: I use a white printed canvas. */
+    } /* I finish print canvas styling. */
+    .marketpulse-navbar, .marketpulse-footer { /* Grouped selectors: I target navigation and footer. */
+        display: none !important; /* Visibility: I remove these elements from the printed layout. */
+    } /* I finish print visibility changes. */
+    .card { /* Class selector: I adapt cards for print. */
+        color: #111111 !important; /* Colour: I use dark card text. */
+        background: #ffffff !important; /* Background: I use white card surfaces. */
+        border-color: #cccccc !important; /* Border colour: I use light grey edges. */
+        box-shadow: none !important; /* Shadow: I remove decorative card shadows. */
+    } /* I finish print card styling. */
+} /* I finish the print media query. */

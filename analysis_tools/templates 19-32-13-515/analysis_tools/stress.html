@@ -1,2 +1,151 @@
-{% extends 'base.html' %}<!-- ======================================================== STRESS FORM: strategy/scenario → stress analyzer. -->
-{% block title %}Stress Test | MarketPulse{% endblock %}{% block content %}<h1 class="h3">Stress Testing</h1><form method="post">{% csrf_token %}<label>Strategy</label><select class="form-select mb-2" name="strategy">{% for s in strategies %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select><label>Symbol</label><input class="form-control mb-2" name="symbol" value="AAPL"><label>Scenario</label><select class="form-select mb-2" name="test_type"><option value="crash">Market Crash</option><option value="volatility_spike">Volatility Spike</option><option value="liquidity_crisis">Liquidity Crisis</option><option value="regime_change">Regime Change</option></select><button class="btn btn-primary">Run Stress Test</button></form>{% endblock %}
+{% extends 'base.html' %} {# TEMPLATE INHERITANCE: Reuses the common MarketPulse layout from base.html. #}
+<!-- ======================================================== STRESS FORM: strategy/scenario → stress analyzer. -->
+
+{% comment %}
+============================================================
+MARKETPULSE - STRESS TESTING FORM
+============================================================
+
+FILE:
+analysis_tools/templates19-32-13-515/analysis_tools/stress.html
+
+PURPOSE:
+This Django template shows the form used to configure
+and run a stress test against a selected strategy.
+
+FRAMEWORK FLOW:
+
+Browser / User
+    ↓
+analysis_tools/urls.py
+    ↓
+analysis_tools/views.py
+    ↓
+strategies
+    ↓
+stress.html
+    ↓
+User selects:
+    Strategy
+    Symbol
+    Stress Scenario
+    ↓
+HTTP POST request
+    ↓
+analysis_tools/views.py
+    ↓
+Stress-testing / analyzer logic
+    ↓
+Stress-test result
+
+DJANGO TEMPLATE CONCEPTS USED:
+
+1. Template inheritance
+2. Template blocks
+3. Template variables
+4. Object attribute access
+5. For-loop iteration
+6. CSRF protection
+7. HTML form submission
+
+PROGRAMMING LANGUAGE FEATURES / CONCEPTS:
+
+Inheritance
+    Reuses behaviour/layout defined somewhere else.
+
+Variables
+    {{ s.id }} and {{ s.name }} display values supplied
+    by the Django backend.
+
+Iteration
+    {% for s in strategies %} repeats code once for
+    every strategy.
+
+Object/property access
+    s.id and s.name access properties of each strategy.
+
+Input / Output
+    The form collects user input and sends it to
+    the backend.
+
+Name/value pairs
+    strategy, symbol, and test_type identify the
+    submitted values.
+
+Selection
+    <select> lets the user choose one value from
+    several possible values.
+
+Security
+    csrf_token protects the POST request.
+
+Separation of concerns
+    HTML/template = presentation.
+    Django view = request handling.
+    Analyzer/backend = stress-test calculations.
+
+============================================================
+{% endcomment %}
+
+{# ============================================================ #}
+{# 1. PAGE TITLE BLOCK                                           #}
+{# Programming concept: TEMPLATE INHERITANCE / BLOCK OVERRIDING. #}
+{# ============================================================ #}
+{% block title %}Stress Test | MarketPulse{% endblock %} {# BLOCK: Replaces the title section defined inside base.html. #}
+
+{# ============================================================ #}
+{# 2. MAIN CONTENT BLOCK                                         #}
+{# Programming concept: STRUCTURED PROGRAM / BLOCK.               #}
+{# ============================================================ #}
+{% block content %} {# BLOCK: Starts the page-specific content inserted into base.html. #}
+<h1 class="h3">Stress Testing</h1> {# HTML OUTPUT: Displays the main heading; h3 is a Bootstrap heading-size class. #}
+
+{# ============================================================ #}
+{# 3. STRESS TEST FORM                                           #}
+{# Programming concept: INPUT + HTTP REQUEST.                     #}
+{# ============================================================ #}
+<form method="post"> {# FORM: Collects user input and sends it to the Django backend using HTTP POST. #}
+{% csrf_token %} {# SECURITY: Django inserts a hidden CSRF token so the POST request can be verified. #}
+
+{# ============================================================ #}
+{# 4. STRATEGY INPUT                                             #}
+{# Programming concepts: VARIABLE, ITERATION, OBJECT ACCESS.      #}
+{# ============================================================ #}
+<label>Strategy</label> {# LABEL: Tells the user that the next field selects a strategy. #}
+<select class="form-select mb-2" name="strategy"> {# INPUT: Bootstrap dropdown; name="strategy" becomes a POST-data key. #}
+{% for s in strategies %} {# LOOP: Repeats the option below once for every strategy supplied by the Django view. #}
+<option value="{{ s.id }}">{{ s.name }}</option> {# VARIABLE/OBJECT ACCESS: Uses the strategy ID as the submitted value and its name as visible text. #}
+{% endfor %} {# LOOP END: Stops repeating once every strategy has been processed. #}
+</select> {# HTML STRUCTURE: Ends the strategy dropdown. #}
+
+{# ============================================================ #}
+{# 5. SYMBOL INPUT                                               #}
+{# Programming concepts: VARIABLE INPUT + DEFAULT VALUE.          #}
+{# ============================================================ #}
+<label>Symbol</label> {# LABEL: Tells the user that this field expects a market ticker symbol. #}
+<input class="form-control mb-2" name="symbol" value="AAPL"> {# INPUT: Sends the value under "symbol"; AAPL is the default displayed value. #}
+
+{# ============================================================ #}
+{# 6. STRESS SCENARIO INPUT                                      #}
+{# Programming concepts: SELECTION + CONSTANT VALUES.             #}
+{# ============================================================ #}
+<label>Scenario</label> {# LABEL: Tells the user to choose the type of stress-test scenario. #}
+<select class="form-select mb-2" name="test_type"> {# INPUT: Sends the selected scenario using the POST key "test_type". #}
+<option value="crash">Market Crash</option> {# VALUE: Selecting Market Crash sends the constant string "crash". #}
+<option value="volatility_spike">Volatility Spike</option> {# VALUE: Selecting this option sends "volatility_spike". #}
+<option value="liquidity_crisis">Liquidity Crisis</option> {# VALUE: Selecting this option sends "liquidity_crisis". #}
+<option value="regime_change">Regime Change</option> {# VALUE: Selecting this option sends "regime_change". #}
+</select> {# HTML STRUCTURE: Ends the scenario dropdown. #}
+
+{# ============================================================ #}
+{# 7. FORM SUBMISSION                                            #}
+{# Programming concept: EVENT / INPUT → PROCESSING.               #}
+{# ============================================================ #}
+<button class="btn btn-primary">Run Stress Test</button> {# ACTION: Clicking the Bootstrap-styled button submits the form to the backend. #}
+</form> {# FORM END: Finishes the group of values submitted by the user. #}
+
+{# ============================================================ #}
+{# 8. END MAIN CONTENT                                           #}
+{# Programming concept: BLOCK SCOPE.                              #}
+{# ============================================================ #}
+{% endblock %} {# BLOCK END: Finishes the content supplied to the base.html template. #}

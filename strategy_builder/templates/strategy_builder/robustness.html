@@ -1,150 +1,113 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {# Template inheritance: I reuse the shared MarketPulse layout. #}
 
-{% block title %}
-Strategy Robustness | MarketPulse
-{% endblock %}
+{# ======================================================== #}
+{# 1. PAGE TITLE                                            #}
+{# ======================================================== #}
+{% block title %} {# Named block: I replace the base template's browser title. #}
+Strategy Robustness | MarketPulse {# Static text: I identify this page and the project. #}
+{% endblock %} {# Block boundary: I finish the title block. #}
 
-{% block content %}
+{# ======================================================== #}
+{# 2. PAGE CONTENT AND BACK LINK                            #}
+{# ======================================================== #}
+{% block content %} {# Named block: I insert this page into the shared content area. #}
+<a href="{% url 'strategy_builder:list' %}" class="text-decoration-none"> {# URL reversing and CSS class: I generate the Strategies link and remove its underline. #}
+    ← Back to Strategies {# Text content: I describe the link's destination. #}
+</a> {# Closing tag: I finish the navigation link. #}
 
+{# ======================================================== #}
+{# 3. PAGE HEADING AND EXPLANATION                           #}
+{# ======================================================== #}
+<div class="mt-3 mb-4"> {# HTML container and CSS classes: I add spacing above and below the introduction. #}
+    <h1 class="h2 mb-1"> {# Heading element: I use a main heading with Bootstrap sizing and bottom spacing. #}
+        Strategy Robustness {# Static text: I display the page heading. #}
+    </h1> {# Closing tag: I finish the main heading. #}
+    <p class="text-muted"> {# Paragraph and CSS class: I display supporting explanatory text. #}
+        Check whether historical performance remains {# Static text: I introduce the purpose of the check. #}
+        reasonably consistent when evaluated on separate {# Static text: I explain the comparison between data periods. #}
+        periods of data. {# Static text: I finish the explanation. #}
+    </p> {# Closing tag: I finish the paragraph. #}
+</div> {# Closing tag: I finish the introduction container. #}
 
-<a
-    href="{% url 'strategy_builder:list' %}"
-    class="text-decoration-none"
->
-    ← Back to Strategies
-</a>
+{# ======================================================== #}
+{# 4. FORM CONTAINER AND CSRF PROTECTION                     #}
+{# ======================================================== #}
+<div class="card shadow-sm"> {# Container and CSS classes: I place the form inside a card with a small shadow. #}
+    <div class="card-body"> {# Nested container: I begin the card's main content. #}
+        <h2 class="h4"> {# Heading element: I introduce the form with a secondary heading. #}
+            What do you want to test? {# Static text: I prompt the user to choose inputs. #}
+        </h2> {# Closing tag: I finish the form heading. #}
+        <form method="post"> {# Form and HTTP method: I submit named fields to the current URL using POST. #}
+            {% csrf_token %} {# Django template tag: I include a token for server-side CSRF checks. #}
 
+            {# ======================================================== #}
+            {# 5. STRATEGY DROPDOWN: ITERATION AND VARIABLES             #}
+            {# ======================================================== #}
+            <div class="mb-3"> {# Field container: I add bottom spacing around the strategy dropdown. #}
+                <label class="form-label fw-semibold"> {# Label element and CSS classes: I display a semibold field label. #}
+                    Strategy {# Static text: I identify the requested selection. #}
+                </label> {# Closing tag: I finish the label. #}
+                <select name="strategy" class="form-select" required> {# Attributes: I submit the chosen value under strategy and require a non-empty selection. #}
+                    <option value=""> {# Empty option value: I provide a prompt that does not satisfy required validation. #}
+                        Select a strategy {# Static text: I show the dropdown prompt. #}
+                    </option> {# Closing tag: I finish the prompt option. #}
+                    {% for strategy in strategies %} {# Iteration: I repeat an option for each strategy supplied by the view. #}
+                        <option value="{{ strategy.id }}"> {# Variable lookup and interpolation: I use the strategy's ID as the submitted value. #}
+                            {{ strategy.name }} {# Variable lookup: I display the strategy's readable name. #}
+                        </option> {# Closing tag: I finish this strategy option. #}
+                    {% endfor %} {# Loop boundary: I finish generating strategy choices. #}
+                </select> {# Closing tag: I finish the strategy dropdown. #}
+            </div> {# Closing tag: I finish the strategy field group. #}
 
-<div class="mt-3 mb-4">
+            {# ======================================================== #}
+            {# 6. HISTORICAL ASSET DROPDOWN                             #}
+            {# ======================================================== #}
+            <div class="mb-3"> {# Field container: I group the asset selection with bottom spacing. #}
+                <label class="form-label fw-semibold"> {# Label element: I display the historical-asset label. #}
+                    Historical Asset {# Static text: I identify the asset input. #}
+                </label> {# Closing tag: I finish the label. #}
+                <select name="symbol" class="form-select" required> {# Attributes: I submit the selected ticker under symbol and require a non-empty value. #}
+                    <option value=""> {# Empty option value: I provide the initial asset-selection prompt. #}
+                        Select an asset {# Static text: I prompt the user to choose an asset. #}
+                    </option> {# Closing tag: I finish the prompt option. #}
+                    {% for symbol in symbols %} {# Iteration: I repeat an option for each symbol supplied by the view. #}
+                        <option value="{{ symbol }}"> {# Variable interpolation: I use the symbol as the submitted value. #}
+                            {{ symbol }} {# Variable interpolation: I display the same symbol to the user. #}
+                        </option> {# Closing tag: I finish this asset option. #}
+                    {% endfor %} {# Loop boundary: I finish generating asset choices. #}
+                </select> {# Closing tag: I finish the asset dropdown. #}
+            </div> {# Closing tag: I finish the asset field group. #}
 
-    <h1 class="h2 mb-1">
-        Strategy Robustness
-    </h1>
+            {# ======================================================== #}
+            {# 7. EXPLANATION OF THE INTENDED ANALYSIS                   #}
+            {# ======================================================== #}
+            <div class="alert alert-light border"> {# Container and CSS classes: I display an informational panel with a border. #}
+                <strong> {# Semantic element: I emphasise the introduction to the analysis steps. #}
+                    MarketPulse will: {# Static text: I introduce the intended backend workflow. #}
+                </strong> {# Closing tag: I finish the emphasised introduction. #}
+                <ul class="mb-0 mt-2"> {# Unordered list: I present the steps with top spacing and no bottom margin. #}
+                    <li> {# List item: I begin the first analysis step. #}
+                        Separate historical periods {# Static text: I describe splitting the historical data. #}
+                    </li> {# Closing tag: I finish the first item. #}
+                    <li> {# List item: I begin the second step. #}
+                        Compare in-sample and out-of-sample behaviour {# Static text: I describe comparing behaviour across the data splits. #}
+                    </li> {# Closing tag: I finish the second item. #}
+                    <li> {# List item: I begin the third step. #}
+                        Measure performance deterioration {# Static text: I describe measuring a reduction in performance. #}
+                    </li> {# Closing tag: I finish the third item. #}
+                    <li> {# List item: I begin the fourth step. #}
+                        Flag possible overfitting {# Static text: I describe highlighting potential overfitting. #}
+                    </li> {# Closing tag: I finish the fourth item. #}
+                </ul> {# Closing tag: I finish the analysis-step list. #}
+            </div> {# Closing tag: I finish the information panel. #}
 
-    <p class="text-muted">
-
-        Check whether historical performance remains
-        reasonably consistent when evaluated on separate
-        periods of data.
-
-    </p>
-
-</div>
-
-
-<div class="card shadow-sm">
-
-    <div class="card-body">
-
-        <h2 class="h4">
-            What do you want to test?
-        </h2>
-
-
-        <form method="post">
-
-            {% csrf_token %}
-
-
-            <div class="mb-3">
-
-                <label class="form-label fw-semibold">
-                    Strategy
-                </label>
-
-                <select
-                    name="strategy"
-                    class="form-select"
-                    required
-                >
-
-                    <option value="">
-                        Select a strategy
-                    </option>
-
-                    {% for strategy in strategies %}
-
-                        <option value="{{ strategy.id }}">
-                            {{ strategy.name }}
-                        </option>
-
-                    {% endfor %}
-
-                </select>
-
-            </div>
-
-
-            <div class="mb-3">
-
-                <label class="form-label fw-semibold">
-                    Historical Asset
-                </label>
-
-                <select
-                    name="symbol"
-                    class="form-select"
-                    required
-                >
-
-                    <option value="">
-                        Select an asset
-                    </option>
-
-                    {% for symbol in symbols %}
-
-                        <option value="{{ symbol }}">
-                            {{ symbol }}
-                        </option>
-
-                    {% endfor %}
-
-                </select>
-
-            </div>
-
-
-            <div class="alert alert-light border">
-
-                <strong>
-                    MarketPulse will:
-                </strong>
-
-                <ul class="mb-0 mt-2">
-
-                    <li>
-                        Separate historical periods
-                    </li>
-
-                    <li>
-                        Compare in-sample and out-of-sample behaviour
-                    </li>
-
-                    <li>
-                        Measure performance deterioration
-                    </li>
-
-                    <li>
-                        Flag possible overfitting
-                    </li>
-
-                </ul>
-
-            </div>
-
-
-            <button
-                class="btn btn-primary"
-                type="submit"
-            >
-                Check Strategy Robustness
-            </button>
-
-        </form>
-
-    </div>
-
-</div>
-
-
-{% endblock %}
+            {# ======================================================== #}
+            {# 8. SUBMIT THE SELECTED INPUTS                            #}
+            {# ======================================================== #}
+            <button class="btn btn-primary" type="submit"> {# Submit button: I send the strategy ID and asset symbol to the receiving view. #}
+                Check Strategy Robustness {# Static text: I describe the requested action. #}
+            </button> {# Closing tag: I finish the submit button. #}
+        </form> {# Closing tag: I finish the form. #}
+    </div> {# Closing tag: I finish the card body. #}
+</div> {# Closing tag: I finish the card. #}
+{% endblock %} {# Block boundary: I finish the page content. #}

@@ -1,2 +1,219 @@
-{% extends 'base.html' %}<!-- ======================================================== STRESS RESULTS: StressTest records → robustness table. -->
-{% block title %}Stress Results | MarketPulse{% endblock %}{% block content %}<h1 class="h3">Stress Results</h1><table class="table"><thead><tr><th>Strategy</th><th>Scenario</th><th>Drawdown</th><th>Recovery</th><th>Score</th><th>Status</th></tr></thead><tbody>{% for x in tests %}<tr><td>{{ x.strategy.name }}</td><td>{{ x.get_test_type_display }}</td><td>{{ x.max_drawdown }}</td><td>{{ x.recovery_time }}</td><td>{{ x.robustness_score }}</td><td>{{ x.passed_test|yesno:'Pass,Review' }}</td></tr>{% empty %}<tr><td colspan="6">No tests.</td></tr>{% endfor %}</tbody></table>{% endblock %}
+{% extends 'base.html' %}{# TEMPLATE INHERITANCE: Reuses the main MarketPulse page structure from base.html. #}
+
+{% comment %}
+============================================================
+MARKETPULSE - STRESS TEST RESULTS
+============================================================
+
+FILE PURPOSE:
+
+This template displays completed strategy stress-test results.
+
+It shows:
+- Strategy name
+- Stress-test scenario
+- Maximum drawdown
+- Recovery time
+- Robustness score
+- Pass / Review status
+
+
+============================================================
+DJANGO FRAMEWORK FLOW
+============================================================
+
+Django follows an MVT-style structure:
+
+MODEL
+    ↓
+StressTest records / related Strategy data
+    ↓
+VIEW
+    ↓
+The Django view gets the stress-test records
+    ↓
+CONTEXT
+    ↓
+tests
+    ↓
+TEMPLATE
+    ↓
+analysis_tools/stress_results.html
+    ↓
+HTML TABLE
+    ↓
+USER'S BROWSER
+
+
+In simple words:
+
+Database data
+    ↓
+Django Model
+    ↓
+Django View
+    ↓
+"tests" template variable
+    ↓
+This template
+    ↓
+Stress Results table
+
+
+============================================================
+HOW THIS CONNECTS TO THE LECTURE
+============================================================
+
+Programming Language Features / Programming Language Concepts
+are the building blocks used to create program behaviour.
+
+This template demonstrates several of them:
+
+1. ABSTRACTION / REUSE
+   {% extends 'base.html' %}
+   Reuses the common MarketPulse layout instead of repeating it.
+
+2. BLOCKS / MODULARITY
+   {% block title %}
+   {% block content %}
+   Define sections that plug into base.html.
+
+3. VARIABLES
+   {{ x.max_drawdown }}
+   Reads values supplied by Django.
+
+4. OBJECT / ATTRIBUTE ACCESS
+   {{ x.strategy.name }}
+   Accesses the related Strategy object and then its name.
+
+5. METHOD ACCESS
+   {{ x.get_test_type_display }}
+   Uses Django's model display method for a choice field.
+
+6. ITERATION / LOOPS
+   {% for x in tests %}
+   Repeats the table row once for every stress-test record.
+
+7. CONDITIONAL BEHAVIOUR
+   {% empty %}
+   Runs when the tests collection has no records.
+
+8. FILTERS / DATA TRANSFORMATION
+   {{ x.passed_test|yesno:'Pass,Review' }}
+   Converts a Boolean-style value into readable text.
+
+9. DATA STRUCTURES / COLLECTIONS
+   tests is a collection of stress-test objects.
+
+10. PRESENTATION LOGIC
+    The template displays data but does not perform the
+    main stress-test calculation itself.
+
+
+============================================================
+STRESS RESULT DATA FLOW
+============================================================
+
+Strategy
+    ↓
+Stress Test calculation
+    ↓
+StressTest record
+    ↓
+Database
+    ↓
+Django View
+    ↓
+tests
+    ↓
+{% for x in tests %}
+    ↓
+Individual stress-test result
+    ↓
+HTML table row
+
+
+============================================================
+IMPORTANT SEPARATION OF RESPONSIBILITIES
+============================================================
+
+Python / Django backend:
+- Gets the records
+- Handles business logic
+- Handles calculations
+- Sends "tests" to this template
+
+This HTML / Django template:
+- Receives "tests"
+- Loops through the records
+- Displays the results
+
+This separation keeps calculation logic away from the
+presentation layer.
+
+============================================================
+{% endcomment %}
+
+{# ============================================================ #}
+{# SECTION 1 - PAGE TITLE BLOCK                                #}
+{# Programming concept: modularity / template inheritance.     #}
+{# ============================================================ #}
+{% block title %}Stress Results | MarketPulse{% endblock %}{# Replaces the title block defined inside base.html. #}
+
+{# ============================================================ #}
+{# SECTION 2 - MAIN CONTENT BLOCK                              #}
+{# Programming concept: a reusable block of presentation code. #}
+{# ============================================================ #}
+{% block content %}{# Starts the content that will be inserted into base.html. #}
+<h1 class="h3">Stress Results</h1>{# HTML: Displays the main heading; class="h3" applies the existing heading styling. #}
+
+{# ============================================================ #}
+{# SECTION 3 - STRESS RESULTS TABLE                            #}
+{# Programming concept: structured presentation of data.       #}
+{# ============================================================ #}
+<table class="table">{# HTML: Starts the Bootstrap-style table used to display stress-test records. #}
+<thead>{# HTML: Starts the table header section. #}
+<tr>{# HTML: Starts one table-header row. #}
+<th>Strategy</th>{# HTML: Column heading for the strategy name. #}
+<th>Scenario</th>{# HTML: Column heading for the stress-test scenario/type. #}
+<th>Drawdown</th>{# HTML: Column heading for maximum drawdown. #}
+<th>Recovery</th>{# HTML: Column heading for recovery time. #}
+<th>Score</th>{# HTML: Column heading for the robustness score. #}
+<th>Status</th>{# HTML: Column heading for the final Pass or Review status. #}
+</tr>{# HTML: Ends the table-header row. #}
+</thead>{# HTML: Ends the table header section. #}
+
+{# ============================================================ #}
+{# SECTION 4 - TABLE BODY                                      #}
+{# Programming concept: collection processing / iteration.     #}
+{# ============================================================ #}
+<tbody>{# HTML: Starts the table body where database results are displayed. #}
+
+{# ============================================================ #}
+{# SECTION 5 - LOOP THROUGH STRESS TESTS                       #}
+{# Programming concept: iteration / loop / collection access.  #}
+{# ============================================================ #}
+{% for x in tests %}{# LOOP: Takes each object from tests one at a time and temporarily calls it x. #}
+<tr>{# HTML: Starts one result row for the current stress-test object. #}
+<td>{{ x.strategy.name }}</td>{# OBJECT ACCESS: Gets x.strategy, then reads the related strategy's name. #}
+<td>{{ x.get_test_type_display }}</td>{# METHOD ACCESS: Displays the readable label for the test_type choice value. #}
+<td>{{ x.max_drawdown }}</td>{# VARIABLE/ATTRIBUTE ACCESS: Displays the current test's maximum drawdown value. #}
+<td>{{ x.recovery_time }}</td>{# VARIABLE/ATTRIBUTE ACCESS: Displays the current test's recovery-time value. #}
+<td>{{ x.robustness_score }}</td>{# VARIABLE/ATTRIBUTE ACCESS: Displays the current test's robustness score. #}
+<td>{{ x.passed_test|yesno:'Pass,Review' }}</td>{# FILTER: Converts passed_test into "Pass" when true or "Review" when false. #}
+</tr>{# HTML: Ends the current stress-test result row. #}
+
+{# ============================================================ #}
+{# SECTION 6 - EMPTY COLLECTION CONDITION                      #}
+{# Programming concept: conditional / alternative control flow.#}
+{# ============================================================ #}
+{% empty %}{# CONTROL FLOW: Runs this section when tests contains no records. #}
+<tr>{# HTML: Starts the fallback table row. #}
+<td colspan="6">No tests.</td>{# HTML: Shows one message across all six columns when there are no stress tests. #}
+</tr>{# HTML: Ends the fallback row. #}
+{% endfor %}{# LOOP CONTROL: Ends the loop through the tests collection. #}
+
+</tbody>{# HTML: Ends the table body. #}
+</table>{# HTML: Ends the stress-results table. #}
+
+{% endblock %}{# TEMPLATE BLOCK: Ends the content block inserted into base.html. #}

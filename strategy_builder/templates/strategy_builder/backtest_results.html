@@ -1,2 +1,80 @@
-{% extends 'base.html' %}<!-- ======================================================== BACKTEST RESULTS: Backtest + BacktestTrade rows → metrics table. -->
-{% block title %}Backtest Results | MarketPulse{% endblock %}{% block content %}<h1 class="h3">Backtest Results</h1><div class="row g-3"><div class="col"><div class="metric-card">Return<strong>{{ backtest.total_return }}</strong></div></div><div class="col"><div class="metric-card">Drawdown<strong>{{ backtest.max_drawdown }}</strong></div></div><div class="col"><div class="metric-card">Sharpe<strong>{{ backtest.sharpe_ratio }}</strong></div></div><div class="col"><div class="metric-card">Win Rate<strong>{{ backtest.win_rate }}</strong></div></div></div><table class="table table-striped mt-4"><thead><tr><th>Entry</th><th>Exit</th><th>Qty</th><th>Partial</th><th>P/L</th><th>Costs</th></tr></thead><tbody>{% for t in trades %}<tr><td>{{ t.entry_date }}</td><td>{{ t.exit_date }}</td><td>{{ t.quantity }}</td><td>{{ t.partial_fill|yesno:'Yes,No' }}</td><td>{{ t.profit_loss }}</td><td>{{ t.transaction_cost }}</td></tr>{% empty %}<tr><td colspan="6">No trades.</td></tr>{% endfor %}</tbody></table>{% endblock %}
+{% extends 'base.html' %} {# Template inheritance: I reuse the shared MarketPulse layout. #}
+<!-- ======================================================== BACKTEST RESULTS: Backtest + BacktestTrade rows → metrics table. -->
+
+{# ======================================================== #}
+{# 1. PAGE TITLE AND CONTENT                                #}
+{# ======================================================== #}
+{% block title %}Backtest Results | MarketPulse{% endblock %} {# Named block: I set the browser title. #}
+{% block content %} {# Named block: I insert the results into the shared content area. #}
+<h1 class="h3">Backtest Results</h1> {# Heading and CSS class: I display the main heading with Bootstrap's h3 visual size. #}
+
+{# ======================================================== #}
+{# 2. BACKTEST PERFORMANCE METRICS                           #}
+{# ======================================================== #}
+<div class="row g-3"> {# Grid container: I arrange metric columns with Bootstrap gutter spacing. #}
+    <div class="col"> {# Grid column: I allocate an equal-width column to return. #}
+        <div class="metric-card"> {# Custom CSS class: I use the project's metric-card styling. #}
+            Return {# Static text: I label the total-return value. #}
+            <strong>{{ backtest.total_return }}</strong> {# Variable lookup and emphasis: I display the stored return without percentage conversion. #}
+        </div> {# Closing tag: I finish the return card. #}
+    </div> {# Closing tag: I finish the return column. #}
+    <div class="col"> {# Grid column: I allocate a column to drawdown. #}
+        <div class="metric-card"> {# Container: I group the drawdown label and value. #}
+            Drawdown {# Static text: I label the maximum-drawdown value. #}
+            <strong>{{ backtest.max_drawdown }}</strong> {# Variable lookup: I display the stored maximum drawdown. #}
+        </div> {# Closing tag: I finish the drawdown card. #}
+    </div> {# Closing tag: I finish the drawdown column. #}
+    <div class="col"> {# Grid column: I allocate a column to the Sharpe ratio. #}
+        <div class="metric-card"> {# Container: I group the Sharpe label and value. #}
+            Sharpe {# Static text: I label the ratio. #}
+            <strong>{{ backtest.sharpe_ratio }}</strong> {# Variable lookup: I display the saved Sharpe ratio. #}
+        </div> {# Closing tag: I finish the Sharpe card. #}
+    </div> {# Closing tag: I finish the Sharpe column. #}
+    <div class="col"> {# Grid column: I allocate a column to win rate. #}
+        <div class="metric-card"> {# Container: I group the win-rate label and value. #}
+            Win Rate {# Static text: I label the winning-trade fraction. #}
+            <strong>{{ backtest.win_rate }}</strong> {# Variable lookup: I display the stored win rate without percentage conversion. #}
+        </div> {# Closing tag: I finish the win-rate card. #}
+    </div> {# Closing tag: I finish the win-rate column. #}
+</div> {# Closing tag: I finish the metrics row. #}
+
+{# ======================================================== #}
+{# 3. SIMULATED-TRADE TABLE HEADINGS                         #}
+{# ======================================================== #}
+<table class="table table-striped mt-4"> {# Table and CSS classes: I display striped rows with spacing above the table. #}
+    <thead> {# Table structure: I begin the column-heading group. #}
+        <tr> {# Table row: I group the column headings. #}
+            <th>Entry</th> {# Header cell: I identify the entry-date column. #}
+            <th>Exit</th> {# Header cell: I identify the exit-date column. #}
+            <th>Qty</th> {# Header cell: I identify the filled-quantity column. #}
+            <th>Partial</th> {# Header cell: I identify the partial-fill column. #}
+            <th>P/L</th> {# Header cell: I identify the profit-or-loss column. #}
+            <th>Costs</th> {# Header cell: I identify the transaction-cost column. #}
+        </tr> {# Closing tag: I finish the heading row. #}
+    </thead> {# Closing tag: I finish the table headings. #}
+
+    {# ======================================================== #}
+    {# 4. TRADE LOOP AND DISPLAYED VALUES                       #}
+    {# ======================================================== #}
+    <tbody> {# Table structure: I begin the trade-data rows. #}
+        {% for t in trades %} {# Iteration: I generate one row for each trade supplied by the view. #}
+            <tr> {# Table row: I begin this trade's details. #}
+                <td>{{ t.entry_date }}</td> {# Variable lookup: I display the simulated entry date. #}
+                <td>{{ t.exit_date }}</td> {# Variable lookup: I display the simulated exit date. #}
+                <td>{{ t.quantity }}</td> {# Variable lookup: I display the filled number of units. #}
+                <td>{{ t.partial_fill|yesno:'Yes,No' }}</td> {# Filter and argument: I display Yes for True and No for False. #}
+                <td>{{ t.profit_loss }}</td> {# Variable lookup: I display the stored trade profit or loss. #}
+                <td>{{ t.transaction_cost }}</td> {# Variable lookup: I display the stored transaction cost. #}
+            </tr> {# Closing tag: I finish this trade's row. #}
+
+        {# -------------------------------------------------------- #}
+        {# 4.1 EMPTY TRADE LIST                                     #}
+        {# -------------------------------------------------------- #}
+        {% empty %} {# Empty-loop branch: I display a fallback when there are no trades. #}
+            <tr> {# Table row: I contain the empty-state message. #}
+                <td colspan="6">No trades.</td> {# Attribute: I span all six columns with one message cell. #}
+            </tr> {# Closing tag: I finish the empty-state row. #}
+        {% endfor %} {# Loop boundary: I finish trade rows and the empty branch. #}
+    </tbody> {# Closing tag: I finish the table body. #}
+</table> {# Closing tag: I finish the trade table. #}
+{% endblock %} {# Block boundary: I finish page content. #}

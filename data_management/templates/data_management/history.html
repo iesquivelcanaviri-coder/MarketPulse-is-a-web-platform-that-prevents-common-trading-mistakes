@@ -1,250 +1,314 @@
-{% extends "base.html" %}
-
+{% extends "base.html" %} {# TEMPLATE INHERITANCE: Reuses the shared MarketPulse page structure from base.html. #}
 
 {% comment %}
 ============================================================
 MARKETPULSE - DATA IMPORT HISTORY
 ============================================================
 
-Framework mapping:
+PURPOSE:
 
+This template displays the historical market-data import
+records belonging to the current MarketPulse user.
+
+It allows the user to review:
+
+- Asset / ticker symbol
+- Market-data source
+- Requested start date
+- Requested end date
+- Import status
+- Number of observations imported
+- Date and time the import was created
+
+
+============================================================
+FRAMEWORK MAPPING
+============================================================
+
+Browser
+    ↓
+data_management/urls.py
+    ↓
 data_management/views.py
-    -> import_history()
+    ↓
+import_history()
+    ↓
+DataImport.objects
+    ↓
+Django ORM
+    ↓
+PostgreSQL / Neon
+    ↓
+imports QuerySet
+    ↓
+history.html
+    ↓
+Bootstrap responsive table
+    ↓
+User
 
-DataImport model
-    -> supplies historical import records
 
-This template
-    -> displays those records to the user
+============================================================
+HOW THIS TEMPLATE RECEIVES DATA
+============================================================
+
+Inside data_management/views.py:
+
+import_history()
+    ↓
+DataImport.objects.filter(user=request.user)
+    ↓
+records are ordered by newest first
+    ↓
+context = {
+    "imports": imports
+}
+    ↓
+render(
+    request,
+    "data_management/history.html",
+    context,
+)
+
+
+The variable:
+
+    imports
+
+therefore contains the DataImport database records that this
+template loops through.
+
+
+============================================================
+MVC / MTV FRAMEWORK RELATIONSHIP
+============================================================
+
+Django follows the MTV pattern:
+
+MODEL
+    ↓
+data_management/models.py
+    ↓
+DataImport
+
+TEMPLATE
+    ↓
+data_management/templates/data_management/history.html
+    ↓
+This file
+
+VIEW
+    ↓
+data_management/views.py
+    ↓
+import_history()
+
+
+The View reads database information through the Model.
+
+The View then sends that information to this Template.
+
+The Template is responsible only for displaying the
+information to the user.
+
+
+============================================================
+PROGRAMMING LANGUAGE / TEMPLATE CONCEPTS USED
+============================================================
+
+Template inheritance
+    {% extends "base.html" %}
+
+Template blocks
+    {% block title %}
+    {% block content %}
+
+Variables
+    {{ item.symbol }}
+
+Loops
+    {% for item in imports %}
+
+Conditional statements
+    {% if %}
+    {% elif %}
+    {% else %}
+
+Filters
+    |date
+    |title
+
+URL reversing
+    {% url 'data_management:import' %}
+
+HTML
+    Builds the semantic page structure.
+
+Bootstrap
+    Provides responsive layout, cards, tables, badges,
+    spacing and buttons.
+
 ============================================================
 {% endcomment %}
 
+{% block title %} {# TEMPLATE BLOCK: Supplies this page's browser title to base.html. #}
+Import History | MarketPulse {# TEXT VALUE: The title displayed in the browser tab. #}
+{% endblock %} {# BLOCK END: Finishes the title block. #}
 
-{% block title %}
-Import History | MarketPulse
-{% endblock %}
-{% block content %}
-
+{% block content %} {# TEMPLATE BLOCK: Inserts this page inside base.html's main content area. #}
 
 <!-- ====================================================== -->
 <!-- 1. PAGE HEADER                                         -->
 <!-- ====================================================== -->
 
-<div class="mb-4">
-
-    <h1 class="h2">
-        Market Data Import History
-    </h1>
-
-    <p class="text-muted">
-
-        Review previous historical market-data imports
-        stored by MarketPulse.
-
-    </p>
-
-</div>
-
+<div class="mb-4"> <!-- HTML CONTAINER: Groups the page heading; Bootstrap mb-4 adds bottom spacing. -->
+    <h1 class="h2"> <!-- HTML HEADING: Main page title; Bootstrap h2 controls its visual size. -->
+        Market Data Import History <!-- TEXT: Explains what information this page displays. -->
+    </h1> <!-- HTML CLOSING TAG: Ends the main heading. -->
+    <p class="text-muted"> <!-- HTML PARAGRAPH: Provides supporting information; Bootstrap gives muted text styling. -->
+        Review previous historical market-data imports <!-- TEXT: First part of the page description. -->
+        stored by MarketPulse. <!-- TEXT: Completes the page description. -->
+    </p> <!-- HTML CLOSING TAG: Ends the supporting paragraph. -->
+</div> <!-- HTML CLOSING TAG: Ends the page-header container. -->
 
 <!-- ====================================================== -->
-<!-- 2. IMPORT HISTORY TABLE                                -->
+<!-- 2. IMPORT HISTORY CARD                                 -->
 <!-- ====================================================== -->
 
-<div class="card shadow-sm">
-
-    <div class="card-body">
-
-
-        <div class="table-responsive">
-
-            <table
-                class="table
-                       table-striped
-                       table-hover
-                       align-middle"
-            >
-
-
-                <!-- -------------------------------------- -->
-                <!-- Table Header                           -->
-                <!-- -------------------------------------- -->
-
-                <thead class="table-dark">
-
-                    <tr>
-
-                        <th>
-                            Symbol
-                        </th>
-
-                        <th>
-                            Source
-                        </th>
-
-                        <th>
-                            Start Date
-                        </th>
-
-                        <th>
-                            End Date
-                        </th>
-
-                        <th>
-                            Status
-                        </th>
-
-                        <th class="text-end">
-                            Records
-                        </th>
-
-                        <th>
-                            Created
-                        </th>
-
-                    </tr>
-
-                </thead>
-
-
-                <!-- -------------------------------------- -->
-                <!-- Table Data                             -->
-                <!-- -------------------------------------- -->
-
-                <tbody>
-
-
-                    {% for item in imports %}
-
-                    <tr>
-
-                        <td class="fw-bold">
-
-                            {{ item.symbol }}
-
-                        </td>
-
-
-                        <td>
-
-                            {{ item.source.name }}
-
-                        </td>
-
-
-                        <td>
-
-                            {{ item.start_date|date:"d/m/Y" }}
-
-                        </td>
-
-
-                        <td>
-
-                            {{ item.end_date|date:"d/m/Y" }}
-
-                        </td>
-
-
-                        <td>
-
-                            {% if item.status == "completed" %}
-
-                                <span class="badge bg-success">
-
-                                    Completed
-
-                                </span>
-
-                            {% elif item.status == "failed" %}
-
-                                <span class="badge bg-danger">
-
-                                    Failed
-
-                                </span>
-
-                            {% elif item.status == "processing" %}
-
-                                <span class="badge bg-warning text-dark">
-
-                                    Processing
-
-                                </span>
-
-                            {% else %}
-
-                                <span class="badge bg-secondary">
-
-                                    {{ item.status|title }}
-
-                                </span>
-
-                            {% endif %}
-
-                        </td>
-
-
-                        <td class="text-end">
-
-                            {{ item.records_imported }}
-
-                        </td>
-
-
-                        <td>
-
-                            {{ item.created_at|date:"d/m/Y H:i" }}
-
-                        </td>
-
-                    </tr>
-
-
-                    {% empty %}
-
-
-                    <tr>
-
-                        <td
-                            colspan="7"
-                            class="text-center text-muted py-4"
-                        >
-
-                            No market-data imports have been
-                            completed yet.
-
-                        </td>
-
-                    </tr>
-
-
-                    {% endfor %}
-
-
-                </tbody>
-
-            </table>
-
-        </div>
-
-
-        <!-- ---------------------------------------------- -->
-        <!-- Return to Import Page                          -->
-        <!-- ---------------------------------------------- -->
+<div class="card shadow-sm"> <!-- BOOTSTRAP COMPONENT: Creates the card containing the import-history table. -->
+    <div class="card-body"> <!-- BOOTSTRAP COMPONENT: Provides padding inside the card. -->
+
+        <!-- ================================================== -->
+        <!-- 2.1 RESPONSIVE TABLE WRAPPER                       -->
+        <!-- ================================================== -->
+
+        <div class="table-responsive"> <!-- RESPONSIVE DESIGN: Allows the table to scroll horizontally on small screens. -->
+            <table class="table table-striped table-hover align-middle"> <!-- BOOTSTRAP TABLE: Adds stripes, hover feedback and vertical alignment. -->
+
+                <!-- ========================================== -->
+                <!-- 2.2 TABLE HEADER                           -->
+                <!-- ========================================== -->
+
+                <thead class="table-dark"> <!-- HTML TABLE SECTION: Contains column headings; Bootstrap supplies dark styling. -->
+                    <tr> <!-- HTML TABLE ROW: Groups all column headings. -->
+                        <th> <!-- HTML TABLE HEADER CELL: Defines the Symbol column. -->
+                            Symbol <!-- TEXT: Name of the Symbol column. -->
+                        </th> <!-- HTML CLOSING TAG: Ends the Symbol heading. -->
+                        <th> <!-- HTML TABLE HEADER CELL: Defines the Source column. -->
+                            Source <!-- TEXT: Name of the market-data provider column. -->
+                        </th> <!-- HTML CLOSING TAG: Ends the Source heading. -->
+                        <th> <!-- HTML TABLE HEADER CELL: Defines the Start Date column. -->
+                            Start Date <!-- TEXT: Beginning of the requested historical period. -->
+                        </th> <!-- HTML CLOSING TAG: Ends the Start Date heading. -->
+                        <th> <!-- HTML TABLE HEADER CELL: Defines the End Date column. -->
+                            End Date <!-- TEXT: End of the requested historical period. -->
+                        </th> <!-- HTML CLOSING TAG: Ends the End Date heading. -->
+                        <th> <!-- HTML TABLE HEADER CELL: Defines the Status column. -->
+                            Status <!-- TEXT: Shows whether the import completed, failed or is processing. -->
+                        </th> <!-- HTML CLOSING TAG: Ends the Status heading. -->
+                        <th class="text-end"> <!-- BOOTSTRAP UTILITY: Right-aligns the numerical Records heading. -->
+                            Records <!-- TEXT: Number of historical observations imported. -->
+                        </th> <!-- HTML CLOSING TAG: Ends the Records heading. -->
+                        <th> <!-- HTML TABLE HEADER CELL: Defines when the import was created. -->
+                            Created <!-- TEXT: Name of the creation date/time column. -->
+                        </th> <!-- HTML CLOSING TAG: Ends the Created heading. -->
+                    </tr> <!-- HTML CLOSING TAG: Ends the table-heading row. -->
+                </thead> <!-- HTML CLOSING TAG: Ends the table header. -->
+
+                <!-- ========================================== -->
+                <!-- 2.3 TABLE BODY                             -->
+                <!-- ========================================== -->
+
+                <tbody> <!-- HTML TABLE SECTION: Contains the database records displayed to the user. -->
+
+                    {% for item in imports %} {# LOOP: Repeats the table row once for every DataImport object in imports. #}
+
+                    <tr> <!-- HTML TABLE ROW: Represents one DataImport database record. -->
+                        <td class="fw-bold"> <!-- BOOTSTRAP UTILITY: Displays the ticker symbol with bold text. -->
+                            {{ item.symbol }} {# VARIABLE: Reads the symbol field from the current DataImport object. #}
+                        </td> <!-- HTML CLOSING TAG: Ends the Symbol cell. -->
+
+                        <td> <!-- HTML TABLE CELL: Contains the market-data source. -->
+                            {{ item.source.name }} {# OBJECT RELATIONSHIP: Reads name from the related DataSource object. #}
+                        </td> <!-- HTML CLOSING TAG: Ends the Source cell. -->
+
+                        <td> <!-- HTML TABLE CELL: Contains the requested import start date. -->
+                            {{ item.start_date|date:"d/m/Y" }} {# FILTER: Formats the Python/Django date as day/month/year. #}
+                        </td> <!-- HTML CLOSING TAG: Ends the Start Date cell. -->
+
+                        <td> <!-- HTML TABLE CELL: Contains the requested import end date. -->
+                            {{ item.end_date|date:"d/m/Y" }} {# FILTER: Formats the ending date as day/month/year. #}
+                        </td> <!-- HTML CLOSING TAG: Ends the End Date cell. -->
+
+                        <!-- ================================== -->
+                        <!-- 2.4 IMPORT STATUS                  -->
+                        <!-- ================================== -->
+
+                        <td> <!-- HTML TABLE CELL: Contains the visual import status. -->
+
+                            {% if item.status == "completed" %} {# CONDITIONAL: Tests whether this DataImport completed successfully. #}
+                                <span class="badge bg-success"> <!-- BOOTSTRAP BADGE: Uses green styling for a successful import. -->
+                                    Completed <!-- TEXT: User-friendly version of the completed status. -->
+                                </span> <!-- HTML CLOSING TAG: Ends the success badge. -->
+
+                            {% elif item.status == "failed" %} {# CONDITIONAL BRANCH: Runs when the import failed. #}
+                                <span class="badge bg-danger"> <!-- BOOTSTRAP BADGE: Uses red styling to communicate failure. -->
+                                    Failed <!-- TEXT: User-friendly failure status. -->
+                                </span> <!-- HTML CLOSING TAG: Ends the failed badge. -->
+
+                            {% elif item.status == "processing" %} {# CONDITIONAL BRANCH: Runs while an import is still being processed. #}
+                                <span class="badge bg-warning text-dark"> <!-- BOOTSTRAP BADGE: Uses warning styling for an active import. -->
+                                    Processing <!-- TEXT: Shows that work has not completed yet. -->
+                                </span> <!-- HTML CLOSING TAG: Ends the processing badge. -->
+
+                            {% else %} {# ELSE BRANCH: Handles any other status value not explicitly listed above. #}
+                                <span class="badge bg-secondary"> <!-- BOOTSTRAP BADGE: Uses neutral styling for another status. -->
+                                    {{ item.status|title }} {# VARIABLE + FILTER: Displays the status and converts it to title case. #}
+                                </span> <!-- HTML CLOSING TAG: Ends the fallback status badge. -->
+                            {% endif %} {# CONDITIONAL END: Finishes the status decision structure. #}
+
+                        </td> <!-- HTML CLOSING TAG: Ends the Status cell. -->
+
+                        <td class="text-end"> <!-- BOOTSTRAP UTILITY: Right-aligns this numeric table value. -->
+                            {{ item.records_imported }} {# VARIABLE: Displays how many market observations were imported. #}
+                        </td> <!-- HTML CLOSING TAG: Ends the Records cell. -->
+
+                        <td> <!-- HTML TABLE CELL: Contains the DataImport creation timestamp. -->
+                            {{ item.created_at|date:"d/m/Y H:i" }} {# FILTER: Formats date and time into a readable value. #}
+                        </td> <!-- HTML CLOSING TAG: Ends the Created cell. -->
+                    </tr> <!-- HTML CLOSING TAG: Ends this DataImport record row. -->
+
+                    {% empty %} {# LOOP FEATURE: Django executes this section when imports contains no records. #}
+
+                    <!-- ====================================== -->
+                    <!-- 2.5 EMPTY DATABASE STATE               -->
+                    <!-- ====================================== -->
+
+                    <tr> <!-- HTML TABLE ROW: Provides an empty-state message instead of leaving the table blank. -->
+                        <td colspan="7" class="text-center text-muted py-4"> <!-- HTML ATTRIBUTE + BOOTSTRAP: Spans all seven columns and centres the message. -->
+                            No market-data imports have been <!-- TEXT: Explains that no DataImport records are available. -->
+                            completed yet. <!-- TEXT: Completes the empty-state message. -->
+                        </td> <!-- HTML CLOSING TAG: Ends the empty-state table cell. -->
+                    </tr> <!-- HTML CLOSING TAG: Ends the empty-state row. -->
+
+                    {% endfor %} {# LOOP END: Finishes iterating through the imports QuerySet. #}
+
+                </tbody> <!-- HTML CLOSING TAG: Ends the table body. -->
+            </table> <!-- HTML CLOSING TAG: Ends the import-history table. -->
+        </div> <!-- HTML CLOSING TAG: Ends the responsive table wrapper. -->
+
+        <!-- ================================================== -->
+        <!-- 3. RETURN TO MARKET DATA IMPORT                    -->
+        <!-- ================================================== -->
 
         <a
-            href="{% url 'data_management:import' %}"
-            class="btn btn-primary mt-3"
+            href="{% url 'data_management:import' %}" {# URL REVERSING: Django generates the URL instead of hard-coding /data/... manually. #}
+            class="btn btn-primary mt-3" <!-- BOOTSTRAP COMPONENT: Styles the link as the primary action button. -->
         >
+            Import Market Data <!-- LINK TEXT: Returns the user to the Market Data import workspace. -->
+        </a> <!-- HTML CLOSING TAG: Ends the navigation link/button. -->
 
-            Import Market Data
+    </div> <!-- HTML CLOSING TAG: Ends the Bootstrap card body. -->
+</div> <!-- HTML CLOSING TAG: Ends the Bootstrap card. -->
 
-        </a>
-
-
-    </div>
-
-</div>
-
-
-{% endblock %}
+{% endblock %} {# BLOCK END: Finishes the page content inserted into base.html. #}

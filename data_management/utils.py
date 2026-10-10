@@ -1,2063 +1,467 @@
 """
-============================================================
 MARKETPULSE - MARKET DATA IMPORT SERVICE
-============================================================
-
-FRAMEWORK MAPPING:
-
-Alpaca Market Data API
-        ↓
-data_management/services/alpaca.py
-        ↓
-data_management/utils.py
-        ↓
-core.MarketData
-        ↓
-PostgreSQL
-        ↓
-Data Tab
-Strategies
-Backtesting
-Market Condition
-Risk
-
-
-PURPOSE:
-
-This module provides the provider-neutral historical market
-data layer used by MarketPulse.
-
-The module is responsible for:
-
-1. Requesting historical bars through the Alpaca service.
-2. Normalising external market-data records.
-3. Persisting OHLCV observations in core.MarketData.
-4. Updating existing rows instead of creating duplicates.
-5. Checking whether enough historical observations exist for
-   analytical features.
-6. Refreshing recent historical data when required.
-7. Ensuring Market Condition analysis has sufficient history.
-
-
-IMPORTANT ARCHITECTURE:
-
-External API communication belongs only inside:
-
-    data_management/services/alpaca.py
-
-This module does NOT contain:
-
-- Alpaca API keys
-- authentication headers
-- requests.get()
-- direct external HTTP calls
-
-
-Instead:
-
-services/alpaca.py
-        ↓
-get_historical_bars()
-        ↓
-utils.py
-        ↓
-MarketData
-
-
-MARKET CONDITION FLOW:
-
-User selects SPY
-        ↓
-data_management/views.py
-        ↓
-ensure_market_data_for_analysis("SPY")
-        ↓
-Enough stored data?
-        ↓
-NO
-        ↓
-import_market_data()
-        ↓
-Alpaca historical bars
-        ↓
-MarketData.update_or_create()
-        ↓
-PostgreSQL
-        ↓
-At least 60 observations?
-        ↓
-YES
-        ↓
-analysis_tools.analyzers.identify_market_regime()
-        ↓
-MarketRegime
-
-
-WHY 60 OBSERVATIONS?
-
-The current Market Condition classifier uses:
-
-- recent returns
-- annualised volatility
-- 20-period moving average
-- 60-period moving average
-- trend strength
-
-Therefore at least 60 historical observations are required.
-
-============================================================
+Framework: Python normalization helpers, Django ORM and the Alpaca service layer.
+Flow: caller → Alpaca service → normalized OHLCV → core.MarketData → analytical features.
+External HTTP communication and credentials remain in services/alpaca.py.
+This module obtains and stores data; it does not run the Market Regime classifier.
 """
-
-
 # ============================================================
 # 1. PYTHON IMPORTS
 # ============================================================
-
-from datetime import (
-    date,
-    datetime,
-    timedelta,
-)
-
-from decimal import (
-    Decimal,
-    InvalidOperation,
-    ROUND_HALF_UP,
-)
-
-
+from datetime import date, datetime, timedelta  # I import date types and durations for date calculations.
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP  # I import decimal arithmetic, its exception and the rounding rule.
 # ============================================================
 # 2. DJANGO IMPORTS
 # ============================================================
-
-from django.db import transaction
-
-from django.db.models import (
-    Count,
-    Max,
-    Min,
-)
-
-from django.utils import timezone
-
-from django.utils.dateparse import (
-    parse_date,
-    parse_datetime,
-)
-
-
+from django.db import transaction  # I import database transaction management.
+from django.db.models import Count, Max, Min  # I import database aggregation functions.
+from django.utils import timezone  # I import Django's timezone utilities.
+from django.utils.dateparse import parse_date, parse_datetime  # I import helpers for parsing date and datetime strings.
 # ============================================================
-# 3. MARKETPULSE MODEL IMPORT
+# 3. MODEL AND SERVICE IMPORTS
 # ============================================================
-
-from core.models import MarketData
-
-
+from core.models import MarketData  # I import the model that stores historical observations.
+from data_management.services.alpaca import (  # I import the existing external-provider service.
+    AlpacaServiceError,  # I import the exception raised for service failures.
+    get_historical_bars,  # I import the function that requests historical bars.
+)  # I finish the service imports.
 # ============================================================
-# 4. ALPACA SERVICE IMPORT
+# 4. CONSTANTS
 # ============================================================
-
-# All external Alpaca communication remains in:
-#
-# data_management/services/alpaca.py
-#
-#
-# utils.py deliberately reuses this service rather than
-# creating another API implementation.
-
-from data_management.services.alpaca import (
-    AlpacaServiceError,
-    get_historical_bars,
-)
-
-
+MARKET_CONDITION_MINIMUM_OBSERVATIONS = 60  # I set the default minimum observation count.
+ANALYSIS_HISTORY_LOOKBACK_DAYS = 365  # I request this many calendar days when more history is needed.
+RECENT_REFRESH_LOOKBACK_DAYS = 30  # I normally refresh this recent overlapping period.
+MARKET_DATA_STALE_AFTER_DAYS = 7  # I consider stored data stale when its age exceeds seven days.
 # ============================================================
-# 5. MARKET DATA CONSTANTS
+# 5. SYMBOL NORMALIZATION
 # ============================================================
-
-# Market Condition currently uses a 60-period moving average.
-#
-# Therefore fewer than 60 observations cannot produce the
-# complete Market Condition analysis.
-
-MARKET_CONDITION_MINIMUM_OBSERVATIONS = 60
-
-
-# When MarketPulse needs to build an analytical dataset from
-# Alpaca, request approximately one calendar year.
-#
-# A calendar year normally contains considerably more than
-# 60 trading sessions while remaining a reasonable API
-# request size.
-
-ANALYSIS_HISTORY_LOOKBACK_DAYS = 365
-
-
-# When sufficient history already exists, MarketPulse only
-# needs to refresh a recent overlapping period rather than
-# downloading the entire historical dataset again.
-
-RECENT_REFRESH_LOOKBACK_DAYS = 30
-
-
-# Daily historical market data is considered reasonably recent
-# when the latest stored observation is within this many
-# calendar days.
-#
-# Seven days handles weekends and many market holidays without
-# repeatedly refreshing the API simply because today is not
-# a trading session.
-
-MARKET_DATA_STALE_AFTER_DAYS = 7
-
-
+def _normalise_symbol(symbol):  # I define a helper for standardizing symbols.
+    """Return a nonempty, trimmed, uppercase symbol."""
+    symbol = str(symbol or "").strip().upper()  # I handle a falsy value, convert to text and normalize it.
+    if not symbol:  # I check whether normalization produced an empty string.
+        raise ValueError("A market symbol is required.")  # I reject a missing symbol.
+    return symbol  # I return the normalized value.
 # ============================================================
-# 6. SYMBOL NORMALISATION
+# 6. DATE NORMALIZATION
 # ============================================================
-
-def _normalise_symbol(symbol):
-    """
-    Convert an asset symbol into MarketPulse's standard format.
-
-    Examples:
-
-        " spy "
-            ↓
-        "SPY"
-
-        "msft"
-            ↓
-        "MSFT"
-    """
-
-
-    symbol = (
-        str(
-            symbol or ""
-        )
-        .strip()
-        .upper()
-    )
-
-
-    if not symbol:
-
-        raise ValueError(
-            "A market symbol is required."
-        )
-
-
-    return symbol
-
-
+def _normalise_date_value(value, field_name):  # I accept a date value and a label used in errors.
+    """Convert date objects, datetime objects or supported strings into a date."""
+    if value is None:  # I check for a missing value.
+        raise ValueError(f"{field_name} is required.")  # I identify the missing field.
+    if isinstance(value, datetime):  # I check datetime before date because datetime is a date subclass.
+        return value.date()  # I keep the date component without converting timezones.
+    if isinstance(value, date):  # I check whether the value is already a date.
+        return value  # I return the existing date.
+    string_value = str(value).strip()  # I convert other input to trimmed text.
+    parsed_date = parse_date(string_value)  # I first attempt to parse a date string.
+    if parsed_date is not None:  # I check whether parsing returned a date.
+        return parsed_date  # I return the parsed date.
+    parsed_datetime = parse_datetime(string_value)  # I next attempt to parse a datetime string.
+    if parsed_datetime is not None:  # I check whether parsing returned a datetime.
+        return parsed_datetime.date()  # I return its date component.
+    raise ValueError(  # I reject input that neither parser interpreted.
+        (  # I begin the original error message.
+            f"MarketPulse could not interpret "  # I introduce the parsing failure.
+            f"{field_name}: {value}"  # I include the field label and input.
+        )  # I finish the combined string.
+    )  # I finish raising the error.
 # ============================================================
-# 7. DATE NORMALISATION
+# 7. PRICE DECIMAL CONVERSION
 # ============================================================
-
-def _normalise_date_value(
-    value,
-    field_name,
-):
-    """
-    Convert common date representations into datetime.date.
-
-    Accepted:
-
-    - datetime.date
-    - datetime.datetime
-    - ISO date string
-    - ISO datetime string
-    """
-
-
-    if value is None:
-
-        raise ValueError(
-            f"{field_name} is required."
-        )
-
-
+def _to_price_decimal(value):  # I define a helper for converting and rounding a price.
+    """Convert a price to Decimal and round it to four decimal places."""
+    if value is None:  # I reject a missing price.
+        raise ValueError("Market price cannot be empty.")  # I explain the missing value.
+    try:  # I attempt conversion and rounding.
+        decimal_value = Decimal(str(value))  # I construct a Decimal from the value's string representation.
+        return decimal_value.quantize(  # I round to the exponent specified by the next argument.
+            Decimal("0.0001"),  # I specify four decimal places.
+            rounding=ROUND_HALF_UP,  # I round to nearest, with ties away from zero.
+        )  # I return the rounded Decimal.
+    except (InvalidOperation, ValueError, TypeError) as error:  # I catch the listed conversion or rounding errors.
+        raise ValueError(f"Invalid market price value: {value}") from error  # I raise a clearer error while preserving its cause.
+# ============================================================
+# 8. ALTERNATIVE BAR FIELD NAMES
+# ============================================================
+def _get_bar_value(bar, *possible_keys):  # I accept a bar and any number of candidate keys.
+    """Return the first candidate value that is not None."""
+    for key in possible_keys:  # I examine candidate keys in their supplied order.
+        if key in bar:  # I check whether the dictionary contains this key.
+            value = bar.get(key)  # I read its value.
+            if value is not None:  # I accept values such as zero, but reject None.
+                return value  # I return the first available value.
+    return None  # I return None when no candidate supplies a value.
+# ============================================================
+# 9. MARKET BAR DATE
+# ============================================================
+def _get_bar_date(bar):  # I define a helper that extracts a bar's date.
+    """Read date, timestamp or t and return its date component."""
+    value = _get_bar_value(bar, "date", "timestamp", "t")  # I try the supported keys in order.
+    if value is None:  # I check whether all supported date values were missing.
+        raise ValueError(  # I reject a bar without a date.
+            (  # I begin the error message.
+                "Historical market bar does "  # I identify the record.
+                "not contain a date."  # I explain the missing field.
+            )  # I finish the combined string.
+        )  # I finish raising the error.
+    if isinstance(value, datetime):  # I check whether the value is already a datetime.
+        return value.date()  # I return its date component.
+    if isinstance(value, date):  # I check whether it is already a date.
+        return value  # I return that date unchanged.
+    value = str(value).strip()  # I convert other values to trimmed text.
+    parsed_datetime = parse_datetime(value)  # I first try datetime parsing for bar timestamps.
+    if parsed_datetime is not None:  # I check whether it succeeded.
+        return parsed_datetime.date()  # I extract the date without timezone conversion.
+    parsed_date = parse_date(value)  # I next try date parsing.
+    if parsed_date is not None:  # I check whether it succeeded.
+        return parsed_date  # I return the parsed date.
+    raise ValueError(  # I reject an unrecognized date value.
+        (  # I begin the error message.
+            "MarketPulse could not interpret "  # I describe the failure.
+            f"historical bar date: {value}"  # I include the unrecognized value.
+        )  # I finish the combined string.
+    )  # I finish raising the error.
+# ============================================================
+# 10. NORMALIZE ONE OHLCV BAR
+# ============================================================
+def _normalise_market_bar(bar):  # I define a helper for preparing one provider record.
+    """Return a dictionary containing a date, Decimal OHLC prices and integer volume."""
+    if not isinstance(bar, dict):  # I require the input to be a dictionary.
+        raise ValueError(  # I reject other input types.
+            (  # I begin the original message.
+                "Historical market bar must "  # I describe the input requirement.
+                "be a dictionary."  # I identify the required type.
+            )  # I finish the combined string.
+        )  # I finish raising the error.
     # --------------------------------------------------------
-    # Datetime
+    # 10.1 READ OHLCV VALUES
     # --------------------------------------------------------
-
-    if isinstance(
-        value,
-        datetime,
-    ):
-
-        return value.date()
-
-
+    open_price = _get_bar_value(bar, "open", "open_price", "o")  # I read the opening price using supported names.
+    high_price = _get_bar_value(bar, "high", "high_price", "h")  # I read the high price.
+    low_price = _get_bar_value(bar, "low", "low_price", "l")  # I read the low price.
+    close_price = _get_bar_value(bar, "close", "close_price", "c")  # I read the closing price.
+    volume = _get_bar_value(bar, "volume", "v")  # I read the volume.
     # --------------------------------------------------------
-    # Date
+    # 10.2 REQUIRE ALL FOUR PRICES
     # --------------------------------------------------------
-
-    if isinstance(
-        value,
-        date,
-    ):
-
-        return value
-
-
+    if any(  # I check whether at least one required value is missing.
+        value is None  # I test each value specifically against None.
+        for value in [open_price, high_price, low_price, close_price]  # I iterate through the four prices.
+    ):  # I begin the missing-price branch.
+        raise ValueError(  # I reject incomplete OHLC data.
+            (  # I begin the message.
+                "Historical Alpaca bar is missing "  # I identify the problem.
+                "one or more OHLC values."  # I identify the missing field group.
+            )  # I finish the combined string.
+        )  # I finish raising the error.
     # --------------------------------------------------------
-    # String
+    # 10.3 CONVERT AND VALIDATE PRICES
     # --------------------------------------------------------
-
-    string_value = str(
-        value
-    ).strip()
-
-
-    parsed_date = parse_date(
-        string_value
-    )
-
-
-    if parsed_date is not None:
-
-        return parsed_date
-
-
-    parsed_datetime = parse_datetime(
-        string_value
-    )
-
-
-    if parsed_datetime is not None:
-
-        return parsed_datetime.date()
-
-
-    raise ValueError(
-        (
-            f"MarketPulse could not interpret "
-            f"{field_name}: {value}"
-        )
-    )
-
-
-# ============================================================
-# 8. PRICE DECIMAL HELPER
-# ============================================================
-
-def _to_price_decimal(value):
-    """
-    ========================================================
-    CONVERT MARKET PRICE TO DECIMAL
-    ========================================================
-
-    MarketData stores OHLC prices using Decimal values.
-
-    Financial values should not normally be persisted using
-    raw floating-point values because binary floating-point
-    arithmetic can introduce small representation errors.
-
-    MarketPulse stores market prices to four decimal places.
-    ========================================================
-    """
-
-
-    if value is None:
-
-        raise ValueError(
-            "Market price cannot be empty."
-        )
-
-
-    try:
-
-        decimal_value = Decimal(
-            str(
-                value
-            )
-        )
-
-
-        return decimal_value.quantize(
-
-            Decimal(
-                "0.0001"
-            ),
-
-            rounding=
-                ROUND_HALF_UP,
-        )
-
-
-    except (
-        InvalidOperation,
-        ValueError,
-        TypeError,
-    ) as error:
-
-        raise ValueError(
-            f"Invalid market price value: {value}"
-        ) from error
-
-
-# ============================================================
-# 9. BAR VALUE HELPER
-# ============================================================
-
-def _get_bar_value(
-    bar,
-    *possible_keys,
-):
-    """
-    ========================================================
-    READ ONE VALUE FROM A MARKET BAR
-    ========================================================
-
-    The Alpaca service normally returns normalised names:
-
-        open
-        high
-        low
-        close
-        volume
-        timestamp
-
-
-    This helper also accepts common alternative names:
-
-        open_price
-        high_price
-        low_price
-        close_price
-
-    and Alpaca's short field names:
-
-        o
-        h
-        l
-        c
-        v
-        t
-
-
-    This makes the persistence layer defensive without
-    duplicating Alpaca API communication.
-    ========================================================
-    """
-
-
-    for key in possible_keys:
-
-        if key in bar:
-
-            value = bar.get(
-                key
-            )
-
-
-            if value is not None:
-
-                return value
-
-
-    return None
-
-
-# ============================================================
-# 10. MARKET BAR DATE HELPER
-# ============================================================
-
-def _get_bar_date(bar):
-    """
-    ========================================================
-    CONVERT ALPACA TIMESTAMP TO DATE
-    ========================================================
-
-    MarketData stores one record per:
-
-        symbol
-        +
-        date
-
-
-    Alpaca may return:
-
-        2026-09-01T04:00:00Z
-
-
-    MarketPulse stores:
-
-        2026-09-01
-    ========================================================
-    """
-
-
-    value = _get_bar_value(
-
-        bar,
-
-        "date",
-
-        "timestamp",
-
-        "t",
-    )
-
-
-    if value is None:
-
-        raise ValueError(
-            (
-                "Historical market bar does "
-                "not contain a date."
-            )
-        )
-
-
+    open_decimal = _to_price_decimal(open_price)  # I convert and round the opening price.
+    high_decimal = _to_price_decimal(high_price)  # I convert and round the high price.
+    low_decimal = _to_price_decimal(low_price)  # I convert and round the low price.
+    close_decimal = _to_price_decimal(close_price)  # I convert and round the closing price.
+    if any(  # I check whether any rounded price is nonpositive.
+        price <= 0  # I test each price against zero.
+        for price in [open_decimal, high_decimal, low_decimal, close_decimal]  # I iterate through the converted prices.
+    ):  # I begin the nonpositive-price branch.
+        raise ValueError(  # I reject nonpositive prices.
+            (  # I begin the message.
+                "Historical market prices "  # I identify the values.
+                "must be greater than zero."  # I explain the requirement.
+            )  # I finish the combined string.
+        )  # I finish raising the error.
+    if high_decimal < low_decimal:  # I check that the high is not below the low.
+        raise ValueError(  # I reject an inconsistent range.
+            (  # I begin the message.
+                "Historical market bar contains "  # I identify the record.
+                "a high price below its low price."  # I explain the inconsistency.
+            )  # I finish the combined string.
+        )  # I finish raising the error.
     # --------------------------------------------------------
-    # Already datetime
+    # 10.4 NORMALIZE VOLUME
     # --------------------------------------------------------
-
-    if isinstance(
-        value,
-        datetime,
-    ):
-
-        return value.date()
-
-
+    try:  # I attempt integer conversion.
+        volume = int(volume or 0)  # I use zero for a falsy value and convert the result to an integer.
+    except (ValueError, TypeError, OverflowError):  # I catch the listed volume conversion errors.
+        volume = 0  # I substitute zero when conversion fails.
+    volume = max(0, volume)  # I prevent negative volume from being returned.
+    return {  # I return the normalized record.
+        "date": _get_bar_date(bar),  # I extract and normalize the date.
+        "open_price": open_decimal,  # I provide the opening Decimal.
+        "high_price": high_decimal,  # I provide the high Decimal.
+        "low_price": low_decimal,  # I provide the low Decimal.
+        "close_price": close_decimal,  # I provide the closing Decimal.
+        "volume": volume,  # I provide nonnegative integer volume.
+    }  # I finish the dictionary.
+# ============================================================
+# 11. STORED DATASET STATUS
+# ============================================================
+def get_stored_market_data_status(symbol):  # I define a public helper for summarizing one dataset.
+    """Return the total stored row count and earliest/latest dates for a symbol."""
+    symbol = _normalise_symbol(symbol)  # I validate and normalize the symbol.
+    summary = MarketData.objects.filter(symbol=symbol).aggregate(  # I aggregate all stored rows for this symbol.
+        observation_count=Count("pk"),  # I count primary keys.
+        earliest_date=Min("date"),  # I find the earliest date.
+        latest_date=Max("date"),  # I find the latest date.
+    )  # I finish the aggregation.
+    return {  # I return a structured summary.
+        "symbol": symbol,  # I include the normalized symbol.
+        "observation_count": summary["observation_count"] or 0,  # I provide the count with a zero fallback.
+        "earliest_date": summary["earliest_date"],  # I provide the earliest date or None.
+        "latest_date": summary["latest_date"],  # I provide the latest date or None.
+    }  # I finish the summary dictionary.
+# ============================================================
+# 12. IMPORT AND PERSIST ALPACA DATA
+# ============================================================
+def import_alpaca_market_data(symbol, start_date, end_date, timeframe="1Day"):  # I accept a symbol, date range and optional timeframe.
+    """Fetch bars, normalize valid records and persist them by symbol and date."""
+    symbol = _normalise_symbol(symbol)  # I normalize the market identifier.
+    start_date = _normalise_date_value(start_date, "start date")  # I normalize the start date.
+    end_date = _normalise_date_value(end_date, "end date")  # I normalize the end date.
+    if start_date >= end_date:  # I require the start date to precede the end date.
+        raise ValueError(  # I reject an invalid range.
+            (  # I begin the message.
+                "The start date must be "  # I identify the first boundary.
+                "earlier than the end date."  # I explain the required ordering.
+            )  # I finish the combined string.
+        )  # I finish raising the error.
     # --------------------------------------------------------
-    # Already date
+    # 12.1 FETCH THROUGH THE SERVICE LAYER
     # --------------------------------------------------------
-
-    if isinstance(
-        value,
-        date,
-    ):
-
-        return value
-
-
+    try:  # I handle the service's specific exception.
+        bars = get_historical_bars(  # I request historical records through the existing service.
+            symbol=symbol,  # I supply the normalized symbol.
+            start_date=start_date,  # I supply the start date.
+            end_date=end_date,  # I supply the end date.
+            timeframe=timeframe,  # I pass through the requested timeframe.
+        )  # I finish the service call.
+    except AlpacaServiceError as error:  # I catch a service failure.
+        raise ValueError(  # I translate it into a ValueError for callers.
+            (  # I begin the message.
+                f"Alpaca could not return historical "  # I describe the failed operation.
+                f"market data for {symbol}: {error}"  # I include the symbol and service error.
+            )  # I finish the combined string.
+        ) from error  # I preserve the original exception as the cause.
+    if not bars:  # I check whether the service returned a falsy result.
+        raise ValueError(  # I reject an empty result.
+            (  # I begin the message.
+                "No historical Alpaca market data "  # I describe the missing data.
+                f"was returned for {symbol}."  # I identify the requested market.
+            )  # I finish the combined string.
+        )  # I finish raising the error.
     # --------------------------------------------------------
-    # Convert to string
+    # 12.2 NORMALIZE BEFORE WRITING TO THE DATABASE
     # --------------------------------------------------------
-
-    value = str(
-        value
-    ).strip()
-
-
+    normalised_bars = []  # I create a list for accepted records.
+    for bar in bars:  # I examine each provider record.
+        try:  # I attempt to normalize this record.
+            normalised_bar = _normalise_market_bar(bar)  # I validate and convert its fields.
+        except ValueError:  # I handle records rejected with ValueError.
+            continue  # I skip this record and move to the next one.
+        if (  # I check whether the date falls outside the requested period.
+            normalised_bar["date"] < start_date  # I reject dates before the start.
+            or normalised_bar["date"] > end_date  # I reject dates after the end.
+        ):  # I begin the out-of-range branch.
+            continue  # I skip this record.
+        normalised_bars.append(normalised_bar)  # I retain the accepted record.
+    if not normalised_bars:  # I check whether any accepted record remains.
+        raise ValueError(  # I reject an import with no valid observations.
+            (  # I begin the message.
+                f"Alpaca returned data for {symbol}, "  # I identify the returned dataset.
+                "but MarketPulse could not process any "  # I describe the normalization failure.
+                "valid historical observations."  # I finish the explanation.
+            )  # I finish the combined string.
+        )  # I finish raising the error.
     # --------------------------------------------------------
-    # ISO datetime
+    # 12.3 STORE ACCEPTED RECORDS IN ONE TRANSACTION
     # --------------------------------------------------------
-
-    parsed_datetime = (
-        parse_datetime(
-            value
-        )
-    )
-
-
-    if parsed_datetime is not None:
-
-        return (
-            parsed_datetime.date()
-        )
-
-
+    count = 0  # I initialize the number of processed records.
+    with transaction.atomic():  # I group these writes into a database transaction.
+        for normalised_bar in normalised_bars:  # I process every accepted record.
+            MarketData.objects.update_or_create(  # I update a matching row or create one.
+                symbol=symbol,  # I match the market symbol.
+                date=normalised_bar["date"],  # I match the observation date.
+                defaults={  # I supply the values to create or update.
+                    "open_price": normalised_bar["open_price"],  # I store the normalized opening price.
+                    "high_price": normalised_bar["high_price"],  # I store the normalized high price.
+                    "low_price": normalised_bar["low_price"],  # I store the normalized low price.
+                    "close_price": normalised_bar["close_price"],  # I store the normalized closing price.
+                    "volume": normalised_bar["volume"],  # I store the normalized volume.
+                },  # I finish the defaults dictionary.
+            )  # I finish the update-or-create call.
+            count += 1  # I count this processed bar, whether it created or updated a row.
+    return count  # I return the processed-bar count after the transaction succeeds.
+# ============================================================
+# 13. PROVIDER-NEUTRAL IMPORT ENTRY POINT
+# ============================================================
+def import_market_data(symbol, start_date, end_date, timeframe="1Day"):  # I expose an importer without a provider-specific name.
+    """Delegate historical imports to the current Alpaca implementation."""
+    return import_alpaca_market_data(  # I delegate the work and return its processed count.
+        symbol=symbol,  # I pass through the symbol.
+        start_date=start_date,  # I pass through the start date.
+        end_date=end_date,  # I pass through the end date.
+        timeframe=timeframe,  # I pass through the timeframe.
+    )  # I finish the delegated call.
+# ============================================================
+# 14. ENSURE DATA FOR ANALYSIS
+# ============================================================
+def ensure_market_data_for_analysis(  # I define a helper that can extend or refresh a dataset.
+    symbol,  # I receive the market symbol.
+    minimum_observations=MARKET_CONDITION_MINIMUM_OBSERVATIONS,  # I default to the configured minimum.
+    force_refresh=False,  # I allow callers to explicitly request a refresh.
+):  # I finish the function signature.
+    """Check total stored observations and freshness, refresh if needed, and return status."""
+    symbol = _normalise_symbol(symbol)  # I validate and normalize the symbol.
     # --------------------------------------------------------
-    # ISO date
+    # 14.1 NORMALIZE THE MINIMUM COUNT
     # --------------------------------------------------------
-
-    parsed_date = (
-        parse_date(
-            value
-        )
-    )
-
-
-    if parsed_date is not None:
-
-        return parsed_date
-
-
-    raise ValueError(
-        (
-            "MarketPulse could not interpret "
-            f"historical bar date: {value}"
-        )
-    )
-
-
+    try:  # I attempt to interpret the supplied minimum as an integer.
+        minimum_observations = int(minimum_observations)  # I convert the requirement.
+    except (TypeError, ValueError):  # I catch the listed conversion failures.
+        minimum_observations = MARKET_CONDITION_MINIMUM_OBSERVATIONS  # I fall back to the default.
+    minimum_observations = max(2, minimum_observations)  # I enforce a minimum requirement of at least two.
+    # --------------------------------------------------------
+    # 14.2 CHECK EXISTING SIZE AND FRESHNESS
+    # --------------------------------------------------------
+    before = get_stored_market_data_status(symbol)  # I summarize the dataset before any refresh.
+    observation_count_before = before["observation_count"]  # I read its total row count.
+    latest_stored_date = before["latest_date"]  # I read its latest date.
+    needs_more_history = observation_count_before < minimum_observations  # I compare the total count with the requirement.
+    today = timezone.localdate()  # I obtain today's date in Django's active timezone.
+    if latest_stored_date is None:  # I handle a dataset with no latest date.
+        data_is_stale = True  # I treat missing data as stale.
+    else:  # I calculate the age of the existing dataset.
+        age_in_days = (today - latest_stored_date).days  # I calculate its age in calendar days.
+        data_is_stale = age_in_days > MARKET_DATA_STALE_AFTER_DAYS  # I mark it stale only when the age exceeds seven days.
+    should_refresh = needs_more_history or data_is_stale or force_refresh  # I refresh when any of these conditions is truthy.
+    records_processed = 0  # I initialize the count for a possible import.
+    # --------------------------------------------------------
+    # 14.3 CHOOSE THE REFRESH PERIOD
+    # --------------------------------------------------------
+    if should_refresh:  # I fetch data only when a refresh is needed or requested.
+        if needs_more_history:  # I choose a longer period for an undersized dataset.
+            refresh_start_date = today - timedelta(  # I calculate the longer start date.
+                days=ANALYSIS_HISTORY_LOOKBACK_DAYS  # I subtract 365 calendar days.
+            )  # I finish the calculation.
+        else:  # I choose a recent overlap when enough total rows already exist.
+            refresh_start_date = today - timedelta(  # I calculate the normal refresh start.
+                days=RECENT_REFRESH_LOOKBACK_DAYS  # I subtract 30 calendar days.
+            )  # I finish the calculation.
+            if (  # I check whether a larger missing period needs recovery.
+                latest_stored_date is not None  # I require a latest stored date.
+                and latest_stored_date < refresh_start_date  # I check whether it predates the normal refresh window.
+            ):  # I begin the extended-gap branch.
+                refresh_start_date = latest_stored_date - timedelta(days=7)  # I start seven days before the latest stored observation.
+        if refresh_start_date >= today:  # I ensure the start precedes the end.
+            refresh_start_date = today - timedelta(days=1)  # I fall back to a one-day range.
+        records_processed = import_market_data(  # I reuse the provider-neutral importer.
+            symbol=symbol,  # I supply the selected market.
+            start_date=refresh_start_date,  # I supply the chosen start date.
+            end_date=today,  # I supply today's date as the end.
+            timeframe="1Day",  # I request daily records.
+        )  # I store the number of processed records.
+    # --------------------------------------------------------
+    # 14.4 RECHECK AND RETURN STATUS
+    # --------------------------------------------------------
+    after = get_stored_market_data_status(symbol)  # I summarize the stored dataset again.
+    observation_count = after["observation_count"]  # I read the resulting total count.
+    analysis_ready = observation_count >= minimum_observations  # I decide readiness using the total stored count.
+    return {  # I return a dictionary explaining the result.
+        "symbol": symbol,  # I include the normalized symbol.
+        "minimum_observations": minimum_observations,  # I include the effective requirement.
+        "observation_count_before": observation_count_before,  # I include the original count.
+        "observation_count": observation_count,  # I include the resulting count.
+        "earliest_date": after["earliest_date"],  # I include the earliest stored date.
+        "latest_date": after["latest_date"],  # I include the latest stored date.
+        "refreshed": should_refresh,  # I report the refresh decision after successful completion.
+        "records_processed": records_processed,  # I report the number of processed import records.
+        "analysis_ready": analysis_ready,  # I report whether the total count meets the requirement.
+    }  # I finish the status dictionary.
 # ============================================================
-# 11. NORMALISE ONE ALPACA BAR
+# 15. MARKET CONDITION CONVENIENCE WRAPPER
 # ============================================================
-
-def _normalise_market_bar(bar):
-    """
-    ========================================================
-    NORMALISE ALPACA OHLCV DATA
-    ========================================================
-
-    Convert an external market-data record into the structure
-    expected by core.MarketData.
-
-
-    OUTPUT:
-
-    {
-        "date": date,
-        "open_price": Decimal,
-        "high_price": Decimal,
-        "low_price": Decimal,
-        "close_price": Decimal,
-        "volume": int,
-    }
-    ========================================================
-    """
-
-
-    if not isinstance(
-        bar,
-        dict,
-    ):
-
-        raise ValueError(
-            (
-                "Historical market bar must "
-                "be a dictionary."
-            )
-        )
-
-
-    # ========================================================
-    # 11.1 READ PRICES
-    # ========================================================
-
-    open_price = _get_bar_value(
-
-        bar,
-
-        "open",
-
-        "open_price",
-
-        "o",
-    )
-
-
-    high_price = _get_bar_value(
-
-        bar,
-
-        "high",
-
-        "high_price",
-
-        "h",
-    )
-
-
-    low_price = _get_bar_value(
-
-        bar,
-
-        "low",
-
-        "low_price",
-
-        "l",
-    )
-
-
-    close_price = _get_bar_value(
-
-        bar,
-
-        "close",
-
-        "close_price",
-
-        "c",
-    )
-
-
-    volume = _get_bar_value(
-
-        bar,
-
-        "volume",
-
-        "v",
-    )
-
-
-    # ========================================================
-    # 11.2 REQUIRED OHLC VALIDATION
-    # ========================================================
-
-    if any(
-        value is None
-        for value in [
-            open_price,
-            high_price,
-            low_price,
-            close_price,
-        ]
-    ):
-
-        raise ValueError(
-            (
-                "Historical Alpaca bar is missing "
-                "one or more OHLC values."
-            )
-        )
-
-
-    # ========================================================
-    # 11.3 NORMALISE PRICES
-    # ========================================================
-
-    open_decimal = _to_price_decimal(
-        open_price
-    )
-
-
-    high_decimal = _to_price_decimal(
-        high_price
-    )
-
-
-    low_decimal = _to_price_decimal(
-        low_price
-    )
-
-
-    close_decimal = _to_price_decimal(
-        close_price
-    )
-
-
-    # ========================================================
-    # 11.4 BASIC PRICE VALIDATION
-    # ========================================================
-
-    if any(
-        price <= 0
-        for price in [
-            open_decimal,
-            high_decimal,
-            low_decimal,
-            close_decimal,
-        ]
-    ):
-
-        raise ValueError(
-            (
-                "Historical market prices "
-                "must be greater than zero."
-            )
-        )
-
-
-    # High should not be below low.
-    if high_decimal < low_decimal:
-
-        raise ValueError(
-            (
-                "Historical market bar contains "
-                "a high price below its low price."
-            )
-        )
-
-
-    # ========================================================
-    # 11.5 VOLUME NORMALISATION
-    # ========================================================
-
-    try:
-
-        volume = int(
-            volume or 0
-        )
-
-
-    except (
-        ValueError,
-        TypeError,
-        OverflowError,
-    ):
-
-        volume = 0
-
-
-    # Negative market volume should never be stored.
-    volume = max(
-        0,
-        volume,
-    )
-
-
-    # ========================================================
-    # 11.6 RETURN NORMALISED BAR
-    # ========================================================
-
-    return {
-
-        "date":
-            _get_bar_date(
-                bar
-            ),
-
-        "open_price":
-            open_decimal,
-
-        "high_price":
-            high_decimal,
-
-        "low_price":
-            low_decimal,
-
-        "close_price":
-            close_decimal,
-
-        "volume":
-            volume,
-    }
-
-
+def prepare_market_condition_data(symbol, force_refresh=False):  # I provide a wrapper using the Market Condition minimum.
+    """Prepare historical data without running the analytical classifier."""
+    return ensure_market_data_for_analysis(  # I delegate preparation and return its status.
+        symbol=symbol,  # I pass the selected symbol.
+        minimum_observations=MARKET_CONDITION_MINIMUM_OBSERVATIONS,  # I use the shared minimum of 60.
+        force_refresh=force_refresh,  # I pass through the caller's refresh option.
+    )  # I finish the delegated call.
 # ============================================================
-# 12. STORED MARKET DATA STATUS
+# 16. LEGACY IMPORT COMPATIBILITY
 # ============================================================
-
-def get_stored_market_data_status(
-    symbol,
-):
-    """
-    ========================================================
-    GET STORED DATASET STATUS
-    ========================================================
-
-    Return information about the historical observations
-    currently stored in core.MarketData for one symbol.
-
-
-    Example:
-
-    {
-        "symbol": "SPY",
-        "observation_count": 26,
-        "earliest_date": date(...),
-        "latest_date": date(...),
-    }
-
-
-    This helper is useful for:
-
-    - Data tab
-    - Market Condition
-    - Risk
-    - Backtesting
-    - diagnostics
-    ========================================================
-    """
-
-
-    symbol = _normalise_symbol(
-        symbol
-    )
-
-
-    summary = (
-
-        MarketData.objects
-
-        .filter(
-            symbol=symbol
-        )
-
-        .aggregate(
-
-            observation_count=
-                Count(
-                    "pk"
-                ),
-
-            earliest_date=
-                Min(
-                    "date"
-                ),
-
-            latest_date=
-                Max(
-                    "date"
-                ),
-        )
-    )
-
-
-    return {
-
-        "symbol":
-            symbol,
-
-        "observation_count":
-            (
-                summary[
-                    "observation_count"
-                ]
-                or
-                0
-            ),
-
-        "earliest_date":
-            summary[
-                "earliest_date"
-            ],
-
-        "latest_date":
-            summary[
-                "latest_date"
-            ],
-    }
-
-
+def import_yahoo_finance_data(symbol, start_date, end_date):  # I preserve an older callable name for existing imports.
+    """Use the current Alpaca-backed importer despite this legacy function name."""
+    return import_market_data(  # I delegate to the current provider-neutral importer.
+        symbol=symbol,  # I pass through the symbol.
+        start_date=start_date,  # I pass through the start date.
+        end_date=end_date,  # I pass through the end date.
+        timeframe="1Day",  # I request daily bars.
+    )  # I finish the delegated call.
 # ============================================================
-# 13. IMPORT ALPACA HISTORICAL DATA
+# 17. PERIOD-TO-DATE-RANGE HELPER
 # ============================================================
-
-def import_alpaca_market_data(
-    symbol,
-    start_date,
-    end_date,
-    timeframe="1Day",
-):
-    """
-    ========================================================
-    IMPORT HISTORICAL ALPACA MARKET DATA
-    ========================================================
-
-    Main MarketPulse historical-data persistence function.
-
-
-    WORKFLOW:
-
-    User / feature requests data
-            ↓
-    import_alpaca_market_data()
-            ↓
-    get_historical_bars()
-            ↓
-    services/alpaca.py
-            ↓
-    Alpaca Historical Bars API
-            ↓
-    normalised OHLCV
-            ↓
-    MarketData.update_or_create()
-            ↓
-    PostgreSQL
-
-
-    PARAMETERS:
-
-    symbol
-        Example:
-            AAPL
-
-    start_date
-        First requested historical date.
-
-    end_date
-        Final requested historical date.
-
-    timeframe
-        Default:
-            1Day
-
-
-    RETURN:
-
-        Number of valid market bars processed.
-
-
-    IMPORTANT:
-
-    MarketData.update_or_create() prevents repeated refreshes
-    from creating duplicate rows for the same:
-
-        symbol + date
-    ========================================================
-    """
-
-
-    # ========================================================
-    # 13.1 NORMALISE SYMBOL
-    # ========================================================
-
-    symbol = _normalise_symbol(
-        symbol
-    )
-
-
-    # ========================================================
-    # 13.2 NORMALISE DATES
-    # ========================================================
-
-    start_date = _normalise_date_value(
-
-        start_date,
-
-        "start date",
-    )
-
-
-    end_date = _normalise_date_value(
-
-        end_date,
-
-        "end date",
-    )
-
-
-    # ========================================================
-    # 13.3 VALIDATE RANGE
-    # ========================================================
-
-    if start_date >= end_date:
-
-        raise ValueError(
-            (
-                "The start date must be "
-                "earlier than the end date."
-            )
-        )
-
-
-    # ========================================================
-    # 13.4 RETRIEVE ALPACA HISTORICAL BARS
-    # ========================================================
-
-    try:
-
-        bars = get_historical_bars(
-
-            symbol=
-                symbol,
-
-            start_date=
-                start_date,
-
-            end_date=
-                end_date,
-
-            timeframe=
-                timeframe,
-        )
-
-
-    except AlpacaServiceError as error:
-
-        raise ValueError(
-            (
-                f"Alpaca could not return historical "
-                f"market data for {symbol}: {error}"
-            )
-        ) from error
-
-
-    # ========================================================
-    # 13.5 VERIFY DATA EXISTS
-    # ========================================================
-
-    if not bars:
-
-        raise ValueError(
-            (
-                "No historical Alpaca market data "
-                f"was returned for {symbol}."
-            )
-        )
-
-
-    # ========================================================
-    # 13.6 NORMALISE BARS BEFORE DATABASE TRANSACTION
-    # ========================================================
-
-    normalised_bars = []
-
-
-    for bar in bars:
-
-        try:
-
-            normalised_bar = (
-                _normalise_market_bar(
-                    bar
-                )
-            )
-
-
-        except ValueError:
-
-            # A malformed provider row should not necessarily
-            # invalidate every other valid observation returned
-            # by the same historical request.
-            continue
-
-
-        # Keep only records inside the requested period.
-        #
-        # This also protects against unexpected provider rows.
-
-        if (
-            normalised_bar[
-                "date"
-            ]
-            <
-            start_date
-
-            or
-
-            normalised_bar[
-                "date"
-            ]
-            >
-            end_date
-        ):
-
-            continue
-
-
-        normalised_bars.append(
-            normalised_bar
-        )
-
-
-    if not normalised_bars:
-
-        raise ValueError(
-            (
-                f"Alpaca returned data for {symbol}, "
-                "but MarketPulse could not process any "
-                "valid historical observations."
-            )
-        )
-
-
-    # ========================================================
-    # 13.7 STORE DATA IN DATABASE
-    # ========================================================
-
-    count = 0
-
-
-    with transaction.atomic():
-
-
-        for normalised_bar in normalised_bars:
-
-
-            MarketData.objects.update_or_create(
-
-                symbol=
-                    symbol,
-
-                date=
-                    normalised_bar[
-                        "date"
-                    ],
-
-                defaults={
-
-                    "open_price":
-                        normalised_bar[
-                            "open_price"
-                        ],
-
-                    "high_price":
-                        normalised_bar[
-                            "high_price"
-                        ],
-
-                    "low_price":
-                        normalised_bar[
-                            "low_price"
-                        ],
-
-                    "close_price":
-                        normalised_bar[
-                            "close_price"
-                        ],
-
-                    "volume":
-                        normalised_bar[
-                            "volume"
-                        ],
-                },
-            )
-
-
-            count += 1
-
-
-    return count
-
-
+def _period_to_dates(period):  # I define a helper for converting supported period labels.
+    """Translate a period label into an approximate calendar-day date range."""
+    end_date = timezone.localdate()  # I use today's local date as the end.
+    period_days = {  # I define the existing period-to-day mapping.
+        "5d": 5,  # I map five days to five calendar days.
+        "1mo": 31,  # I approximate one month as 31 days.
+        "3mo": 93,  # I approximate three months as 93 days.
+        "6mo": 186,  # I approximate six months as 186 days.
+        "1y": 366,  # I use the existing one-year value of 366 days.
+        "2y": 732,  # I use the existing two-year value of 732 days.
+        "5y": 1830,  # I use the existing five-year value of 1,830 days.
+    }  # I finish the mapping.
+    days = period_days.get(period, 31)  # I use 31 days when the period is not in the mapping.
+    start_date = end_date - timedelta(days=days)  # I subtract the selected duration.
+    return (start_date, end_date)  # I return the two dates as a tuple.
 # ============================================================
-# 14. PROVIDER-NEUTRAL IMPORT FUNCTION
+# 18. GET RECENT DATA WITHOUT PERSISTING IT
 # ============================================================
-
-def import_market_data(
-    symbol,
-    start_date,
-    end_date,
-    timeframe="1Day",
-):
-    """
-    ========================================================
-    MARKETPULSE MARKET DATA IMPORT
-    ========================================================
-
-    Provider-neutral public entry point.
-
-    Other MarketPulse modules should use:
-
-        import_market_data()
-
-    rather than calling:
-
-        get_historical_bars()
-
-    directly.
-
-
-    CURRENT IMPLEMENTATION:
-
-        import_market_data()
-                ↓
-        import_alpaca_market_data()
-                ↓
-        get_historical_bars()
-                ↓
-        Alpaca
-
-
-    WHY PROVIDER-NEUTRAL?
-
-    Views, tasks and analytical features should not need to
-    know which external provider supplies the historical data.
-
-    If the provider changes in the future, the rest of the
-    MarketPulse application can continue using:
-
-        import_market_data()
-    ========================================================
-    """
-
-
-    return import_alpaca_market_data(
-
-        symbol=
-            symbol,
-
-        start_date=
-            start_date,
-
-        end_date=
-            end_date,
-
-        timeframe=
-            timeframe,
-    )
-
-
-# ============================================================
-# 15. ENSURE MARKET DATA FOR ANALYSIS
-# ============================================================
-
-def ensure_market_data_for_analysis(
-    symbol,
-    minimum_observations=MARKET_CONDITION_MINIMUM_OBSERVATIONS,
-    force_refresh=False,
-):
-    """
-    ========================================================
-    ENSURE SUFFICIENT HISTORICAL DATA FOR ANALYSIS
-    ========================================================
-
-    This is the function Market Condition should call BEFORE:
-
-        identify_market_regime(symbol)
-
-
-    PURPOSE:
-
-    Market Condition needs enough historical observations to
-    calculate the 60-period moving average.
-
-    Instead of implementing another Alpaca request inside
-    views.py, this function reuses:
-
-        import_market_data()
-
-
-    WORKFLOW:
-
-    Selected ticker
-            ↓
-    Check MarketData
-            ↓
-    Enough observations?
-            ↓
-        NO
-            ↓
-    Fetch approximately one year from Alpaca
-            ↓
-    update_or_create MarketData
-            ↓
-    Count again
-            ↓
-    At least 60?
-            ↓
-        YES
-            ↓
-    Ready for identify_market_regime()
-
-
-    EXISTING DATASET:
-
-    If sufficient history already exists but it has become
-    stale, only the recent period is refreshed.
-
-    force_refresh=True can be used when the user explicitly
-    clicks:
-
-        Run Market Condition Analysis
-
-    This refreshes recent data while avoiding an unnecessary
-    full-year import.
-
-
-    RETURNS:
-
-    {
-        "symbol": "SPY",
-        "minimum_observations": 60,
-        "observation_count_before": 26,
-        "observation_count": 252,
-        "earliest_date": ...,
-        "latest_date": ...,
-        "refreshed": True,
-        "records_processed": 252,
-        "analysis_ready": True,
-    }
-    ========================================================
-    """
-
-
-    # ========================================================
-    # 15.1 NORMALISE SYMBOL
-    # ========================================================
-
-    symbol = _normalise_symbol(
-        symbol
-    )
-
-
-    # ========================================================
-    # 15.2 NORMALISE MINIMUM OBSERVATION REQUIREMENT
-    # ========================================================
-
-    try:
-
-        minimum_observations = int(
-            minimum_observations
-        )
-
-
-    except (
-        TypeError,
-        ValueError,
-    ):
-
-        minimum_observations = (
-            MARKET_CONDITION_MINIMUM_OBSERVATIONS
-        )
-
-
-    minimum_observations = max(
-        2,
-        minimum_observations,
-    )
-
-
-    # ========================================================
-    # 15.3 CURRENT STORED STATUS
-    # ========================================================
-
-    before = (
-        get_stored_market_data_status(
-            symbol
-        )
-    )
-
-
-    observation_count_before = (
-        before[
-            "observation_count"
-        ]
-    )
-
-
-    latest_stored_date = (
-        before[
-            "latest_date"
-        ]
-    )
-
-
-    # ========================================================
-    # 15.4 DETERMINE WHETHER MORE HISTORY IS REQUIRED
-    # ========================================================
-
-    needs_more_history = (
-
-        observation_count_before
-        <
-        minimum_observations
-    )
-
-
-    # ========================================================
-    # 15.5 DETERMINE WHETHER STORED DATA IS STALE
-    # ========================================================
-
-    today = (
-        timezone.localdate()
-    )
-
-
-    if latest_stored_date is None:
-
-        data_is_stale = True
-
-
-    else:
-
-        age_in_days = (
-
-            today
-            -
-            latest_stored_date
-
-        ).days
-
-
-        data_is_stale = (
-
-            age_in_days
-            >
-            MARKET_DATA_STALE_AFTER_DAYS
-        )
-
-
-    # ========================================================
-    # 15.6 DETERMINE WHETHER TO CONTACT ALPACA
-    # ========================================================
-
-    should_refresh = (
-
-        needs_more_history
-
-        or
-
-        data_is_stale
-
-        or
-
-        force_refresh
-    )
-
-
-    records_processed = 0
-
-
-    # ========================================================
-    # 15.7 REFRESH / EXTEND HISTORICAL DATASET
-    # ========================================================
-
-    if should_refresh:
-
-
-        # ----------------------------------------------------
-        # Not enough data:
-        #
-        # Request approximately one year so the analyzer has
-        # substantially more than the 60 observations required
-        # under normal circumstances.
-        # ----------------------------------------------------
-
-        if needs_more_history:
-
-            refresh_start_date = (
-
-                today
-
-                -
-                timedelta(
-                    days=
-                        ANALYSIS_HISTORY_LOOKBACK_DAYS
-                )
-            )
-
-
-        # ----------------------------------------------------
-        # Sufficient history already exists:
-        #
-        # Refresh only a recent overlapping window.
-        #
-        # update_or_create() means existing days are safely
-        # updated rather than duplicated.
-        # ----------------------------------------------------
-
-        else:
-
-            refresh_start_date = (
-
-                today
-
-                -
-                timedelta(
-                    days=
-                        RECENT_REFRESH_LOOKBACK_DAYS
-                )
-            )
-
-
-            # If the latest stored observation is older than
-            # our standard refresh window, start slightly
-            # before that observation so the missing period
-            # can be recovered.
-
-            if (
-                latest_stored_date
-                is not None
-
-                and
-
-                latest_stored_date
-                <
-                refresh_start_date
-            ):
-
-                refresh_start_date = (
-
-                    latest_stored_date
-
-                    -
-                    timedelta(
-                        days=7
-                    )
-                )
-
-
-        # ----------------------------------------------------
-        # Ensure the range contains at least one full day.
-        # ----------------------------------------------------
-
-        if refresh_start_date >= today:
-
-            refresh_start_date = (
-
-                today
-
-                -
-                timedelta(
-                    days=1
-                )
-            )
-
-
-        # ----------------------------------------------------
-        # Reuse the EXISTING provider-neutral importer.
-        #
-        # IMPORTANT:
-        #
-        # No direct Alpaca request is implemented here.
-        # ----------------------------------------------------
-
-        records_processed = (
-            import_market_data(
-
-                symbol=
-                    symbol,
-
-                start_date=
-                    refresh_start_date,
-
-                end_date=
-                    today,
-
-                timeframe=
-                    "1Day",
-            )
-        )
-
-
-    # ========================================================
-    # 15.8 RECHECK STORED DATA AFTER REFRESH
-    # ========================================================
-
-    after = (
-        get_stored_market_data_status(
-            symbol
-        )
-    )
-
-
-    observation_count = (
-        after[
-            "observation_count"
-        ]
-    )
-
-
-    # ========================================================
-    # 15.9 ANALYSIS READINESS
-    # ========================================================
-
-    analysis_ready = (
-
-        observation_count
-        >=
-        minimum_observations
-    )
-
-
-    # ========================================================
-    # 15.10 RETURN STRUCTURED STATUS
-    # ========================================================
-
-    return {
-
-        "symbol":
-            symbol,
-
-        "minimum_observations":
-            minimum_observations,
-
-        "observation_count_before":
-            observation_count_before,
-
-        "observation_count":
-            observation_count,
-
-        "earliest_date":
-            after[
-                "earliest_date"
-            ],
-
-        "latest_date":
-            after[
-                "latest_date"
-            ],
-
-        "refreshed":
-            should_refresh,
-
-        "records_processed":
-            records_processed,
-
-        "analysis_ready":
-            analysis_ready,
-    }
-
-
-# ============================================================
-# 16. MARKET CONDITION DATA HELPER
-# ============================================================
-
-def prepare_market_condition_data(
-    symbol,
-    force_refresh=False,
-):
-    """
-    ========================================================
-    PREPARE DATA FOR MARKET CONDITION
-    ========================================================
-
-    Convenience wrapper specifically for Market Condition.
-
-    This keeps the minimum-observation requirement in one
-    central location instead of repeating:
-
-        60
-
-    throughout multiple views.
-
-
-    USE FROM data_management/views.py:
-
-        data_status = prepare_market_condition_data(
-            selected_symbol,
-            force_refresh=True,
-        )
-
-        if data_status["analysis_ready"]:
-            regime = identify_market_regime(
-                selected_symbol
-            )
-
-
-    This function does NOT run the analytical model itself.
-
-    Responsibility remains separated:
-
-        utils.py
-            = obtain + store data
-
-        analysis_tools/analyzers.py
-            = analyse stored data
-    ========================================================
-    """
-
-
-    return ensure_market_data_for_analysis(
-
-        symbol=
-            symbol,
-
-        minimum_observations=
-            MARKET_CONDITION_MINIMUM_OBSERVATIONS,
-
-        force_refresh=
-            force_refresh,
-    )
-
-
-# ============================================================
-# 17. TEMPORARY LEGACY COMPATIBILITY
-# ============================================================
-
-def import_yahoo_finance_data(
-    symbol,
-    start_date,
-    end_date,
-):
-    """
-    ========================================================
-    TEMPORARY COMPATIBILITY WRAPPER
-    ========================================================
-
-    IMPORTANT:
-
-    Despite this OLD function name, this function does NOT
-    contact Yahoo Finance.
-
-    It redirects to MarketPulse's current provider-neutral
-    importer:
-
-        import_market_data()
-            ↓
-        Alpaca
-
-
-    WHY KEEP IT TEMPORARILY?
-
-    Existing files may still contain:
-
-        from data_management.utils import (
-            import_yahoo_finance_data
-        )
-
-    Removing this compatibility function immediately could
-    create ImportError exceptions in older code.
-
-    Once the whole project uses:
-
-        import_market_data()
-
-    this wrapper can safely be removed.
-    ========================================================
-    """
-
-
-    return import_market_data(
-
-        symbol=
-            symbol,
-
-        start_date=
-            start_date,
-
-        end_date=
-            end_date,
-
-        timeframe=
-            "1Day",
-    )
-
-
-# ============================================================
-# 18. PERIOD → DATE RANGE HELPER
-# ============================================================
-
-def _period_to_dates(period):
-    """
-    ========================================================
-    CONVERT SIMPLE PERIOD TO START / END DATES
-    ========================================================
-
-    Preserves compatibility with get_latest_data().
-
-
-    EXAMPLES:
-
-        5d
-        1mo
-        3mo
-        6mo
-        1y
-        2y
-        5y
-    ========================================================
-    """
-
-
-    end_date = (
-        timezone.localdate()
-    )
-
-
-    period_days = {
-
-        "5d":
-            5,
-
-        "1mo":
-            31,
-
-        "3mo":
-            93,
-
-        "6mo":
-            186,
-
-        "1y":
-            366,
-
-        "2y":
-            732,
-
-        "5y":
-            1830,
-    }
-
-
-    days = (
-        period_days.get(
-            period,
-            31,
-        )
-    )
-
-
-    start_date = (
-
-        end_date
-
-        -
-        timedelta(
-            days=
-                days
-        )
-    )
-
-
-    return (
-        start_date,
-        end_date,
-    )
-
-
-# ============================================================
-# 19. GET RECENT ALPACA DATA
-# ============================================================
-
-def get_latest_data(
-    symbol,
-    period="1mo",
-):
-    """
-    ========================================================
-    GET RECENT HISTORICAL MARKET DATA
-    ========================================================
-
-    Return recent Alpaca historical market data without
-    persisting it.
-
-
-    OUTPUT:
-
-    [
-        {
-            "date": "2026-08-01",
-            "open": 100.00,
-            "high": 105.00,
-            "low": 99.00,
-            "close": 104.00,
-            "volume": 1000000
-        }
-    ]
-
-
-    IMPORTANT:
-
-    This function is useful when a feature needs a temporary
-    historical series.
-
-    If data must become part of MarketPulse's persistent
-    analytical dataset, use:
-
-        import_market_data()
-
-    or:
-
-        ensure_market_data_for_analysis()
-
-    instead.
-    ========================================================
-    """
-
-
-    try:
-
-        symbol = _normalise_symbol(
-            symbol
-        )
-
-
-    except ValueError:
-
-        return []
-
-
-    start_date, end_date = (
-        _period_to_dates(
-            period
-        )
-    )
-
-
-    # ========================================================
-    # 19.1 REQUEST ALPACA DATA THROUGH SERVICE LAYER
-    # ========================================================
-
-    try:
-
-        bars = get_historical_bars(
-
-            symbol=
-                symbol,
-
-            start_date=
-                start_date,
-
-            end_date=
-                end_date,
-
-            timeframe=
-                "1Day",
-        )
-
-
-    except AlpacaServiceError:
-
-        return []
-
-
-    if not bars:
-
-        return []
-
-
-    # ========================================================
-    # 19.2 NORMALISE RESULT
-    # ========================================================
-
-    results = []
-
-
-    for bar in bars:
-
-
-        try:
-
-            normalised_bar = (
-                _normalise_market_bar(
-                    bar
-                )
-            )
-
-
-        except ValueError:
-
-            # Skip malformed provider records.
-            continue
-
-
-        results.append(
-            {
-
-                "date":
-                    normalised_bar[
-                        "date"
-                    ].isoformat(),
-
-                "open":
-                    float(
-                        normalised_bar[
-                            "open_price"
-                        ]
-                    ),
-
-                "high":
-                    float(
-                        normalised_bar[
-                            "high_price"
-                        ]
-                    ),
-
-                "low":
-                    float(
-                        normalised_bar[
-                            "low_price"
-                        ]
-                    ),
-
-                "close":
-                    float(
-                        normalised_bar[
-                            "close_price"
-                        ]
-                    ),
-
-                "volume":
-                    normalised_bar[
-                        "volume"
-                    ],
-            }
-        )
-
-
-    # ========================================================
-    # 19.3 CHRONOLOGICAL ORDER
-    # ========================================================
-
-    results.sort(
-        key=lambda item:
-            item[
-                "date"
-            ]
-    )
-
-
-    return results
+def get_latest_data(symbol, period="1mo"):  # I accept a symbol and an optional period label.
+    """Return normalized historical records without writing them to MarketData."""
+    try:  # I handle an invalid or empty symbol.
+        symbol = _normalise_symbol(symbol)  # I validate and normalize it.
+    except ValueError:  # I catch symbol validation failures.
+        return []  # I return an empty list.
+    start_date, end_date = _period_to_dates(period)  # I unpack the calculated date range.
+    # --------------------------------------------------------
+    # 18.1 FETCH THROUGH THE ALPACA SERVICE
+    # --------------------------------------------------------
+    try:  # I handle the service's specific error.
+        bars = get_historical_bars(  # I request temporary historical records.
+            symbol=symbol,  # I supply the normalized symbol.
+            start_date=start_date,  # I supply the calculated start.
+            end_date=end_date,  # I supply the calculated end.
+            timeframe="1Day",  # I request daily bars.
+        )  # I finish the service call.
+    except AlpacaServiceError:  # I catch the service failure.
+        return []  # I return an empty list rather than propagating this exception.
+    if not bars:  # I check whether any bars were returned.
+        return []  # I return an empty list when none were supplied.
+    # --------------------------------------------------------
+    # 18.2 NORMALIZE THE RETURNED RECORDS
+    # --------------------------------------------------------
+    results = []  # I create the output list.
+    for bar in bars:  # I examine each provider record.
+        try:  # I attempt normalization.
+            normalised_bar = _normalise_market_bar(bar)  # I validate and convert the record.
+        except ValueError:  # I catch records rejected with ValueError.
+            continue  # I skip that record and continue the loop.
+        results.append(  # I append a presentation-friendly dictionary.
+            {  # I begin the output record.
+                "date": normalised_bar["date"].isoformat(),  # I convert the date to ISO text.
+                "open": float(normalised_bar["open_price"]),  # I convert the opening Decimal to a float.
+                "high": float(normalised_bar["high_price"]),  # I convert the high Decimal to a float.
+                "low": float(normalised_bar["low_price"]),  # I convert the low Decimal to a float.
+                "close": float(normalised_bar["close_price"]),  # I convert the closing Decimal to a float.
+                "volume": normalised_bar["volume"],  # I retain the integer volume.
+            }  # I finish the output record.
+        )  # I finish appending it.
+    # --------------------------------------------------------
+    # 18.3 ORDER THE RESULTS
+    # --------------------------------------------------------
+    results.sort(key=lambda item: item["date"])  # I sort the list in place by ISO date, oldest first.
+    return results  # I return the normalized, ordered records.

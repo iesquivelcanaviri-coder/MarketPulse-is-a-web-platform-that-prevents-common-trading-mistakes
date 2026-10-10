@@ -1,41 +1,68 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %} {# Template inheritance: I reuse the shared layout from base.html. #}
 
-{% block title %}Overfitting Detection{% endblock %}
+{# ======================================================== #}
+{# 1. PAGE TITLE                                            #}
+{# ======================================================== #}
+{% block title %}Overfitting Detection{% endblock %} {# Named block: I replace the base template's default browser title. #}
 
-{% block content %}
-<div class="row">
-    <div class="col-md-8 offset-md-2">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">Overfitting Detection</h4>
-            </div>
-            <div class="card-body">
-                <p class="card-text">
-                    Overfitting occurs when a strategy performs well on historical data but fails in live trading.
-                    Our tool tests your strategy across different time periods to detect if it's overfitted.
-                </p>
-                
-                <form method="post">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="strategy" class="form-label">Select Strategy</label>
-                        <select class="form-select" id="strategy" name="strategy" required>
-                            <option value="" selected disabled>-- Choose a strategy --</option>
-                            {% for strategy in strategies %}
-                            <option value="{{ strategy.id }}">{{ strategy.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="symbol" class="form-label">Symbol</label>
-                        <input type="text" class="form-control" id="symbol" name="symbol" placeholder="AAPL" required>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary">Run Overfitting Detection</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
+{# ======================================================== #}
+{# 2. PAGE CONTENT AND RESPONSIVE LAYOUT                     #}
+{# ======================================================== #}
+{% block content %} {# Named block: I insert this page into the base template's content area. #}
+<div class="row"> {# HTML element and CSS class: I begin a Bootstrap grid row. #}
+    <div class="col-md-8 offset-md-2"> {# Responsive layout: I centre an eight-column panel on medium and larger screens. #}
+        <div class="card"> {# HTML nesting: I group the heading, explanation and form inside a card. #}
+
+            {# ======================================================== #}
+            {# 3. CARD HEADING                                          #}
+            {# ======================================================== #}
+            <div class="card-header bg-primary text-white"> {# CSS classes: I request Bootstrap header, primary background and white text styling. #}
+                <h4 class="mb-0">Overfitting Detection</h4> {# Heading element: I display the section title without bottom margin. #}
+            </div> {# Closing tag: I finish the card header. #}
+
+            {# ======================================================== #}
+            {# 4. EXPLANATION                                           #}
+            {# ======================================================== #}
+            <div class="card-body"> {# Container: I begin the main card content. #}
+                <p class="card-text"> {# Paragraph element: I introduce the purpose of the test. #}
+                    Overfitting occurs when a strategy performs well on historical data but fails in live trading. {# Static text: I display the original simplified explanation of overfitting. #}
+                    Our tool tests your strategy across different time periods to detect if it's overfitted. {# Static text: I describe the intended test; this template performs no calculations. #}
+                </p> {# Closing tag: I finish the explanatory paragraph. #}
+
+                {# ======================================================== #}
+                {# 5. FORM AND CSRF PROTECTION                              #}
+                {# ======================================================== #}
+                <form method="post"> {# Form and HTTP method: I submit named fields to the current URL using POST. #}
+                    {% csrf_token %} {# Django template tag: I include a token for server-side CSRF checks. #}
+
+                    {# ======================================================== #}
+                    {# 6. STRATEGY SELECTION: LOOP AND VARIABLES                #}
+                    {# ======================================================== #}
+                    <div class="mb-3"> {# Field container: I add bottom spacing around the dropdown. #}
+                        <label for="strategy" class="form-label">Select Strategy</label> {# Label association: for matches the dropdown's id. #}
+                        <select class="form-select" id="strategy" name="strategy" required> {# Attributes: id identifies the dropdown, name sets the POST key, and required requires a selection. #}
+                            <option value="" selected disabled>-- Choose a strategy --</option> {# Boolean attributes: I show a default prompt that cannot be chosen as a valid strategy. #}
+                            {% for strategy in strategies %} {# Iteration: I repeat the next option for each item in the strategies context variable. #}
+                            <option value="{{ strategy.id }}">{{ strategy.name }}</option> {# Variable lookup and interpolation: I submit the strategy ID while displaying its name. #}
+                            {% endfor %} {# Loop boundary: I finish generating the strategy options. #}
+                        </select> {# Closing tag: I finish the strategy dropdown. #}
+                    </div> {# Closing tag: I finish the strategy field group. #}
+
+                    {# ======================================================== #}
+                    {# 7. ASSET SYMBOL INPUT                                    #}
+                    {# ======================================================== #}
+                    <div class="mb-3"> {# Field container: I group the symbol label and input. #}
+                        <label for="symbol" class="form-label">Symbol</label> {# Label association: I connect this label to the symbol input. #}
+                        <input type="text" class="form-control" id="symbol" name="symbol" placeholder="AAPL" required> {# Text input: I submit symbol; AAPL is a hint, and required enables browser validation. #}
+                    </div> {# Closing tag: I finish the symbol field group. #}
+
+                    {# ======================================================== #}
+                    {# 8. SUBMIT THE ANALYSIS REQUEST                           #}
+                    {# ======================================================== #}
+                    <button type="submit" class="btn btn-primary">Run Overfitting Detection</button> {# Submit button: I send the selected strategy ID and entered symbol to the receiving view. #}
+                </form> {# Closing tag: I finish the form. #}
+            </div> {# Closing tag: I finish the card body. #}
+        </div> {# Closing tag: I finish the card. #}
+    </div> {# Closing tag: I finish the centred grid column. #}
+</div> {# Closing tag: I finish the outer grid row. #}
+{% endblock %} {# Block boundary: I finish the content inserted into base.html. #}

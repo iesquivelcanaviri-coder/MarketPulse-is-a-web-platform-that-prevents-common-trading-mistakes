@@ -1,132 +1,162 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %} {# Template inheritance: I reuse the shared page layout. #}
+{% block title %}Stress Testing{% endblock %} {# Named block: I set this page's browser title. #}
 
-{% block title %}Stress Testing{% endblock %}
+{# ======================================================== #}
+{# 1. PAGE CONTENT AND LAYOUT                                #}
+{# Django supplies data; HTML structures it; Bootstrap styles it. #}
+{# ======================================================== #}
+{% block content %} {# Named block: I place this page inside base.html's content area. #}
+<div class="row"> {# HTML element and class attribute: I start a Bootstrap grid row. #}
+    <div class="col-md-8 offset-md-2"> {# Responsive layout: I centre an eight-column panel on medium and larger screens. #}
+        <div class="card"> {# Container: I group the stress-test interface inside a card. #}
+            <div class="card-header bg-primary text-white"> {# CSS classes: I request a primary background and white header text. #}
+                <h4 class="mb-0">Stress Testing</h4> {# Heading: I name the page section and remove its bottom margin. #}
+            </div> {# Closing tag: I finish the card header. #}
+            <div class="card-body"> {# Container: I start the card's main content area. #}
+                <p class="card-text"> {# Paragraph: I explain the purpose of the form. #}
+                    Stress testing evaluates how your strategy performs under extreme market conditions. {# Text content: I explain what stress testing evaluates. #}
+                    This helps you understand the risks and potential weaknesses of your strategy. {# Text content: I explain why the test is useful. #}
+                </p> {# Closing tag: I finish the explanation. #}
 
-{% block content %}
-<div class="row">
-    <div class="col-md-8 offset-md-2">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">Stress Testing</h4>
-            </div>
-            <div class="card-body">
-                <p class="card-text">
-                    Stress testing evaluates how your strategy performs under extreme market conditions.
-                    This helps you understand the risks and potential weaknesses of your strategy.
-                </p>
-                
-                <form method="post" id="stressForm">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="strategy" class="form-label">Select Strategy</label>
-                        <select class="form-select" id="strategy" name="strategy" required>
-                            <option value="" selected disabled>-- Choose a strategy --</option>
-                            {% for strategy in strategies %}
-                            <option value="{{ strategy.id }}">{{ strategy.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="symbol" class="form-label">Symbol</label>
-                        <input type="text" class="form-control" id="symbol" name="symbol" placeholder="AAPL" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="test_type" class="form-label">Test Type</label>
-                        <select class="form-select" id="test_type" name="test_type" required>
-                            <option value="" selected disabled>-- Choose a test type --</option>
-                            <option value="crash">Market Crash</option>
-                            <option value="volatility_spike">Volatility Spike</option>
-                            <option value="liquidity_crisis">Liquidity Crisis</option>
-                            <option value="regime_change">Regime Change</option>
-                        </select>
-                    </div>
-                    
+                {# ======================================================== #}
+                {# 2. FORM AND STRATEGY SELECTION                            #}
+                {# ======================================================== #}
+                <form method="post" id="stressForm"> {# Form attributes: I submit named fields to the current URL using POST. #}
+                    {% csrf_token %} {# Django security tag: I include a token for server-side CSRF checks. #}
+                    <div class="mb-3"> {# Container: I group the strategy field with bottom spacing. #}
+                        <label for="strategy" class="form-label">Select Strategy</label> {# Label association: I connect this label to the strategy field's ID. #}
+                        <select class="form-select" id="strategy" name="strategy" required> {# Dropdown: I submit the chosen value as strategy and require a selection. #}
+                            <option value="" selected disabled>-- Choose a strategy --</option> {# Boolean attributes: I show a default prompt that cannot be chosen as a valid option. #}
+                            {% for strategy in strategies %} {# Iteration: I repeat the next option for each strategy supplied by Django. #}
+                            <option value="{{ strategy.id }}">{{ strategy.name }}</option> {# Variable lookup: I submit the strategy ID while displaying its name. #}
+                            {% endfor %} {# Loop boundary: I finish generating strategy options. #}
+                        </select> {# Closing tag: I finish the strategy dropdown. #}
+                    </div> {# Closing tag: I finish the strategy field group. #}
+
+                    {# ======================================================== #}
+                    {# 3. ASSET SYMBOL AND TEST TYPE                             #}
+                    {# ======================================================== #}
+                    <div class="mb-3"> {# Container: I group the asset-symbol field. #}
+                        <label for="symbol" class="form-label">Symbol</label> {# Label association: I identify the symbol input. #}
+                        <input type="text" class="form-control" id="symbol" name="symbol" placeholder="AAPL" required> {# Text input: I submit symbol; AAPL is only a hint, not a default value. #}
+                    </div> {# Closing tag: I finish the symbol field group. #}
+                    <div class="mb-3"> {# Container: I group the market-scenario dropdown. #}
+                        <label for="test_type" class="form-label">Test Type</label> {# Label association: I identify the test-type field. #}
+                        <select class="form-select" id="test_type" name="test_type" required> {# Dropdown and DOM ID: I submit test_type and let JavaScript watch this field. #}
+                            <option value="" selected disabled>-- Choose a test type --</option> {# Default prompt: I require the user to choose an actual scenario. #}
+                            <option value="crash">Market Crash</option> {# Option value: I send crash when this scenario is selected. #}
+                            <option value="volatility_spike">Volatility Spike</option> {# Option value: I send volatility_spike for this scenario. #}
+                            <option value="liquidity_crisis">Liquidity Crisis</option> {# Option value: I send liquidity_crisis for this scenario. #}
+                            <option value="regime_change">Regime Change</option> {# Option value: I send regime_change for this scenario. #}
+                        </select> {# Closing tag: I finish the scenario dropdown. #}
+                    </div> {# Closing tag: I finish the test-type field group. #}
+
+                    {# ======================================================== #}
+                    {# 4. MARKET CRASH PARAMETERS                                #}
+                    {# Fractions: 0.7 represents 70%; 0.3 represents 30%.        #}
+                    {# ======================================================== #}
                     <!-- Market Crash Parameters -->
-                    <div id="crash_params" class="test-params" style="display: none;">
-                        <h5>Market Crash Parameters</h5>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="crash_start" class="form-label">Crash Start (% of period)</label>
-                                <input type="number" class="form-control" id="crash_start" name="crash_start" value="0.7" min="0" max="1" step="0.1">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="crash_magnitude" class="form-label">Crash Magnitude (% drop)</label>
-                                <input type="number" class="form-control" id="crash_magnitude" name="crash_magnitude" value="0.3" min="0.1" max="0.5" step="0.05">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Volatility Spike Parameters -->
-                    <div id="volatility_spike_params" class="test-params" style="display: none;">
-                        <h5>Volatility Spike Parameters</h5>
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label for="spike_start" class="form-label">Spike Start (% of period)</label>
-                                <input type="number" class="form-control" id="spike_start" name="spike_start" value="0.5" min="0" max="1" step="0.1">
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="spike_duration" class="form-label">Spike Duration (% of period)</label>
-                                <input type="number" class="form-control" id="spike_duration" name="spike_duration" value="0.1" min="0.05" max="0.3" step="0.05">
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="spike_magnitude" class="form-label">Spike Magnitude (multiplier)</label>
-                                <input type="number" class="form-control" id="spike_magnitude" name="spike_magnitude" value="3.0" min="1.5" max="5" step="0.5">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Liquidity Crisis Parameters -->
-                    <div id="liquidity_crisis_params" class="test-params" style="display: none;">
-                        <h5>Liquidity Crisis Parameters</h5>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="crisis_start" class="form-label">Crisis Start (% of period)</label>
-                                <input type="number" class="form-control" id="crisis_start" name="crisis_start" value="0.6" min="0" max="1" step="0.1">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="volume_reduction" class="form-label">Volume Reduction (%)</label>
-                                <input type="number" class="form-control" id="volume_reduction" name="volume_reduction" value="0.7" min="0.3" max="0.9" step="0.1">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Regime Change Parameters -->
-                    <div id="regime_change_params" class="test-params" style="display: none;">
-                        <h5>Regime Change Parameters</h5>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="change_point" class="form-label">Change Point (% of period)</label>
-                                <input type="number" class="form-control" id="change_point" name="change_point" value="0.5" min="0" max="1" step="0.1">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="new_trend" class="form-label">New Trend (daily change)</label>
-                                <input type="number" class="form-control" id="new_trend" name="new_trend" value="-0.01" min="-0.05" max="0.05" step="0.005">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary">Run Stress Test</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
+                    <div id="crash_params" class="test-params" style="display: none;"> {# ID and shared class: JavaScript can find this initially hidden scenario section. #}
+                        <h5>Market Crash Parameters</h5> {# Heading: I identify the crash settings. #}
+                        <div class="row"> {# Grid row: I arrange the crash inputs side by side when space allows. #}
+                            <div class="col-md-6 mb-3"> {# Responsive column: I give this field half the row on medium and larger screens. #}
+                                <label for="crash_start" class="form-label">Crash Start (% of period)</label> {# Label: I describe the crash's position within the test period. #}
+                                <input type="number" class="form-control" id="crash_start" name="crash_start" value="0.7" min="0" max="1" step="0.1"> {# Numeric input: I default to 0.7 and set browser limits and a 0.1 step. #}
+                            </div> {# Closing tag: I finish the crash-start column. #}
+                            <div class="col-md-6 mb-3"> {# Responsive column: I place the crash magnitude in the other half. #}
+                                <label for="crash_magnitude" class="form-label">Crash Magnitude (% drop)</label> {# Label: I describe the simulated price-drop size. #}
+                                <input type="number" class="form-control" id="crash_magnitude" name="crash_magnitude" value="0.3" min="0.1" max="0.5" step="0.05"> {# Numeric input: I default to 0.3 with a range of 0.1 to 0.5 and a 0.05 step. #}
+                            </div> {# Closing tag: I finish the crash-magnitude column. #}
+                        </div> {# Closing tag: I finish the crash-input row. #}
+                    </div> {# Closing tag: I finish the crash parameter section. #}
 
-<script>
-document.getElementById('test_type').addEventListener('change', function() {
+                    {# ======================================================== #}
+                    {# 5. VOLATILITY SPIKE PARAMETERS                            #}
+                    {# ======================================================== #}
+                    <!-- Volatility Spike Parameters -->
+                    <div id="volatility_spike_params" class="test-params" style="display: none;"> {# Naming convention: This ID matches volatility_spike plus _params. #}
+                        <h5>Volatility Spike Parameters</h5> {# Heading: I identify the volatility settings. #}
+                        <div class="row"> {# Grid row: I organise the three volatility fields. #}
+                            <div class="col-md-4 mb-3"> {# Responsive column: I use one-third of the row on medium and larger screens. #}
+                                <label for="spike_start" class="form-label">Spike Start (% of period)</label> {# Label: I describe when the spike begins. #}
+                                <input type="number" class="form-control" id="spike_start" name="spike_start" value="0.5" min="0" max="1" step="0.1"> {# Numeric input: I default to the halfway point with a 0.1 step. #}
+                            </div> {# Closing tag: I finish the spike-start column. #}
+                            <div class="col-md-4 mb-3"> {# Responsive column: I allocate another third to spike duration. #}
+                                <label for="spike_duration" class="form-label">Spike Duration (% of period)</label> {# Label: I describe how much of the period the spike lasts. #}
+                                <input type="number" class="form-control" id="spike_duration" name="spike_duration" value="0.1" min="0.05" max="0.3" step="0.05"> {# Numeric input: I default to 0.1 with a range of 0.05 to 0.3. #}
+                            </div> {# Closing tag: I finish the duration column. #}
+                            <div class="col-md-4 mb-3"> {# Responsive column: I allocate the final third to spike magnitude. #}
+                                <label for="spike_magnitude" class="form-label">Spike Magnitude (multiplier)</label> {# Label: I describe magnitude as a multiplier. #}
+                                <input type="number" class="form-control" id="spike_magnitude" name="spike_magnitude" value="3.0" min="1.5" max="5" step="0.5"> {# Numeric input: I default to a 3.0 multiplier with a 0.5 step. #}
+                            </div> {# Closing tag: I finish the magnitude column. #}
+                        </div> {# Closing tag: I finish the volatility-input row. #}
+                    </div> {# Closing tag: I finish the volatility parameter section. #}
+
+                    {# ======================================================== #}
+                    {# 6. LIQUIDITY CRISIS PARAMETERS                            #}
+                    {# ======================================================== #}
+                    <!-- Liquidity Crisis Parameters -->
+                    <div id="liquidity_crisis_params" class="test-params" style="display: none;"> {# Naming convention: JavaScript finds this ID from the selected scenario value. #}
+                        <h5>Liquidity Crisis Parameters</h5> {# Heading: I identify the liquidity settings. #}
+                        <div class="row"> {# Grid row: I organise the liquidity fields. #}
+                            <div class="col-md-6 mb-3"> {# Responsive column: I allocate half the row to crisis timing. #}
+                                <label for="crisis_start" class="form-label">Crisis Start (% of period)</label> {# Label: I describe when the liquidity crisis starts. #}
+                                <input type="number" class="form-control" id="crisis_start" name="crisis_start" value="0.6" min="0" max="1" step="0.1"> {# Numeric input: I default to 0.6 of the period with a 0.1 step. #}
+                            </div> {# Closing tag: I finish the crisis-start column. #}
+                            <div class="col-md-6 mb-3"> {# Responsive column: I allocate half the row to volume reduction. #}
+                                <label for="volume_reduction" class="form-label">Volume Reduction (%)</label> {# Label: I describe the simulated reduction in trading volume. #}
+                                <input type="number" class="form-control" id="volume_reduction" name="volume_reduction" value="0.7" min="0.3" max="0.9" step="0.1"> {# Numeric input: I default to a 0.7 reduction with a range of 0.3 to 0.9. #}
+                            </div> {# Closing tag: I finish the volume-reduction column. #}
+                        </div> {# Closing tag: I finish the liquidity-input row. #}
+                    </div> {# Closing tag: I finish the liquidity parameter section. #}
+
+                    {# ======================================================== #}
+                    {# 7. REGIME CHANGE PARAMETERS                               #}
+                    {# ======================================================== #}
+                    <!-- Regime Change Parameters -->
+                    <div id="regime_change_params" class="test-params" style="display: none;"> {# Initially hidden container: I reveal it when regime_change is selected. #}
+                        <h5>Regime Change Parameters</h5> {# Heading: I identify the market-regime settings. #}
+                        <div class="row"> {# Grid row: I organise the regime-change fields. #}
+                            <div class="col-md-6 mb-3"> {# Responsive column: I allocate half the row to the change point. #}
+                                <label for="change_point" class="form-label">Change Point (% of period)</label> {# Label: I describe when the market condition changes. #}
+                                <input type="number" class="form-control" id="change_point" name="change_point" value="0.5" min="0" max="1" step="0.1"> {# Numeric input: I default to a change halfway through the period. #}
+                            </div> {# Closing tag: I finish the change-point column. #}
+                            <div class="col-md-6 mb-3"> {# Responsive column: I allocate half the row to the new trend. #}
+                                <label for="new_trend" class="form-label">New Trend (daily change)</label> {# Label: I describe the new daily price-change setting. #}
+                                <input type="number" class="form-control" id="new_trend" name="new_trend" value="-0.01" min="-0.05" max="0.05" step="0.005"> {# Signed numeric value: I default to -0.01 with a 0.005 step. #}
+                            </div> {# Closing tag: I finish the new-trend column. #}
+                        </div> {# Closing tag: I finish the regime-change row. #}
+                    </div> {# Closing tag: I finish the regime parameter section. #}
+
+                    {# ======================================================== #}
+                    {# 8. SUBMIT THE FORM                                        #}
+                    {# Hidden sections remain enabled, so their named inputs   #}
+                    {# are also submitted; the backend must use the chosen type. #}
+                    {# ======================================================== #}
+                    <button type="submit" class="btn btn-primary">Run Stress Test</button> {# Submit button: I send the form fields to the receiving Django view. #}
+                </form> {# Closing tag: I finish the stress-test form. #}
+            </div> {# Closing tag: I finish the card body. #}
+        </div> {# Closing tag: I finish the card. #}
+    </div> {# Closing tag: I finish the centred grid column. #}
+</div> {# Closing tag: I finish the outer grid row. #}
+
+{# ======================================================== #}
+{# 9. JAVASCRIPT: SHOW THE SELECTED SCENARIO'S PARAMETERS     #}
+{# Concepts: events, callbacks, constants, iteration,        #}
+{# property access, assignment, concatenation and conditions. #}
+{# ======================================================== #}
+<script> // Script element: I begin the browser-side JavaScript.
+document.getElementById('test_type').addEventListener('change', function() { // DOM lookup and event callback: I run this function when the dropdown changes.
     // Hide all parameter sections
-    const paramSections = document.querySelectorAll('.test-params');
-    paramSections.forEach(section => {
-        section.style.display = 'none';
-    });
-    
+    const paramSections = document.querySelectorAll('.test-params'); // Constant and CSS selector: I collect every scenario parameter section.
+    paramSections.forEach(section => { // Iteration and arrow function: I process each section in the collection.
+        section.style.display = 'none'; // Property assignment: I hide the current section without disabling its inputs.
+    }); // I finish the iteration callback and the forEach call.
     // Show the selected parameter section
-    const selectedParams = document.getElementById(this.value + '_params');
-    if (selectedParams) {
-        selectedParams.style.display = 'block';
-    }
-});
-</script>
-{% endblock %}
+    const selectedParams = document.getElementById(this.value + '_params'); // this and string concatenation: I build the section ID from the dropdown's value.
+    if (selectedParams) { // Conditional and truthiness: I continue only if a matching element exists.
+        selectedParams.style.display = 'block'; // Property assignment: I make the selected parameter section visible.
+    } // I finish the conditional block.
+}); // I finish the change-event callback and listener registration.
+</script> {# Closing tag: I finish the JavaScript element. #}
+{% endblock %} {# Block boundary: I finish the page content inserted into base.html. #}

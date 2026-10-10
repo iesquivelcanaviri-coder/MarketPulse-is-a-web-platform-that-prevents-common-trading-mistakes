@@ -1,2 +1,59 @@
-{% extends 'base.html' %}<!-- ======================================================== RISK DASHBOARD: profile daily limit + snapshot history. -->
-{% block title %}Risk Dashboard | MarketPulse{% endblock %}{% block content %}<h1 class="h3">Risk Dashboard</h1>{% if profile %}<div class="alert alert-info">Maximum daily loss: {{ profile.max_daily_loss }}</div>{% endif %}<table class="table"><thead><tr><th>Date</th><th>Symbol</th><th>Risk</th><th>Position</th><th>Stop</th></tr></thead><tbody>{% for x in snapshots %}<tr><td>{{ x.created_at }}</td><td>{{ x.symbol }}</td><td>{{ x.risk_percentage }}</td><td>{{ x.recommended_position_size }}</td><td>{{ x.stop_loss_price }}</td></tr>{% empty %}<tr><td colspan="5">No snapshots.</td></tr>{% endfor %}</tbody></table>{% endblock %}
+{% extends 'base.html' %} {# Template inheritance: reuse the shared base layout. #}
+{# ============================================================ #}
+{# RISK DASHBOARD — PROFILE DAILY LIMIT AND SNAPSHOT HISTORY #}
+{# ============================================================ #}
+
+{# ============================================================ #}
+{# 1. BROWSER TITLE #}
+{# ============================================================ #}
+{% block title %} {# Override the title block defined in base.html. #}
+Risk Dashboard | MarketPulse {# Set the browser-tab title. #}
+{% endblock %} {# Close the title block. #}
+
+{# ============================================================ #}
+{# 2. PAGE CONTENT AND HEADING #}
+{# ============================================================ #}
+{% block content %} {# Start the content inserted into the shared layout. #}
+<h1 class="h3">Risk Dashboard</h1> {# Display the main heading using Bootstrap's h3 sizing. #}
+
+{# ============================================================ #}
+{# 3. PROFILE DAILY-LOSS LIMIT #}
+{# ============================================================ #}
+{% if profile %} {# Condition: display the alert only when profile is truthy. #}
+    <div class="alert alert-info">Maximum daily loss: {{ profile.max_daily_loss }}</div> {# Variable lookup: display the profile's stored limit. #}
+{% endif %} {# Finish the profile condition. #}
+
+{# ============================================================ #}
+{# 4. SNAPSHOT TABLE HEADINGS #}
+{# ============================================================ #}
+<table class="table"> {# Open a table styled with Bootstrap's table class. #}
+    <thead> {# Open the table-header section. #}
+        <tr> {# Open the heading row. #}
+            <th>Date</th> {# Label the snapshot creation-date column. #}
+            <th>Symbol</th> {# Label the asset-symbol column. #}
+            <th>Risk</th> {# Label the stored risk-value column. #}
+            <th>Position</th> {# Label the recommended-position column. #}
+            <th>Stop</th> {# Label the stop-price column. #}
+        </tr> {# Close the heading row. #}
+    </thead> {# Close the table-header section. #}
+
+    {# ======================================================== #}
+    {# 5. SNAPSHOT ROWS #}
+    {# ======================================================== #}
+    <tbody> {# Open the table-body section. #}
+        {% for x in snapshots %} {# Loop: assign each supplied snapshot to x in turn. #}
+            <tr> {# Create one row for the current snapshot. #}
+                <td>{{ x.created_at }}</td> {# Display the snapshot's creation timestamp. #}
+                <td>{{ x.symbol }}</td> {# Display its asset symbol. #}
+                <td>{{ x.risk_percentage }}</td> {# Display the stored risk value without percentage conversion. #}
+                <td>{{ x.recommended_position_size }}</td> {# Display its recommended position quantity. #}
+                <td>{{ x.stop_loss_price }}</td> {# Display its stored stop price. #}
+            </tr> {# Close the current snapshot row. #}
+        {% empty %} {# Alternative: display this branch when the loop has no items. #}
+            <tr> {# Open the empty-state row. #}
+                <td colspan="5">No snapshots.</td> {# Span all five columns with the original message. #}
+            </tr> {# Close the empty-state row. #}
+        {% endfor %} {# Finish the snapshot loop and its empty branch. #}
+    </tbody> {# Close the table-body section. #}
+</table> {# Close the snapshot table. #}
+{% endblock %} {# Finish the page-content block. #}

@@ -1,1423 +1,503 @@
-{% extends 'base.html' %}
-
-<!-- ========================================================
-     HOME TEMPLATE
-=========================================================
-
-FRAMEWORK MAPPING:
-
-core/views.py
-        ↓
-home()
-        ↓
-templates/home.html
-        ↓
-base.html
-
-
-PURPOSE:
-
-MarketPulse public landing page and authenticated-user
-overview.
-
-The homepage provides a concise entry point into:
-
-1. Dashboard
-2. Market Data
-3. Strategies
-4. Risk Management
-5. Community
-6. Private Conversations
-
-
-PRIVATE MESSAGING ARCHITECTURE:
-
-community/models.py
-        ↓
-Conversation
-        ↓
-PrivateMessage
-        ↓
-core/views.py
-        ↓
-recent_messages
-unread_messages
-        ↓
-templates/home.html
-        ↓
-community:conversation_detail
-        ↓
-community/views.py
-        ↓
-Shared split-screen Inbox workspace
-
-
-IMPORTANT TRANSITION NOTE:
-
-Older PrivateMessage records may temporarily have:
-
-    conversation = NULL
-
-because they were created before Conversation was added.
-
-For those historical messages, this template retains a
-fallback to:
-
-    community:message_detail
-
-New messages open directly inside the conversation-based
-messaging workspace.
-
-========================================================= -->
-
-
-{% block title %}
-MarketPulse | Trading Decision Support
-{% endblock %}
-
-
-{% block content %}
-
-
-<!-- ========================================================
-     1. MARKETPULSE HERO
-========================================================= -->
-
-<section class="hero p-4 p-md-5 rounded-4 mb-4">
-
-    <div class="row align-items-stretch g-4">
-
-
-        <!-- =================================================
-             HERO INTRODUCTION
-        ================================================== -->
-
-        <div class="col-lg-7">
-
-            <div
-                class="
-                    h-100
-                    d-flex
-                    flex-column
-                    justify-content-center
-                "
-            >
-
-                <span
-                    class="
-                        badge
-                        bg-primary-subtle
-                        text-primary-emphasis
-                        border
-                        border-primary-subtle
-                        mb-3
-                        align-self-start
-                    "
-                >
-
-                    Django + React + MATLAB
-
-                </span>
-
-
-                <h1 class="display-4 fw-bold mb-3">
-
-                    Research markets.<br>
-                    Test strategies.<br>
-                    Manage trading risk.
-
-                </h1>
-
-
-                <p class="lead text-secondary mb-4">
-
-                    A trading decision-support platform for
-                    market research, strategy testing and
-                    risk management.
-
-                </p>
-
-
-                <div>
-
-                    {% if user.is_authenticated %}
-
-                        <a
-                            class="btn btn-primary btn-lg"
-                            href="{% url 'dashboard' %}"
-                        >
-
-                            <i
-                                class="
-                                    fa-solid
-                                    fa-gauge-high
-                                    me-2
-                                "
-                            ></i>
-
-                            Open Dashboard
-
-                        </a>
-
-                    {% else %}
-
-                        <a
-                            class="btn btn-primary btn-lg"
-                            href="{% url 'accounts:register' %}"
-                        >
-
-                            <i
-                                class="
-                                    fa-solid
-                                    fa-user-plus
-                                    me-2
-                                "
-                            ></i>
-
-                            Get Started
-
-                        </a>
-
-                    {% endif %}
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- =================================================
-             TECHNOLOGY STACK
-        ================================================== -->
-
-        <div class="col-lg-5">
-
-            <div
-                class="
-                    card
-                    h-100
-                    border
-                    rounded-4
-                    shadow-sm
-                "
-            >
-
-                <div class="card-body p-4">
-
-
-                    <!-- =====================================
-                         STACK HEADER
-                    ====================================== -->
-
-                    <div
-                        class="
-                            d-flex
-                            align-items-center
-                            gap-2
-                            mb-4
-                        "
-                    >
-
-                        <span
-                            class="
-                                d-inline-flex
-                                align-items-center
-                                justify-content-center
-                                rounded-3
-                                bg-primary-subtle
-                                text-primary-emphasis
-                                border
-                                border-primary-subtle
-                                p-2
-                            "
-                        >
-
-                            <i
-                                class="
-                                    fa-solid
-                                    fa-layer-group
-                                "
-                            ></i>
-
-                        </span>
-
-
-                        <div>
-
-                            <h5 class="mb-0">
-
-                                Technology Stack
-
-                            </h5>
-
-                            <small class="text-secondary">
-
-                                Full-stack architecture
-
-                            </small>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- =====================================
-                         STACK ITEMS
-                    ====================================== -->
-
-                    <div class="vstack gap-3 small">
-
-
-                        <!-- BACKEND -->
-
-                        <div>
-
-                            <div class="fw-semibold mb-1">
-
-                                <i
-                                    class="
-                                        fa-solid
-                                        fa-server
-                                        text-primary
-                                        me-2
-                                    "
-                                ></i>
-
-                                Backend
-
-                            </div>
-
-                            <div class="text-secondary">
-
-                                Django 5.2 + PostgreSQL + DRF
-
-                            </div>
-
-                        </div>
-
-
-                        <!-- FRONTEND -->
-
-                        <div>
-
-                            <div class="fw-semibold mb-1">
-
-                                <i
-                                    class="
-                                        fa-solid
-                                        fa-desktop
-                                        text-primary
-                                        me-2
-                                    "
-                                ></i>
-
-                                Frontend
-
-                            </div>
-
-                            <div class="text-secondary">
-
-                                React + Bootstrap 5 + Chart.js
-
-                            </div>
-
-                        </div>
-
-
-                        <!-- MARKET DATA -->
-
-                        <div>
-
-                            <div class="fw-semibold mb-1">
-
-                                <i
-                                    class="
-                                        fa-solid
-                                        fa-chart-column
-                                        text-primary
-                                        me-2
-                                    "
-                                ></i>
-
-                                Market Data
-
-                            </div>
-
-                            <div class="text-secondary">
-
-                                Alpaca + pandas + NumPy
-
-                            </div>
-
-                        </div>
-
-
-                        <!-- ANALYTICS -->
-
-                        <div>
-
-                            <div class="fw-semibold mb-1">
-
-                                <i
-                                    class="
-                                        fa-solid
-                                        fa-square-root-variable
-                                        text-primary
-                                        me-2
-                                    "
-                                ></i>
-
-                                Analytics
-
-                            </div>
-
-                            <div class="text-secondary">
-
-                                MATLAB Integration
-
-                            </div>
-
-                        </div>
-
-
-                        <!-- SECURITY -->
-
-                        <div>
-
-                            <div class="fw-semibold mb-1">
-
-                                <i
-                                    class="
-                                        fa-solid
-                                        fa-shield-halved
-                                        text-primary
-                                        me-2
-                                    "
-                                ></i>
-
-                                Email & Security
-
-                            </div>
-
-                            <div class="text-secondary">
-
-                                Django Authentication +
-                                Email Service
-
-                            </div>
-
-                        </div>
-
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- ========================================================
-     2. QUICK ACCESS
-========================================================= -->
-
-<div class="row g-3 mb-4">
-
-
-    <!-- ====================================================
-         DASHBOARD
-    ===================================================== -->
-
-    <div class="col-6 col-lg-3">
-
-        <a
-            href="{% url 'dashboard' %}"
-            class="text-decoration-none text-reset"
-        >
-
-            <div class="card shadow-sm h-100">
-
-                <div class="card-body text-center py-4">
-
-                    <div class="mb-3">
-
-                        <span
-                            class="
-                                d-inline-flex
-                                align-items-center
-                                justify-content-center
-                                rounded-3
-                                bg-primary-subtle
-                                text-primary-emphasis
-                                border
-                                border-primary-subtle
-                                p-3
-                            "
-                        >
-
-                            <i
-                                class="
-                                    fa-solid
-                                    fa-gauge-high
-                                "
-                            ></i>
-
-                        </span>
-
-                    </div>
-
-
-                    <h5 class="mb-1">
-
-                        Dashboard
-
-                    </h5>
-
-
-                    <small class="text-secondary">
-
-                        Overview & Alerts
-
-                    </small>
-
-                </div>
-
-            </div>
-
-        </a>
-
-    </div>
-
-
-    <!-- ====================================================
-         MARKET DATA
-    ===================================================== -->
-
-    <div class="col-6 col-lg-3">
-
-        <a
-            href="{% url 'data_management:import' %}"
-            class="text-decoration-none text-reset"
-        >
-
-            <div class="card shadow-sm h-100">
-
-                <div class="card-body text-center py-4">
-
-                    <div class="mb-3">
-
-                        <span
-                            class="
-                                d-inline-flex
-                                align-items-center
-                                justify-content-center
-                                rounded-3
-                                bg-primary-subtle
-                                text-primary-emphasis
-                                border
-                                border-primary-subtle
-                                p-3
-                            "
-                        >
-
-                            <i
-                                class="
-                                    fa-solid
-                                    fa-database
-                                "
-                            ></i>
-
-                        </span>
-
-                    </div>
-
-
-                    <h5 class="mb-1">
-
-                        Market Data
-
-                    </h5>
-
-
-                    <small class="text-secondary">
-
-                        Research & Market Conditions
-
-                    </small>
-
-                </div>
-
-            </div>
-
-        </a>
-
-    </div>
-
-
-    <!-- ====================================================
-         STRATEGIES
-    ===================================================== -->
-
-    <div class="col-6 col-lg-3">
-
-        <a
-            href="{% url 'strategy_builder:list' %}"
-            class="text-decoration-none text-reset"
-        >
-
-            <div class="card shadow-sm h-100">
-
-                <div class="card-body text-center py-4">
-
-                    <div class="mb-3">
-
-                        <span
-                            class="
-                                d-inline-flex
-                                align-items-center
-                                justify-content-center
-                                rounded-3
-                                bg-primary-subtle
-                                text-primary-emphasis
-                                border
-                                border-primary-subtle
-                                p-3
-                            "
-                        >
-
-                            <i
-                                class="
-                                    fa-solid
-                                    fa-chart-line
-                                "
-                            ></i>
-
-                        </span>
-
-                    </div>
-
-
-                    <h5 class="mb-1">
-
-                        Strategies
-
-                    </h5>
-
-
-                    <small class="text-secondary">
-
-                        Build & Backtest
-
-                    </small>
-
-                </div>
-
-            </div>
-
-        </a>
-
-    </div>
-
-
-    <!-- ====================================================
-         RISK MANAGEMENT
-    ===================================================== -->
-
-    <div class="col-6 col-lg-3">
-
-        <a
-            href="{% url 'risk_management:calculator' %}"
-            class="text-decoration-none text-reset"
-        >
-
-            <div class="card shadow-sm h-100">
-
-                <div class="card-body text-center py-4">
-
-                    <div class="mb-3">
-
-                        <span
-                            class="
-                                d-inline-flex
-                                align-items-center
-                                justify-content-center
-                                rounded-3
-                                bg-primary-subtle
-                                text-primary-emphasis
-                                border
-                                border-primary-subtle
-                                p-3
-                            "
-                        >
-
-                            <i
-                                class="
-                                    fa-solid
-                                    fa-shield-halved
-                                "
-                            ></i>
-
-                        </span>
-
-                    </div>
-
-
-                    <h5 class="mb-1">
-
-                        Risk
-
-                    </h5>
-
-
-                    <small class="text-secondary">
-
-                        Plan & Measure Risk
-
-                    </small>
-
-                </div>
-
-            </div>
-
-        </a>
-
-    </div>
-
-</div>
-
-
-<!-- ========================================================
-     3. COMMUNITY & PRIVATE MESSAGING
-========================================================= -->
-
-{% if user.is_authenticated %}
-
-<div class="row g-4">
-
-
-    <!-- ====================================================
-         COMMUNITY PULSE
-    ===================================================== -->
-
-    <div class="col-lg-8">
-
-        <div class="card shadow-sm h-100">
-
-
-            <!-- =============================================
-                 COMMUNITY HEADER
-            ============================================== -->
-
-            <div
-                class="
-                    card-header
-                    d-flex
-                    flex-column
-                    flex-md-row
-                    justify-content-between
-                    align-items-md-center
-                    gap-2
-                "
-            >
-
-                <div>
-
-                    <h5 class="mb-1">
-
-                        Community Pulse
-
-                    </h5>
-
-
-                    <small class="text-secondary">
-
-                        Latest market observations and
-                        discussions shared by MarketPulse users.
-
-                    </small>
-
-                </div>
-
-
-                <a
-                    href="{% url 'community:feed' %}"
-                    class="btn btn-sm btn-outline-primary"
-                >
-
-                    <i class="fa-solid fa-users me-1"></i>
-
-                    View Community
-
-                </a>
-
-            </div>
-
-
-            <!-- =============================================
-                 COMMUNITY CONTENT
-            ============================================== -->
-
-            <div class="card-body">
-
-
-                {% for post in recent_posts %}
-
-
-                    <div class="border-bottom pb-3 mb-3">
-
-
-                        <!-- =================================
-                             AUTHOR / TYPE / TIME
-                        ================================== -->
-
-                        <div
-                            class="
-                                d-flex
-                                flex-column
-                                flex-sm-row
-                                justify-content-between
-                                gap-2
-                            "
-                        >
-
-                            <div>
-
-                                <strong>
-
-                                    {{ post.author.username }}
-
-                                </strong>
-
-
-                                <span
-                                    class="
-                                        badge
-                                        bg-secondary-subtle
-                                        text-secondary-emphasis
-                                        border
-                                        ms-2
-                                    "
-                                >
-
-                                    {{ post.get_post_type_display }}
-
-                                </span>
-
-                            </div>
-
-
-                            <small class="text-secondary">
-
-                                {{ post.created_at|timesince }}
-                                ago
-
-                            </small>
-
-                        </div>
-
-
-                        <!-- =================================
-                             OPTIONAL TICKER
-                        ================================== -->
-
-                        {% if post.ticker %}
-
-                            <div class="mt-2">
-
-                                <span class="badge bg-primary">
-
-                                    {{ post.ticker }}
-
-                                </span>
-
-                            </div>
-
-                        {% endif %}
-
-
-                        <!-- =================================
-                             CONTENT
-                        ================================== -->
-
-                        <p class="mt-3 mb-0">
-
-                            {{ post.content|truncatechars:220 }}
-
-                        </p>
-
-                    </div>
-
-
-                {% empty %}
-
-
-                    <!-- =====================================
-                         EMPTY COMMUNITY
-                    ====================================== -->
-
-                    <div class="text-center py-4">
-
-                        <i
-                            class="
-                                fa-regular
-                                fa-comments
-                                fs-2
-                                text-secondary
-                                mb-3
-                            "
-                        ></i>
-
-
-                        <h6>
-
-                            No Community Posts Yet
-
-                        </h6>
-
-
-                        <p class="text-secondary mb-3">
-
-                            Community posts will appear here
-                            when MarketPulse users begin sharing
-                            market observations.
-
-                        </p>
-
-
-                        <a
-                            href="{% url 'community:feed' %}"
-                            class="btn btn-primary"
-                        >
-
-                            Create the First Post
-
-                        </a>
-
-                    </div>
-
-
-                {% endfor %}
-
-
-                <!-- =========================================
-                     COMMUNITY ACTIONS
-                ========================================== -->
-
-                {% if recent_posts %}
-
-                    <div class="d-flex flex-wrap gap-2 mt-3">
-
-                        <a
-                            href="{% url 'community:feed' %}"
-                            class="btn btn-outline-primary"
-                        >
-
-                            View All Posts
-
-                        </a>
-
-
-                        <a
-                            href="{% url 'community:feed' %}"
-                            class="btn btn-primary"
-                        >
-
-                            Share an Update
-
-                        </a>
-
-                    </div>
-
-                {% endif %}
-
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- ====================================================
-         PRIVATE MESSAGES
-    ===================================================== -->
-
-    <div class="col-lg-4">
-
-        <div class="card shadow-sm h-100">
-
-
-            <!-- =============================================
-                 MESSAGE HEADER
-            ============================================== -->
-
-            <div
-                class="
-                    card-header
-                    d-flex
-                    justify-content-between
-                    align-items-center
-                    gap-2
-                "
-            >
-
-                <div>
-
-                    <h5 class="mb-0">
-
-                        Messages
-
-                    </h5>
-
-                </div>
-
-
-                {% if unread_messages %}
-
-                    <span class="badge bg-primary">
-
-                        {{ unread_messages }} unread
-
-                    </span>
-
-                {% else %}
-
-                    <span
-                        class="
-                            badge
-                            bg-secondary-subtle
-                            text-secondary-emphasis
-                            border
-                        "
-                    >
-
-                        0 unread
-
-                    </span>
-
-                {% endif %}
-
-            </div>
-
-
-            <!-- =============================================
-                 MESSAGE CONTENT
-            ============================================== -->
-
-            <div class="card-body">
-
-
-                <!-- =========================================
-                     RECENT PRIVATE MESSAGES
-                ========================================== -->
-
-                {% for message in recent_messages %}
-
-
-                    <!-- =====================================
-                         MESSAGE LINK
-                         
-                         New messages:
-                         open conversation thread directly.
-
-                         Legacy messages with conversation=NULL:
-                         use message_detail compatibility view.
-                    ====================================== -->
-
-                    <a
-                        href="
-                            {% if message.conversation_id %}
-                                {% url 'community:conversation_detail' message.conversation_id %}
-                            {% else %}
-                                {% url 'community:message_detail' message.pk %}
-                            {% endif %}
-                        "
-                        class="text-decoration-none text-reset"
-                    >
-
-                        <div class="border-bottom pb-3 mb-3">
-
-
-                            <!-- =============================
-                                 USER / UNREAD
-                            ============================== -->
-
-                            <div
-                                class="
-                                    d-flex
-                                    justify-content-between
-                                    align-items-start
-                                    gap-2
-                                "
-                            >
-
-                                <div
-                                    class="
-                                        d-flex
-                                        align-items-center
-                                        gap-2
-                                        min-w-0
-                                    "
-                                >
-
-                                    <span
-                                        class="
-                                            d-inline-flex
-                                            align-items-center
-                                            justify-content-center
-                                            rounded-circle
-                                            bg-primary-subtle
-                                            text-primary-emphasis
-                                            border
-                                            border-primary-subtle
-                                            flex-shrink-0
-                                        "
-                                        style="
-                                            width: 32px;
-                                            height: 32px;
-                                        "
-                                    >
-
-                                        {% if message.sender == request.user %}
-
-                                            {% if message.recipient %}
-
-                                                {{ message.recipient.username|slice:":1"|upper }}
-
-                                            {% else %}
-
-                                                <i class="fa-solid fa-user"></i>
-
-                                            {% endif %}
-
-                                        {% else %}
-
-                                            {{ message.sender.username|slice:":1"|upper }}
-
-                                        {% endif %}
-
-                                    </span>
-
-
-                                    <div class="min-w-0">
-
-
-                                        <strong class="d-block">
-
-
-                                            {% if message.sender == request.user %}
-
-                                                {% if message.recipient %}
-
-                                                    {{ message.recipient.username }}
-
-                                                {% else %}
-
-                                                    Conversation
-
-                                                {% endif %}
-
-                                            {% else %}
-
-                                                {{ message.sender.username }}
-
-                                            {% endif %}
-
-
-                                        </strong>
-
-
-                                        <small class="text-secondary">
-
-
-                                            {% if message.sender == request.user %}
-
-                                                You sent a message
-
-                                            {% else %}
-
-                                                Private conversation
-
-                                            {% endif %}
-
-
-                                        </small>
-
-
-                                    </div>
-
-                                </div>
-
-
-                                {% if message.recipient == request.user and not message.is_read %}
-
-                                    <span class="badge bg-primary">
-
-                                        New
-
-                                    </span>
-
-                                {% endif %}
-
-                            </div>
-
-
-                            <!-- =============================
-                                 MESSAGE PREVIEW
-                            ============================== -->
-
-                            <div class="mt-2">
-
-                                {{ message.body|truncatechars:75 }}
-
-                            </div>
-
-
-                            <!-- =============================
-                                 TIME
-                            ============================== -->
-
-                            <small class="text-secondary">
-
-                                {{ message.created_at|timesince }}
-                                ago
-
-                            </small>
-
-
-                        </div>
-
-                    </a>
-
-
-                {% empty %}
-
-
-                    <!-- =====================================
-                         EMPTY MESSAGE STATE
-                    ====================================== -->
-
-                    <div class="text-center py-3">
-
-                        <i
-                            class="
-                                fa-regular
-                                fa-comments
-                                fs-3
-                                text-secondary
-                                mb-3
-                            "
-                        ></i>
-
-
-                        <h6>
-
-                            No Conversations Yet
-
-                        </h6>
-
-
-                        <p class="text-secondary">
-
-                            Private conversations with other
-                            MarketPulse users will appear here.
-
-                        </p>
-
-                    </div>
-
-
-                {% endfor %}
-
-
-                <!-- =========================================
-                     MESSAGE ACTIONS
-                ========================================== -->
-
-                <div class="d-grid gap-2 mt-3">
-
-                    <a
-                        href="{% url 'community:inbox' %}"
-                        class="btn btn-outline-primary"
-                    >
-
-                        <i class="fa-regular fa-comments me-1"></i>
-
-                        Open Messages
-
-                    </a>
-
-
-                    <a
-                        href="{% url 'community:new_conversation' %}"
-                        class="btn btn-primary"
-                    >
-
-                        <i class="fa-solid fa-plus me-1"></i>
-
-                        New Conversation
-
-                    </a>
-
-                </div>
-
-
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-
-{% endif %}
-
-
-<!-- ========================================================
-     4. ABOUT MARKETPULSE
-========================================================= -->
-
-<div class="card shadow-sm mt-4 mb-4">
-
-    <div class="card-body p-4">
-
-
-        <div class="row g-4 align-items-start">
-
-
-            <!-- =================================================
-                 ABOUT
-            ================================================== -->
-
-            <div class="col-lg-8">
-
-                <h4 class="mb-2">
-
-                    About MarketPulse
-
-                </h4>
-
-
-                <p class="text-secondary mb-0">
-
-                    MarketPulse is an educational trading
-                    decision-support platform that combines
-                    market research, strategy testing, risk
-                    management and user collaboration.
-
-                    Its purpose is to encourage a more structured
-                    approach to evaluating trading decisions,
-                    rather than relying only on price movements
-                    or historical backtest performance.
-
-                </p>
-
-            </div>
-
-
-            <!-- =================================================
-                 MAIN PURPOSE
-            ================================================== -->
-
-            <div class="col-lg-4">
-
-                <div
-                    class="
-                        border
-                        rounded-3
-                        p-3
-                        bg-body-tertiary
-                    "
-                >
-
-                    <small
-                        class="
-                            text-secondary
-                            d-block
-                            mb-2
-                        "
-                    >
-
-                        Main Purpose
-
-                    </small>
-
-
-                    <strong>
-
-                        Research • Test • Analyse •
-                        Manage Risk • Communicate
-
-                    </strong>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- =================================================
-             EDUCATIONAL NOTICE
-        ================================================== -->
-
-        <hr class="my-4">
-
-
-        <div
-            class="
-                d-flex
-                align-items-start
-                gap-2
-                small
-                text-secondary
-            "
-        >
-
-            <i
-                class="
-                    fa-solid
-                    fa-circle-info
-                    text-warning
-                    mt-1
-                "
-            ></i>
-
-
-            <p class="mb-0">
-
-                <strong class="text-body">
-
-                    Educational Notice:
-
-                </strong>
-
-                MarketPulse is designed for educational and
-                decision-support purposes.
-
-                Market information, backtesting results,
-                strategy analysis, risk calculations and
-                user-generated content do not constitute
-                personalised financial, investment or trading
-                advice.
-
-                Users remain responsible for conducting their
-                own research and evaluating risk before making
-                financial decisions.
-
-            </p>
-
-        </div>
-
-    </div>
-
-</div>
-
-
-{% endblock %}
+{% extends 'base.html' %} {# I inherit the shared page layout. #}
+
+{% comment %}
+============================================================
+HOME TEMPLATE — PURPOSE AND FRAMEWORK
+============================================================
+Purpose: display the MarketPulse homepage.
+
+Framework interaction:
+The home view in core/views.py renders this template.
+This template fills the title and content blocks in base.html.
+The backend supplies user, request, recent_posts,
+recent_messages and unread_messages.
+
+HTML structures the page.
+Bootstrap classes style its layout.
+Font Awesome classes identify icons.
+The React and MATLAB labels describe the wider project;
+this file does not execute React or MATLAB code.
+
+Concepts: inheritance, blocks, variables, attribute lookup,
+conditions, loops, filters, comparisons and Boolean logic.
+
+Messaging:
+A message with conversation_id links to conversation_detail.
+A message without it uses message_detail as a fallback.
+Backend views must enforce access to private messages.
+
+Django comments are removed before HTML reaches the browser.
+============================================================
+{% endcomment %}
+
+{% block title %} {# I begin the inherited page-title block. #}
+MarketPulse | Trading Decision Support{# I supply the title text. #}
+{% endblock %} {# I close the title block. #}
+
+{% block content %} {# I begin the homepage content block. #}
+
+{# ======================================================== #}
+{# 1. HERO — INTRODUCTION AND AUTHENTICATION                 #}
+{# ======================================================== #}
+<section class="hero p-4 p-md-5 rounded-4 mb-4"> {# I group the introduction with responsive padding and rounded corners. #}
+    <div class="row align-items-stretch g-4"> {# I create a Bootstrap grid row with gutters. #}
+        <div class="col-lg-7"> {# I allocate seven grid columns at large widths. #}
+            <div class="h-100 d-flex flex-column justify-content-center"> {# I stack and vertically centre the introduction. #}
+                <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle mb-3 align-self-start"> {# I style the stack label as a badge. #}
+                    Django + React + MATLAB{# I display descriptive text, not executable integrations. #}
+                </span> {# I close the badge. #}
+                <h1 class="display-4 fw-bold mb-3"> {# I create the main heading with large, bold text. #}
+                    Research markets.<br>{# I display a phrase and insert a line break. #}
+                    Test strategies.<br>{# I display another phrase and insert a line break. #}
+                    Manage trading risk.{# I complete the heading text. #}
+                </h1> {# I close the main heading. #}
+                <p class="lead text-secondary mb-4"> {# I begin the supporting description. #}
+                    A trading decision-support platform for{# I describe the platform. #}
+                    market research, strategy testing and{# I continue the description. #}
+                    risk management.{# I complete the description. #}
+                </p> {# I close the paragraph. #}
+                <div> {# I group the main navigation action. #}
+                    {% if user.is_authenticated %} {# Selection: I check the supplied user's authentication status. #}
+                        <a class="btn btn-primary btn-lg" href="{% url 'dashboard' %}"> {# I resolve a named URL and style the link as a button. #}
+                            <i class="fa-solid fa-gauge-high me-2"></i> {# I display the dashboard icon with spacing. #}
+                            Open Dashboard{# I display the signed-in user's action label. #}
+                        </a> {# I close the dashboard link. #}
+                    {% else %} {# I choose this branch for an unauthenticated user. #}
+                        <a class="btn btn-primary btn-lg" href="{% url 'accounts:register' %}"> {# I resolve register within the accounts namespace. #}
+                            <i class="fa-solid fa-user-plus me-2"></i> {# I display the registration icon. #}
+                            Get Started{# I display the visitor's action label. #}
+                        </a> {# I close the registration link. #}
+                    {% endif %} {# I close the condition; destination views enforce their own permissions. #}
+                </div> {# I close the action group. #}
+            </div> {# I close the introduction container. #}
+        </div> {# I close the introduction column. #}
+
+        {# ================================================= #}
+        {# 1.1 TECHNOLOGY STACK — STATIC PROJECT INFORMATION  #}
+        {# ================================================= #}
+        <div class="col-lg-5"> {# I allocate the remaining five columns at large widths. #}
+            <div class="card h-100 border rounded-4 shadow-sm"> {# I create a full-height card with a border and shadow. #}
+                <div class="card-body p-4"> {# I create its padded body. #}
+                    <div class="d-flex align-items-center gap-2 mb-4"> {# I align the header icon and text using Flexbox. #}
+                        <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary-emphasis border border-primary-subtle p-2"> {# I centre the icon inside a padded wrapper. #}
+                            <i class="fa-solid fa-layer-group"></i> {# I display the technology-stack icon. #}
+                        </span> {# I close the icon wrapper. #}
+                        <div> {# I group the stack heading and subtitle. #}
+                            <h5 class="mb-0"> {# I begin a heading without bottom margin. #}
+                                Technology Stack{# I display the card title. #}
+                            </h5> {# I close the heading. #}
+                            <small class="text-secondary"> {# I style the supporting text. #}
+                                Full-stack architecture{# I display the subtitle. #}
+                            </small> {# I close the subtitle. #}
+                        </div> {# I close the header-text group. #}
+                    </div> {# I close the stack header. #}
+                    <div class="vstack gap-3 small"> {# I stack the technology descriptions vertically. #}
+                        {# BACKEND #}
+                        <div> {# I group backend information. #}
+                            <div class="fw-semibold mb-1"> {# I style its label with semibold text. #}
+                                <i class="fa-solid fa-server text-primary me-2"></i> {# I display the server icon. #}
+                                Backend{# I display the category name. #}
+                            </div> {# I close the category label. #}
+                            <div class="text-secondary"> {# I begin its descriptive text. #}
+                                Django 5.2 + PostgreSQL + DRF{# I name the backend framework, database and API framework. #}
+                            </div> {# I close the description. #}
+                        </div> {# I close the backend item. #}
+                        {# FRONTEND #}
+                        <div> {# I group frontend information. #}
+                            <div class="fw-semibold mb-1"> {# I style its category label. #}
+                                <i class="fa-solid fa-desktop text-primary me-2"></i> {# I display the desktop icon. #}
+                                Frontend{# I display the category name. #}
+                            </div> {# I close the category label. #}
+                            <div class="text-secondary"> {# I begin its description. #}
+                                React + Bootstrap 5 + Chart.js{# I describe the wider stack; this text does not create components or charts. #}
+                            </div> {# I close the description. #}
+                        </div> {# I close the frontend item. #}
+                        {# MARKET DATA #}
+                        <div> {# I group market-data information. #}
+                            <div class="fw-semibold mb-1"> {# I style its category label. #}
+                                <i class="fa-solid fa-chart-column text-primary me-2"></i> {# I display the market-data icon. #}
+                                Market Data{# I display the category name. #}
+                            </div> {# I close the label. #}
+                            <div class="text-secondary"> {# I begin its description. #}
+                                Alpaca + pandas + NumPy{# I name data-provider and processing technologies. #}
+                            </div> {# I close the description. #}
+                        </div> {# I close the market-data item. #}
+                        {# ANALYTICS #}
+                        <div> {# I group analytics information. #}
+                            <div class="fw-semibold mb-1"> {# I style its category label. #}
+                                <i class="fa-solid fa-square-root-variable text-primary me-2"></i> {# I display the mathematical icon. #}
+                                Analytics{# I display the category name. #}
+                            </div> {# I close the label. #}
+                            <div class="text-secondary"> {# I begin its description. #}
+                                MATLAB Integration{# I display integration information; no MATLAB calculation runs here. #}
+                            </div> {# I close the description. #}
+                        </div> {# I close the analytics item. #}
+                        {# SECURITY #}
+                        <div> {# I group security information. #}
+                            <div class="fw-semibold mb-1"> {# I style its category label. #}
+                                <i class="fa-solid fa-shield-halved text-primary me-2"></i> {# I display the security icon. #}
+                                Email & Security{# I display the category name. #}
+                            </div> {# I close the label. #}
+                            <div class="text-secondary"> {# I begin its description. #}
+                                Django Authentication +{# I name the authentication framework. #}
+                                Email Service{# I name the email capability. #}
+                            </div> {# I close the description. #}
+                        </div> {# I close the security item. #}
+                    </div> {# I close the technology stack. #}
+                </div> {# I close the card body. #}
+            </div> {# I close the technology card. #}
+        </div> {# I close the technology column. #}
+    </div> {# I close the hero row. #}
+</section> {# I close the hero section. #}
+
+{# ======================================================== #}
+{# 2. QUICK ACCESS — LINKS TO PROJECT APPLICATIONS          #}
+{# ======================================================== #}
+<div class="row g-3 mb-4"> {# I create a responsive navigation row with spacing. #}
+    {# DASHBOARD #}
+    <div class="col-6 col-lg-3"> {# Responsive layout: half-width normally, quarter-width at large sizes. #}
+        <a href="{% url 'dashboard' %}" class="text-decoration-none text-reset"> {# I link to the dashboard without default link decoration. #}
+            <div class="card shadow-sm h-100"> {# I create the navigation card. #}
+                <div class="card-body text-center py-4"> {# I centre and vertically pad its content. #}
+                    <div class="mb-3"> {# I add spacing below the icon group. #}
+                        <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary-emphasis border border-primary-subtle p-3"> {# I style and centre the icon wrapper. #}
+                            <i class="fa-solid fa-gauge-high"></i> {# I display the dashboard icon. #}
+                        </span> {# I close the icon wrapper. #}
+                    </div> {# I close the icon group. #}
+                    <h5 class="mb-1"> {# I begin the destination heading. #}
+                        Dashboard{# I display the destination name. #}
+                    </h5> {# I close the heading. #}
+                    <small class="text-secondary"> {# I begin its supporting label. #}
+                        Overview & Alerts{# I describe the destination. #}
+                    </small> {# I close the supporting label. #}
+                </div> {# I close the card body. #}
+            </div> {# I close the card. #}
+        </a> {# I close the dashboard link. #}
+    </div> {# I close the dashboard column. #}
+    {# MARKET DATA #}
+    <div class="col-6 col-lg-3"> {# I create the responsive market-data column. #}
+        <a href="{% url 'data_management:import' %}" class="text-decoration-none text-reset"> {# I resolve the import route in the data_management namespace. #}
+            <div class="card shadow-sm h-100"> {# I create the market-data card. #}
+                <div class="card-body text-center py-4"> {# I centre and pad its content. #}
+                    <div class="mb-3"> {# I add space below the icon group. #}
+                        <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary-emphasis border border-primary-subtle p-3"> {# I style and centre the icon wrapper. #}
+                            <i class="fa-solid fa-database"></i> {# I display the database icon. #}
+                        </span> {# I close the icon wrapper. #}
+                    </div> {# I close the icon group. #}
+                    <h5 class="mb-1"> {# I begin the destination heading. #}
+                        Market Data{# I display the destination name. #}
+                    </h5> {# I close the heading. #}
+                    <small class="text-secondary"> {# I begin its supporting label. #}
+                        Research & Market Conditions{# I describe the destination. #}
+                    </small> {# I close the supporting label. #}
+                </div> {# I close the card body. #}
+            </div> {# I close the card. #}
+        </a> {# I close the market-data link. #}
+    </div> {# I close the market-data column. #}
+    {# STRATEGIES #}
+    <div class="col-6 col-lg-3"> {# I create the responsive strategies column. #}
+        <a href="{% url 'strategy_builder:list' %}" class="text-decoration-none text-reset"> {# I resolve the strategy list route. #}
+            <div class="card shadow-sm h-100"> {# I create the strategies card. #}
+                <div class="card-body text-center py-4"> {# I centre and pad its content. #}
+                    <div class="mb-3"> {# I add space below the icon group. #}
+                        <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary-emphasis border border-primary-subtle p-3"> {# I style and centre the icon wrapper. #}
+                            <i class="fa-solid fa-chart-line"></i> {# I display the strategy icon. #}
+                        </span> {# I close the icon wrapper. #}
+                    </div> {# I close the icon group. #}
+                    <h5 class="mb-1"> {# I begin the destination heading. #}
+                        Strategies{# I display the destination name. #}
+                    </h5> {# I close the heading. #}
+                    <small class="text-secondary"> {# I begin its supporting label. #}
+                        Build & Backtest{# I describe the destination's workflow. #}
+                    </small> {# I close the supporting label. #}
+                </div> {# I close the card body. #}
+            </div> {# I close the card. #}
+        </a> {# I close the strategies link. #}
+    </div> {# I close the strategies column. #}
+    {# RISK MANAGEMENT #}
+    <div class="col-6 col-lg-3"> {# I create the responsive risk column. #}
+        <a href="{% url 'risk_management:calculator' %}" class="text-decoration-none text-reset"> {# I resolve the risk-calculator route. #}
+            <div class="card shadow-sm h-100"> {# I create the risk card. #}
+                <div class="card-body text-center py-4"> {# I centre and pad its content. #}
+                    <div class="mb-3"> {# I add space below the icon group. #}
+                        <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary-emphasis border border-primary-subtle p-3"> {# I style and centre the icon wrapper. #}
+                            <i class="fa-solid fa-shield-halved"></i> {# I display the risk icon. #}
+                        </span> {# I close the icon wrapper. #}
+                    </div> {# I close the icon group. #}
+                    <h5 class="mb-1"> {# I begin the destination heading. #}
+                        Risk{# I display the destination name. #}
+                    </h5> {# I close the heading. #}
+                    <small class="text-secondary"> {# I begin its supporting label. #}
+                        Plan & Measure Risk{# I describe the destination. #}
+                    </small> {# I close the supporting label. #}
+                </div> {# I close the card body. #}
+            </div> {# I close the card. #}
+        </a> {# I close the risk link. #}
+    </div> {# I close the risk column. #}
+</div> {# I close the quick-access row. #}
+
+{# ======================================================== #}
+{# 3. COMMUNITY — CONDITIONS, LOOPS AND DISPLAY FILTERS     #}
+{# ======================================================== #}
+{% if user.is_authenticated %} {# I render community and messages only for signed-in users. #}
+<div class="row g-4"> {# I create a responsive row for both panels. #}
+    <div class="col-lg-8"> {# I allocate eight columns to community at large widths. #}
+        <div class="card shadow-sm h-100"> {# I create the community card. #}
+            <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2"> {# I stack the header on smaller screens and arrange it horizontally from medium widths. #}
+                <div> {# I group the community heading and description. #}
+                    <h5 class="mb-1"> {# I begin the panel heading. #}
+                        Community Pulse{# I display the title. #}
+                    </h5> {# I close the heading. #}
+                    <small class="text-secondary"> {# I begin supporting text. #}
+                        Latest market observations and{# I describe the community content. #}
+                        discussions shared by MarketPulse users.{# I complete the description. #}
+                    </small> {# I close the supporting text. #}
+                </div> {# I close the header-text group. #}
+                <a href="{% url 'community:feed' %}" class="btn btn-sm btn-outline-primary"> {# I create a styled link to the community feed. #}
+                    <i class="fa-solid fa-users me-1"></i> {# I display the users icon. #}
+                    View Community{# I display the action label. #}
+                </a> {# I close the community link. #}
+            </div> {# I close the card header. #}
+            <div class="card-body"> {# I begin the community content area. #}
+                {% for post in recent_posts %} {# Iteration: I repeat the markup for each supplied post. #}
+                    <div class="border-bottom pb-3 mb-3"> {# I separate each post with a border and spacing. #}
+                        {# AUTHOR, TYPE AND TIME #}
+                        <div class="d-flex flex-column flex-sm-row justify-content-between gap-2"> {# I arrange metadata responsively using Flexbox. #}
+                            <div> {# I group author and post type. #}
+                                <strong> {# I emphasise the author's name. #}
+                                    {{ post.author.username }}{# Attribute lookup: I access the author's username. #}
+                                </strong> {# I close the emphasis. #}
+                                <span class="badge bg-secondary-subtle text-secondary-emphasis border ms-2"> {# I style the post-type badge. #}
+                                    {{ post.get_post_type_display }}{# I display the readable choices label; Django resolves the callable without parentheses. #}
+                                </span> {# I close the badge. #}
+                            </div> {# I close the author-and-type group. #}
+                            <small class="text-secondary"> {# I begin the time display. #}
+                                {{ post.created_at|timesince }}{# Filter: I format elapsed time from the creation date. #}
+                                ago{# I append a plain-text suffix. #}
+                            </small> {# I close the time display. #}
+                        </div> {# I close the metadata row. #}
+                        {# OPTIONAL TICKER #}
+                        {% if post.ticker %} {# Truthiness: I show the ticker when it has a value. #}
+                            <div class="mt-2"> {# I add top spacing. #}
+                                <span class="badge bg-primary"> {# I create a ticker badge. #}
+                                    {{ post.ticker }}{# I display the ticker variable. #}
+                                </span> {# I close the badge. #}
+                            </div> {# I close the ticker container. #}
+                        {% endif %} {# I close the ticker condition. #}
+                        {# POST PREVIEW #}
+                        <p class="mt-3 mb-0"> {# I begin the post-preview paragraph. #}
+                            {{ post.content|truncatechars:220 }}{# Filter argument: I limit the displayed preview to 220 characters, including any truncation marker. #}
+                        </p> {# I close the preview; the stored content is unchanged. #}
+                    </div> {# I close this post container. #}
+                {% empty %} {# I handle a collection with no posts. #}
+                    <div class="text-center py-4"> {# I centre and pad the empty state. #}
+                        <i class="fa-regular fa-comments fs-2 text-secondary mb-3"></i> {# I display the empty-community icon. #}
+                        <h6> {# I begin its heading. #}
+                            No Community Posts Yet{# I explain why the list is empty. #}
+                        </h6> {# I close the heading. #}
+                        <p class="text-secondary mb-3"> {# I begin the empty-state description. #}
+                            Community posts will appear here{# I explain where posts will appear. #}
+                            when MarketPulse users begin sharing{# I continue the description. #}
+                            market observations.{# I complete the description. #}
+                        </p> {# I close the paragraph. #}
+                        <a href="{% url 'community:feed' %}" class="btn btn-primary"> {# I link to the feed; clicking does not itself create a post. #}
+                            Create the First Post{# I display the action label. #}
+                        </a> {# I close the link. #}
+                    </div> {# I close the empty state. #}
+                {% endfor %} {# I close the post loop and its empty branch. #}
+                {# COMMUNITY ACTIONS #}
+                {% if recent_posts %} {# I show additional links when the supplied collection is nonempty. #}
+                    <div class="d-flex flex-wrap gap-2 mt-3"> {# I arrange actions with wrapping and spacing. #}
+                        <a href="{% url 'community:feed' %}" class="btn btn-outline-primary"> {# I link to the community feed. #}
+                            View All Posts{# I display the link label. #}
+                        </a> {# I close the all-posts link. #}
+                        <a href="{% url 'community:feed' %}" class="btn btn-primary"> {# I send this action to the same feed route. #}
+                            Share an Update{# I display the sharing label. #}
+                        </a> {# I close the share-update link. #}
+                    </div> {# I close the action group. #}
+                {% endif %} {# I close the collection condition. #}
+            </div> {# I close the community card body. #}
+        </div> {# I close the community card. #}
+    </div> {# I close the community column. #}
+
+    {# ==================================================== #}
+    {# 3.1 PRIVATE MESSAGES — ROUTING AND BOOLEAN LOGIC      #}
+    {# ==================================================== #}
+    <div class="col-lg-4"> {# I allocate four columns to messages at large widths. #}
+        <div class="card shadow-sm h-100"> {# I create the messages card. #}
+            <div class="card-header d-flex justify-content-between align-items-center gap-2"> {# I separate the title and unread badge using Flexbox. #}
+                <div> {# I group the title. #}
+                    <h5 class="mb-0"> {# I begin the message heading. #}
+                        Messages{# I display its title. #}
+                    </h5> {# I close the heading. #}
+                </div> {# I close the title group. #}
+                {% if unread_messages %} {# I check the truthiness of the supplied unread count. #}
+                    <span class="badge bg-primary"> {# I create an unread-count badge. #}
+                        {{ unread_messages }} unread{# I display the count supplied by the backend. #}
+                    </span> {# I close the badge. #}
+                {% else %} {# I use a fallback when the count is false or absent. #}
+                    <span class="badge bg-secondary-subtle text-secondary-emphasis border"> {# I create a secondary badge. #}
+                        0 unread{# I display the fixed fallback text. #}
+                    </span> {# I close the fallback badge. #}
+                {% endif %} {# I close the unread-count condition. #}
+            </div> {# I close the message header. #}
+            <div class="card-body"> {# I begin the message-preview area. #}
+                {% for message in recent_messages %} {# I iterate over messages supplied by the backend. #}
+                    {# MESSAGES WITH CONVERSATIONS USE THE THREAD; LEGACY MESSAGES USE A FALLBACK. #}
+                    <a {# I begin a clickable message preview. #}
+                        href="{# I begin the destination attribute. #}
+                            {% if message.conversation_id %} {# I check whether a conversation association exists. #}
+                                {% url 'community:conversation_detail' message.conversation_id %} {# I pass the conversation ID to the named route. #}
+                            {% else %} {# I handle a message without a conversation ID. #}
+                                {% url 'community:message_detail' message.pk %} {# I pass its primary key to the compatibility route. #}
+                            {% endif %} {# I close the destination-selection condition. #}
+                        "{# I finish the destination attribute. #}
+                        class="text-decoration-none text-reset"{# I preserve normal text appearance. #}
+                    > {# I finish the opening hyperlink. #}
+                        <div class="border-bottom pb-3 mb-3"> {# I separate this preview with a border and spacing. #}
+                            {# PARTICIPANT AND UNREAD STATUS #}
+                            <div class="d-flex justify-content-between align-items-start gap-2"> {# I separate participant details from the New badge. #}
+                                <div class="d-flex align-items-center gap-2 min-w-0"> {# I align avatar and text; min-w-0 needs a matching CSS rule. #}
+                                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary-subtle text-primary-emphasis border border-primary-subtle flex-shrink-0" style="width: 32px; height: 32px;"> {# I create a circular avatar with inline CSS dimensions. #}
+                                        {% if message.sender == request.user %} {# Equality: I check whether the current user sent this message. #}
+                                            {% if message.recipient %} {# Nested condition: I check for a recipient. #}
+                                                {{ message.recipient.username|slice:":1"|upper }}{# Chained filters: I take the first character and uppercase it. #}
+                                            {% else %} {# I handle an absent recipient. #}
+                                                <i class="fa-solid fa-user"></i> {# I display a generic user icon. #}
+                                            {% endif %} {# I close the recipient condition. #}
+                                        {% else %} {# I handle a message sent by someone else. #}
+                                            {{ message.sender.username|slice:":1"|upper }}{# I display the sender's uppercase initial. #}
+                                        {% endif %} {# I close the sender comparison. #}
+                                    </span> {# I close the avatar wrapper. #}
+                                    <div class="min-w-0"> {# I group participant text; its width behaviour depends on project CSS. #}
+                                        <strong class="d-block"> {# I display the participant name as an emphasised block. #}
+                                            {% if message.sender == request.user %} {# I identify an outgoing message. #}
+                                                {% if message.recipient %} {# I check that a recipient is available. #}
+                                                    {{ message.recipient.username }}{# I display the recipient's username. #}
+                                                {% else %} {# I handle an absent recipient. #}
+                                                    Conversation{# I display a fallback label. #}
+                                                {% endif %} {# I close the recipient condition. #}
+                                            {% else %} {# I identify a message from another sender. #}
+                                                {{ message.sender.username }}{# I display the sender's username. #}
+                                            {% endif %} {# I close the participant-name condition. #}
+                                        </strong> {# I close the name block. #}
+                                        <small class="text-secondary"> {# I begin the message-direction label. #}
+                                            {% if message.sender == request.user %} {# I select text based on who sent the message. #}
+                                                You sent a message{# I describe the outgoing message. #}
+                                            {% else %} {# I choose the incoming-message label. #}
+                                                Private conversation{# I display the conversation description. #}
+                                            {% endif %} {# I close the label condition. #}
+                                        </small> {# I close the direction label. #}
+                                    </div> {# I close the participant-text group. #}
+                                </div> {# I close the avatar-and-text group. #}
+                                {% if message.recipient == request.user and not message.is_read %} {# Boolean logic: the recipient must match AND the message must NOT be read. #}
+                                    <span class="badge bg-primary"> {# I create the unread-message badge. #}
+                                        New{# I display the status label. #}
+                                    </span> {# I close the badge. #}
+                                {% endif %} {# I close the unread-message condition. #}
+                            </div> {# I close the participant row. #}
+                            {# MESSAGE PREVIEW #}
+                            <div class="mt-2"> {# I add space above the preview. #}
+                                {{ message.body|truncatechars:75 }}{# I shorten displayed text without changing the stored message. #}
+                            </div> {# I close the preview container. #}
+                            {# MESSAGE TIME #}
+                            <small class="text-secondary"> {# I begin the time display. #}
+                                {{ message.created_at|timesince }}{# I format elapsed time using a filter. #}
+                                ago{# I append a plain-text suffix. #}
+                            </small> {# I close the time display. #}
+                        </div> {# I close this message container. #}
+                    </a> {# I close the message link. #}
+                {% empty %} {# I render a fallback when the supplied message collection is empty. #}
+                    <div class="text-center py-3"> {# I centre and pad the empty state. #}
+                        <i class="fa-regular fa-comments fs-3 text-secondary mb-3"></i> {# I display the empty-message icon. #}
+                        <h6> {# I begin the empty-state heading. #}
+                            No Conversations Yet{# I explain the absence of message previews. #}
+                        </h6> {# I close the heading. #}
+                        <p class="text-secondary"> {# I begin the empty-state description. #}
+                            Private conversations with other{# I describe the expected content. #}
+                            MarketPulse users will appear here.{# I complete the description. #}
+                        </p> {# I close the paragraph. #}
+                    </div> {# I close the empty state. #}
+                {% endfor %} {# I close the message loop and its empty branch. #}
+                {# MESSAGE ACTIONS #}
+                <div class="d-grid gap-2 mt-3"> {# I stack action links using Grid with spacing. #}
+                    <a href="{% url 'community:inbox' %}" class="btn btn-outline-primary"> {# I resolve the inbox route. #}
+                        <i class="fa-regular fa-comments me-1"></i> {# I display the inbox icon. #}
+                        Open Messages{# I display the action label. #}
+                    </a> {# I close the inbox link. #}
+                    <a href="{% url 'community:new_conversation' %}" class="btn btn-primary"> {# I navigate to the conversation-creation view. #}
+                        <i class="fa-solid fa-plus me-1"></i> {# I display the plus icon. #}
+                        New Conversation{# I display the label; this template does not create a record. #}
+                    </a> {# I close the new-conversation link. #}
+                </div> {# I close the messaging actions. #}
+            </div> {# I close the message card body. #}
+        </div> {# I close the message card. #}
+    </div> {# I close the message column. #}
+</div> {# I close the community-and-messages row. #}
+{% endif %} {# I close the authentication condition around both panels. #}
+
+{# ======================================================== #}
+{# 4. ABOUT — STATIC CONTENT AND EDUCATIONAL NOTICE         #}
+{# ======================================================== #}
+<div class="card shadow-sm mt-4 mb-4"> {# I create an About card visible to visitors and signed-in users. #}
+    <div class="card-body p-4"> {# I create its padded body. #}
+        <div class="row g-4 align-items-start"> {# I arrange the description and purpose box responsively. #}
+            <div class="col-lg-8"> {# I allocate eight columns to the description at large widths. #}
+                <h4 class="mb-2"> {# I begin the section heading. #}
+                    About MarketPulse{# I display the heading text. #}
+                </h4> {# I close the heading. #}
+                <p class="text-secondary mb-0"> {# I begin the fixed project description. #}
+                    MarketPulse is an educational trading{# I identify the project's educational role. #}
+                    decision-support platform that combines{# I introduce its combined capabilities. #}
+                    market research, strategy testing, risk{# I list project capabilities. #}
+                    management and user collaboration.{# I complete the capability list. #}
+                    Its purpose is to encourage a more structured{# I describe the project's intended approach. #}
+                    approach to evaluating trading decisions,{# I continue the purpose statement. #}
+                    rather than relying only on price movements{# I explain the scope of the approach. #}
+                    or historical backtest performance.{# I complete the description. #}
+                </p> {# I close the project description. #}
+            </div> {# I close the description column. #}
+            <div class="col-lg-4"> {# I allocate four columns to the purpose box at large widths. #}
+                <div class="border rounded-3 p-3 bg-body-tertiary"> {# I style the purpose box with a border, padding and background. #}
+                    <small class="text-secondary d-block mb-2"> {# I display its label as a separate block. #}
+                        Main Purpose{# I display the label text. #}
+                    </small> {# I close the label. #}
+                    <strong> {# I emphasise the purpose summary. #}
+                        Research • Test • Analyse •{# I list the first project activities. #}
+                        Manage Risk • Communicate{# I complete the activity list. #}
+                    </strong> {# I close the emphasis. #}
+                </div> {# I close the purpose box. #}
+            </div> {# I close the purpose column. #}
+        </div> {# I close the About row. #}
+        {# EDUCATIONAL NOTICE #}
+        <hr class="my-4"> {# I add a thematic break with vertical margin. #}
+        <div class="d-flex align-items-start gap-2 small text-secondary"> {# I place the notice icon beside smaller explanatory text. #}
+            <i class="fa-solid fa-circle-info text-warning mt-1"></i> {# I display the information icon. #}
+            <p class="mb-0"> {# I begin the notice paragraph. #}
+                <strong class="text-body"> {# I emphasise the notice label. #}
+                    Educational Notice:{# I display the label. #}
+                </strong> {# I close the emphasis. #}
+                MarketPulse is designed for educational and{# I state the intended use. #}
+                decision-support purposes.{# I complete that statement. #}
+                Market information, backtesting results,{# I list information covered by the notice. #}
+                strategy analysis, risk calculations and{# I continue the list. #}
+                user-generated content do not constitute{# I state the limitation. #}
+                personalised financial, investment or trading{# I identify the advice categories. #}
+                advice.{# I complete the statement. #}
+                Users remain responsible for conducting their{# I state the user's research responsibility. #}
+                own research and evaluating risk before making{# I continue the responsibility statement. #}
+                financial decisions.{# I complete the notice. #}
+            </p> {# I close the notice paragraph. #}
+        </div> {# I close the notice container. #}
+    </div> {# I close the About card body. #}
+</div> {# I close the About card. #}
+
+{% comment %}
+MY UNDERSTANDING FOR MY LECTURER:
+This template presents data and provides navigation.
+Django uses inheritance, conditions, loops, filters and variables.
+HTML structures the content; CSS classes control presentation.
+Backend views select records and enforce permissions.
+Displaying a message preview does not mark it as read.
+{% endcomment %}
+{% endblock %} {# I close the homepage content block. #}

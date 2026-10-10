@@ -1,6 +1,51 @@
 # ============================================================
 # COMMUNITY - MODELS
 # ============================================================
+# FILE PURPOSE:
+# This file defines the database structure for the Community app.
+#
+# DJANGO FRAMEWORK:
+#
+# User
+#   ↓
+# urls.py
+#   ↓
+# community/views.py
+#   ↓
+# community/models.py          ← THIS FILE / MODEL LAYER
+#   ↓
+# Django ORM
+#   ↓
+# PostgreSQL / Neon
+#   ↓
+# community/views.py
+#   ↓
+# templates/community/*.html
+#   ↓
+# Browser
+#
+# PROGRAMMING LANGUAGE CONCEPTS USED:
+#
+# imports
+# classes
+# inheritance
+# variables / constants
+# attributes
+# methods
+# parameters
+# return values
+# lists
+# tuples
+# strings
+# f-strings
+# Boolean expressions
+# conditionals
+# object relationships
+# method overriding
+# *args and **kwargs
+# Django ORM
+# database indexes
+# ============================================================
 
 """
 MarketPulse Community models.
@@ -73,17 +118,27 @@ tested, the data model can be simplified further.
 ============================================================
 """
 
-
-from django.conf import settings
-from django.db import models
-from django.utils import timezone
-
-
 # ============================================================
-# 1. COMMUNITY POST
+# 1. IMPORTS
+# Programming concept: modules and imports
 # ============================================================
 
-class CommunityPost(models.Model):
+from django.conf import settings  # Imports Django project settings so the model can use the configured custom User model.
+from django.db import models  # Imports Django ORM model classes and database field types.
+from django.utils import timezone  # Imports Django's timezone-aware date/time utilities.
+
+# ============================================================
+# 2. COMMUNITY POST MODEL
+# Programming concepts:
+# - class
+# - inheritance
+# - class attributes
+# - tuples
+# - lists
+# - object relationships
+# ============================================================
+
+class CommunityPost(models.Model):  # Defines CommunityPost and inherits Django database behaviour from models.Model.
     """
     Stores trading-related posts created by MarketPulse users.
 
@@ -96,122 +151,130 @@ class CommunityPost(models.Model):
     - General stock-market updates
     """
 
-    POST_TYPE_CHOICES = [
-
-        (
-            "UPDATE",
-            "Market Update",
-        ),
-
-        (
-            "WARNING",
-            "Trading Warning",
-        ),
-
-        (
-            "IDEA",
-            "Trading Idea",
-        ),
-
-        (
-            "RISK",
-            "Risk Alert",
-        ),
-
-        (
-            "DISCUSSION",
-            "Discussion",
-        ),
-
-    ]
-
-
     # --------------------------------------------------------
-    # User who created the post
+    # 2.1 POST TYPE CHOICES
+    # Programming concept: constant-like class variable
     # --------------------------------------------------------
 
-    author = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="community_posts",
-    )
-
-
-    # --------------------------------------------------------
-    # Post category
-    # --------------------------------------------------------
-
-    post_type = models.CharField(
-        max_length=20,
-        choices=POST_TYPE_CHOICES,
-        default="UPDATE",
-    )
-
-
-    # --------------------------------------------------------
-    # Optional ticker / asset symbol
-    # --------------------------------------------------------
-
-    ticker = models.CharField(
-        max_length=15,
-        blank=True,
-        help_text=(
-            "Optional stock or asset ticker, "
-            "for example AAPL or MSFT."
-        ),
-    )
-
+    POST_TYPE_CHOICES = [  # Stores the allowed post categories as a Python list.
+        (  # Starts the first tuple containing database value and human-readable label.
+            "UPDATE",  # Database value stored for a market update.
+            "Market Update",  # Friendly value displayed to the user.
+        ),  # Ends the UPDATE tuple.
+        (  # Starts the trading warning tuple.
+            "WARNING",  # Database value stored for a warning.
+            "Trading Warning",  # Friendly label displayed to the user.
+        ),  # Ends the WARNING tuple.
+        (  # Starts the trading idea tuple.
+            "IDEA",  # Database value stored for a trading idea.
+            "Trading Idea",  # Friendly label displayed to the user.
+        ),  # Ends the IDEA tuple.
+        (  # Starts the risk alert tuple.
+            "RISK",  # Database value stored for a risk alert.
+            "Risk Alert",  # Friendly label displayed to the user.
+        ),  # Ends the RISK tuple.
+        (  # Starts the discussion tuple.
+            "DISCUSSION",  # Database value stored for a discussion.
+            "Discussion",  # Friendly label displayed to the user.
+        ),  # Ends the DISCUSSION tuple.
+    ]  # Ends the list of available post types.
 
     # --------------------------------------------------------
-    # Main post content
+    # 2.2 USER WHO CREATED THE POST
+    # Programming concept: object relationship / ForeignKey
     # --------------------------------------------------------
 
-    content = models.TextField(
-        max_length=1500,
-    )
-
-
-    # --------------------------------------------------------
-    # Timestamps
-    # --------------------------------------------------------
-
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-    )
-
-    updated_at = models.DateTimeField(
-        auto_now=True,
-    )
-
+    author = models.ForeignKey(  # Creates a many-posts-to-one-user database relationship.
+        settings.AUTH_USER_MODEL,  # Uses the custom User model configured in Django settings.
+        on_delete=models.CASCADE,  # Deletes this user's posts if the user itself is deleted.
+        related_name="community_posts",  # Allows user.community_posts to retrieve this user's posts.
+    )  # Finishes the author ForeignKey definition.
 
     # --------------------------------------------------------
-    # Model configuration
+    # 2.3 POST CATEGORY
+    # Programming concept: string field + validation choices
     # --------------------------------------------------------
 
-    class Meta:
-
-        ordering = [
-            "-created_at",
-        ]
-
+    post_type = models.CharField(  # Creates a database column containing a short string.
+        max_length=20,  # Limits the stored string to 20 characters.
+        choices=POST_TYPE_CHOICES,  # Restricts normal Django form choices to the categories defined above.
+        default="UPDATE",  # Uses UPDATE when no other post type is supplied.
+    )  # Finishes the post_type field.
 
     # --------------------------------------------------------
-    # Human-readable representation
+    # 2.4 OPTIONAL TICKER / ASSET SYMBOL
+    # Programming concept: field configuration
     # --------------------------------------------------------
 
-    def __str__(self):
+    ticker = models.CharField(  # Creates a short text database column for a ticker symbol.
+        max_length=15,  # Allows a maximum of 15 characters.
+        blank=True,  # Allows Django validation/forms to accept an empty ticker.
+        help_text=(  # Starts a multi-line Python string expression used as help text.
+            "Optional stock or asset ticker, "  # First part of the help message.
+            "for example AAPL or MSFT."  # Second part; adjacent strings are automatically joined by Python.
+        ),  # Ends the help_text expression.
+    )  # Finishes the ticker field.
 
-        return (
-            f"{self.author} - "
-            f"{self.get_post_type_display()}"
-        )
+    # --------------------------------------------------------
+    # 2.5 MAIN POST CONTENT
+    # Programming concept: text value / attribute
+    # --------------------------------------------------------
 
+    content = models.TextField(  # Creates a database text field for the main community post.
+        max_length=1500,  # Restricts the expected post length to 1500 characters.
+    )  # Finishes the content field.
+
+    # --------------------------------------------------------
+    # 2.6 TIMESTAMPS
+    # Programming concept: automatic object state
+    # --------------------------------------------------------
+
+    created_at = models.DateTimeField(  # Creates a date/time field for when the post was created.
+        auto_now_add=True,  # Django automatically sets this once when the object is first created.
+    )  # Finishes created_at.
+
+    updated_at = models.DateTimeField(  # Creates a date/time field for the latest update.
+        auto_now=True,  # Django updates this timestamp whenever the object is saved.
+    )  # Finishes updated_at.
+
+    # --------------------------------------------------------
+    # 2.7 MODEL CONFIGURATION
+    # Programming concept: nested class
+    # --------------------------------------------------------
+
+    class Meta:  # Defines extra configuration for the CommunityPost model.
+        ordering = [  # Sets the model's default database ordering.
+            "-created_at",  # Minus means newest CommunityPost records appear first.
+        ]  # Ends the ordering list.
+
+    # --------------------------------------------------------
+    # 2.8 HUMAN-READABLE REPRESENTATION
+    # Programming concepts:
+    # - method
+    # - self
+    # - return value
+    # - f-string
+    # --------------------------------------------------------
+
+    def __str__(self):  # Defines how a CommunityPost object is represented as readable text.
+        return (  # Returns the constructed string to Python/Django.
+            f"{self.author} - "  # Inserts the object's author into an f-string.
+            f"{self.get_post_type_display()}"  # Uses Django's generated method to show the friendly choice label.
+        )  # Ends the returned string expression.
 
 # ============================================================
-# 2. PRIVATE CONVERSATION
+# 3. PRIVATE CONVERSATION MODEL
+# Programming concepts:
+# - class
+# - inheritance
+# - ManyToMany relationships
+# - methods
+# - conditionals
+# - lists
+# - QuerySets
 # ============================================================
 
-class Conversation(models.Model):
+class Conversation(models.Model):  # Defines a database model representing one private conversation.
     """
     Represents a private MarketPulse conversation.
 
@@ -241,90 +304,92 @@ class Conversation(models.Model):
     flexible enough for possible future multi-user threads.
     """
 
-
     # --------------------------------------------------------
-    # Conversation participants
-    # --------------------------------------------------------
-
-    participants = models.ManyToManyField(
-        settings.AUTH_USER_MODEL,
-        related_name="marketpulse_conversations",
-    )
-
-
-    # --------------------------------------------------------
-    # Timestamps
+    # 3.1 CONVERSATION PARTICIPANTS
+    # Programming concept: many-to-many object relationship
     # --------------------------------------------------------
 
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-    )
-
-    updated_at = models.DateTimeField(
-        auto_now=True,
-    )
-
+    participants = models.ManyToManyField(  # Allows multiple users to belong to a Conversation.
+        settings.AUTH_USER_MODEL,  # Connects participants to the project's configured User model.
+        related_name="marketpulse_conversations",  # Allows a user to access their conversations through this reverse name.
+    )  # Finishes the ManyToMany relationship.
 
     # --------------------------------------------------------
-    # Model configuration
+    # 3.2 TIMESTAMPS
     # --------------------------------------------------------
 
-    class Meta:
+    created_at = models.DateTimeField(  # Stores when the Conversation was originally created.
+        auto_now_add=True,  # Automatically records the creation date/time once.
+    )  # Finishes created_at.
 
-        ordering = [
-            "-updated_at",
-        ]
-
-
-    # --------------------------------------------------------
-    # Human-readable representation
-    # --------------------------------------------------------
-
-    def __str__(self):
-
-        if not self.pk:
-
-            return (
-                "Unsaved MarketPulse Conversation"
-            )
-
-
-        participant_names = list(
-            self.participants
-            .order_by(
-                "username"
-            )
-            .values_list(
-                "username",
-                flat=True,
-            )
-        )
-
-
-        if participant_names:
-
-            return (
-                "Conversation: "
-                +
-                " ↔ ".join(
-                    participant_names
-                )
-            )
-
-
-        return (
-            f"Conversation {self.pk}"
-        )
-
+    updated_at = models.DateTimeField(  # Stores when the Conversation was most recently active.
+        auto_now=True,  # Automatically updates when the Conversation object itself is saved.
+    )  # Finishes updated_at.
 
     # --------------------------------------------------------
-    # Return participant other than supplied user
+    # 3.3 MODEL CONFIGURATION
+    # Programming concept: nested Meta class
     # --------------------------------------------------------
 
-    def get_other_participant(
-        self,
-        user,
-    ):
+    class Meta:  # Holds Django metadata for Conversation.
+        ordering = [  # Defines default ordering for Conversation QuerySets.
+            "-updated_at",  # Shows the most recently active conversations first.
+        ]  # Ends the ordering list.
+
+    # --------------------------------------------------------
+    # 3.4 HUMAN-READABLE REPRESENTATION
+    # Programming concepts:
+    # - special method
+    # - conditionals
+    # - local variables
+    # - lists
+    # - QuerySet methods
+    # - return
+    # --------------------------------------------------------
+
+    def __str__(self):  # Defines the readable string representation of a Conversation.
+        if not self.pk:  # Checks whether this object has not yet received a database primary key.
+            return (  # Immediately returns a label for an unsaved object.
+                "Unsaved MarketPulse Conversation"  # Text used when the Conversation is not yet in the database.
+            )  # Ends the return expression.
+
+        participant_names = list(  # Creates a normal Python list containing participant usernames.
+            self.participants  # Starts with the participants ManyToMany manager.
+            .order_by(  # Sorts the participants before retrieving their usernames.
+                "username"  # Sorts alphabetically by username.
+            )  # Finishes order_by().
+            .values_list(  # Retrieves only selected database field values rather than complete User objects.
+                "username",  # Requests the username field.
+                flat=True,  # Returns a flat sequence rather than one-element tuples.
+            )  # Finishes values_list().
+        )  # Converts the QuerySet result into a Python list.
+
+        if participant_names:  # Checks whether at least one participant name exists.
+            return (  # Returns a readable conversation description.
+                "Conversation: "  # Adds text before the participant names.
+                +  # Uses Python string concatenation.
+                " ↔ ".join(  # Joins usernames together with the conversation arrow symbol.
+                    participant_names  # Supplies the list of usernames to join().
+                )  # Finishes join().
+            )  # Finishes the return expression.
+
+        return (  # Fallback return when there are no participant names.
+            f"Conversation {self.pk}"  # Uses an f-string containing the database primary key.
+        )  # Ends the fallback return.
+
+    # --------------------------------------------------------
+    # 3.5 RETURN PARTICIPANT OTHER THAN SUPPLIED USER
+    # Programming concepts:
+    # - method parameter
+    # - Boolean logic
+    # - getattr()
+    # - QuerySet filtering
+    # --------------------------------------------------------
+
+    def get_other_participant(  # Defines a custom method for locating the other user.
+        self,  # Refers to the current Conversation object.
+        user,  # Receives the User object that should be excluded.
+    ):  # Ends the method signature.
         """
         Return the other participant in a one-to-one
         conversation.
@@ -332,51 +397,55 @@ class Conversation(models.Model):
         If no other participant exists, return None.
         """
 
-        if not user or not getattr(
-            user,
-            "pk",
-            None,
-        ):
+        if not user or not getattr(  # Checks that a valid saved user was supplied.
+            user,  # Object whose attribute Python will inspect.
+            "pk",  # Looks for the user's primary-key attribute.
+            None,  # Returns None instead of raising an error if the attribute does not exist.
+        ):  # Ends the condition.
+            return None  # Stops the method and returns no participant.
 
-            return None
-
-
-        return (
-            self.participants
-            .exclude(
-                pk=user.pk
-            )
-            .order_by(
-                "username"
-            )
-            .first()
-        )
-
+        return (  # Returns the resulting User object.
+            self.participants  # Starts with all participants in this Conversation.
+            .exclude(  # Removes one or more matching records.
+                pk=user.pk  # Removes the supplied user's database record.
+            )  # Finishes exclude().
+            .order_by(  # Sorts remaining participants.
+                "username"  # Sorts alphabetically by username.
+            )  # Finishes order_by().
+            .first()  # Returns the first User object or None if no object exists.
+        )  # Ends the return expression.
 
     # --------------------------------------------------------
-    # Return most recent message
+    # 3.6 RETURN MOST RECENT MESSAGE
+    # Programming concepts:
+    # - method
+    # - reverse relationship
+    # - method chaining
     # --------------------------------------------------------
 
-    def get_last_message(self):
+    def get_last_message(self):  # Defines a helper method that finds the latest message.
         """
         Return the newest PrivateMessage belonging to this
         conversation.
         """
 
-        return (
-            self.messages
-            .order_by(
-                "-created_at"
-            )
-            .first()
-        )
-
+        return (  # Returns the most recent PrivateMessage object.
+            self.messages  # Uses related_name="messages" from PrivateMessage.conversation.
+            .order_by(  # Changes the ordering of the related messages.
+                "-created_at"  # Minus means newest timestamp first.
+            )  # Finishes order_by().
+            .first()  # Returns the first/newest message or None.
+        )  # Ends the return expression.
 
     # --------------------------------------------------------
-    # Update conversation activity time
+    # 3.7 UPDATE CONVERSATION ACTIVITY TIME
+    # Programming concepts:
+    # - state mutation
+    # - method call
+    # - keyword argument
     # --------------------------------------------------------
 
-    def touch(self):
+    def touch(self):  # Defines a helper method for marking the Conversation as recently active.
         """
         Move the conversation to the most recently active
         position.
@@ -384,20 +453,26 @@ class Conversation(models.Model):
         This is useful when a new message is created.
         """
 
-        self.updated_at = timezone.now()
-
-        self.save(
-            update_fields=[
-                "updated_at",
-            ]
-        )
-
+        self.updated_at = timezone.now()  # Changes the object's updated_at attribute to the current timezone-aware time.
+        self.save(  # Saves the changed Conversation object to the database.
+            update_fields=[  # Tells Django that only the listed database field needs updating.
+                "updated_at",  # Specifies that updated_at is the field being saved.
+            ]  # Ends the list.
+        )  # Finishes the save() call.
 
 # ============================================================
-# 3. PRIVATE MESSAGE
+# 4. PRIVATE MESSAGE MODEL
+# Programming concepts:
+# - class and inheritance
+# - ForeignKey relationships
+# - Boolean values
+# - database indexing
+# - method overriding
+# - *args / **kwargs
+# - conditional logic
 # ============================================================
 
-class PrivateMessage(models.Model):
+class PrivateMessage(models.Model):  # Defines each individual message as a Django database model.
     """
     Stores an individual private message exchanged between
     MarketPulse users.
@@ -423,15 +498,15 @@ class PrivateMessage(models.Model):
     conversation-style interface.
     """
 
-
     # --------------------------------------------------------
-    # Conversation / chat thread
+    # 4.1 CONVERSATION / CHAT THREAD
+    # Programming concept: ForeignKey relationship
     # --------------------------------------------------------
 
-    conversation = models.ForeignKey(
-        Conversation,
-        on_delete=models.CASCADE,
-        related_name="messages",
+    conversation = models.ForeignKey(  # Links each PrivateMessage to one Conversation.
+        Conversation,  # References the Conversation model defined above.
+        on_delete=models.CASCADE,  # Deletes related messages if their Conversation is deleted.
+        related_name="messages",  # Allows conversation.messages to retrieve its PrivateMessage records.
 
         # ----------------------------------------------------
         # TEMPORARY MIGRATION SETTINGS
@@ -446,24 +521,22 @@ class PrivateMessage(models.Model):
         # After old messages have been assigned to
         # conversations, this can eventually become required.
         #
-        null=True,
-        blank=True,
-    )
-
-
-    # --------------------------------------------------------
-    # User who sent the message
-    # --------------------------------------------------------
-
-    sender = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="sent_marketpulse_messages",
-    )
-
+        null=True,  # Allows the database value to temporarily be NULL.
+        blank=True,  # Allows Django forms/validation to temporarily accept an empty Conversation.
+    )  # Finishes the conversation ForeignKey.
 
     # --------------------------------------------------------
-    # Recipient
+    # 4.2 USER WHO SENT THE MESSAGE
+    # --------------------------------------------------------
+
+    sender = models.ForeignKey(  # Creates a relationship from each message to its sending User.
+        settings.AUTH_USER_MODEL,  # Uses MarketPulse's configured custom User model.
+        on_delete=models.CASCADE,  # Deletes sent messages if their User is deleted.
+        related_name="sent_marketpulse_messages",  # Allows user.sent_marketpulse_messages to retrieve sent messages.
+    )  # Finishes the sender relationship.
+
+    # --------------------------------------------------------
+    # 4.3 RECIPIENT
     # --------------------------------------------------------
     #
     # Retained during migration for compatibility with:
@@ -475,15 +548,14 @@ class PrivateMessage(models.Model):
     #
     # --------------------------------------------------------
 
-    recipient = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="received_marketpulse_messages",
-    )
-
+    recipient = models.ForeignKey(  # Creates a relationship from a message to the receiving User.
+        settings.AUTH_USER_MODEL,  # Uses MarketPulse's configured User model.
+        on_delete=models.CASCADE,  # Deletes received messages if their User is deleted.
+        related_name="received_marketpulse_messages",  # Allows a User to retrieve messages received by them.
+    )  # Finishes the recipient relationship.
 
     # --------------------------------------------------------
-    # Subject
+    # 4.4 SUBJECT
     # --------------------------------------------------------
     #
     # Retained temporarily for compatibility with the
@@ -494,43 +566,44 @@ class PrivateMessage(models.Model):
     #
     # --------------------------------------------------------
 
-    subject = models.CharField(
-        max_length=150,
-    )
-
-
-    # --------------------------------------------------------
-    # Message body
-    # --------------------------------------------------------
-
-    body = models.TextField(
-        max_length=3000,
-    )
-
+    subject = models.CharField(  # Stores the message subject as a short string.
+        max_length=150,  # Limits the subject to 150 characters.
+    )  # Finishes the subject field.
 
     # --------------------------------------------------------
-    # Message timestamp
+    # 4.5 MESSAGE BODY
     # --------------------------------------------------------
 
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-    )
-
-
-    # --------------------------------------------------------
-    # Read / unread state
-    # --------------------------------------------------------
-
-    is_read = models.BooleanField(
-        default=False,
-    )
-
+    body = models.TextField(  # Stores the main text content of the private message.
+        max_length=3000,  # Limits message body length to 3000 characters.
+    )  # Finishes the body field.
 
     # --------------------------------------------------------
-    # Model configuration
+    # 4.6 MESSAGE TIMESTAMP
     # --------------------------------------------------------
 
-    class Meta:
+    created_at = models.DateTimeField(  # Stores when the PrivateMessage was created.
+        auto_now_add=True,  # Django automatically sets the timestamp when the message is first created.
+    )  # Finishes created_at.
+
+    # --------------------------------------------------------
+    # 4.7 READ / UNREAD STATE
+    # Programming concept: Boolean value
+    # --------------------------------------------------------
+
+    is_read = models.BooleanField(  # Creates a True/False database field.
+        default=False,  # New messages begin as unread.
+    )  # Finishes the is_read field.
+
+    # --------------------------------------------------------
+    # 4.8 MODEL CONFIGURATION
+    # Programming concepts:
+    # - nested class
+    # - list
+    # - database indexes
+    # --------------------------------------------------------
+
+    class Meta:  # Defines database/model configuration for PrivateMessage.
 
         # Keep newest-first as the default because existing
         # MarketPulse views may rely on recent messages being
@@ -541,63 +614,70 @@ class PrivateMessage(models.Model):
         # .order_by("created_at")
         #
         # so chat messages appear oldest → newest.
-        ordering = [
-            "-created_at",
-        ]
+        ordering = [  # Defines the default order of PrivateMessage query results.
+            "-created_at",  # Returns newest messages first by default.
+        ]  # Ends the ordering list.
 
-
-        indexes = [
+        indexes = [  # Creates explicit database indexes for frequently queried fields.
 
             # ------------------------------------------------
             # Fast conversation-history lookup
             # ------------------------------------------------
 
-            models.Index(
-                fields=[
-                    "conversation",
-                    "created_at",
-                ],
-                name="community_conv_date_idx",
-            ),
-
+            models.Index(  # Creates the first database index.
+                fields=[  # Lists the database columns included in this index.
+                    "conversation",  # Indexes the Conversation foreign-key column.
+                    "created_at",  # Also indexes creation time for efficient ordered history lookup.
+                ],  # Ends the fields list.
+                name="community_conv_date_idx",  # Gives this database index an explicit name.
+            ),  # Finishes the conversation/date index.
 
             # ------------------------------------------------
             # Fast unread-message lookup
             # ------------------------------------------------
 
-            models.Index(
-                fields=[
-                    "recipient",
-                    "is_read",
-                ],
-                name="community_unread_idx",
-            ),
+            models.Index(  # Creates another database index.
+                fields=[  # Lists the database columns included in this index.
+                    "recipient",  # Indexes the message recipient.
+                    "is_read",  # Also indexes whether the message has been read.
+                ],  # Ends the fields list.
+                name="community_unread_idx",  # Gives the unread-message index an explicit database name.
+            ),  # Finishes the recipient/read index.
 
-        ]
-
-
-    # --------------------------------------------------------
-    # Human-readable representation
-    # --------------------------------------------------------
-
-    def __str__(self):
-
-        return (
-            f"{self.sender} → "
-            f"{self.recipient}: "
-            f"{self.subject}"
-        )
-
+        ]  # Ends the indexes list.
 
     # --------------------------------------------------------
-    # Save message and update conversation activity
+    # 4.9 HUMAN-READABLE REPRESENTATION
+    # Programming concepts:
+    # - special method
+    # - f-strings
+    # - return value
     # --------------------------------------------------------
 
-    def save(
-        self,
-        *args,
-        **kwargs,
-    ):
+    def __str__(self):  # Defines the readable representation of a PrivateMessage object.
+        return (  # Returns one combined string.
+            f"{self.sender} → "  # Inserts the sender using an f-string.
+            f"{self.recipient}: "  # Inserts the recipient.
+            f"{self.subject}"  # Inserts the message subject.
+        )  # Finishes the returned string.
+
+    # --------------------------------------------------------
+    # 4.10 SAVE MESSAGE AND UPDATE CONVERSATION ACTIVITY
+    # Programming concepts:
+    # - method overriding
+    # - *args
+    # - **kwargs
+    # - object state
+    # - superclass method
+    # - Boolean condition
+    # - database update
+    # --------------------------------------------------------
+
+    def save(  # Overrides Django's normal models.Model.save() method.
+        self,  # Refers to the current PrivateMessage object.
+        *args,  # Collects additional positional arguments supplied to save().
+        **kwargs,  # Collects additional named/keyword arguments supplied to save().
+    ):  # Ends the method definition.
         """
         Save the PrivateMessage.
 
@@ -611,25 +691,23 @@ class PrivateMessage(models.Model):
         conversation back to the top.
         """
 
-        is_new_message = (
-            self._state.adding
-        )
+        is_new_message = (  # Stores whether Django considers this object new.
+            self._state.adding  # Django's internal model state is True while the object is being inserted.
+        )  # Ends the Boolean expression.
 
+        super().save(  # Calls the original Django models.Model.save() implementation.
+            *args,  # Passes all positional arguments to Django's original save method.
+            **kwargs,  # Passes all keyword arguments to Django's original save method.
+        )  # Completes the normal database save.
 
-        super().save(
-            *args,
-            **kwargs,
-        )
+        if (  # Begins a conditional statement.
+            is_new_message  # First condition: this must be a newly created message.
+            and  # Boolean AND means both conditions must be true.
+            self.conversation_id  # Second condition: the message must belong to a Conversation.
+        ):  # Ends the condition.
 
-
-        if (
-            is_new_message
-            and
-            self.conversation_id
-        ):
-
-            Conversation.objects.filter(
-                pk=self.conversation_id
-            ).update(
-                updated_at=timezone.now()
-            )
+            Conversation.objects.filter(  # Creates a QuerySet containing the matching Conversation.
+                pk=self.conversation_id  # Finds the Conversation using its primary key.
+            ).update(  # Performs a direct database update on the matching Conversation.
+                updated_at=timezone.now()  # Moves its activity timestamp to the current time.
+            )  # Finishes the database update.

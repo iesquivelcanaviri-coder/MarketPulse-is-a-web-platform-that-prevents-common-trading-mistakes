@@ -1,20 +1,237 @@
 # ============================================================
 # RENDER BLUEPRINT - SECRETS ARE SET IN RENDER, NOT GITHUB
 # ============================================================
+#
+# 1. PURPOSE OF THIS FILE
+# ------------------------------------------------------------
+# I use this file to describe how Render should build and start
+# my hosted MarketPulse application.
+#
+# This is deployment configuration, sometimes called
+# Infrastructure as Code: the hosting setup is described in
+# a file that can be tracked alongside my project in Git.
+#
+# Render reads this file when I create or sync a Blueprint.
+# Django does not use it to define views, models, or templates.
+#
+#
+# 2. LANGUAGE CONCEPTS USED HERE: YAML
+# ------------------------------------------------------------
+# Comments:
+# Lines beginning with # explain the configuration. 
+# They do not change the settings Render reads.
+#
+# Mappings / key-value pairs:
+# A colon separates a setting name from its value.
+# Example: runtime: python
+#
+# Sequences / lists:
+# A dash introduces a list item.
+# services contains a list of service definitions.
+# envVars contains a list of environment-variable definitions.
+#
+# Nesting / indentation:
+# Indentation shows which settings belong together.
+# For example, envVars belongs to the marketpulse service.
+# I preserve indentation because it affects YAML structure.
+#
+# Scalars:
+# Individual values such as web, python, and marketpulse.
+#
+# Strings:
+# "False" is quoted, so it is a YAML string.
+# 3.13.5 is also a version string, not a decimal number:
+# it contains two dots.
+#
+# Booleans:
+# Unquoted true and false are YAML Boolean values here.
+# Examples: generateValue: true and sync: false.
+#
+# These are configuration concepts. This file does not define
+# Python functions, classes, loops, or if statements.
+#
+#
+# 3. HOW MY PROJECT FILES INTERACT
+# ------------------------------------------------------------
+# Deployment preparation:
+# Render reads render.yaml -> runs ./build.sh.
+#
+# build.sh contains the actual preparation commands.
+# It may install requirements, collect static files, or run
+# migrations, depending on what I put in that script.
+# This YAML file does not show or guarantee those operations.
+#
+# Application startup:
+# Render runs Gunicorn -> loads marketpulse.wsgi:application
+# -> Django initializes using the configured settings.
+#
+# Typical Django request:
+# Browser -> Gunicorn -> Django middleware and URL routing
+# -> View -> Model/Service -> HTML or JSON response.
+#
+# Environment configuration:
+# Render supplies environment variables -> settings.py reads
+# and converts them -> Django uses the resulting settings.
+#
+# Important:
+# Environment-variable names alone do not configure Django.
+# settings.py must read them and apply them correctly.
+
+
+# ============================================================
+# 4. SERVICE DEFINITION
+# ============================================================
+
+# "services" is a YAML key containing a list.
+# This Blueprint defines one service.
 services:
+
+  # The dash begins one service mapping.
+  # "web" tells Render that this is a web service.
   - type: web
+
+    # Name used to identify this service in Render.
+    # This does not rename my Django project package.
     name: marketpulse
+
+    # Selects Render's native Python runtime.
+    # The project runs as a Python application rather than
+    # using a Docker runtime in this configuration.
     runtime: python
+
+
+    # ========================================================
+    # 5. BUILD STAGE
+    # ========================================================
+
+    # Render executes this command during the build stage.
+    # "./" means the script is addressed relative to the
+    # service's working directory.
+    #
+    # build.sh -> its preparation commands -> prepared app.
+    #
+    # The script must exist and be executable for this exact
+    # command to work.
     buildCommand: ./build.sh
+
+
+    # ========================================================
+    # 6. START STAGE
+    # ========================================================
+
+    # Starts Gunicorn, the production WSGI application server.
+    #
+    # gunicorn:
+    # The command supplied by the installed Gunicorn package.
+    #
+    # marketpulse.wsgi:
+    # Python module corresponding to marketpulse/wsgi.py.
+    #
+    # :application:
+    # The application object Gunicorn loads from that module.
+    #
+    # WSGI means Web Server Gateway Interface.
+    # It connects a compatible web server to my Django app.
+    #
+    # This command starts the WSGI application; it does not
+    # start a separate React development server or Celery worker.
     startCommand: gunicorn marketpulse.wsgi:application
+
+
+    # ========================================================
+    # 7. ENVIRONMENT VARIABLES
+    # ========================================================
+
+    # This is a list of environment-variable definitions.
+    # Each item has a "key" and instructions for its value.
+    #
+    # Render provides environment variables to the process.
+    # My settings.py must read application-specific values.
     envVars:
+
+      # ------------------------------------------------------
+      # 7.1 PYTHON VERSION
+      # ------------------------------------------------------
+
+      # Requests Python 3.13.5 for Render's Python runtime.
+      # This selects the interpreter, not the Django version.
+      # Django's package version belongs in requirements.txt.
       - key: PYTHON_VERSION
         value: 3.13.5
+
+      # ------------------------------------------------------
+      # 7.2 DJANGO DEBUG CONFIGURATION
+      # ------------------------------------------------------
+
+      # Supplies the text "False" as an environment value.
+      # My settings must parse this into the Boolean False.
+      #
+      # Learning point:
+      # bool("False") is True in Python because the string
+      # is non-empty. Proper Boolean parsing is necessary.
+      #
+      # When applied correctly, DEBUG=False disables Django's
+      # detailed debug error pages in production.
       - key: DEBUG
         value: "False"
+
+      # ------------------------------------------------------
+      # 7.3 GENERATED SECRET KEY
+      # ------------------------------------------------------
+
+      # Asks Render to generate a random value if this
+      # environment variable does not already have a value.
+      #
+      # My settings.py must assign this environment value
+      # to Django's SECRET_KEY setting.
+      #
+      # Django uses SECRET_KEY for cryptographic signing,
+      # including features such as password-reset tokens.
+      # It is not a database password and does not encrypt
+      # every database record.
+      #
+      # The actual secret is not written in this YAML file.
       - key: SECRET_KEY
         generateValue: true
+
+      # ------------------------------------------------------
+      # 7.4 DATABASE CONNECTION
+      # ------------------------------------------------------
+
+      # The connection URL is supplied through Render.
+      # It can contain credentials, so its value is omitted.
+      #
+      # Typical project connection:
+      # DATABASE_URL -> settings.py / dj-database-url
+      # -> Django DATABASES -> PostgreSQL driver -> database.
+      #
+      # sync: false asks for the value during initial Blueprint
+      # creation. On later Blueprint updates, Render ignores
+      # this entry; changes are managed in the dashboard.
+      #
+      # This entry does not create a database server.
+      # No database resource is declared in this Blueprint.
       - key: DATABASE_URL
         sync: false
+
+      # ------------------------------------------------------
+      # 7.5 ALLOWED HOST NAMES
+      # ------------------------------------------------------
+
+      # Supplies host names that my settings.py can convert
+      # into Django's ALLOWED_HOSTS list.
+      #
+      # Django uses ALLOWED_HOSTS to validate incoming Host
+      # headers, helping protect against Host-header attacks.
+      #
+      # The exact input format depends on how settings.py
+      # parses this environment variable.
+      #
+      # ALLOWED_HOSTS is not a user permission list and does
+      # not replace authentication, CORS, or CSRF settings.
+      #
+      # sync: false leaves its value to Render configuration.
+      # This value is configuration, not necessarily a secret.
       - key: ALLOWED_HOSTS
         sync: false
+
