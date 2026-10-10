@@ -9,36 +9,74 @@ Django URLs → these views → forms / models / analytics
 
 Strategy & Model Library:
 StrategyLibraryItem → strategy_list()
-→ strategy_builder/list.html → Browse / Filter / Compare.
+→ strategy_builder/list.html
+→ Browse / Filter / Compare.
 
 Custom Strategy:
-StrategyCreateForm → core.Strategy → strategy_create()
-→ Backtesting.
+StrategyCreateForm
+    ↓
+strategy_list()
+    ↓
+core.Strategy
+    ↓
+Strategy Rules
+    ↓
+My Strategies section
+    ↓
+Backtesting.
 
 Historical Backtesting:
-BacktestForm → run_backtest() → core.Backtest
-→ BacktestTrade → backtest_results().
+BacktestForm
+    ↓
+run_backtest()
+    ↓
+core.Backtest
+    ↓
+BacktestTrade
+    ↓
+backtest_results().
 
 Strategy Robustness:
-Strategies page → User Strategy → Historical MarketData
-→ detect_overfitting() → OverfittingTest
-→ Result displayed inside /strategy/.
+The analytical backend is retained for compatibility.
+
+User Strategy
+    ↓
+Historical MarketData
+    ↓
+detect_overfitting()
+    ↓
+OverfittingTest.
+
+The separate visible Strategy Robustness section is no longer
+required on the Strategies workspace.
 
 Stress Testing:
-Strategies page → User Strategy → Historical MarketData
-→ run_stress_test() → StressTest
-→ Result displayed inside /strategy/.
+The analytical backend is retained for compatibility.
+
+User Strategy
+    ↓
+Historical MarketData
+    ↓
+run_stress_test()
+    ↓
+StressTest.
+
+The separate visible Stress Testing section is no longer
+required on the Strategies workspace.
 
 Library Creation:
-StrategyLibraryItemForm → StrategyLibraryItem
-→ Strategy & Model Library.
+StrategyLibraryItemForm
+    ↓
+StrategyLibraryItem
+    ↓
+Strategy & Model Library.
 
 Student understanding:
-Views coordinate requests and return responses.
-Forms validate submitted data.
+Views coordinate HTTP requests and responses.
+Forms validate submitted user data.
 Models provide database access through Django's ORM.
-Imported analytics functions perform the calculations.
-Templates display the supplied context.
+Imported analytical functions perform calculations.
+Templates display the context supplied by views.
 
 Programming concepts:
 Imports, functions, decorators, parameters, return values,
@@ -46,8 +84,13 @@ variables, strings, numbers, Booleans, lists, tuples,
 dictionaries, loops, conditions, comprehensions, slicing,
 unpacking, method chaining and exception handling.
 
+Important workflow change:
+Creating a strategy now happens inside /strategy/.
+
+The old /strategy/create/ URL remains available only as a
+compatibility redirect back to the My Strategies section.
+
 analysis_tools remains an internal analytics layer.
-Robustness and stress forms are handled on the Strategies page.
 Market Condition remains part of the Data workflow.
 
 These notes describe this view's calls. Details inside imported
@@ -55,552 +98,985 @@ forms and calculation engines belong to their own source files.
 ============================================================
 """
 
+
 # ============================================================
 # 1. DJANGO IMPORTS — REUSING FRAMEWORK FUNCTIONS
 # ============================================================
-from django.contrib import messages  # I import user-notification helpers.
-from django.contrib.auth.decorators import login_required  # I import the decorator that requires authentication.
-from django.db.models import Max, Min  # I import database aggregation functions for date ranges.
-from django.shortcuts import get_object_or_404, redirect, render  # I import retrieval and response helpers.
-from django.urls import reverse  # I import named-route URL resolution.
+
+from django.contrib import messages  # Import: I use Django's temporary user-notification system.
+
+from django.contrib.auth.decorators import login_required  # Import: I require authentication before selected views run.
+
+from django.db.models import Max, Min  # Import: I use database aggregation functions for historical date ranges.
+
+from django.shortcuts import get_object_or_404, redirect, render  # Import: I use Django helpers for retrieval, redirection and template rendering.
+
+from django.urls import reverse  # Import: I convert named Django URL routes into actual URL strings.
+
 
 # ============================================================
 # 2. CORE MODELS — DATABASE ACCESS
 # ============================================================
-from core.models import Backtest, MarketData, Strategy  # I import model classes used by these views.
+
+from core.models import Backtest, MarketData, Strategy  # Model imports: I access shared backtests, market data and strategies.
+
 
 # ============================================================
 # 3. INTERNAL ANALYTICS — CALCULATIONS AND STORED RESULTS
 # ============================================================
-from analysis_tools.analyzers import detect_overfitting, run_stress_test  # I delegate analysis to the internal engine.
-from analysis_tools.models import OverfittingTest, StressTest  # I import models used to retrieve analysis results.
+
+from analysis_tools.analyzers import detect_overfitting, run_stress_test  # Function imports: I reuse the project's analytical calculation functions.
+
+from analysis_tools.models import OverfittingTest, StressTest  # Model imports: I retrieve stored analytical results.
+
 
 # ============================================================
 # 4. LOCAL FORMS — SUBMITTED DATA
 # ============================================================
-from .forms import BacktestForm, StrategyCreateForm, StrategyLibraryItemForm  # The leading dot imports from this package.
+
+from .forms import BacktestForm, StrategyCreateForm, StrategyLibraryItemForm  # Relative imports: I load forms belonging to strategy_builder.
+
 
 # ============================================================
 # 5. LOCAL LIBRARY MODEL
 # ============================================================
-from .models import StrategyLibraryItem  # I import the strategy-library metadata model.
+
+from .models import StrategyLibraryItem  # Relative model import: I access strategy and model catalogue metadata.
+
 
 # ============================================================
 # 6. BACKTESTING ENGINE
 # ============================================================
-from .backtesting import run_backtest  # I import the function that performs historical simulation.
+
+from .backtesting import run_backtest  # Relative import: I use the project's historical backtesting function.
+
 
 # ============================================================
 # 7. HELPERS — SMALL REUSABLE FUNCTIONS
 # ============================================================
-def _strategy_workspace_url(anchor=None):  # I define a helper with an optional parameter defaulting to None.
+
+def _strategy_workspace_url(anchor=None):  # Function definition: I create a reusable helper with an optional anchor argument.
     """Return the Strategies URL, optionally followed by a section anchor."""
-    url = reverse("strategy_builder:list")  # I resolve the named route instead of hard-coding its path.
-    if anchor:  # I check whether a truthy anchor was supplied.
-        return f"{url}#{anchor}"  # An f-string inserts values; the fragment identifies a browser section.
-    return url  # I return the plain URL when there is no anchor.
+
+    url = reverse("strategy_builder:list")  # Function call: I resolve the named Strategies workspace URL.
+
+    if anchor:  # Conditional: I check whether a browser section anchor was supplied.
+        return f"{url}#{anchor}"  # Formatted string: I append the section fragment to the workspace URL.
+
+    return url  # Return statement: I provide the plain Strategies URL when no anchor is needed.
 
 
-def _get_available_historical_symbols():  # I define a helper with no explicit parameters.
+def _get_available_historical_symbols():  # Function definition: I create a helper that takes no explicit arguments.
     """Return distinct symbols stored in core.MarketData."""
-    return list(  # I evaluate the query and convert its results into a Python list.
-        MarketData.objects  # I access the model's query manager.
-        .order_by("symbol")  # I order the records by symbol.
-        .values_list("symbol", flat=True)  # I request symbol values rather than complete model objects.
-        .distinct()  # I remove duplicate symbol values.
-    )  # I finish the returned list conversion.
+
+    return list(  # Return and conversion: I evaluate the QuerySet and return an ordinary Python list.
+        MarketData.objects  # ORM manager: I begin a query against stored historical market data.
+        .order_by("symbol")  # Method chaining: I sort records alphabetically by symbol.
+        .values_list("symbol", flat=True)  # Query projection: I retrieve only symbol values rather than complete objects.
+        .distinct()  # Query method: I remove duplicate ticker symbols.
+    )  # Closing parenthesis: I finish the list conversion.
 
 
-def _robustness_interpretation(test):  # I receive an analysis result as a parameter.
+def _robustness_interpretation(test):  # Function definition: I receive one robustness-result object.
     """Return a user-facing label and explanation as a two-item tuple."""
-    if not test:  # I handle an absent or false result.
-        return (None, None)  # I return a tuple containing two empty values.
-    score = float(test.overfitting_score)  # I convert the stored score into a floating-point number.
-    if test.is_overfitted and score >= 0.50:  # Boolean AND requires the flag and score threshold to match.
-        return (  # I return the high-risk label and explanation.
-            "High Overfitting Risk",  # I supply the label string.
+
+    if not test:  # Conditional and truthiness: I handle an absent result.
+        return (None, None)  # Tuple return: I provide two empty values when no test exists.
+
+    score = float(test.overfitting_score)  # Type conversion: I convert the stored score into a Python float.
+
+    if test.is_overfitted and score >= 0.50:  # Boolean logic: I require both overfitting and the higher score threshold.
+        return (  # Return statement: I provide the high-risk interpretation.
+            "High Overfitting Risk",  # String: I provide the readable label.
             (
-                "Performance weakened substantially when "  # Adjacent string literals join automatically.
-                "MarketPulse moved from the in-sample period "  # I continue the explanation.
-                "to the out-of-sample period. The historical "  # I describe the comparison.
-                "result may depend too heavily on the data "  # I explain the possible limitation.
-                "used during strategy development."  # I complete the explanation.
-            ),  # I close the explanation string.
-        )  # I close the returned tuple.
-    if test.is_overfitted:  # I handle flagged results below the previous threshold.
-        return (  # I return the moderate-risk interpretation.
-            "Moderate Overfitting Risk",  # I supply its label.
+                "Performance weakened substantially when "  # Adjacent string: I begin the explanation.
+                "MarketPulse moved from the in-sample period "  # String continuation: I identify the historical comparison.
+                "to the out-of-sample period. The historical "  # String continuation: I describe the performance change.
+                "result may depend too heavily on the data "  # String continuation: I explain the possible problem.
+                "used during strategy development."  # String: I finish the explanation.
+            ),  # Closing parenthesis: I finish the explanation expression.
+        )  # Closing parenthesis: I finish the tuple.
+
+    if test.is_overfitted:  # Conditional: I handle overfitting below the previous score threshold.
+        return (  # Return statement: I provide the moderate-risk interpretation.
+            "Moderate Overfitting Risk",  # String: I provide the readable label.
             (
-                "The strategy showed a meaningful reduction "  # I begin the explanation.
-                "in performance on the out-of-sample period. "  # I describe the observed reduction.
-                "Additional testing across other data periods "  # I suggest broader evaluation.
-                "and market conditions would be useful."  # I complete the explanation.
-            ),  # I close the explanation string.
-        )  # I close the tuple.
-    return (  # I return the remaining interpretation.
-        "Low Overfitting Risk",  # I supply the unflagged-result label.
+                "The strategy showed a meaningful reduction "  # Adjacent string: I begin the explanation.
+                "in performance on the out-of-sample period. "  # String continuation: I identify where performance weakened.
+                "Additional testing across other data periods "  # String continuation: I describe useful additional research.
+                "and market conditions would be useful."  # String: I finish the explanation.
+            ),  # Closing parenthesis: I finish the explanation.
+        )  # Closing parenthesis: I finish the tuple.
+
+    return (  # Return statement: I handle the remaining non-overfitted result.
+        "Low Overfitting Risk",  # String: I provide the readable label.
         (
-            "The simplified robustness check did not identify "  # I describe this check's finding.
-            "a large deterioration between the in-sample and "  # I identify the comparison.
-            "out-of-sample periods. This does not guarantee "  # I state the interpretation's limit.
-            "future performance."  # I complete the explanation.
-        ),  # I close the explanation string.
-    )  # I close the tuple.
+            "The simplified robustness check did not identify "  # Adjacent string: I begin the explanation.
+            "a large deterioration between the in-sample and "  # String continuation: I describe the comparison.
+            "out-of-sample periods. This does not guarantee "  # String continuation: I state an important limitation.
+            "future performance."  # String: I finish the explanation.
+        ),  # Closing parenthesis: I finish the explanation.
+    )  # Closing parenthesis: I finish the tuple.
+
 
 # ============================================================
 # 8. STRATEGIES WORKSPACE — MAIN REQUEST HANDLER
 # ============================================================
-@login_required  # A decorator checks authentication before this view executes.
-def strategy_list(request):  # Django supplies the HTTP request object.
+
+@login_required  # Decorator: Django requires a signed-in user before this view executes.
+def strategy_list(request):  # Function definition: Django passes the current HTTP request object.
     """
     Render the combined Strategies workspace.
-    GET prepares library, comparison and saved-strategy data.
-    POST also processes robustness or stress-test submissions.
+
+    GET:
+    - prepares the model library;
+    - prepares comparison data;
+    - prepares the user's saved strategies;
+    - prepares an empty inline strategy-creation form.
+
+    POST:
+    - creates a new strategy inside the same Strategies page;
+    - retains compatibility with robustness processing;
+    - retains compatibility with stress-test processing.
     """
 
+    # ========================================================
     # 8.1 ACTIVE MODEL LIBRARY
-    library_items = (  # I store a QuerySet representing matching library records.
-        StrategyLibraryItem.objects  # I access the library model manager.
-        .filter(is_active=True)  # I include only active items.
-        .order_by("category", "display_order", "name")  # I define the display ordering.
-    )  # I close the chained query.
+    # ========================================================
 
+    library_items = (  # Variable assignment: I store a QuerySet of active library entries.
+        StrategyLibraryItem.objects  # ORM manager: I access strategy-library records.
+        .filter(is_active=True)  # Query filter: I include only entries currently marked active.
+        .order_by("category", "display_order", "name")  # Query ordering: I organise models consistently for display.
+    )  # Closing parenthesis: I finish the QuerySet expression.
+
+
+    # ========================================================
     # 8.2 CATEGORY SUMMARY CARDS
-    category_cards = []  # I initialise an empty list of category dictionaries.
-    for category_code, category_label in StrategyLibraryItem.CATEGORY_CHOICES:  # Tuple unpacking gives each choice a code and label.
-        category_count = library_items.filter(category=category_code).count()  # I count active items in this category.
-        category_cards.append({  # I append a dictionary representing one category.
-            "code": category_code,  # I store its machine-readable code.
-            "label": category_label,  # I store its readable label.
-            "count": category_count,  # I store its model count.
-        })  # I finish appending the category.
+    # ========================================================
 
+    category_cards = []  # List creation: I start an empty collection for category summaries.
+
+    for category_code, category_label in StrategyLibraryItem.CATEGORY_CHOICES:  # Loop and tuple unpacking: I process every configured category.
+        category_count = library_items.filter(category=category_code).count()  # ORM filtering: I count active models belonging to this category.
+
+        category_cards.append({  # List method: I add one dictionary containing category display data.
+            "code": category_code,  # Dictionary entry: I store the machine-readable category code.
+            "label": category_label,  # Dictionary entry: I store the human-readable category name.
+            "count": category_count,  # Dictionary entry: I store how many models belong to this category.
+        })  # Closing parenthesis: I finish appending the dictionary.
+
+
+    # ========================================================
     # 8.3 LIBRARY COUNTS
-    total_library_models = library_items.count()  # I count all active library records.
-    ready_models = library_items.filter(implementation_status="ready").count()  # I count ready records.
-    experimental_models = library_items.filter(implementation_status="experimental").count()  # I count experimental records.
-    catalogued_models = library_items.filter(implementation_status="catalogued").count()  # I count catalogued records.
+    # ========================================================
 
+    total_library_models = library_items.count()  # ORM count: I calculate the number of active library models.
+
+    ready_models = library_items.filter(
+        implementation_status="ready"
+    ).count()  # ORM filtering and count: I calculate how many models are ready to run.
+
+    experimental_models = library_items.filter(
+        implementation_status="experimental"
+    ).count()  # ORM filtering and count: I calculate how many models are experimental.
+
+    catalogued_models = library_items.filter(
+        implementation_status="catalogued"
+    ).count()  # ORM filtering and count: I calculate how many models currently contain catalogue metadata only.
+
+
+    # ========================================================
     # 8.4 COMPARISON INPUT
-    requested_compare_codes = request.GET.getlist("compare")  # I retrieve repeated compare query parameters as a list.
-    requested_compare_codes = list(dict.fromkeys(requested_compare_codes))  # Dictionary keys remove duplicates while retaining insertion order.
-    comparison_message = ""  # I initialise an empty feedback string.
+    # ========================================================
 
+    requested_compare_codes = request.GET.getlist(
+        "compare"
+    )  # Request access: I retrieve every repeated compare query-string value.
+
+    requested_compare_codes = list(
+        dict.fromkeys(requested_compare_codes)
+    )  # Dictionary keys and list conversion: I remove duplicates while preserving requested order.
+
+    comparison_message = ""  # String assignment: I begin with no model-comparison feedback.
+
+
+    # ========================================================
     # 8.5 SERVER-SIDE COMPARISON LIMIT
-    if len(requested_compare_codes) > 4:  # I check the list length independently of browser controls.
-        requested_compare_codes = requested_compare_codes[:4]  # Slicing retains only the first four codes.
-        comparison_message = (  # I prepare feedback about the limit.
-            "MarketPulse compares a maximum of four "  # I begin the message.
-            "models at the same time."  # I complete the message.
-        )  # I close the string expression.
+    # ========================================================
 
+    if len(requested_compare_codes) > 4:  # Conditional: I enforce a maximum of four models even if browser controls are bypassed.
+        requested_compare_codes = requested_compare_codes[:4]  # List slicing: I retain only the first four submitted model codes.
+
+        comparison_message = (  # String assignment: I prepare user feedback explaining the limit.
+            "MarketPulse compares a maximum of four "  # Adjacent string: I begin the feedback.
+            "models at the same time."  # String: I finish the feedback.
+        )  # Closing parenthesis: I finish the message expression.
+
+
+    # ========================================================
     # 8.6 RETRIEVE VALID COMPARISON ITEMS
-    compare_queryset = StrategyLibraryItem.objects.filter(  # I query active records matching submitted codes.
-        code__in=requested_compare_codes,  # The __in lookup matches any code in the list.
-        is_active=True,  # I exclude inactive records.
-    )  # I close the query.
-    compare_lookup = {item.code: item for item in compare_queryset}  # A dictionary comprehension indexes objects by code.
-    compare_items = [compare_lookup[code] for code in requested_compare_codes if code in compare_lookup]  # A list comprehension preserves requested order and skips unknown codes.
-    if requested_compare_codes and len(compare_items) < 2:  # I require at least two valid items when comparison was requested.
-        comparison_message = "Select at least two models to compare."  # I replace feedback with the minimum-selection message.
+    # ========================================================
 
+    compare_queryset = StrategyLibraryItem.objects.filter(  # ORM query: I retrieve valid active library records.
+        code__in=requested_compare_codes,  # Field lookup: I match any requested model code.
+        is_active=True,  # Boolean filter: I exclude inactive catalogue entries.
+    )  # Closing parenthesis: I finish the query.
+
+    compare_lookup = {
+        item.code: item
+        for item in compare_queryset
+    }  # Dictionary comprehension: I map each valid model code to its model object.
+
+    compare_items = [
+        compare_lookup[code]
+        for code in requested_compare_codes
+        if code in compare_lookup
+    ]  # List comprehension: I keep valid models in the same order requested by the browser.
+
+    if requested_compare_codes and len(compare_items) < 2:  # Boolean condition: I detect a comparison request containing fewer than two valid models.
+        comparison_message = "Select at least two models to compare."  # String assignment: I replace the feedback with the minimum-selection message.
+
+
+    # ========================================================
     # 8.7 USER-OWNED STRATEGIES
-    my_strategies = (  # I prepare the user's strategy QuerySet.
-        Strategy.objects  # I access the Strategy manager.
-        .filter(user=request.user)  # I restrict this list to the current user.
-        .prefetch_related("rules")  # I preload related rules to reduce later repeated queries.
-        .order_by("-created_at")  # The minus sign requests newest-first ordering.
-    )  # I close the query.
+    # ========================================================
 
+    my_strategies = (  # Variable assignment: I prepare the current user's strategy QuerySet.
+        Strategy.objects  # ORM manager: I access Strategy database records.
+        .filter(user=request.user)  # Ownership filter: I show only strategies belonging to the signed-in user.
+        .prefetch_related("rules")  # Query optimisation: I retrieve related rules efficiently for later display.
+        .order_by("-created_at")  # Ordering: I place the newest strategies first.
+    )  # Closing parenthesis: I finish the QuerySet expression.
+
+
+    # ========================================================
     # 8.8 STORED HISTORICAL SYMBOLS
-    available_symbols = _get_available_historical_symbols()  # I call the reusable helper for stored-data choices.
+    # ========================================================
 
-    # 8.9 PRESERVE FORM SELECTIONS
-    selected_validation_strategy = (  # I choose the submitted or query-string strategy value.
-        request.POST.get("strategy")  # I first check form data.
-        or request.GET.get("strategy")  # Logical OR falls back to query-string data.
-        or ""  # I use an empty string when neither supplies a truthy value.
-    )  # I close the selection expression.
-    selected_validation_symbol = (  # I choose and normalise the asset symbol.
-        request.POST.get("symbol")  # I first check submitted form data.
-        or request.GET.get("symbol")  # I then check the query string.
-        or ""  # I provide an empty fallback.
-    ).strip().upper()  # Method chaining removes outer whitespace and uppercases the symbol.
-    selected_stress_scenario = request.POST.get("scenario") or "crash"  # I use the posted scenario or default to crash.
+    available_symbols = _get_available_historical_symbols()  # Function call: I retrieve the unique symbols stored in MarketData.
 
-    # 8.10 DISPATCH POST ACTIONS
-    if request.method == "POST":  # I process calculation actions only for a POST request.
-        action = request.POST.get("action", "")  # I read the hidden action field with an empty default.
 
-        # 8.10.1 ROBUSTNESS
-        if action == "robustness":  # Equality selects the robustness branch.
-            if not selected_validation_strategy:  # I require a strategy selection.
-                messages.error(request, "Select a strategy to test.")  # I queue user-facing error feedback.
-            elif not selected_validation_symbol:  # I next require a historical symbol.
-                messages.error(request, "Select a historical asset to test.")  # I queue missing-symbol feedback.
-            else:  # I continue when both selections are present.
-                strategy = get_object_or_404(  # I retrieve a matching strategy or raise Http404.
-                    Strategy,  # I identify the model.
-                    pk=selected_validation_strategy,  # I match the requested primary key.
-                    user=request.user,  # I also enforce ownership in this lookup.
-                )  # I close retrieval.
-                market_queryset = (  # I prepare the selected asset's historical data.
-                    MarketData.objects  # I access the market-data manager.
-                    .filter(symbol=selected_validation_symbol)  # I match the normalised symbol.
-                    .order_by("date")  # I order observations chronologically.
-                )  # I close the query.
-                observation_count = market_queryset.count()  # I count stored observations.
-                if observation_count < 60:  # I enforce this view's minimum robustness-data requirement.
-                    messages.error(  # I queue a detailed data-shortage message.
-                        request,  # I attach feedback to this request.
+    # ========================================================
+    # 8.9 IDENTIFY THE SUBMITTED SAME-PAGE ACTION
+    # ========================================================
+
+    action = (
+        request.POST.get("action", "")
+        if request.method == "POST"
+        else ""
+    )  # Conditional expression: I read the hidden action field only for submitted POST requests.
+
+
+    # ========================================================
+    # 8.10 INLINE STRATEGY CREATION FORM
+    # ========================================================
+
+    strategy_form = StrategyCreateForm(
+        request.POST if action == "create_strategy" else None
+    )  # Form creation: I bind submitted data only when the inline strategy form caused the POST request.
+
+
+    # ========================================================
+    # 8.11 PRESERVE ANALYTICS FORM SELECTIONS
+    # ========================================================
+
+    selected_validation_strategy = (  # Variable assignment: I preserve a submitted or query-string strategy identifier.
+        request.POST.get("strategy")  # Request data: I first look for the strategy in POST data.
+        or request.GET.get("strategy")  # Logical OR: I next look for a strategy in the query string.
+        or ""  # Empty string: I provide a safe fallback when no strategy was supplied.
+    )  # Closing parenthesis: I finish the selection expression.
+
+    selected_validation_symbol = (  # Variable assignment: I prepare the selected historical symbol.
+        request.POST.get("symbol")  # Request data: I first inspect submitted POST data.
+        or request.GET.get("symbol")  # Logical OR: I then inspect the query string.
+        or ""  # Empty string: I provide a safe fallback.
+    ).strip().upper()  # String methods: I remove surrounding whitespace and normalise the ticker to uppercase.
+
+    selected_stress_scenario = (
+        request.POST.get("scenario")
+        or "crash"
+    )  # Logical OR: I retain a submitted stress scenario or use crash as the compatibility default.
+
+
+    # ========================================================
+    # 8.12 DISPATCH SAME-PAGE POST ACTIONS
+    # ========================================================
+
+    if request.method == "POST":  # Conditional: I process submitted forms only for POST requests.
+
+        # ----------------------------------------------------
+        # 8.12.1 CREATE STRATEGY INSIDE MY STRATEGIES
+        # ----------------------------------------------------
+
+        if action == "create_strategy":  # Equality comparison: I identify the inline strategy-creation submission.
+
+            if strategy_form.is_valid():  # Form validation: I continue only when every field and cross-field rule is valid.
+                strategy = strategy_form.save(
+                    request.user
+                )  # Custom form method: I create the Strategy and its associated strategy rules for this user.
+
+                messages.success(  # Django messages: I prepare temporary confirmation feedback.
+                    request,  # Request argument: I attach the message to this user's request.
+                    f"{strategy.name} was created successfully.",  # Formatted string: I include the new strategy's readable name.
+                )  # Closing parenthesis: I finish the success message.
+
+                return redirect(
+                    _strategy_workspace_url("myStrategiesSection")
+                )  # Redirect: I return to My Strategies instead of opening another page.
+
+            messages.error(
+                request,
+                "Please correct the strategy form errors below.",
+            )  # Error feedback: I tell the user why the inline form remains open.
+
+
+        # ----------------------------------------------------
+        # 8.12.2 ROBUSTNESS — BACKEND RETAINED FOR COMPATIBILITY
+        # ----------------------------------------------------
+
+        elif action == "robustness":  # Equality comparison: I retain processing for older or external robustness submissions.
+
+            if not selected_validation_strategy:  # Conditional: I require a selected strategy.
+                messages.error(
+                    request,
+                    "Select a strategy to test.",
+                )  # Error feedback: I explain that a strategy must be supplied.
+
+            elif not selected_validation_symbol:  # Alternative condition: I require a historical asset.
+                messages.error(
+                    request,
+                    "Select a historical asset to test.",
+                )  # Error feedback: I explain that a stored-data symbol must be supplied.
+
+            else:  # Else branch: I continue when both required selections exist.
+                strategy = get_object_or_404(  # Secure retrieval: I load the requested strategy or return HTTP 404.
+                    Strategy,  # Model argument: I query Strategy.
+                    pk=selected_validation_strategy,  # Primary-key filter: I match the submitted strategy ID.
+                    user=request.user,  # Ownership filter: I prevent access to another user's strategy.
+                )  # Closing parenthesis: I finish the retrieval.
+
+                market_queryset = (  # Variable assignment: I prepare historical observations for the selected symbol.
+                    MarketData.objects  # ORM manager: I access stored MarketData.
+                    .filter(symbol=selected_validation_symbol)  # Query filter: I include only the selected ticker.
+                    .order_by("date")  # Ordering: I arrange observations chronologically.
+                )  # Closing parenthesis: I finish the query.
+
+                observation_count = market_queryset.count()  # ORM count: I determine how much historical data is available.
+
+                if observation_count < 60:  # Validation condition: I enforce the existing minimum-data requirement.
+                    messages.error(  # Error message: I explain the insufficient-data problem.
+                        request,  # Request argument: I attach the message to this request.
                         (
-                            f"{selected_validation_symbol} currently "  # An f-string inserts the selected symbol.
-                            f"has {observation_count} historical "  # I insert the observed count.
-                            f"observations. MarketPulse requires at "  # I continue the explanation.
-                            f"least 60 observations for this "  # I state the minimum.
-                            f"Strategy Robustness check."  # I complete the message.
-                        ),  # I close the combined string.
-                    )  # I finish queuing feedback.
-                else:  # I continue with sufficient observations.
-                    date_range = market_queryset.aggregate(  # Aggregation returns one dictionary of summary values.
-                        first_date=Min("date"),  # I calculate the earliest stored date.
-                        last_date=Max("date"),  # I calculate the latest stored date.
-                    )  # I close aggregation.
-                    first_date = date_range["first_date"]  # Dictionary indexing extracts the first date.
-                    last_date = date_range["last_date"]  # I extract the last date.
-                    if first_date is None or last_date is None or first_date >= last_date:  # Identity checks and OR detect an absent or invalid range.
-                        messages.error(  # I queue invalid-period feedback.
-                            request,  # I attach it to this request.
+                            f"{selected_validation_symbol} currently "  # Formatted string: I identify the selected symbol.
+                            f"has {observation_count} historical "  # Formatted string: I include the available observation count.
+                            f"observations. MarketPulse requires at "  # String continuation: I introduce the minimum.
+                            f"least 60 observations for this "  # String continuation: I specify the minimum number.
+                            f"Strategy Robustness check."  # String: I identify the affected analysis.
+                        ),  # Closing parenthesis: I finish the message.
+                    )  # Closing parenthesis: I finish creating the error notification.
+
+                else:  # Else branch: I continue when enough observations exist.
+                    date_range = market_queryset.aggregate(  # ORM aggregation: I calculate the available historical date boundaries.
+                        first_date=Min("date"),  # Aggregation: I retrieve the earliest stored date.
+                        last_date=Max("date"),  # Aggregation: I retrieve the latest stored date.
+                    )  # Closing parenthesis: I finish aggregation.
+
+                    first_date = date_range["first_date"]  # Dictionary indexing: I extract the earliest date.
+                    last_date = date_range["last_date"]  # Dictionary indexing: I extract the latest date.
+
+                    if (
+                        first_date is None
+                        or last_date is None
+                        or first_date >= last_date
+                    ):  # Boolean OR: I reject missing dates or an invalid historical period.
+
+                        messages.error(  # Error feedback: I explain that the period cannot be used.
+                            request,  # Request argument: I attach the feedback.
                             (
-                                "MarketPulse could not determine "  # I explain the problem.
-                                "a valid historical period for "  # I continue the message.
-                                f"{selected_validation_symbol}."  # I identify the selected symbol.
-                            ),  # I close the combined string.
-                        )  # I finish feedback.
-                    else:  # I continue with a valid historical range.
-                        test_periods = [(first_date, last_date)]  # I build a list containing a start/end tuple for the engine.
-                        try:  # I begin calculation operations that may raise exceptions.
-                            tests = detect_overfitting(  # I delegate robustness calculation to the imported function.
-                                strategy,  # I pass the owned strategy object.
-                                selected_validation_symbol,  # I pass the selected symbol.
-                                test_periods,  # I pass the available test period.
-                            )  # I store the returned results.
-                            if tests:  # I treat a truthy result as successful.
-                                messages.success(  # I queue success feedback.
-                                    request,  # I attach it to the request.
+                                "MarketPulse could not determine "  # String: I begin the explanation.
+                                "a valid historical period for "  # Adjacent string: I continue the explanation.
+                                f"{selected_validation_symbol}."  # Formatted string: I identify the selected ticker.
+                            ),  # Closing parenthesis: I finish the message.
+                        )  # Closing parenthesis: I finish error creation.
+
+                    else:  # Else branch: I continue with a valid historical date range.
+                        test_periods = [
+                            (first_date, last_date)
+                        ]  # List containing tuple: I supply the analytical engine with the available period.
+
+                        try:  # Exception handling: I protect the request from analytical calculation failures.
+
+                            tests = detect_overfitting(  # Function call: I delegate robustness analysis to the existing engine.
+                                strategy,  # Argument: I supply the owned Strategy object.
+                                selected_validation_symbol,  # Argument: I supply the selected historical ticker.
+                                test_periods,  # Argument: I supply the historical testing period.
+                            )  # Closing parenthesis: I finish the analytical call.
+
+                            if tests:  # Truthiness condition: I treat a returned result as successful completion.
+                                messages.success(  # Success feedback: I tell the user the compatibility calculation completed.
+                                    request,  # Request argument: I attach the feedback.
                                     (
-                                        "Strategy Robustness check "  # I begin the success message.
-                                        f"completed for "  # I continue it.
-                                        f"{strategy.name} on "  # I insert the strategy name.
-                                        f"{selected_validation_symbol}."  # I insert the asset symbol.
-                                    ),  # I close the combined string.
-                                )  # I finish success feedback.
-                                return redirect(_strategy_workspace_url("strategyRobustnessSection"))  # I return a redirect to the workspace section after POST.
-                            messages.error(  # I handle a false or empty calculation result.
-                                request,  # I attach feedback to this request.
-                                (
-                                    "MarketPulse could not produce "  # I explain the missing result.
-                                    "a Strategy Robustness result."  # I complete the message.
-                                ),  # I close the string.
-                            )  # I finish feedback.
-                        except Exception as error:  # I catch exceptions raised within this try block.
-                            messages.error(  # I queue calculation-failure feedback.
-                                request,  # I attach it to this request.
-                                (
-                                    "Strategy Robustness analysis "  # I begin the explanation.
-                                    "could not be completed: "  # I introduce the error detail.
-                                    f"{error}"  # I insert the exception's string representation.
-                                ),  # I close the combined string.
-                            )  # I finish feedback.
+                                        "Strategy Robustness check "  # String: I begin the success message.
+                                        f"completed for "  # Formatted-string continuation: I prepare the strategy name.
+                                        f"{strategy.name} on "  # Formatted string: I include the strategy.
+                                        f"{selected_validation_symbol}."  # Formatted string: I include the historical ticker.
+                                    ),  # Closing parenthesis: I finish the message.
+                                )  # Closing parenthesis: I finish success feedback.
 
-        # 8.10.2 STRESS TESTING
-        elif action == "stress_test":  # I dispatch the alternative supported action.
-            if not selected_validation_strategy:  # I require a strategy.
-                messages.error(request, "Select a strategy first.")  # I queue missing-strategy feedback.
-            elif not selected_validation_symbol:  # I require an asset symbol.
-                messages.error(request, "Select an asset first.")  # I queue missing-asset feedback.
-            else:  # I continue when both selections exist.
-                strategy = get_object_or_404(  # I retrieve the selected strategy.
-                    Strategy,  # I identify its model.
-                    pk=selected_validation_strategy,  # I match its primary key.
-                    user=request.user,  # I restrict the lookup to the current owner.
-                )  # I close retrieval.
-                scenarios = {  # I define a nested dictionary of engine parameter presets.
-                    "crash": {  # I define the severe-decline preset.
-                        "crash_start": 0.70,  # I pass the engine's configured start parameter.
-                        "crash_magnitude": 0.20,  # I pass the configured shock magnitude.
-                    },  # I close the crash parameters.
-                    "volatility_spike": {  # I define the volatility preset.
-                        "spike_start": 0.50,  # I pass its start parameter.
-                        "spike_duration": 0.10,  # I pass its duration parameter.
-                        "spike_magnitude": 3.0,  # I pass its magnitude parameter.
-                    },  # I close the spike parameters.
-                    "liquidity_crisis": {  # I define the liquidity preset.
-                        "crisis_start": 0.60,  # I pass its start parameter.
-                        "crisis_duration": 0.20,  # I pass its duration parameter.
-                        "volume_reduction": 0.70,  # I pass its volume-reduction parameter.
-                    },  # I close the liquidity parameters.
-                    "regime_change": {  # I define the market-condition-change preset.
-                        "change_point": 0.50,  # I pass its change-point parameter.
-                        "new_trend": -0.01,  # I pass a negative floating-point trend parameter.
-                    },  # I close the regime-change parameters.
-                }  # I close the scenario dictionary; the engine defines the precise parameter semantics.
-                parameters = scenarios.get(selected_stress_scenario)  # Dictionary get returns the preset or None for an unknown key.
-                if parameters is None:  # I validate the requested scenario against these presets.
-                    messages.error(request, "Choose a valid stress scenario.")  # I queue invalid-scenario feedback.
-                else:  # I continue with an allowed preset.
-                    try:  # I begin calculation error handling.
-                        stress_result = run_stress_test(  # I delegate the numerical test to the engine.
-                            strategy,  # I pass the owned strategy.
-                            selected_validation_symbol,  # I pass the historical asset.
-                            selected_stress_scenario,  # I pass the scenario code.
-                            parameters,  # I pass the preset dictionary.
-                        )  # I store the returned result.
-                        if stress_result:  # I check for a truthy result.
-                            messages.success(  # I queue completion feedback.
-                                request,  # I attach it to the request.
+                                return redirect(
+                                    _strategy_workspace_url("myStrategiesSection")
+                                )  # Redirect: The removed robustness section is replaced by the existing My Strategies anchor.
+
+                            messages.error(  # Error feedback: I handle an empty or false analytical response.
+                                request,  # Request argument: I attach the message.
                                 (
-                                    "Stress test completed "  # I begin the message.
-                                    f"for {strategy.name} on "  # I insert the strategy name.
-                                    f"{selected_validation_symbol}."  # I insert the asset symbol.
-                                ),  # I close the string.
-                            )  # I finish feedback.
-                            return redirect(_strategy_workspace_url("stressTestingSection"))  # I redirect to the same workspace's stress section.
-                        messages.error(  # I handle a false calculation result.
-                            request,  # I attach feedback to the request.
+                                    "MarketPulse could not produce "  # String: I begin the explanation.
+                                    "a Strategy Robustness result."  # String: I finish the explanation.
+                                ),  # Closing parenthesis: I finish the message.
+                            )  # Closing parenthesis: I finish error feedback.
+
+                        except Exception as error:  # Exception handling: I catch errors raised by the analytical engine.
+                            messages.error(  # Error feedback: I convert the failure into user-visible feedback.
+                                request,  # Request argument: I attach the message.
+                                (
+                                    "Strategy Robustness analysis "  # String: I begin the explanation.
+                                    "could not be completed: "  # String continuation: I introduce the exception.
+                                    f"{error}"  # Formatted string: I include the exception's text.
+                                ),  # Closing parenthesis: I finish the message.
+                            )  # Closing parenthesis: I finish error feedback.
+
+
+        # ----------------------------------------------------
+        # 8.12.3 STRESS TESTING — BACKEND RETAINED FOR COMPATIBILITY
+        # ----------------------------------------------------
+
+        elif action == "stress_test":  # Equality comparison: I retain support for older stress-test submissions.
+
+            if not selected_validation_strategy:  # Conditional: I require a strategy identifier.
+                messages.error(
+                    request,
+                    "Select a strategy first.",
+                )  # Error feedback: I explain the missing strategy.
+
+            elif not selected_validation_symbol:  # Alternative condition: I require a historical symbol.
+                messages.error(
+                    request,
+                    "Select an asset first.",
+                )  # Error feedback: I explain the missing historical asset.
+
+            else:  # Else branch: I continue when both selections exist.
+                strategy = get_object_or_404(  # Secure retrieval: I retrieve the selected strategy or return HTTP 404.
+                    Strategy,  # Model argument: I query Strategy.
+                    pk=selected_validation_strategy,  # Primary-key filter: I match the submitted ID.
+                    user=request.user,  # Ownership filter: I restrict the strategy to the signed-in user.
+                )  # Closing parenthesis: I finish strategy retrieval.
+
+                scenarios = {  # Nested dictionary: I retain the project's configured stress-test parameter presets.
+
+                    "crash": {  # Dictionary key: I define the crash scenario.
+                        "crash_start": 0.70,  # Float: I store the configured start position.
+                        "crash_magnitude": 0.20,  # Float: I store the configured crash magnitude.
+                    },  # Closing brace: I finish the crash parameters.
+
+                    "volatility_spike": {  # Dictionary key: I define the volatility-spike scenario.
+                        "spike_start": 0.50,  # Float: I store the configured spike start.
+                        "spike_duration": 0.10,  # Float: I store the configured spike duration.
+                        "spike_magnitude": 3.0,  # Float: I store the configured volatility multiplier.
+                    },  # Closing brace: I finish volatility-spike parameters.
+
+                    "liquidity_crisis": {  # Dictionary key: I define the liquidity-crisis scenario.
+                        "crisis_start": 0.60,  # Float: I store the configured crisis start.
+                        "crisis_duration": 0.20,  # Float: I store the configured crisis duration.
+                        "volume_reduction": 0.70,  # Float: I store the configured reduction in market volume.
+                    },  # Closing brace: I finish liquidity-crisis parameters.
+
+                    "regime_change": {  # Dictionary key: I define the market-regime-change scenario.
+                        "change_point": 0.50,  # Float: I store the configured change point.
+                        "new_trend": -0.01,  # Signed float: I store the configured new negative trend.
+                    },  # Closing brace: I finish regime-change parameters.
+
+                }  # Closing brace: I finish the scenario dictionary.
+
+                parameters = scenarios.get(
+                    selected_stress_scenario
+                )  # Dictionary lookup: I retrieve the chosen preset or None for an unknown scenario.
+
+                if parameters is None:  # Identity condition: I reject scenario names that are not in the preset dictionary.
+                    messages.error(
+                        request,
+                        "Choose a valid stress scenario.",
+                    )  # Error feedback: I explain the invalid selection.
+
+                else:  # Else branch: I continue with an allowed scenario.
+                    try:  # Exception handling: I protect the page from calculation failures.
+
+                        stress_result = run_stress_test(  # Function call: I delegate the calculation to the existing stress-test engine.
+                            strategy,  # Argument: I supply the user's strategy.
+                            selected_validation_symbol,  # Argument: I supply the historical market symbol.
+                            selected_stress_scenario,  # Argument: I supply the selected scenario code.
+                            parameters,  # Argument: I supply the scenario's parameter dictionary.
+                        )  # Closing parenthesis: I finish the stress-test call.
+
+                        if stress_result:  # Truthiness condition: I detect successful analytical output.
+                            messages.success(  # Success feedback: I tell the user the compatibility calculation completed.
+                                request,  # Request argument: I attach the feedback.
+                                (
+                                    "Stress test completed "  # String: I begin the success message.
+                                    f"for {strategy.name} on "  # Formatted string: I include the strategy name.
+                                    f"{selected_validation_symbol}."  # Formatted string: I include the historical asset.
+                                ),  # Closing parenthesis: I finish the message.
+                            )  # Closing parenthesis: I finish success feedback.
+
+                            return redirect(
+                                _strategy_workspace_url("myStrategiesSection")
+                            )  # Redirect: I return to the remaining My Strategies section because the stress panel is being removed.
+
+                        messages.error(  # Error feedback: I handle a false or empty analytical result.
+                            request,  # Request argument: I attach the feedback.
                             (
-                                "MarketPulse could not complete "  # I begin the explanation.
-                                "the stress test. Make sure the "  # I continue it.
-                                "selected asset has sufficient "  # I identify a data requirement.
-                                "historical data."  # I complete the guidance.
-                            ),  # I close the string.
-                        )  # I finish feedback.
-                    except Exception as error:  # I catch calculation exceptions.
-                        messages.error(  # I queue failure feedback.
-                            request,  # I attach it to the request.
+                                "MarketPulse could not complete "  # String: I begin the explanation.
+                                "the stress test. Make sure the "  # String continuation: I suggest a likely requirement.
+                                "selected asset has sufficient "  # String continuation: I identify historical data availability.
+                                "historical data."  # String: I finish the guidance.
+                            ),  # Closing parenthesis: I finish the message.
+                        )  # Closing parenthesis: I finish error feedback.
+
+                    except Exception as error:  # Exception handling: I catch calculation failures.
+                        messages.error(  # Error feedback: I expose a readable error message.
+                            request,  # Request argument: I attach the feedback.
                             (
-                                "Stress testing could not be "  # I begin the explanation.
-                                f"completed: {error}"  # I insert the exception detail.
-                            ),  # I close the combined string.
-                        )  # I finish feedback.
+                                "Stress testing could not be "  # String: I begin the explanation.
+                                f"completed: {error}"  # Formatted string: I append the exception text.
+                            ),  # Closing parenthesis: I finish the message.
+                        )  # Closing parenthesis: I finish error feedback.
 
-    # 8.11 PREPARE EACH STRATEGY'S SUMMARY
-    my_strategy_rows = []  # I initialise the list used by the template.
-    for strategy in my_strategies:  # I iterate over the current user's strategies.
-        latest_backtest = strategy.backtests.order_by("-created_at").first()  # I retrieve the newest related backtest or None.
-        backtest_count = strategy.backtests.count()  # I count related backtests.
-        latest_robustness_test = (  # I prepare the latest name-matched robustness result.
-            OverfittingTest.objects  # I access the result manager.
-            .filter(user=request.user, strategy_name=strategy.name)  # I match by user and strategy name, not a Strategy foreign key.
-            .order_by("-created_at")  # I sort newest first.
-            .first()  # I retrieve one result or None.
-        )  # I close the query.
-        robustness_label, robustness_explanation = _robustness_interpretation(latest_robustness_test)  # Tuple unpacking separates the two returned values.
-        my_strategy_rows.append({  # I append a presentation dictionary.
-            "strategy": strategy,  # I include the strategy object.
-            "latest_backtest": latest_backtest,  # I include the latest backtest.
-            "backtest_count": backtest_count,  # I include its count.
-            "latest_robustness_test": latest_robustness_test,  # I include the matched robustness result.
-            "robustness_label": robustness_label,  # I include the readable label.
-            "robustness_explanation": robustness_explanation,  # I include its explanation.
-        })  # I finish appending the row.
 
-    # 8.12 USER-LEVEL ROBUSTNESS SUMMARY
-    robustness_test_count = OverfittingTest.objects.filter(user=request.user).count()  # I count the user's robustness results.
-    latest_user_robustness_test = (  # I retrieve the user's newest robustness result across strategies.
-        OverfittingTest.objects  # I access the manager.
-        .filter(user=request.user)  # I restrict results to this user.
-        .order_by("-created_at")  # I sort newest first.
-        .first()  # I retrieve one object or None.
-    )  # I close the query.
-    latest_user_robustness_label, latest_user_robustness_explanation = _robustness_interpretation(latest_user_robustness_test)  # I unpack its readable interpretation.
+    # ========================================================
+    # 8.13 PREPARE EACH STRATEGY'S SUMMARY
+    # ========================================================
 
-    # 8.13 USER-LEVEL STRESS SUMMARY
-    stress_test_count = StressTest.objects.filter(user=request.user).count()  # I count the user's stress results.
-    latest_strategy_stress_test = (  # Despite its name, this query retrieves the latest result for the user across strategies.
-        StressTest.objects  # I access the stress-result manager.
-        .filter(user=request.user)  # I restrict results to this user.
-        .order_by("-created_at")  # I sort newest first.
-        .first()  # I retrieve one object or None.
-    )  # I close the query.
+    my_strategy_rows = []  # List creation: I prepare presentation data for the My Strategies section.
 
-    # 8.14 TEMPLATE CONTEXT — DICTIONARY OF DISPLAY DATA
-    context = {  # I map template variable names to Python values.
-        "library_items": library_items,  # I supply the active model library.
-        "category_cards": category_cards,  # I supply category summaries.
-        "total_library_models": total_library_models,  # I supply the total count.
-        "ready_models": ready_models,  # I supply the ready count.
-        "experimental_models": experimental_models,  # I supply the experimental count.
-        "catalogued_models": catalogued_models,  # I supply the catalogued count.
-        "compare_items": compare_items,  # I supply valid comparison objects.
-        "compare_codes": requested_compare_codes,  # I supply selected codes for checkbox state.
-        "comparison_message": comparison_message,  # I supply comparison feedback.
-        "my_strategy_rows": my_strategy_rows,  # I supply enriched strategy summaries.
-        "my_strategy_count": my_strategies.count(),  # I supply the user's strategy count.
-        "available_symbols": available_symbols,  # I supply historical asset choices.
-        "symbols": available_symbols,  # I retain the older compatibility variable name.
-        "selected_validation_strategy": selected_validation_strategy,  # I supply the selected strategy value.
-        "selected_validation_symbol": selected_validation_symbol,  # I supply the normalised symbol.
-        "selected_stress_scenario": selected_stress_scenario,  # I supply the chosen scenario.
-        "robustness_test_count": robustness_test_count,  # I supply the user's robustness count.
-        "latest_user_robustness_test": latest_user_robustness_test,  # I supply the latest user-level result.
-        "latest_user_robustness_label": latest_user_robustness_label,  # I supply its readable label.
-        "latest_user_robustness_explanation": latest_user_robustness_explanation,  # I supply its explanation.
-        "stress_test_count": stress_test_count,  # I supply the user's stress count.
-        "latest_strategy_stress_test": latest_strategy_stress_test,  # I supply the latest user-level stress result.
-        "strategies": my_strategies,  # I retain the strategy collection used by forms and older templates.
-        "page_title": "Strategy & Model Research",  # I supply page information.
-    }  # I close the context dictionary.
+    for strategy in my_strategies:  # Loop: I process every strategy belonging to the current user.
 
-    # 8.15 HTML RESPONSE
-    return render(request, "strategy_builder/list.html", context)  # Django renders the template and returns an HTTP response.
+        latest_backtest = (
+            strategy.backtests
+            .order_by("-created_at")
+            .first()
+        )  # Related query: I retrieve the most recent backtest for this strategy or None.
+
+        backtest_count = (
+            strategy.backtests.count()
+        )  # Related-manager count: I calculate the number of saved backtests for this strategy.
+
+        latest_robustness_test = (  # Variable assignment: I retain compatibility with stored robustness results.
+            OverfittingTest.objects  # ORM manager: I access stored overfitting tests.
+            .filter(
+                user=request.user,
+                strategy_name=strategy.name,
+            )  # Query filter: I match the current user and the existing strategy-name field.
+            .order_by("-created_at")  # Ordering: I place the newest result first.
+            .first()  # Query evaluation: I retrieve one result or None.
+        )  # Closing parenthesis: I finish the query.
+
+        robustness_label, robustness_explanation = _robustness_interpretation(
+            latest_robustness_test
+        )  # Tuple unpacking: I convert the stored test into readable interpretation values.
+
+        my_strategy_rows.append({  # List method: I add one display dictionary for this strategy.
+            "strategy": strategy,  # Dictionary entry: I provide the Strategy model object.
+            "latest_backtest": latest_backtest,  # Dictionary entry: I provide its newest saved backtest.
+            "backtest_count": backtest_count,  # Dictionary entry: I provide the number of backtests.
+            "latest_robustness_test": latest_robustness_test,  # Dictionary entry: I retain stored robustness information for compatibility.
+            "robustness_label": robustness_label,  # Dictionary entry: I provide the readable robustness label.
+            "robustness_explanation": robustness_explanation,  # Dictionary entry: I provide the readable explanation.
+        })  # Closing parenthesis: I finish appending this strategy summary.
+
+
+    # ========================================================
+    # 8.14 USER-LEVEL ROBUSTNESS SUMMARY — COMPATIBILITY DATA
+    # ========================================================
+
+    robustness_test_count = OverfittingTest.objects.filter(
+        user=request.user
+    ).count()  # ORM query: I count stored robustness tests belonging to this user.
+
+    latest_user_robustness_test = (  # Variable assignment: I retrieve the user's newest stored robustness test.
+        OverfittingTest.objects  # ORM manager: I access OverfittingTest records.
+        .filter(user=request.user)  # Ownership filter: I restrict results to the current user.
+        .order_by("-created_at")  # Ordering: I place newest results first.
+        .first()  # Query evaluation: I retrieve one object or None.
+    )  # Closing parenthesis: I finish the query.
+
+    (
+        latest_user_robustness_label,
+        latest_user_robustness_explanation,
+    ) = _robustness_interpretation(
+        latest_user_robustness_test
+    )  # Tuple unpacking: I create readable compatibility values for the newest robustness result.
+
+
+    # ========================================================
+    # 8.15 USER-LEVEL STRESS SUMMARY — COMPATIBILITY DATA
+    # ========================================================
+
+    stress_test_count = StressTest.objects.filter(
+        user=request.user
+    ).count()  # ORM query: I count stored stress tests belonging to this user.
+
+    latest_strategy_stress_test = (  # Variable assignment: I retrieve the user's newest stored stress-test result.
+        StressTest.objects  # ORM manager: I access StressTest records.
+        .filter(user=request.user)  # Ownership filter: I restrict results to this user.
+        .order_by("-created_at")  # Ordering: I put newest results first.
+        .first()  # Query evaluation: I retrieve one object or None.
+    )  # Closing parenthesis: I finish the query.
+
+
+    # ========================================================
+    # 8.16 TEMPLATE CONTEXT — DICTIONARY OF DISPLAY DATA
+    # ========================================================
+
+    context = {  # Dictionary creation: I map template variable names to Python values.
+
+        "library_items": library_items,  # Context value: I supply the active model catalogue.
+
+        "category_cards": category_cards,  # Context value: I supply model-category summary information.
+
+        "total_library_models": total_library_models,  # Context value: I supply the total active model count.
+
+        "ready_models": ready_models,  # Context value: I supply the ready-to-run count.
+
+        "experimental_models": experimental_models,  # Context value: I supply the experimental-model count.
+
+        "catalogued_models": catalogued_models,  # Context value: I supply the catalogue-only count.
+
+        "compare_items": compare_items,  # Context value: I supply valid models selected for comparison.
+
+        "compare_codes": requested_compare_codes,  # Context value: I preserve comparison checkbox selections.
+
+        "comparison_message": comparison_message,  # Context value: I supply server-side comparison feedback.
+
+        "my_strategy_rows": my_strategy_rows,  # Context value: I supply enriched user-strategy summaries.
+
+        "my_strategy_count": my_strategies.count(),  # Context value: I supply the user's total saved-strategy count.
+
+        "strategy_form": strategy_form,  # Context value: I send the inline StrategyCreateForm to list.html.
+
+        "show_strategy_form": (
+            action == "create_strategy"
+        ),  # Boolean context value: I keep the inline form open after a submitted creation request, especially when validation fails.
+
+        "available_symbols": available_symbols,  # Context value: I supply distinct historical symbols.
+
+        "symbols": available_symbols,  # Compatibility value: I retain the older template variable name.
+
+        "selected_validation_strategy": selected_validation_strategy,  # Compatibility value: I retain the selected strategy identifier.
+
+        "selected_validation_symbol": selected_validation_symbol,  # Compatibility value: I retain the selected historical ticker.
+
+        "selected_stress_scenario": selected_stress_scenario,  # Compatibility value: I retain the chosen stress scenario.
+
+        "robustness_test_count": robustness_test_count,  # Compatibility value: I supply the user's stored robustness-test count.
+
+        "latest_user_robustness_test": latest_user_robustness_test,  # Compatibility value: I supply the newest user-level robustness result.
+
+        "latest_user_robustness_label": latest_user_robustness_label,  # Compatibility value: I supply its readable interpretation label.
+
+        "latest_user_robustness_explanation": latest_user_robustness_explanation,  # Compatibility value: I supply its readable explanation.
+
+        "stress_test_count": stress_test_count,  # Compatibility value: I supply the user's stored stress-test count.
+
+        "latest_strategy_stress_test": latest_strategy_stress_test,  # Compatibility value: I supply the newest user-level stress result.
+
+        "strategies": my_strategies,  # Context value: I retain the plain strategy collection for template compatibility.
+
+        "page_title": "Strategy & Model Research",  # Context value: I supply the readable page title.
+
+    }  # Closing brace: I finish the context dictionary.
+
+
+    # ========================================================
+    # 8.17 HTML RESPONSE
+    # ========================================================
+
+    return render(
+        request,
+        "strategy_builder/list.html",
+        context,
+    )  # Template response: Django renders the combined Strategies workspace using the prepared context.
+
 
 # ============================================================
 # 9. LEGACY ROBUSTNESS ROUTE — REDIRECT COMPATIBILITY
 # ============================================================
-@login_required  # I require authentication.
-def strategy_robustness(request):  # I keep the previous route usable.
-    """Redirect legacy robustness links to the combined Strategies page."""
-    strategy_id = request.GET.get("strategy") or ""  # I read an optional strategy query parameter.
-    base_url = reverse("strategy_builder:list")  # I resolve the main workspace URL.
-    if strategy_id:  # I check whether a strategy was supplied.
-        return redirect(  # I redirect while retaining the selection in the query string.
-            (
-                f"{base_url}"  # I insert the resolved route.
-                f"?strategy={strategy_id}"  # I append the supplied strategy value.
-                "#strategyRobustnessSection"  # I append the browser section fragment.
-            )  # I close the combined string.
-        )  # I return the redirect response.
-    return redirect(  # I handle links without a strategy selection.
-        (
-            f"{base_url}"  # I insert the workspace URL.
-            "#strategyRobustnessSection"  # I select the robustness section.
-        )  # I close the combined string.
-    )  # I return the redirect.
+
+@login_required  # Decorator: I require authentication before handling this older route.
+def strategy_robustness(request):  # Function definition: I retain the route so existing links do not fail.
+    """
+    Redirect old robustness URLs to My Strategies.
+
+    The separate visible Strategy Robustness section is being
+    removed from the Strategies workspace.
+    """
+
+    return redirect(
+        _strategy_workspace_url("myStrategiesSection")
+    )  # Redirect: I send old robustness links to the remaining My Strategies section.
+
 
 # ============================================================
 # 10. LEGACY ROBUSTNESS RESULTS ROUTE
 # ============================================================
-@login_required  # I require authentication.
-def strategy_robustness_results(request):  # I handle the older results route.
-    """Redirect old robustness-results links to the Strategies workspace."""
-    return redirect(_strategy_workspace_url("strategyRobustnessSection"))  # I return a section redirect rather than rendering a separate page.
+
+@login_required  # Decorator: I require authentication before handling the older results route.
+def strategy_robustness_results(request):  # Function definition: I keep the previous named route available.
+    """
+    Redirect old robustness-result links to My Strategies.
+
+    This prevents existing URLs from pointing to a section that
+    has now been removed from list.html.
+    """
+
+    return redirect(
+        _strategy_workspace_url("myStrategiesSection")
+    )  # Redirect: I return to the active My Strategies area.
+
 
 # ============================================================
-# 11. CREATE A CUSTOM STRATEGY — FORM VALIDATION
+# 11. LEGACY CREATE-STRATEGY ROUTE
 # ============================================================
-@login_required  # I require a signed-in user.
-def strategy_create(request):  # I handle strategy creation requests.
-    """Validate a StrategyCreateForm and redirect successful creation to backtesting."""
-    form = StrategyCreateForm(request.POST or None)  # I bind nonempty submitted data or create an unbound form.
-    if request.method == "POST" and form.is_valid():  # Short-circuit AND validates only when the method matches.
-        strategy = form.save(request.user)  # I call this form's custom save method with the current user.
-        messages.success(request, "Strategy created successfully.")  # I queue success feedback.
-        return redirect(  # I redirect to the new strategy's backtest route.
-            "strategy_builder:backtest",  # I identify the named route.
-            strategy_id=strategy.pk,  # I supply its required URL argument.
-        )  # I return the redirect.
-    context = {  # I prepare data for GET requests or unsuccessful validation.
-        "form": form,  # I include the form, which can contain validation errors.
-        "page_title": "Create Strategy",  # I include the page title.
-    }  # I close the context.
-    return render(request, "strategy_builder/create.html", context)  # I render the creation form.
+
+@login_required  # Decorator: I require a signed-in user.
+def strategy_create(request):  # Function definition: I retain /strategy/create/ for backwards compatibility.
+    """
+    Redirect old strategy-creation links to My Strategies.
+
+    Strategy creation is now performed by StrategyCreateForm
+    inside strategy_list(), so this view no longer renders
+    strategy_builder/create.html.
+    """
+
+    return redirect(
+        _strategy_workspace_url("myStrategiesSection")
+    )  # Redirect: I return to the inline strategy-creation area on the main Strategies page.
+
 
 # ============================================================
 # 12. ADD LIBRARY METADATA — DEFERRED MODEL SAVE
 # ============================================================
-@login_required  # This view checks login; it contains no additional is_staff check.
-def library_item_create(request):  # I handle library-item creation.
+
+@login_required  # Decorator: I require authentication; this view itself does not add an is_staff permission check.
+def library_item_create(request):  # Function definition: I process creation of strategy-library metadata.
     """Create an active library item whose initial implementation status is catalogued."""
-    if request.method == "POST":  # I distinguish submitted forms from initial page requests.
-        form = StrategyLibraryItemForm(request.POST)  # I bind submitted data to the form.
-        if form.is_valid():  # I validate it using the form's rules.
-            library_item = form.save(commit=False)  # I obtain a model instance without saving it yet.
-            library_item.implementation_status = "catalogued"  # I mark metadata as catalogued rather than numerically implemented.
-            library_item.is_active = True  # I make the item eligible for the active library.
-            library_item.display_order = 999  # I give it the configured later display-order value.
-            library_item.save()  # I persist the model instance.
-            messages.success(  # I queue creation feedback.
-                request,  # I attach it to the request.
+
+    if request.method == "POST":  # Conditional: I distinguish a submitted form from an initial page request.
+
+        form = StrategyLibraryItemForm(
+            request.POST
+        )  # Form binding: I populate the library form with submitted POST data.
+
+        if form.is_valid():  # Form validation: I continue only after Django accepts the submitted values.
+
+            library_item = form.save(
+                commit=False
+            )  # ModelForm save: I create the model object in memory without writing it to the database yet.
+
+            library_item.implementation_status = (
+                "catalogued"
+            )  # Attribute assignment: I mark the new library entry as metadata-only initially.
+
+            library_item.is_active = True  # Boolean assignment: I make the entry visible in the active library.
+
+            library_item.display_order = 999  # Integer assignment: I place manually added entries later in their category.
+
+            library_item.save()  # Model method: I persist the prepared library record to the configured database.
+
+            messages.success(  # Django messages: I prepare confirmation feedback.
+                request,  # Request argument: I attach the notification to this request.
                 (
-                    f"{library_item.name} was added "  # I insert the new item's name.
-                    f"to the MarketPulse Strategy & "  # I continue the message.
-                    f"Model Library."  # I complete it.
-                ),  # I close the string.
-            )  # I finish feedback.
-            return redirect("strategy_builder:list")  # I return to the workspace after successful creation.
-    else:  # I handle a non-POST request.
-        form = StrategyLibraryItemForm()  # I create an empty form.
-    context = {  # I prepare initial or invalid-form display data.
-        "form": form,  # I include the form and any validation errors.
-        "page_title": "Add Strategy or Model",  # I include the page title.
-    }  # I close the context.
-    return render(request, "strategy_builder/library_add.html", context)  # I render the library-item form.
+                    f"{library_item.name} was added "  # Formatted string: I include the library item's name.
+                    f"to the MarketPulse Strategy & "  # Formatted string continuation: I identify the library.
+                    f"Model Library."  # String: I finish the confirmation message.
+                ),  # Closing parenthesis: I finish the message expression.
+            )  # Closing parenthesis: I finish creating the success message.
+
+            return redirect(
+                "strategy_builder:list"
+            )  # Redirect: I return to the main Strategies workspace after successful library creation.
+
+    else:  # Else branch: I handle an initial GET request.
+        form = StrategyLibraryItemForm()  # Form creation: I prepare an empty library-entry form.
+
+    context = {  # Dictionary creation: I prepare values required by the library-add template.
+        "form": form,  # Context value: I supply the form and any validation errors.
+        "page_title": "Add Strategy or Model",  # Context value: I supply the readable page title.
+    }  # Closing brace: I finish the context dictionary.
+
+    return render(
+        request,
+        "strategy_builder/library_add.html",
+        context,
+    )  # Template response: I display the library-entry page.
+
 
 # ============================================================
 # 13. BACKTEST A STRATEGY — VALIDATED KEYWORD UNPACKING
 # ============================================================
-@login_required  # I require authentication.
-def backtest_strategy(request, strategy_id):  # Django supplies the request and route parameter.
+
+@login_required  # Decorator: I require the user to be authenticated.
+def backtest_strategy(request, strategy_id):  # Function definition: Django supplies the request and integer URL parameter.
     """Run a historical backtest for a strategy owned by the current user."""
-    strategy = get_object_or_404(  # I retrieve the strategy or raise Http404.
-        Strategy,  # I identify its model.
-        pk=strategy_id,  # I match the URL's strategy ID.
-        user=request.user,  # I enforce ownership in the lookup.
-    )  # I close retrieval.
-    form = BacktestForm(request.POST or None)  # I create a bound or unbound backtest form.
-    if request.method == "POST" and form.is_valid():  # I require a submitted request and valid data.
-        try:  # I handle exceptions from calculation and subsequent operations.
-            backtest = run_backtest(  # I call the imported simulation engine.
-                strategy,  # I pass the owned strategy.
-                **form.cleaned_data,  # Double-star unpacking passes validated dictionary entries as keyword arguments.
-            )  # I store the returned backtest object.
-            messages.success(  # I queue completion feedback.
-                request,  # I attach it to the request.
+
+    strategy = get_object_or_404(  # Secure retrieval: I load the strategy or return HTTP 404.
+        Strategy,  # Model argument: I query Strategy.
+        pk=strategy_id,  # Primary-key filter: I match the ID captured from the URL.
+        user=request.user,  # Ownership filter: I prevent users from backtesting another user's strategy.
+    )  # Closing parenthesis: I finish retrieval.
+
+    form = BacktestForm(
+        request.POST or None
+    )  # Form creation: I bind submitted data for POST or create an unbound form for GET.
+
+    if request.method == "POST" and form.is_valid():  # Boolean AND: I require both a POST request and valid form values.
+
+        try:  # Exception handling: I protect the page from calculation failures.
+
+            backtest = run_backtest(  # Function call: I invoke the historical simulation engine.
+                strategy,  # Positional argument: I supply the selected owned strategy.
+                **form.cleaned_data,  # Dictionary unpacking: I pass validated form fields as named keyword arguments.
+            )  # Closing parenthesis: I finish the backtesting call.
+
+            messages.success(  # Django messages: I prepare completion feedback.
+                request,  # Request argument: I attach the feedback to this request.
                 (
-                    f"Backtest completed for "  # I begin the message.
-                    f"{strategy.name}."  # I insert the strategy name.
-                ),  # I close the string.
-            )  # I finish feedback.
-            return redirect(  # I navigate to the saved backtest result.
-                "strategy_builder:results",  # I identify the results route.
-                backtest_id=backtest.pk,  # I pass the backtest's primary key.
-            )  # I return the redirect response.
-        except Exception as error:  # I catch exceptions raised within the try block.
-            messages.error(request, str(error))  # I convert the exception to text and queue it as feedback.
-    context = {  # I prepare the initial or unsuccessful form response.
-        "strategy": strategy,  # I include the selected strategy.
-        "form": form,  # I include the form and validation errors.
-        "page_title": f"Backtest {strategy.name}",  # I build the title with an f-string.
-    }  # I close the context.
-    return render(request, "strategy_builder/backtest_form.html", context)  # I display the backtest form.
+                    f"Backtest completed for "  # Formatted string: I begin the confirmation.
+                    f"{strategy.name}."  # Formatted string: I insert the strategy name.
+                ),  # Closing parenthesis: I finish the message expression.
+            )  # Closing parenthesis: I finish success feedback.
+
+            return redirect(  # Redirect: I navigate to the persisted backtest result.
+                "strategy_builder:results",  # Named URL: I identify the results route.
+                backtest_id=backtest.pk,  # Keyword argument: I supply the new Backtest primary key required by that route.
+            )  # Closing parenthesis: I finish the redirect.
+
+        except Exception as error:  # Exception handling: I catch errors produced during historical simulation.
+            messages.error(
+                request,
+                str(error),
+            )  # Type conversion and feedback: I convert the exception to readable text and display it.
+
+    context = {  # Dictionary creation: I prepare values needed by the backtest template.
+        "strategy": strategy,  # Context value: I supply the selected Strategy object.
+        "form": form,  # Context value: I supply the form and any validation errors.
+        "page_title": f"Backtest {strategy.name}",  # Formatted string: I build a strategy-specific page title.
+    }  # Closing brace: I finish the context dictionary.
+
+    return render(
+        request,
+        "strategy_builder/backtest_form.html",
+        context,
+    )  # Template response: I display the backtest form.
+
 
 # ============================================================
 # 14. BACKTEST RESULTS — RELATED RECORDS AND OWNERSHIP
 # ============================================================
-@login_required  # I require authentication.
-def backtest_results(request, backtest_id):  # I receive the requested result ID.
-    """Display an owned backtest and its related simulated trades."""
-    backtest = get_object_or_404(  # I retrieve the result or raise Http404.
-        Backtest,  # I identify the model.
-        pk=backtest_id,  # I match the requested backtest.
-        strategy__user=request.user,  # A related-field lookup restricts results through the strategy owner.
-    )  # I close retrieval.
-    trades = backtest.trades.all().order_by("entry_date")  # I query related trades in entry-date order.
-    context = {  # I prepare results-template data.
-        "backtest": backtest,  # I supply the result object and its metrics.
-        "trades": trades,  # I supply the simulated trade collection.
-        "page_title": "Backtest Results",  # I supply the title.
-    }  # I close the dictionary.
-    return render(  # I return the rendered results page.
-        request,  # I pass the current request.
-        "strategy_builder/backtest_results.html",  # I select the results template.
-        context,  # I supply its display data.
-    )  # I finish the response.
 
-# Lecturer explanation:
-# I use views to coordinate HTTP requests, form validation,
-# owned database records and imported calculation engines.
-# I pass prepared dictionaries to templates and redirect after
-# successful submissions. The numerical algorithms live in
-# the imported analytics and backtesting modules.
+@login_required  # Decorator: I require authentication before exposing a saved backtest.
+def backtest_results(request, backtest_id):  # Function definition: Django supplies the requested backtest's integer ID.
+    """Display an owned backtest and its related simulated trades."""
+
+    backtest = get_object_or_404(  # Secure retrieval: I load the requested result or return HTTP 404.
+        Backtest,  # Model argument: I query Backtest.
+        pk=backtest_id,  # Primary-key filter: I match the ID captured by the URL.
+        strategy__user=request.user,  # Related-field lookup: I ensure the associated strategy belongs to the signed-in user.
+    )  # Closing parenthesis: I finish retrieval.
+
+    trades = (
+        backtest.trades
+        .all()
+        .order_by("entry_date")
+    )  # Related-manager query: I retrieve simulated trades in chronological entry order.
+
+    context = {  # Dictionary creation: I prepare data required by the results template.
+        "backtest": backtest,  # Context value: I supply the stored backtest and its performance metrics.
+        "trades": trades,  # Context value: I supply the associated simulated trades.
+        "page_title": "Backtest Results",  # Context value: I supply the readable page title.
+    }  # Closing brace: I finish the context dictionary.
+
+    return render(  # Return statement: I ask Django to build the final HTML response.
+        request,  # Argument: I provide the current HTTP request.
+        "strategy_builder/backtest_results.html",  # Template path: I select the backtest-results template.
+        context,  # Dictionary argument: I supply all values the template can display.
+    )  # Closing parenthesis: I finish the rendered response.
+
+
+# ============================================================
+# LECTURER EXPLANATION
+# ============================================================
+
+# I use Django views to coordinate browser requests,
+# validated forms, owned database records and calculation engines.
+#
+# The main Strategies page now handles strategy creation itself:
+#
+# Browser
+#     ↓
+# /strategy/
+#     ↓
+# strategy_list()
+#     ↓
+# StrategyCreateForm
+#     ↓
+# form.is_valid()
+#     ↓
+# form.save(request.user)
+#     ↓
+# core.Strategy + related StrategyRule records
+#     ↓
+# PostgreSQL
+#     ↓
+# redirect to /strategy/#myStrategiesSection
+#     ↓
+# newly created strategy appears under My Strategies
+#
+# The old /strategy/create/ route remains available so existing
+# URLs do not break, but it now redirects back to My Strategies
+# rather than rendering a second strategy-creation page.
+#
+# Backtesting remains a separate workflow because a saved strategy
+# must already exist before the backtesting engine can execute.
+#
+# Robustness and stress-test backend functionality is retained
+# for compatibility even though their separate visible sections
+# are being removed from the Strategies template.
+#
+# Programming-language concepts demonstrated in this file include:
+#
+# - imports;
+# - functions;
+# - decorators;
+# - parameters;
+# - return values;
+# - variables;
+# - strings;
+# - integers and floating-point numbers;
+# - Booleans;
+# - lists;
+# - tuples;
+# - dictionaries;
+# - loops;
+# - conditions;
+# - comprehensions;
+# - slicing;
+# - method chaining;
+# - keyword arguments;
+# - dictionary unpacking;
+# - exception handling;
+# - object attributes;
+# - Django ORM queries;
+# - HTTP GET and POST processing;
+# - server-side form validation;
+# - redirects;
+# - template context dictionaries.

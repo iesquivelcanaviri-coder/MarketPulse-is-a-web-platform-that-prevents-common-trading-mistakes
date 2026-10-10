@@ -3,18 +3,38 @@
 MARKETPULSE - STRATEGY & MODEL RESEARCH WORKSPACE
 
 Purpose:
-Browse and compare models, review custom strategies,
-submit robustness and stress tests, and display their latest results.
+Browse and compare quantitative models, create and review
+custom strategies, and continue to historical backtesting.
 
 Framework:
 strategy_list() supplies context to this template.
 GET compare parameters request model comparison.
-POST action=robustness or action=stress_test requests backend analysis.
-analysis_tools supplies the internal calculations.
+POST action=create_strategy creates a strategy from this page.
+Saved strategies can continue to the historical backtest workflow.
+
+MAIN WORKFLOW:
+
+Strategy & Model Library
+    ↓
+Choose a quantitative approach
+    ↓
+My Strategies
+    ↓
+Create Strategy
+    ↓
+StrategyCreateForm
+    ↓
+core.Strategy + StrategyRule
+    ↓
+PostgreSQL
+    ↓
+My Strategies
+    ↓
+Run Backtest
 
 Browser interactions:
 JavaScript filters existing model rows and manages comparison choices.
-Strategy action links select a strategy and follow a same-page anchor.
+JavaScript opens the strategy-creation form inside this same page.
 
 Styling:
 Bootstrap supplies shared components.
@@ -27,6 +47,7 @@ Workspace CSS uses MarketPulse theme tokens and responsive breakpoints.
 {% block title %} {# Named block: I set the browser title. #}
 Strategies | MarketPulse {# Static text: I identify this page. #}
 {% endblock %} {# Block boundary: I finish the title. #}
+
 {% block extra_css %} {# Named block: I provide page-specific CSS to base.html. #}
 <style> /* I begin the workspace's CSS rules. */
 
@@ -47,7 +68,6 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
     --strategy-blue-soft: var(--mp-primary-soft, rgba(79, 134, 182, .15)); /* Fallback function: I use a translucent primary colour if needed. */
     --strategy-success: var(--mp-success, #32c98b); /* Variable: I define the success colour. */
     --strategy-warning: var(--mp-warning, #d3a854); /* Variable: I define the warning colour. */
-    --strategy-danger: var(--mp-danger, #dc6b75); /* Variable: I define the danger colour. */
     width: 100%; /* Percentage: I fill the available container width. */
     max-width: 1480px; /* Size limit: I restrict the desktop workspace width. */
     min-width: 0; /* Size limit: I allow the workspace to shrink. */
@@ -63,7 +83,7 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
 /* ======================================================== */
 /* 1.2 SAME-PAGE SCROLL TARGETS                              */
 /* ======================================================== */
-#myStrategiesSection, #strategyRobustnessSection, #stressTestingSection { scroll-margin-top: 90px; } /* ID selectors: I leave space above anchor targets. */
+#myStrategiesSection, #createStrategySection { scroll-margin-top: 90px; } /* ID selectors: I leave space above same-page anchor targets. */
 
 /* ======================================================== */
 /* 2. PAGE HEADER                                           */
@@ -79,7 +99,6 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
 /* ======================================================== */
 .strategy-panel { width: 100%; min-width: 0; margin-bottom: 1rem; padding: .9rem; color: var(--strategy-text); background: var(--strategy-panel); border: 1px solid var(--strategy-border); border-radius: 8px; } /* Box styling: I define the reusable section panel. */
 .strategy-eyebrow { margin-bottom: .18rem; color: var(--strategy-blue); font-size: .75rem; font-weight: 800; letter-spacing: .055em; text-transform: uppercase; } /* Typography: I style small uppercase section labels. */
-.strategy-eyebrow-danger { color: var(--strategy-danger); } /* Modifier class: I use the danger colour for risk labels. */
 .strategy-section-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: .8rem; margin-bottom: .7rem; min-width: 0; } /* Flexbox: I arrange section headings and actions. */
 .strategy-section-header > * { min-width: 0; } /* Child selector: I allow header content to shrink. */
 .strategy-section-header h2 { margin: 0 0 .2rem; color: var(--strategy-text); font-size: 1rem; font-weight: 750; overflow-wrap: anywhere; } /* Descendant selector: I style section headings. */
@@ -88,13 +107,11 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
 /* ======================================================== */
 /* 4. RESEARCH WORKFLOW                                     */
 /* ======================================================== */
-.strategy-flow { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: .55rem; width: 100%; min-width: 0; } /* Grid: I alternate five flexible steps with arrow columns. */
+.strategy-flow { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: .55rem; width: 100%; min-width: 0; } /* Grid: I alternate three workflow steps with two arrows. */
 .strategy-flow-step { display: flex; align-items: center; gap: .55rem; min-width: 0; } /* Flexbox: I align each step's number, icon and description. */
 .strategy-flow-step > * { min-width: 0; } /* Child selector: I allow step content to shrink. */
 .strategy-flow-number { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 26px; height: 26px; color: #ffffff; background: var(--strategy-blue); border-radius: 50%; font-size: .75rem; font-weight: 800; } /* Shape and layout: I create circular numbered badges. */
-.strategy-flow-number-danger { background: var(--strategy-danger); } /* Modifier: I change the risk-step number background. */
 .strategy-flow-icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 34px; height: 34px; color: var(--strategy-blue); background: var(--strategy-blue-soft); border: 1px solid rgba(79, 134, 182, .18); border-radius: 7px; font-size: .8125rem; } /* Icon container: I centre icons inside styled boxes. */
-.strategy-flow-icon-danger { color: #ef9aa2; background: rgba(220, 107, 117, .11); border-color: rgba(220, 107, 117, .22); } /* Modifier: I apply risk colours to the final icon. */
 .strategy-flow-copy { min-width: 0; } /* Shrinking: I prevent text from enforcing a minimum width. */
 .strategy-flow-copy strong { display: block; margin-bottom: .08rem; color: var(--strategy-text); font-size: .8125rem; overflow-wrap: anywhere; } /* Typography: I display each step title on its own line. */
 .strategy-flow-copy span { display: block; color: var(--strategy-muted); font-size: .75rem; line-height: 1.4; overflow-wrap: anywhere; } /* Typography: I display each supporting explanation below its title. */
@@ -171,7 +188,7 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
 .strategy-compare-copy strong { display: block; margin-bottom: .08rem; color: var(--strategy-text); font-size: .875rem; } /* Typography: I display the comparison title separately. */
 
 /* ======================================================== */
-/* 11. EMPTY STATES                                        */
+/* 11. EMPTY STATES                                         */
 /* ======================================================== */
 .strategy-no-results { width: 100%; min-width: 0; margin-top: .8rem; padding: .8rem; color: var(--strategy-muted); background: var(--strategy-panel-dark); border: 1px dashed var(--strategy-border); border-radius: 7px; text-align: center; font-size: .8125rem; overflow-wrap: anywhere; } /* Message styling: I format missing-category and no-match states. */
 
@@ -206,30 +223,25 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
 .my-strategy-metric strong { display: block; margin-top: .12rem; color: var(--strategy-text); font-size: .875rem; overflow-wrap: anywhere; } /* Typography: I style metric values. */
 
 /* ======================================================== */
-/* 14. VALIDATION BOXES                                     */
+/* 14. INLINE STRATEGY CREATION                             */
 /* ======================================================== */
-.validation-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .65rem; width: 100%; min-width: 0; } /* Grid: I define a reusable three-column validation layout. */
-.validation-box { min-width: 0; padding: .8rem; background: var(--strategy-panel-dark); border: 1px solid var(--strategy-border-soft); border-radius: 8px; } /* Box styling: I define validation and scenario cards. */
-.validation-box h3 { margin: .15rem 0 .35rem; color: var(--strategy-text); font-size: .9rem; font-weight: 720; overflow-wrap: anywhere; } /* Typography: I style validation headings. */
-.validation-box p { color: var(--strategy-muted); font-size: .8125rem; line-height: 1.5; overflow-wrap: anywhere; } /* Typography: I style validation explanations. */
-.validation-question { min-width: 0; padding: .6rem; color: #d7e0eb; background: var(--strategy-panel-soft); border: 1px solid var(--strategy-border-soft); border-radius: 6px; font-size: .8125rem; line-height: 1.45; overflow-wrap: anywhere; } /* Box styling: I retain the reusable validation-question style. */
+.create-strategy-details { width: 100%; min-width: 0; margin-top: .8rem; overflow: hidden; color: var(--strategy-text); background: var(--strategy-panel-dark); border: 1px solid var(--strategy-border); border-radius: 8px; } /* Details element: I contain the same-page strategy form. */
+.create-strategy-details > summary { display: flex; align-items: center; justify-content: space-between; gap: .6rem; cursor: pointer; padding: .7rem .8rem; color: #dce5ef; background: var(--strategy-panel-soft); list-style: none; font-size: .8125rem; font-weight: 700; } /* Summary: I create the clickable form heading. */
+.create-strategy-details > summary::-webkit-details-marker { display: none; } /* Browser pseudo-element: I hide the native details marker. */
+.create-strategy-summary-label { display: flex; align-items: center; gap: .45rem; min-width: 0; } /* Flexbox: I align the form icon and title. */
+.create-strategy-chevron { flex: 0 0 auto; color: var(--strategy-muted); transition: transform .2s ease; } /* Transition: I prepare the opening indicator. */
+.create-strategy-details[open] .create-strategy-chevron { transform: rotate(180deg); } /* Attribute selector: I rotate the chevron while the form is open. */
+.create-strategy-body { min-width: 0; padding: .8rem; border-top: 1px solid var(--strategy-border-soft); } /* Form body: I separate the form from its summary. */
+.create-strategy-intro { margin: 0 0 .75rem; color: var(--strategy-muted); font-size: .8125rem; line-height: 1.5; } /* Paragraph: I explain what the inline form creates. */
+.create-strategy-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; width: 100%; min-width: 0; } /* Grid: I display form fields in two columns when space permits. */
+.create-strategy-field { min-width: 0; } /* Field wrapper: I allow fields to shrink within the grid. */
+.create-strategy-field label { display: block; margin-bottom: .3rem; color: #d7e0eb; font-size: .75rem; font-weight: 700; } /* Label: I style each form-field name. */
+.create-strategy-field .form-text { color: var(--strategy-muted); font-size: .75rem; } /* Supporting text: I style Django field help text. */
+.create-strategy-errors { margin-top: .25rem; color: #ef9aa2; font-size: .75rem; } /* Error text: I distinguish Django validation messages. */
+.create-strategy-actions { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .8rem; } /* Flexbox: I arrange form actions. */
 
 /* ======================================================== */
-/* 15. SAME-PAGE ANALYTICS RESULTS                           */
-/* ======================================================== */
-.strategy-analysis-form { min-width: 0; } /* Shrinking: I allow analytics forms to narrow. */
-.strategy-analysis-form .form-label { margin-bottom: .3rem; color: #d7e0eb; font-size: .75rem; font-weight: 700; } /* Labels: I style analysis inputs. */
-.strategy-result-panel { min-width: 0; margin-top: .9rem; padding: .8rem; background: var(--strategy-panel-dark); border: 1px solid var(--strategy-border-soft); border-radius: 8px; } /* Panel styling: I contain saved analysis results. */
-.strategy-result-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .5rem; width: 100%; min-width: 0; } /* Grid: I arrange four result statistics. */
-.strategy-result-stat { min-width: 0; padding: .65rem; background: var(--strategy-panel-soft); border: 1px solid var(--strategy-border-soft); border-radius: 6px; } /* Statistic box: I style individual result values. */
-.strategy-result-stat span { display: block; margin-bottom: .15rem; color: var(--strategy-muted); font-size: .7rem; text-transform: uppercase; overflow-wrap: anywhere; } /* Typography: I style result labels. */
-.strategy-result-stat strong { display: block; color: var(--strategy-text); font-size: .875rem; overflow-wrap: anywhere; } /* Typography: I style result values. */
-.strategy-result-note { margin-top: .7rem; padding: .65rem; color: var(--strategy-muted); background: var(--strategy-panel-soft); border: 1px solid var(--strategy-border-soft); border-radius: 6px; font-size: .8125rem; line-height: 1.5; overflow-wrap: anywhere; } /* Note styling: I format interpretation and recommendation text. */
-.strategy-status-success { color: #a8f3d0 !important; } /* Modifier: I retain the success-status text colour. */
-.strategy-status-danger { color: #ef9aa2 !important; } /* Modifier: I set the danger-status text colour. */
-
-/* ======================================================== */
-/* 16. RELATED TOOLS                                        */
+/* 15. RELATED TOOLS                                        */
 /* ======================================================== */
 .related-tools-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: .65rem; width: 100%; min-width: 0; } /* Grid: I define a single-column related-tools layout. */
 .related-tool { min-width: 0; padding: .8rem; background: var(--strategy-panel-dark); border: 1px solid var(--strategy-border-soft); border-radius: 8px; } /* Box styling: I contain related research links. */
@@ -237,7 +249,7 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
 .related-tool p { margin-bottom: .5rem; color: var(--strategy-muted); font-size: .8125rem; line-height: 1.5; overflow-wrap: anywhere; } /* Typography: I style related-tool explanations. */
 
 /* ======================================================== */
-/* 17. BOOTSTRAP COMPONENT ADJUSTMENTS                       */
+/* 16. BOOTSTRAP COMPONENT ADJUSTMENTS                       */
 /* ======================================================== */
 .strategy-workspace .btn { max-width: 100%; border-radius: 6px; font-size: .8125rem; font-weight: 650; } /* Scoped selector: I adjust buttons only inside this workspace. */
 .strategy-workspace .btn-primary { background: #3f739e; border-color: #4c83af; box-shadow: 0 2px 5px rgba(0, 0, 0, .12); } /* Button theme: I style primary actions. */
@@ -246,16 +258,16 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
 .strategy-workspace .btn-outline-primary:hover { color: #ffffff; background: #3f739e; border-color: #5f8fb6; } /* Hover state: I fill primary outline buttons. */
 .strategy-workspace .btn-outline-secondary { color: #c2cfdb; border-color: #53667b; } /* Button theme: I style secondary outline actions. */
 .strategy-workspace .btn-outline-secondary:hover { color: #ffffff; background: #314258; border-color: #667b92; } /* Hover state: I fill secondary outline buttons. */
-.strategy-workspace .btn-outline-danger { color: #ef9aa2; border-color: rgba(220, 107, 117, .65); } /* Button theme: I style stress-test actions. */
-.strategy-workspace .btn-outline-danger:hover { color: #ffffff; background: var(--strategy-danger); border-color: var(--strategy-danger); } /* Hover state: I fill danger outline buttons. */
 .strategy-workspace .form-control, .strategy-workspace .form-select { width: 100%; max-width: 100%; min-width: 0; min-height: 38px; color: var(--strategy-text); background-color: #142131; border-color: #3a4d64; border-radius: 6px; font-size: .8125rem; } /* Grouped selectors: I theme inputs and dropdowns. */
+.strategy-workspace textarea.form-control { min-height: 90px; } /* Element and class selector: I give multiline fields useful vertical space. */
 .strategy-workspace .form-control:focus, .strategy-workspace .form-select:focus { color: var(--strategy-text); background-color: #142131; border-color: var(--strategy-blue); box-shadow: 0 0 0 2px rgba(79, 134, 182, .14); } /* Focus state: I highlight the active input. */
 .strategy-workspace .form-control::placeholder { color: #72859a; } /* Pseudo-element: I style input hints. */
-.strategy-workspace .form-select option { color: #111111; background: #ffffff; } /* Option styling: I preserve the original dropdown-option colours. */
+.strategy-workspace .form-select option { color: #111111; background: #ffffff; } /* Option styling: I preserve readable dropdown-option colours. */
 .strategy-workspace .form-check-input { background-color: #142131; border-color: #53667b; } /* Checkbox styling: I theme unchecked inputs. */
 .strategy-workspace .form-check-input:checked { background-color: var(--strategy-blue); border-color: var(--strategy-blue); } /* Checked state: I theme selected checkboxes. */
 .strategy-workspace .alert { min-width: 0; color: var(--strategy-text); background: var(--strategy-panel-soft); border-color: var(--strategy-border); font-size: .8125rem; overflow-wrap: anywhere; } /* Alert styling: I theme informational messages. */
 .strategy-workspace .alert-info { color: #c9e5f8; background: rgba(79, 134, 182, .13); border-color: rgba(79, 134, 182, .3); } /* Modifier: I distinguish information alerts. */
+.strategy-workspace .alert-danger { color: #ffd4d8; background: rgba(220, 107, 117, .12); border-color: rgba(220, 107, 117, .3); } /* Modifier: I style form-wide validation errors. */
 .strategy-workspace .badge { font-size: .7rem; line-height: 1.2; } /* Typography: I size status badges. */
 .strategy-workspace .badge.bg-success { color: #bdf7da !important; background: rgba(50, 201, 139, .15) !important; border: 1px solid rgba(50, 201, 139, .25); } /* Combined selector: I theme success badges. */
 .strategy-workspace .badge.bg-warning { color: #ffe6ac !important; background: rgba(211, 168, 84, .14) !important; border: 1px solid rgba(211, 168, 84, .25); } /* Combined selector: I theme warning badges. */
@@ -263,35 +275,34 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
 .strategy-requirement-badge { max-width: 100%; color: #d6e1eb; background: #122031; border: 1px solid var(--strategy-border-soft); white-space: normal; overflow-wrap: anywhere; } /* Wrapping: I allow long data-requirement badges to wrap. */
 
 /* ======================================================== */
-/* 18. RESPONSIVE: SMALL DESKTOP                            */
+/* 17. RESPONSIVE: SMALL DESKTOP                            */
 /* ======================================================== */
 @media (max-width: 1199.98px) { /* Media query: I apply these changes at this viewport width and below. */
     .strategy-workspace { max-width: 100%; } /* Width: I use all available space. */
     .strategy-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } /* Grid: I display workflow steps in two columns. */
     .strategy-flow-arrow { display: none; } /* Visibility: I hide arrows when the workflow wraps. */
-    .validation-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } /* Grid: I use two validation columns. */
 } /* I finish the small-desktop media query. */
 
 /* ======================================================== */
-/* 19. RESPONSIVE: TABLET                                   */
+/* 18. RESPONSIVE: TABLET                                   */
 /* ======================================================== */
 @media (max-width: 991.98px) { /* Media query: I apply tablet-sized layout changes. */
     .strategy-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } /* Grid: I use two filter columns. */
-    .my-strategy-metrics, .strategy-result-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } /* Grid: I use two metric columns. */
+    .my-strategy-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } /* Grid: I use two strategy-metric columns. */
     .strategy-model-main { grid-template-columns: auto minmax(0, 1fr); align-items: start; } /* Grid: I keep the checkbox beside the description. */
     .strategy-model-actions { grid-column: 1 / -1; padding-left: 0; } /* Grid placement: I put actions across the full row. */
     .strategy-model-actions .btn { width: auto; } /* Sizing: I retain content-sized action buttons. */
 } /* I finish the tablet media query. */
 
 /* ======================================================== */
-/* 20. RESPONSIVE: PHONE                                    */
+/* 19. RESPONSIVE: PHONE                                    */
 /* ======================================================== */
 @media (max-width: 767.98px) { /* Media query: I adapt the workspace for phone-sized screens. */
     .strategy-workspace { width: 100%; max-width: 100%; min-width: 0; margin: 0; transform: none; } /* Container: I remove desktop centring and transforms. */
     .strategy-page-header, .strategy-section-header { flex-direction: column; align-items: stretch; } /* Flexbox: I stack heading content. */
     .strategy-header-actions { width: 100%; } /* Sizing: I fill the action-container width. */
     .strategy-header-actions .btn { width: 100%; } /* Sizing: I make header buttons full width. */
-    .strategy-flow, .strategy-filter-grid, .validation-grid, .related-tools-grid, .strategy-model-detail-content, .strategy-result-grid { grid-template-columns: minmax(0, 1fr); } /* Grid: I switch these layouts to one column. */
+    .strategy-flow, .strategy-filter-grid, .related-tools-grid, .strategy-model-detail-content, .create-strategy-grid { grid-template-columns: minmax(0, 1fr); } /* Grid: I switch these layouts to one column. */
     .strategy-flow { gap: .7rem; } /* Spacing: I increase the gap between stacked workflow steps. */
     .strategy-flow-step { width: 100%; padding: .25rem 0; } /* Sizing: I give each workflow step a full row. */
     .strategy-filter-grid { align-items: stretch; } /* Alignment: I stretch filter groups. */
@@ -309,15 +320,17 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
     .my-strategy-actions { width: 100%; flex-direction: column; } /* Flexbox: I stack user-strategy actions. */
     .my-strategy-actions .btn { width: 100%; flex: 0 0 auto; } /* Sizing: I make strategy buttons full width. */
     .my-strategy-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } /* Grid: I keep strategy metrics in two columns. */
-    .validation-box .btn, .related-tool .btn { width: 100%; } /* Sizing: I expand validation and related-tool buttons. */
+    .related-tool .btn { width: 100%; } /* Sizing: I expand related-tool buttons. */
+    .create-strategy-actions { flex-direction: column; } /* Flexbox: I stack strategy-form actions. */
+    .create-strategy-actions .btn { width: 100%; } /* Sizing: I make strategy-form buttons full width. */
     .strategy-panel { padding: .8rem; } /* Spacing: I reduce panel padding. */
 } /* I finish the phone media query. */
 
 /* ======================================================== */
-/* 21. RESPONSIVE: VERY SMALL PHONE                         */
+/* 20. RESPONSIVE: VERY SMALL PHONE                         */
 /* ======================================================== */
 @media (max-width: 575.98px) { /* Media query: I apply the smallest-screen refinements. */
-    .strategy-page-title { font-size: 1.4rem; } /* Typography: I preserve the original small-screen title rule. */
+    .strategy-page-title { font-size: 1.4rem; } /* Typography: I reduce the page title. */
     .strategy-page-subtitle { font-size: .8125rem; } /* Typography: I reduce the subtitle size. */
     .strategy-panel { padding: .7rem; border-radius: 7px; } /* Box styling: I reduce panel spacing and rounding. */
     .strategy-flow { grid-template-columns: minmax(0, 1fr); } /* Grid: I retain one workflow column. */
@@ -329,58 +342,54 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
     .strategy-model-main { gap: .45rem; } /* Spacing: I reduce the model-column gap. */
     .strategy-model-title-row { align-items: flex-start; } /* Alignment: I align model titles and badges at the top. */
     .strategy-model-details summary { padding: .5rem; } /* Spacing: I compact disclosure controls. */
-    .my-strategy-summary, .my-strategy-detail-body { padding: .65rem; } /* Spacing: I compact strategy panels. */
-    .my-strategy-metrics, .strategy-result-grid { grid-template-columns: minmax(0, 1fr); } /* Grid: I stack all metrics in one column. */
+    .my-strategy-summary, .my-strategy-detail-body, .create-strategy-body { padding: .65rem; } /* Spacing: I compact strategy and creation panels. */
+    .my-strategy-metrics { grid-template-columns: minmax(0, 1fr); } /* Grid: I stack strategy metrics in one column. */
     .strategy-comparison-table th, .strategy-comparison-table td { padding: .5rem; } /* Spacing: I compact comparison cells. */
 } /* I finish the smallest-screen media query. */
 
 /* ======================================================== */
-/* 22. FINAL TYPOGRAPHY RULES                               */
+/* 21. FINAL TYPOGRAPHY RULES                               */
 /* ======================================================== */
 .strategy-workspace { font-size: .875rem; line-height: 1.5; } /* Cascade: I retain the final base typography declaration. */
-.strategy-workspace p, .strategy-page-subtitle, .strategy-section-header p, .strategy-model-summary, .strategy-detail-block p, .my-strategy-description, .validation-box p, .related-tool p, .strategy-compare-copy, .strategy-result-note { font-size: .8125rem; line-height: 1.5; } /* Grouped selectors: I standardise descriptive text. */
-.strategy-workspace small, .strategy-workspace .small, .strategy-library-hint, .strategy-flow-copy span, .strategy-category-count, .strategy-detail-label, .strategy-parameter-list span, .my-strategy-metric span, .strategy-result-stat span { font-size: .75rem; } /* Typography: I standardise supporting metadata. */
+.strategy-workspace p, .strategy-page-subtitle, .strategy-section-header p, .strategy-model-summary, .strategy-detail-block p, .my-strategy-description, .related-tool p, .strategy-compare-copy, .create-strategy-intro { font-size: .8125rem; line-height: 1.5; } /* Grouped selectors: I standardise descriptive text. */
+.strategy-workspace small, .strategy-workspace .small, .strategy-library-hint, .strategy-flow-copy span, .strategy-category-count, .strategy-detail-label, .strategy-parameter-list span, .my-strategy-metric span, .create-strategy-field label, .create-strategy-field .form-text, .create-strategy-errors { font-size: .75rem; } /* Typography: I standardise supporting metadata. */
 .strategy-eyebrow { font-size: .75rem; } /* Typography: I set the final eyebrow size. */
-.strategy-page-title { font-size: 1.5rem; } /* Cascade: I retain this later title rule, which can override the earlier small-phone size. */
+.strategy-page-title { font-size: 1.5rem; } /* Cascade: I retain the main title size. */
 .strategy-section-header h2 { font-size: 1rem; } /* Typography: I set section heading size. */
-.strategy-model-title-row h3, .my-strategy-name h3, .validation-box h3, .related-tool h3 { font-size: .9rem; } /* Typography: I standardise subheadings. */
+.strategy-model-title-row h3, .my-strategy-name h3, .related-tool h3 { font-size: .9rem; } /* Typography: I standardise subheadings. */
 .strategy-flow-copy strong { font-size: .8125rem; } /* Typography: I size workflow titles. */
 .strategy-flow-copy span { font-size: .75rem; } /* Typography: I size workflow descriptions. */
 .strategy-flow-number, .strategy-category-number { font-size: .75rem; } /* Typography: I size number badges. */
 .strategy-category-button { font-size: .8125rem; } /* Typography: I size category buttons. */
-.strategy-model-details summary, .my-strategy-details summary { font-size: .8125rem; } /* Typography: I size disclosure summaries. */
-.strategy-filter-grid label, .strategy-analysis-form .form-label { font-size: .75rem; } /* Typography: I size labels. */
+.strategy-model-details summary, .my-strategy-details summary, .create-strategy-details > summary { font-size: .8125rem; } /* Typography: I size disclosure summaries. */
+.strategy-filter-grid label { font-size: .75rem; } /* Typography: I size filter labels. */
 .strategy-workspace .form-control, .strategy-workspace .form-select { font-size: .8125rem; } /* Typography: I size form controls. */
 .strategy-workspace .btn, .strategy-workspace .btn-sm { font-size: .8125rem; } /* Typography: I size buttons. */
 .strategy-workspace .badge, .strategy-model-title-row .badge { font-size: .7rem; } /* Typography: I size status badges. */
 .strategy-comparison-table th, .strategy-comparison-table td { font-size: .8125rem; } /* Typography: I size comparison cells. */
 .my-strategy-metric span { font-size: .7rem; } /* Cascade: I set the final strategy-metric label size. */
-.my-strategy-metric strong, .strategy-result-stat strong { font-size: .875rem; } /* Typography: I size metric values. */
-.validation-question { font-size: .8125rem; } /* Typography: I size validation-question text. */
+.my-strategy-metric strong { font-size: .875rem; } /* Typography: I size metric values. */
 .strategy-no-results, .strategy-workspace .alert { font-size: .8125rem; } /* Typography: I size empty-state and alert text. */
 </style> {# Closing element: I finish the workspace CSS. #}
 {% endblock %} {# Block boundary: I finish page-specific styling. #}
 
 {# ======================================================== #}
-{# 23. PAGE CONTENT AND HEADER                              #}
+{# 22. PAGE CONTENT AND HEADER                              #}
 {# ======================================================== #}
 {% block content %} {# Named block: I start the content inserted into base.html. #}
 <div class="strategy-workspace"> {# Container: I scope the workspace styling and content. #}
+
     <div class="strategy-page-header"> {# Container: I arrange the introduction and actions. #}
         <div> {# Container: I group the title and description. #}
             <h1 class="strategy-page-title">Strategy & Model Research</h1> {# Heading: I identify the workspace. #}
             <p class="strategy-page-subtitle"> {# Paragraph: I introduce the available research tools. #}
                 Explore quantitative approaches, create your own {# Static text: I introduce model research and strategy creation. #}
-                strategies, test historical performance, investigate {# Static text: I introduce historical testing. #}
-                robustness and evaluate severe hypothetical {# Static text: I introduce validation and stress scenarios. #}
-                market scenarios. {# Static text: I finish the description. #}
+                strategies and test their historical performance {# Static text: I identify the main research workflow. #}
+                using stored MarketPulse market data. {# Static text: I finish the description. #}
             </p> {# Closing tag: I finish the description. #}
         </div> {# Closing tag: I finish the introduction. #}
+
         <div class="strategy-header-actions"> {# Container: I group header action links. #}
-            <a class="btn btn-primary" href="{% url 'strategy_builder:create' %}"> {# Named URL: I link to strategy creation. #}
-                <i class="fa-solid fa-plus me-1"></i> {# Icon: I display a plus symbol. #}
-                New Strategy {# Static text: I label the action. #}
-            </a> {# Closing tag: I finish the creation link. #}
             {% if request.user.is_staff %} {# Boolean condition: I display the library-add link only for staff users. #}
                 <a class="btn btn-outline-primary" href="{% url 'strategy_builder:library_add' %}"> {# Named URL: I link to the library-entry form. #}
                     <i class="fa-solid fa-database me-1"></i> {# Icon: I identify the library action. #}
@@ -391,60 +400,53 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
     </div> {# Closing tag: I finish the page header. #}
 
     {# ======================================================== #}
-    {# 24. RESEARCH WORKFLOW                                    #}
+    {# 23. RESEARCH WORKFLOW                                    #}
     {# ======================================================== #}
     <section class="strategy-panel"> {# Semantic section: I group the research workflow. #}
         <div class="strategy-eyebrow">Research Workflow</div> {# Label: I identify the workflow panel. #}
+
         <div class="strategy-flow"> {# Grid container: I arrange workflow steps and arrows. #}
             <div class="strategy-flow-step"> {# Container: I begin step one. #}
                 <span class="strategy-flow-number">1</span> {# Inline element: I display the step number. #}
-                <span class="strategy-flow-icon"><i class="fa-solid fa-book-open"></i></span> {# Nested elements: I display the research icon. #}
+                <span class="strategy-flow-icon"> {# Container: I hold the research icon. #}
+                    <i class="fa-solid fa-book-open"></i> {# Icon: I represent model research. #}
+                </span> {# Closing tag: I finish the icon container. #}
                 <div class="strategy-flow-copy"> {# Container: I group step-one text. #}
                     <strong>Choose a Model</strong> {# Emphasis: I display the step title. #}
                     <span>Explore a quantitative approach.</span> {# Inline text: I explain the step. #}
-                </div> {# Closing tag: I finish the step text. #}
+                </div> {# Closing tag: I finish step-one text. #}
             </div> {# Closing tag: I finish step one. #}
+
             <i class="fa-solid fa-chevron-right strategy-flow-arrow"></i> {# Icon: I indicate the next workflow step. #}
+
             <div class="strategy-flow-step"> {# Container: I begin step two. #}
                 <span class="strategy-flow-number">2</span> {# Inline element: I display the step number. #}
-                <span class="strategy-flow-icon"><i class="fa-solid fa-sliders"></i></span> {# Icon container: I represent parameter configuration. #}
+                <span class="strategy-flow-icon"> {# Container: I hold the strategy-builder icon. #}
+                    <i class="fa-solid fa-sliders"></i> {# Icon: I represent parameter configuration. #}
+                </span> {# Closing tag: I finish the icon container. #}
                 <div class="strategy-flow-copy"> {# Container: I group step-two text. #}
                     <strong>Build a Strategy</strong> {# Emphasis: I display the step title. #}
                     <span>Define trading rules and parameters.</span> {# Text: I explain strategy construction. #}
-                </div> {# Closing tag: I finish the step text. #}
+                </div> {# Closing tag: I finish step-two text. #}
             </div> {# Closing tag: I finish step two. #}
-            <i class="fa-solid fa-chevron-right strategy-flow-arrow"></i> {# Icon: I display the next arrow. #}
+
+            <i class="fa-solid fa-chevron-right strategy-flow-arrow"></i> {# Icon: I indicate the final workflow step. #}
+
             <div class="strategy-flow-step"> {# Container: I begin step three. #}
                 <span class="strategy-flow-number">3</span> {# Inline element: I display the step number. #}
-                <span class="strategy-flow-icon"><i class="fa-solid fa-clock-rotate-left"></i></span> {# Icon container: I represent historical testing. #}
+                <span class="strategy-flow-icon"> {# Container: I hold the backtesting icon. #}
+                    <i class="fa-solid fa-clock-rotate-left"></i> {# Icon: I represent historical testing. #}
+                </span> {# Closing tag: I finish the icon container. #}
                 <div class="strategy-flow-copy"> {# Container: I group step-three text. #}
                     <strong>Backtest</strong> {# Emphasis: I display the step title. #}
                     <span>Measure historical behaviour.</span> {# Text: I explain the historical test. #}
-                </div> {# Closing tag: I finish the step text. #}
+                </div> {# Closing tag: I finish step-three text. #}
             </div> {# Closing tag: I finish step three. #}
-            <i class="fa-solid fa-chevron-right strategy-flow-arrow"></i> {# Icon: I display the next arrow. #}
-            <div class="strategy-flow-step"> {# Container: I begin step four. #}
-                <span class="strategy-flow-number">4</span> {# Inline element: I display the step number. #}
-                <span class="strategy-flow-icon"><i class="fa-solid fa-shield-halved"></i></span> {# Icon container: I represent robustness checking. #}
-                <div class="strategy-flow-copy"> {# Container: I group step-four text. #}
-                    <strong>Check Robustness</strong> {# Emphasis: I display the step title. #}
-                    <span>Investigate possible overfitting.</span> {# Text: I explain the validation step. #}
-                </div> {# Closing tag: I finish the step text. #}
-            </div> {# Closing tag: I finish step four. #}
-            <i class="fa-solid fa-chevron-right strategy-flow-arrow"></i> {# Icon: I display the final arrow. #}
-            <div class="strategy-flow-step"> {# Container: I begin step five. #}
-                <span class="strategy-flow-number strategy-flow-number-danger">5</span> {# Modifier class: I display a risk-coloured step number. #}
-                <span class="strategy-flow-icon strategy-flow-icon-danger"><i class="fa-solid fa-triangle-exclamation"></i></span> {# Icon container: I represent severe hypothetical conditions. #}
-                <div class="strategy-flow-copy"> {# Container: I group step-five text. #}
-                    <strong>Stress Test</strong> {# Emphasis: I display the step title. #}
-                    <span>Explore severe market scenarios.</span> {# Text: I explain stress testing. #}
-                </div> {# Closing tag: I finish the step text. #}
-            </div> {# Closing tag: I finish step five. #}
         </div> {# Closing tag: I finish the workflow grid. #}
     </section> {# Closing tag: I finish the workflow section. #}
 
     {# ======================================================== #}
-    {# 25. SEARCH AND FILTER CONTROLS                           #}
+    {# 24. SEARCH AND FILTER CONTROLS                           #}
     {# ======================================================== #}
     <section class="strategy-panel"> {# Section: I group library filtering controls. #}
         <div class="strategy-section-header"> {# Container: I begin the section introduction. #}
@@ -457,6 +459,7 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
                 </p> {# Closing tag: I finish the explanation. #}
             </div> {# Closing tag: I finish heading text. #}
         </div> {# Closing tag: I finish the introduction. #}
+
         <div class="strategy-filter-grid"> {# Grid container: I arrange the filter controls. #}
             <div> {# Container: I group the search label and input. #}
                 <label for="modelSearch">Search</label> {# Label association: I identify the search input by ID. #}
@@ -465,6 +468,7 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
                     <input type="search" id="modelSearch" class="form-control" placeholder="Search ARIMA, Heston, Random Forest, Monte Carlo..."> {# Input attributes: JavaScript uses this ID to read search text. #}
                 </div> {# Closing tag: I finish the search wrapper. #}
             </div> {# Closing tag: I finish the search group. #}
+
             <div> {# Container: I group category filtering. #}
                 <label for="categoryFilter">Category</label> {# Label association: I identify the category dropdown. #}
                 <select id="categoryFilter" class="form-select"> {# Dropdown: JavaScript reads the selected category code. #}
@@ -474,6 +478,7 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
                     {% endfor %} {# Loop boundary: I finish category options. #}
                 </select> {# Closing tag: I finish the category filter. #}
             </div> {# Closing tag: I finish the category group. #}
+
             <div> {# Container: I group status filtering. #}
                 <label for="statusFilter">Implementation</label> {# Label association: I identify the status dropdown. #}
                 <select id="statusFilter" class="form-select"> {# Dropdown: JavaScript reads the selected implementation code. #}
@@ -483,6 +488,7 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
                     <option value="catalogued">Catalogued</option> {# Option: I filter catalogue entries. #}
                 </select> {# Closing tag: I finish the status filter. #}
             </div> {# Closing tag: I finish the status group. #}
+
             <div> {# Container: I hold the clearing action. #}
                 <button type="button" id="clearFilters" class="btn btn-outline-secondary w-100">Clear</button> {# Button: JavaScript resets filters without submitting a form. #}
             </div> {# Closing tag: I finish the clearing group. #}
@@ -490,7 +496,7 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
     </section> {# Closing tag: I finish the filter section. #}
 
     {# ======================================================== #}
-    {# 26. MODEL LIBRARY AND CATEGORY ACCORDION                 #}
+    {# 25. MODEL LIBRARY AND CATEGORY ACCORDION                 #}
     {# ======================================================== #}
     <section class="strategy-panel" id="modelLibrarySection"> {# Section and ID: I identify the model-library panel. #}
         <div class="strategy-section-header"> {# Container: I arrange library introduction and guidance. #}
@@ -502,14 +508,18 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
                     and expand only the details you need. {# Text: I explain progressive disclosure. #}
                 </p> {# Closing tag: I finish the description. #}
             </div> {# Closing tag: I finish the introduction. #}
+
             <div class="strategy-library-meta"> {# Container: I hold comparison guidance. #}
                 <span class="strategy-library-hint">Select 2–4 models if you want to compare them.</span> {# Text: I explain the allowed comparison selection. #}
             </div> {# Closing tag: I finish guidance. #}
         </div> {# Closing tag: I finish the library header. #}
+
         <form method="get" id="compareForm"> {# GET form: I send checked compare values as URL query parameters. #}
             <div class="accordion strategy-category-accordion" id="strategyCategoryAccordion"> {# Bootstrap accordion: I contain category collapse panels. #}
+
                 {% for category in category_cards %} {# Iteration: I create a panel for each category. #}
                     <div class="accordion-item strategy-category-item" data-category="{{ category.code }}"> {# Data attribute: I associate the panel with its category code. #}
+
                         <h2 class="accordion-header" id="categoryHeading{{ forloop.counter }}"> {# Loop counter: I generate a distinct category-heading ID. #}
                             <button class="accordion-button collapsed strategy-category-button" type="button" data-bs-toggle="collapse" data-bs-target="#categoryCollapse{{ forloop.counter }}" aria-expanded="false" aria-controls="categoryCollapse{{ forloop.counter }}"> {# Bootstrap attributes: I link this button to its initially closed category panel. #}
                                 <span class="strategy-category-number">{{ forloop.counter }}</span> {# Loop metadata: I display the one-based category number. #}
@@ -520,22 +530,28 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
                                 </span> {# Closing tag: I finish the count. #}
                             </button> {# Closing tag: I finish the category button. #}
                         </h2> {# Closing tag: I finish the category heading. #}
+
                         <div id="categoryCollapse{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="categoryHeading{{ forloop.counter }}" data-bs-parent="#strategyCategoryAccordion"> {# Matching IDs: I connect the collapsible panel, heading and accordion parent. #}
                             <div class="accordion-body strategy-category-body"> {# Container: I hold the category's model entries. #}
+
                                 {% for item in library_items %} {# Nested iteration: I inspect each supplied library item. #}
                                     {% if item.category == category.code %} {# Comparison: I display only items belonging to this category. #}
 
                                         {# -------------------------------------------------------- #}
-                                        {# 26.1 MODEL SUMMARY AND COMPARISON CHECKBOX                #}
+                                        {# 25.1 MODEL SUMMARY AND COMPARISON CHECKBOX                #}
                                         {# -------------------------------------------------------- #}
                                         <article class="strategy-model-row" data-name="{{ item.name|lower }} {{ item.description|lower }} {{ item.purpose|lower }}" data-category="{{ item.category }}" data-status="{{ item.implementation_status }}"> {# Data attributes and filters: I supply searchable text, category and status to JavaScript. #}
+
                                             <div class="strategy-model-main"> {# Grid container: I arrange selection, description and action. #}
+
                                                 <div class="strategy-model-select"> {# Container: I centre the comparison checkbox. #}
                                                     <input type="checkbox" class="form-check-input model-compare-checkbox" name="compare" value="{{ item.code }}" aria-label="Compare {{ item.name }}" {% if item.code in compare_codes %}checked{% endif %}> {# Membership condition: I preserve selected codes and submit each checked code under compare. #}
                                                 </div> {# Closing tag: I finish the checkbox container. #}
+
                                                 <div class="strategy-model-copy"> {# Container: I group name, status and description. #}
                                                     <div class="strategy-model-title-row"> {# Flex container: I arrange name and badge. #}
                                                         <h3>{{ item.name }}</h3> {# Variable: I display the model name. #}
+
                                                         {% if item.implementation_status == "ready" %} {# Conditional: I check for ready status. #}
                                                             <span class="badge bg-success">Ready to Run</span> {# Badge: I display the ready label. #}
                                                         {% elif item.implementation_status == "experimental" %} {# Alternative condition: I check for experimental status. #}
@@ -544,8 +560,10 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
                                                             <span class="badge bg-secondary">Catalogued</span> {# Badge: I display the catalogue label. #}
                                                         {% endif %} {# Conditional boundary: I finish status display. #}
                                                     </div> {# Closing tag: I finish the title row. #}
+
                                                     <p class="strategy-model-summary">{{ item.description|truncatechars:150 }}</p> {# Filter argument: I shorten the description to a 150-character preview. #}
                                                 </div> {# Closing tag: I finish model text. #}
+
                                                 <div class="strategy-model-actions"> {# Container: I hold the model action. #}
                                                     <a href="{% url 'data_management:import' %}?model={{ item.code }}" class="btn btn-sm btn-outline-primary"> {# Named URL and query parameter: I pass the model code to the Data workspace. #}
                                                         <i class="fa-solid fa-database me-1"></i> {# Icon: I represent market data. #}
@@ -555,28 +573,32 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
                                             </div> {# Closing tag: I finish the main model row. #}
 
                                             {# -------------------------------------------------------- #}
-                                            {# 26.2 EXPANDABLE MODEL METADATA                            #}
+                                            {# 25.2 EXPANDABLE MODEL METADATA                            #}
                                             {# -------------------------------------------------------- #}
                                             <details class="strategy-model-details"> {# Native HTML disclosure: I provide expandable model information. #}
+
                                                 <summary> {# Disclosure control: I define the clickable summary. #}
                                                     <span> {# Container: I group the summary icon and text. #}
                                                         <i class="fa-solid fa-circle-info me-2"></i> {# Icon: I indicate extra information. #}
                                                         More Details {# Text: I label the expandable content. #}
                                                     </span> {# Closing tag: I finish the summary label. #}
+
                                                     <i class="fa-solid fa-chevron-down strategy-details-chevron"></i> {# Icon: CSS rotates this indicator when details are open. #}
                                                 </summary> {# Closing tag: I finish the disclosure control. #}
+
                                                 <div class="strategy-model-detail-content"> {# Grid container: I arrange model metadata. #}
+
                                                     <div class="strategy-detail-block"> {# Container: I group the purpose information. #}
                                                         <span class="strategy-detail-label">Purpose</span> {# Label: I identify this metadata field. #}
                                                         <p> {# Paragraph: I contain purpose text or a fallback. #}
                                                             {% if item.purpose %} {# Truthiness condition: I check whether purpose text exists. #}
                                                                 {{ item.purpose }} {# Variable: I display the stored purpose. #}
                                                             {% else %} {# Fallback branch: I handle missing purpose text. #}
-                                                                No additional purpose {# Text: I begin the fallback message. #}
-                                                                information has been supplied. {# Text: I finish the fallback message. #}
+                                                                No additional purpose information has been supplied. {# Static text: I explain the missing information. #}
                                                             {% endif %} {# Conditional boundary: I finish purpose selection. #}
                                                         </p> {# Closing tag: I finish the purpose paragraph. #}
                                                     </div> {# Closing tag: I finish the purpose block. #}
+
                                                     <div class="strategy-detail-block"> {# Container: I group data requirements. #}
                                                         <span class="strategy-detail-label">Data Required</span> {# Label: I identify required inputs. #}
                                                         <div> {# Container: I hold requirement badges. #}
@@ -587,21 +609,24 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
                                                             {% endfor %} {# Loop boundary: I finish requirements. #}
                                                         </div> {# Closing tag: I finish the badges container. #}
                                                     </div> {# Closing tag: I finish requirements. #}
+
                                                     <div class="strategy-detail-block"> {# Container: I group expected-output information. #}
                                                         <span class="strategy-detail-label">Expected Output</span> {# Label: I identify the output description. #}
                                                         <p> {# Paragraph: I hold output text or a fallback. #}
                                                             {% if item.output_type %} {# Condition: I check for configured output information. #}
                                                                 {{ item.output_type }} {# Variable: I display the stored output description. #}
                                                             {% else %} {# Fallback branch: I handle missing information. #}
-                                                                Output information {# Text: I begin the fallback. #}
-                                                                has not yet been configured. {# Text: I finish the fallback. #}
+                                                                Output information has not yet been configured. {# Static text: I explain the missing output information. #}
                                                             {% endif %} {# Conditional boundary: I finish output display. #}
                                                         </p> {# Closing tag: I finish the output paragraph. #}
                                                     </div> {# Closing tag: I finish expected output. #}
+
                                                     <div class="strategy-detail-block"> {# Container: I group default parameters. #}
                                                         <span class="strategy-detail-label">Default Parameters</span> {# Label: I identify the parameter collection. #}
+
                                                         {% if item.default_parameters %} {# Condition: I check for non-empty parameters. #}
                                                             <div class="strategy-parameter-list"> {# Flex container: I arrange parameter badges. #}
+
                                                                 {% for key, value in item.default_parameters.items %} {# Tuple unpacking: I iterate through dictionary keys and values. #}
                                                                     <span> {# Container: I display one parameter pair. #}
                                                                         <strong>{{ key }}</strong> {# Variable and emphasis: I display the parameter name. #}
@@ -611,627 +636,488 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
                                                                 {% endfor %} {# Loop boundary: I finish parameter display. #}
                                                             </div> {# Closing tag: I finish parameter badges. #}
                                                         {% else %} {# Fallback branch: I handle no parameters. #}
-                                                            <span class="text-muted small"> {# Container: I display supporting fallback text. #}
-                                                                No configurable {# Text: I begin the fallback. #}
-                                                                default parameters. {# Text: I finish the fallback. #}
-                                                            </span> {# Closing tag: I finish the fallback text. #}
+                                                            <span class="text-muted small">No configurable default parameters.</span> {# Fallback text: I explain that no defaults exist. #}
                                                         {% endif %} {# Conditional boundary: I finish parameter display. #}
                                                     </div> {# Closing tag: I finish the parameter block. #}
+
                                                 </div> {# Closing tag: I finish model metadata. #}
                                             </details> {# Closing tag: I finish expandable details. #}
                                         </article> {# Closing tag: I finish this model entry. #}
+
                                     {% endif %} {# Conditional boundary: I finish matching this item's category. #}
                                 {% endfor %} {# Loop boundary: I finish inspecting library items. #}
+
                             </div> {# Closing tag: I finish the category body. #}
                         </div> {# Closing tag: I finish the collapse panel. #}
                     </div> {# Closing tag: I finish the category item. #}
+
                 {% empty %} {# Empty-loop branch: I handle missing category cards. #}
                     <div class="strategy-no-results"> {# Message container: I display the category empty state. #}
-                        The quantitative model categories {# Text: I begin the empty-state message. #}
-                        are currently unavailable. {# Text: I finish the message. #}
+                        The quantitative model categories are currently unavailable. {# Static text: I explain missing categories. #}
                     </div> {# Closing tag: I finish the message. #}
                 {% endfor %} {# Loop boundary: I finish category panels. #}
+
             </div> {# Closing tag: I finish the accordion. #}
+
             <div id="noModelResults" class="strategy-no-results d-none"> {# Initially hidden message: JavaScript shows this when no model matches. #}
                 <i class="fa-solid fa-magnifying-glass me-2"></i> {# Icon: I indicate a search result state. #}
                 No strategy or model matches the selected filters. {# Text: I explain no matching rows. #}
             </div> {# Closing tag: I finish the no-match message. #}
+
             <div id="compareBar" class="strategy-compare-bar"> {# Container and ID: JavaScript controls this comparison bar. #}
                 <div class="strategy-compare-copy"> {# Container: I group the comparison title and count. #}
                     <strong>Compare Models</strong> {# Emphasis: I display the comparison title. #}
                     <span id="compareCounter">Select 2–4 models</span> {# Dynamic target: JavaScript updates the selected count here. #}
                 </div> {# Closing tag: I finish comparison text. #}
+
                 <button type="submit" class="btn btn-sm btn-primary" id="compareButton" disabled> {# Submit button: JavaScript enables GET submission when enough models are checked. #}
                     Compare Selected {# Text: I label the comparison action. #}
                     <i class="fa-solid fa-arrow-right ms-1"></i> {# Icon: I indicate continuing to comparison. #}
                 </button> {# Closing tag: I finish the comparison button. #}
             </div> {# Closing tag: I finish the comparison bar. #}
+
         </form> {# Closing tag: I finish the comparison GET form. #}
     </section> {# Closing tag: I finish the model library. #}
 
     {# ======================================================== #}
-    {# 27. SERVER-RENDERED MODEL COMPARISON                      #}
+    {# 26. SERVER-RENDERED MODEL COMPARISON                      #}
     {# ======================================================== #}
     {% if comparison_message %} {# Condition: I check for a message prepared by the view. #}
         <div class="alert alert-info">{{ comparison_message }}</div> {# Variable: I display comparison guidance or validation feedback. #}
     {% endif %} {# Conditional boundary: I finish message display. #}
+
     {% if compare_items|length >= 2 %} {# Filter and comparison: I show the table when at least two models are supplied. #}
-    <section class="strategy-panel"> {# Section: I group comparison results. #}
-        <div class="strategy-section-header"> {# Container: I introduce comparison. #}
-            <div> {# Container: I group heading text. #}
-                <div class="strategy-eyebrow">Research Comparison</div> {# Label: I identify the comparison context. #}
-                <h2>Model Comparison</h2> {# Heading: I identify the table. #}
-                <p> {# Paragraph: I explain the compared metadata. #}
-                    Compare the selected models by purpose, {# Text: I describe comparison criteria. #}
-                    required data, expected output and {# Text: I continue the criteria. #}
-                    implementation status. {# Text: I finish the description. #}
-                </p> {# Closing tag: I finish the explanation. #}
-            </div> {# Closing tag: I finish heading text. #}
-        </div> {# Closing tag: I finish the header. #}
-        <div class="table-responsive"> {# Wrapper: I contain horizontal table scrolling. #}
-            <table class="table table-bordered strategy-comparison-table mb-0"> {# Table: I display selected models as columns. #}
-                <tbody> {# Table structure: I begin comparison rows. #}
-                    <tr> {# Row: I display model names. #}
-                        <th style="min-width: 160px;">Model</th> {# Header cell: I identify the model-name row. #}
-                        {% for item in compare_items %} {# Loop: I create a column heading for each selected model. #}
-                            <th style="min-width: 210px;">{{ item.name }}</th> {# Variable: I display the model name. #}
-                        {% endfor %} {# Loop boundary: I finish model headings. #}
-                    </tr> {# Closing tag: I finish the name row. #}
-                    <tr> {# Row: I display model categories. #}
-                        <th>Category</th> {# Header cell: I identify this comparison criterion. #}
-                        {% for item in compare_items %} {# Loop: I process selected models. #}
-                            <td>{{ item.get_category_display }}</td> {# Display method lookup: I show the readable category label. #}
-                        {% endfor %} {# Loop boundary: I finish category cells. #}
-                    </tr> {# Closing tag: I finish the category row. #}
-                    <tr> {# Row: I display model purposes. #}
-                        <th>Purpose</th> {# Header cell: I identify the criterion. #}
-                        {% for item in compare_items %} {# Loop: I process selected models. #}
-                            <td>{{ item.purpose|default:"—" }}</td> {# Default filter: I display an em dash for a falsey purpose. #}
-                        {% endfor %} {# Loop boundary: I finish purpose cells. #}
-                    </tr> {# Closing tag: I finish the purpose row. #}
-                    <tr> {# Row: I display data requirements. #}
-                        <th>Data Required</th> {# Header cell: I identify the criterion. #}
-                        {% for item in compare_items %} {# Loop: I process selected models. #}
-                            <td> {# Cell: I contain the current model's requirements. #}
-                                {% for requirement in item.data_requirements %} {# Nested loop: I display individual requirements. #}
-                                    <span class="badge strategy-requirement-badge me-1 mb-1">{{ requirement }}</span> {# Badge: I display one required data field. #}
-                                {% empty %} {# Empty branch: I handle no requirements. #}
-                                    — {# Static text: I display a missing-value marker. #}
-                                {% endfor %} {# Loop boundary: I finish requirements. #}
-                            </td> {# Closing tag: I finish the requirements cell. #}
-                        {% endfor %} {# Loop boundary: I finish the model cells. #}
-                    </tr> {# Closing tag: I finish the requirements row. #}
-                    <tr> {# Row: I display parameter counts. #}
-                        <th>Default Parameters</th> {# Header cell: I preserve the original row label. #}
-                        {% for item in compare_items %} {# Loop: I process selected models. #}
-                            <td>{{ item.default_parameters|length }}</td> {# Length filter: I display the number of parameters, not their values. #}
-                        {% endfor %} {# Loop boundary: I finish parameter counts. #}
-                    </tr> {# Closing tag: I finish the parameter row. #}
-                    <tr> {# Row: I display expected outputs. #}
-                        <th>Expected Output</th> {# Header cell: I identify the criterion. #}
-                        {% for item in compare_items %} {# Loop: I process selected models. #}
-                            <td>{{ item.output_type|default:"—" }}</td> {# Default filter: I use an em dash if output information is falsey. #}
-                        {% endfor %} {# Loop boundary: I finish output cells. #}
-                    </tr> {# Closing tag: I finish the output row. #}
-                    <tr> {# Row: I display implementation labels. #}
-                        <th>Implementation</th> {# Header cell: I identify the criterion. #}
-                        {% for item in compare_items %} {# Loop: I process selected models. #}
-                            <td>{{ item.get_implementation_status_display }}</td> {# Display method lookup: I show the readable status label. #}
-                        {% endfor %} {# Loop boundary: I finish status cells. #}
-                    </tr> {# Closing tag: I finish the implementation row. #}
-                    <tr> {# Row: I display Data workspace links. #}
-                        <th>Research Action</th> {# Header cell: I identify available actions. #}
-                        {% for item in compare_items %} {# Loop: I create an action for each selected model. #}
-                            <td> {# Cell: I contain the action link. #}
-                                <a href="{% url 'data_management:import' %}?model={{ item.code }}" class="btn btn-sm btn-primary">Use With Data</a> {# URL and query parameter: I pass the model code to the Data page. #}
-                            </td> {# Closing tag: I finish the action cell. #}
-                        {% endfor %} {# Loop boundary: I finish action cells. #}
-                    </tr> {# Closing tag: I finish the action row. #}
-                </tbody> {# Closing tag: I finish comparison rows. #}
-            </table> {# Closing tag: I finish the comparison table. #}
-        </div> {# Closing tag: I finish the scrolling wrapper. #}
-    </section> {# Closing tag: I finish comparison results. #}
+        <section class="strategy-panel"> {# Section: I group comparison results. #}
+
+            <div class="strategy-section-header"> {# Container: I introduce comparison. #}
+                <div> {# Container: I group heading text. #}
+                    <div class="strategy-eyebrow">Research Comparison</div> {# Label: I identify the comparison context. #}
+                    <h2>Model Comparison</h2> {# Heading: I identify the table. #}
+                    <p> {# Paragraph: I explain the compared metadata. #}
+                        Compare the selected models by purpose,
+                        required data, expected output and
+                        implementation status.
+                    </p> {# Closing tag: I finish the explanation. #}
+                </div> {# Closing tag: I finish heading text. #}
+            </div> {# Closing tag: I finish the header. #}
+
+            <div class="table-responsive"> {# Wrapper: I contain horizontal table scrolling. #}
+                <table class="table table-bordered strategy-comparison-table mb-0"> {# Table: I display selected models as columns. #}
+                    <tbody> {# Table structure: I begin comparison rows. #}
+
+                        <tr> {# Row: I display model names. #}
+                            <th style="min-width: 160px;">Model</th> {# Header cell: I identify the model-name row. #}
+                            {% for item in compare_items %} {# Loop: I create a column heading for each selected model. #}
+                                <th style="min-width: 210px;">{{ item.name }}</th> {# Variable: I display the model name. #}
+                            {% endfor %} {# Loop boundary: I finish model headings. #}
+                        </tr> {# Closing tag: I finish the name row. #}
+
+                        <tr> {# Row: I display model categories. #}
+                            <th>Category</th> {# Header cell: I identify this comparison criterion. #}
+                            {% for item in compare_items %} {# Loop: I process selected models. #}
+                                <td>{{ item.get_category_display }}</td> {# Display method lookup: I show the readable category label. #}
+                            {% endfor %} {# Loop boundary: I finish category cells. #}
+                        </tr> {# Closing tag: I finish the category row. #}
+
+                        <tr> {# Row: I display model purposes. #}
+                            <th>Purpose</th> {# Header cell: I identify the criterion. #}
+                            {% for item in compare_items %} {# Loop: I process selected models. #}
+                                <td>{{ item.purpose|default:"—" }}</td> {# Default filter: I display an em dash for a falsey purpose. #}
+                            {% endfor %} {# Loop boundary: I finish purpose cells. #}
+                        </tr> {# Closing tag: I finish the purpose row. #}
+
+                        <tr> {# Row: I display data requirements. #}
+                            <th>Data Required</th> {# Header cell: I identify the criterion. #}
+
+                            {% for item in compare_items %} {# Loop: I process selected models. #}
+                                <td> {# Cell: I contain the current model's requirements. #}
+                                    {% for requirement in item.data_requirements %} {# Nested loop: I display individual requirements. #}
+                                        <span class="badge strategy-requirement-badge me-1 mb-1">{{ requirement }}</span> {# Badge: I display one required data field. #}
+                                    {% empty %} {# Empty branch: I handle no requirements. #}
+                                        — {# Static text: I display a missing-value marker. #}
+                                    {% endfor %} {# Loop boundary: I finish requirements. #}
+                                </td> {# Closing tag: I finish the requirements cell. #}
+                            {% endfor %} {# Loop boundary: I finish the model cells. #}
+                        </tr> {# Closing tag: I finish the requirements row. #}
+
+                        <tr> {# Row: I display parameter counts. #}
+                            <th>Default Parameters</th> {# Header cell: I identify the parameter-count row. #}
+                            {% for item in compare_items %} {# Loop: I process selected models. #}
+                                <td>{{ item.default_parameters|length }}</td> {# Length filter: I display the number of parameters, not their values. #}
+                            {% endfor %} {# Loop boundary: I finish parameter counts. #}
+                        </tr> {# Closing tag: I finish the parameter row. #}
+
+                        <tr> {# Row: I display expected outputs. #}
+                            <th>Expected Output</th> {# Header cell: I identify the criterion. #}
+                            {% for item in compare_items %} {# Loop: I process selected models. #}
+                                <td>{{ item.output_type|default:"—" }}</td> {# Default filter: I use an em dash if output information is falsey. #}
+                            {% endfor %} {# Loop boundary: I finish output cells. #}
+                        </tr> {# Closing tag: I finish the output row. #}
+
+                        <tr> {# Row: I display implementation labels. #}
+                            <th>Implementation</th> {# Header cell: I identify the criterion. #}
+                            {% for item in compare_items %} {# Loop: I process selected models. #}
+                                <td>{{ item.get_implementation_status_display }}</td> {# Display method lookup: I show the readable status label. #}
+                            {% endfor %} {# Loop boundary: I finish status cells. #}
+                        </tr> {# Closing tag: I finish the implementation row. #}
+
+                        <tr> {# Row: I display Data workspace links. #}
+                            <th>Research Action</th> {# Header cell: I identify available actions. #}
+
+                            {% for item in compare_items %} {# Loop: I create an action for each selected model. #}
+                                <td> {# Cell: I contain the action link. #}
+                                    <a href="{% url 'data_management:import' %}?model={{ item.code }}" class="btn btn-sm btn-primary">Use With Data</a> {# URL and query parameter: I pass the model code to the Data page. #}
+                                </td> {# Closing tag: I finish the action cell. #}
+                            {% endfor %} {# Loop boundary: I finish action cells. #}
+                        </tr> {# Closing tag: I finish the action row. #}
+
+                    </tbody> {# Closing tag: I finish comparison rows. #}
+                </table> {# Closing tag: I finish the comparison table. #}
+            </div> {# Closing tag: I finish the scrolling wrapper. #}
+        </section> {# Closing tag: I finish comparison results. #}
     {% endif %} {# Conditional boundary: I finish the comparison check. #}
 
     {# ======================================================== #}
-    {# 28. USER STRATEGIES AND HISTORICAL METRICS                #}
+    {# 27. MY STRATEGIES                                       #}
     {# ======================================================== #}
     <section class="strategy-panel" id="myStrategiesSection"> {# Section and anchor ID: I identify the user's strategy area. #}
-        <div class="strategy-section-header"> {# Container: I arrange introduction and creation link. #}
+
+        <div class="strategy-section-header"> {# Container: I arrange introduction and creation action. #}
             <div> {# Container: I group the introduction. #}
                 <div class="strategy-eyebrow">My Research</div> {# Label: I identify personal research. #}
                 <h2>My Strategies</h2> {# Heading: I identify the strategy list. #}
-                <p> {# Paragraph: I explain the list. #}
-                    Strategies you created using the {# Text: I describe ownership. #}
-                    MarketPulse Strategy Builder. {# Text: I identify the creation tool. #}
+                <p> {# Paragraph: I explain the section. #}
+                    Create, review and backtest strategies
+                    using the MarketPulse Strategy Builder.
                 </p> {# Closing tag: I finish the explanation. #}
             </div> {# Closing tag: I finish the introduction. #}
-            <a class="btn btn-sm btn-primary" href="{% url 'strategy_builder:create' %}"> {# Named URL: I link to strategy creation. #}
+
+            <a class="btn btn-sm btn-primary open-create-strategy" href="#createStrategySection"> {# Same-page anchor: I open the strategy form without navigating to /strategy/create/. #}
                 <i class="fa-solid fa-plus me-1"></i> {# Icon: I represent creation. #}
-                New Strategy {# Text: I label the link. #}
+                New Strategy {# Text: I label the action. #}
             </a> {# Closing tag: I finish the creation link. #}
         </div> {# Closing tag: I finish the strategy header. #}
+
+        {# -------------------------------------------------------- #}
+        {# 27.1 SAVED STRATEGIES WITH ENRICHED BACKTEST DATA         #}
+        {# -------------------------------------------------------- #}
         {% if my_strategy_rows %} {# Conditional: I prefer enriched rows prepared by the view. #}
+
             <div class="my-strategy-list"> {# Container: I stack strategy entries. #}
+
                 {% for row in my_strategy_rows %} {# Loop: I process each prepared strategy summary. #}
                     <article class="my-strategy-item"> {# Article: I contain one strategy. #}
+
                         <div class="my-strategy-summary"> {# Grid: I arrange information and actions. #}
+
                             <div> {# Container: I group strategy text. #}
                                 <div class="my-strategy-name"> {# Container: I group the name and status. #}
                                     <h3>{{ row.strategy.name }}</h3> {# Nested lookup: I display the strategy's name. #}
+
                                     {% if row.strategy.is_active %} {# Boolean condition: I check active status. #}
                                         <span class="badge bg-success">Active</span> {# Badge: I display active status. #}
                                     {% else %} {# Alternative branch: I handle inactive status. #}
                                         <span class="badge bg-secondary">Inactive</span> {# Badge: I display inactive status. #}
                                     {% endif %} {# Conditional boundary: I finish status display. #}
                                 </div> {# Closing tag: I finish the name group. #}
-                                <p class="my-strategy-description">{{ row.strategy.description|default:"Custom MarketPulse strategy."|truncatechars:130 }}</p> {# Filter chain: I supply fallback text and shorten the preview. #}
+
+                                <p class="my-strategy-description">{{ row.strategy.description|default:"Custom MarketPulse strategy."|truncatechars:130 }}</p> {# Filter chain: I provide fallback text and shorten the preview. #}
                             </div> {# Closing tag: I finish strategy text. #}
+
                             <div class="my-strategy-actions"> {# Container: I group strategy actions. #}
-                                <a class="btn btn-sm btn-outline-primary" href="{% url 'strategy_builder:backtest' row.strategy.id %}">Run Backtest</a> {# URL argument: I pass the strategy ID to the backtest route. #}
-                                <a class="btn btn-sm btn-outline-secondary same-page-strategy-action" href="#strategyRobustnessSection" data-strategy-id="{{ row.strategy.id }}" data-target-select="robustnessStrategy">Check Robustness</a> {# Anchor and data attributes: I select this strategy and move to its robustness form. #}
-                                <a class="btn btn-sm btn-outline-danger same-page-strategy-action" href="#stressTestingSection" data-strategy-id="{{ row.strategy.id }}" data-target-select="stressStrategy">Stress Test</a> {# Anchor and data attributes: I select this strategy and move to its stress form. #}
+                                <a class="btn btn-sm btn-outline-primary" href="{% url 'strategy_builder:backtest' row.strategy.id %}"> {# URL argument: I pass the strategy ID to the backtest route. #}
+                                    Run Backtest {# Text: I identify the strategy's historical-testing action. #}
+                                </a> {# Closing tag: I finish the backtest link. #}
                             </div> {# Closing tag: I finish actions. #}
+
                         </div> {# Closing tag: I finish the strategy summary. #}
+
                         <details class="my-strategy-details"> {# Disclosure element: I provide expandable rules and metrics. #}
                             <summary> {# Disclosure control: I define the clickable heading. #}
                                 <i class="fa-solid fa-circle-info me-2"></i> {# Icon: I indicate details. #}
                                 View Strategy Details {# Text: I label the disclosure. #}
                             </summary> {# Closing tag: I finish the control. #}
+
                             <div class="my-strategy-detail-body"> {# Container: I hold strategy details. #}
+
                                 <div class="small fw-semibold mb-2">Strategy Rules</div> {# Label: I identify the rule list. #}
+
                                 <ul class="small mb-0"> {# Unordered list: I display rule descriptions. #}
                                     {% for rule in row.strategy.rules.all %} {# Related-manager lookup: I iterate through the strategy's rules. #}
                                         <li> {# List item: I begin one rule description. #}
                                             {{ rule.name }} {# Variable: I display the rule name. #}
+
                                             {% if rule.symbol %} {# Condition: I check for a symbol. #}
                                                 ({{ rule.symbol }}) {# Interpolation: I display the symbol in parentheses. #}
                                             {% endif %} {# Conditional boundary: I finish the symbol check. #}
                                         </li> {# Closing tag: I finish the rule item. #}
+
                                     {% empty %} {# Empty-loop branch: I handle no rules. #}
                                         <li class="text-muted">No rules configured.</li> {# Fallback: I explain the empty rule list. #}
                                     {% endfor %} {# Loop boundary: I finish rules. #}
                                 </ul> {# Closing tag: I finish the rule list. #}
+
                                 {% if row.latest_backtest %} {# Condition: I check for a saved historical backtest. #}
                                     <div class="my-strategy-metrics"> {# Grid: I arrange historical statistics. #}
+
                                         <div class="my-strategy-metric"> {# Metric box: I contain total return. #}
                                             <span>Return</span> {# Label: I identify the statistic. #}
-                                            <strong>{{ row.latest_backtest.total_return|floatformat:2 }}</strong> {# Formatting filter: I show two decimal places without percentage conversion. #}
+                                            <strong>{{ row.latest_backtest.total_return|floatformat:2 }}</strong> {# Formatting filter: I show two decimal places. #}
                                         </div> {# Closing tag: I finish return. #}
+
                                         <div class="my-strategy-metric"> {# Metric box: I contain the Sharpe ratio. #}
                                             <span>Sharpe Ratio</span> {# Label: I identify the statistic. #}
                                             <strong>{{ row.latest_backtest.sharpe_ratio|floatformat:2 }}</strong> {# Filter: I display two decimal places. #}
                                         </div> {# Closing tag: I finish the Sharpe ratio. #}
+
                                         <div class="my-strategy-metric"> {# Metric box: I contain maximum drawdown. #}
                                             <span>Maximum Drawdown</span> {# Label: I identify the statistic. #}
-                                            <strong>{{ row.latest_backtest.max_drawdown|floatformat:2 }}</strong> {# Filter: I format the stored value without changing its units. #}
+                                            <strong>{{ row.latest_backtest.max_drawdown|floatformat:2 }}</strong> {# Filter: I format the stored value. #}
                                         </div> {# Closing tag: I finish drawdown. #}
+
                                         <div class="my-strategy-metric"> {# Metric box: I contain the backtest count. #}
                                             <span>Backtests</span> {# Label: I identify the count. #}
                                             <strong>{{ row.backtest_count }}</strong> {# Variable: I display the count supplied by the view. #}
                                         </div> {# Closing tag: I finish the count. #}
+
                                     </div> {# Closing tag: I finish metrics. #}
+
                                 {% else %} {# Fallback branch: I handle a strategy with no saved backtest. #}
                                     <div class="alert border small mt-3 mb-0"> {# Message container: I display the empty backtest state. #}
-                                        This strategy has not been {# Text: I begin the message. #}
-                                        backtested yet. {# Text: I finish the message. #}
+                                        This strategy has not been backtested yet. {# Static text: I explain the current state. #}
                                     </div> {# Closing tag: I finish the message. #}
                                 {% endif %} {# Conditional boundary: I finish backtest display. #}
+
                             </div> {# Closing tag: I finish strategy details. #}
                         </details> {# Closing tag: I finish expandable details. #}
+
                     </article> {# Closing tag: I finish the strategy entry. #}
                 {% endfor %} {# Loop boundary: I finish enriched strategy rows. #}
+
             </div> {# Closing tag: I finish the strategy list. #}
 
         {# -------------------------------------------------------- #}
-        {# 28.1 COMPATIBILITY WITH A BASIC STRATEGIES COLLECTION     #}
+        {# 27.2 COMPATIBILITY WITH BASIC STRATEGY COLLECTION         #}
         {# -------------------------------------------------------- #}
         {% elif strategies %} {# Alternative condition: I fall back to the basic strategies collection. #}
+
             <div class="my-strategy-list"> {# Container: I stack fallback strategy entries. #}
+
                 {% for s in strategies %} {# Loop: I process each strategy directly. #}
                     <article class="my-strategy-item"> {# Article: I contain one strategy. #}
+
                         <div class="my-strategy-summary"> {# Grid: I arrange text and actions. #}
+
                             <div> {# Container: I group strategy text. #}
                                 <div class="my-strategy-name"> {# Container: I hold the strategy name. #}
                                     <h3>{{ s.name }}</h3> {# Variable: I display the strategy name. #}
                                 </div> {# Closing tag: I finish the name group. #}
+
                                 <p class="my-strategy-description">{{ s.description|default:"Custom MarketPulse strategy."|truncatechars:130 }}</p> {# Filter chain: I provide a fallback and shorten the description. #}
                             </div> {# Closing tag: I finish strategy text. #}
+
                             <div class="my-strategy-actions"> {# Container: I group actions. #}
-                                <a class="btn btn-sm btn-outline-primary" href="{% url 'strategy_builder:backtest' s.id %}">Run Backtest</a> {# Named URL: I pass the strategy ID to the backtest route. #}
-                                <a class="btn btn-sm btn-outline-secondary same-page-strategy-action" href="#strategyRobustnessSection" data-strategy-id="{{ s.id }}" data-target-select="robustnessStrategy">Check Robustness</a> {# Data attributes: I prepare same-page robustness selection. #}
-                                <a class="btn btn-sm btn-outline-danger same-page-strategy-action" href="#stressTestingSection" data-strategy-id="{{ s.id }}" data-target-select="stressStrategy">Stress Test</a> {# Data attributes: I prepare same-page stress selection. #}
+                                <a class="btn btn-sm btn-outline-primary" href="{% url 'strategy_builder:backtest' s.id %}"> {# Named URL: I pass the strategy ID to the backtest route. #}
+                                    Run Backtest {# Text: I identify the historical-testing action. #}
+                                </a> {# Closing tag: I finish the action. #}
                             </div> {# Closing tag: I finish actions. #}
+
                         </div> {# Closing tag: I finish the summary. #}
+
                         <details class="my-strategy-details"> {# Disclosure: I provide expandable rules. #}
                             <summary> {# Control: I define the clickable heading. #}
                                 <i class="fa-solid fa-circle-info me-2"></i> {# Icon: I indicate details. #}
                                 View Strategy Details {# Text: I label the control. #}
                             </summary> {# Closing tag: I finish the control. #}
+
                             <div class="my-strategy-detail-body"> {# Container: I hold rule information. #}
                                 <div class="small fw-semibold mb-2">Strategy Rules</div> {# Label: I identify the list. #}
+
                                 <ul class="small mb-0"> {# List: I display strategy rules. #}
                                     {% for r in s.rules.all %} {# Related lookup: I iterate through this strategy's rules. #}
                                         <li> {# List item: I contain one rule. #}
                                             {{ r.name }} {# Variable: I display the rule name. #}
+
                                             {% if r.symbol %} {# Condition: I check for an asset symbol. #}
                                                 ({{ r.symbol }}) {# Interpolation: I display the symbol. #}
                                             {% endif %} {# Conditional boundary: I finish the symbol check. #}
                                         </li> {# Closing tag: I finish the rule. #}
+
                                     {% empty %} {# Empty branch: I handle no rules. #}
                                         <li class="text-muted">No rules configured.</li> {# Fallback: I explain the empty list. #}
                                     {% endfor %} {# Loop boundary: I finish rules. #}
                                 </ul> {# Closing tag: I finish the list. #}
                             </div> {# Closing tag: I finish details content. #}
                         </details> {# Closing tag: I finish the disclosure. #}
+
                     </article> {# Closing tag: I finish the strategy. #}
                 {% endfor %} {# Loop boundary: I finish basic strategy entries. #}
+
             </div> {# Closing tag: I finish the fallback list. #}
+
+        {# -------------------------------------------------------- #}
+        {# 27.3 NO SAVED STRATEGIES                                  #}
+        {# -------------------------------------------------------- #}
         {% else %} {# Final fallback: I handle no user strategies. #}
+
             <div class="alert border mb-0"> {# Message container: I display the empty-strategy state. #}
                 <div class="fw-semibold mb-1">No custom strategies yet</div> {# Label: I identify the empty state. #}
+
                 <div class="small text-muted mb-3"> {# Container: I explain the next step. #}
-                    Create a strategy first. You can then {# Text: I introduce creation. #}
-                    backtest it, investigate its robustness {# Text: I describe later testing. #}
-                    and run stress scenarios. {# Text: I finish the explanation. #}
+                    Create your first strategy below. Once it is saved,
+                    it will appear here and can be backtested using
+                    stored historical market data.
                 </div> {# Closing tag: I finish the explanation. #}
-                <a href="{% url 'strategy_builder:create' %}" class="btn btn-sm btn-primary">Create First Strategy</a> {# Named URL: I offer strategy creation. #}
+
+                <a href="#createStrategySection" class="btn btn-sm btn-primary open-create-strategy"> {# Same-page anchor: I open the inline form instead of /strategy/create/. #}
+                    <i class="fa-solid fa-plus me-1"></i> {# Icon: I represent creation. #}
+                    Create First Strategy {# Text: I label the action. #}
+                </a> {# Closing tag: I finish the same-page action. #}
             </div> {# Closing tag: I finish the empty state. #}
+
         {% endif %} {# Conditional boundary: I finish strategy-list selection. #}
+
+        {# ======================================================== #}
+        {# 27.4 INLINE STRATEGY CREATION                            #}
+        {# ======================================================== #}
+        <details
+            class="create-strategy-details"
+            id="createStrategySection"
+            {% if strategy_form.errors %}open{% elif not my_strategy_rows and not strategies %}open{% endif %}
+        > {# Details element: I keep strategy creation directly inside the Strategies page and automatically open it for errors or the first strategy. #}
+
+            <summary> {# Disclosure control: I allow the user to open or close the strategy form. #}
+                <span class="create-strategy-summary-label"> {# Container: I group the icon and label. #}
+                    <i class="fa-solid fa-plus"></i> {# Icon: I represent strategy creation. #}
+                    Create Strategy {# Static text: I identify the inline form. #}
+                </span> {# Closing tag: I finish the summary label. #}
+
+                <i class="fa-solid fa-chevron-down create-strategy-chevron"></i> {# Icon: CSS rotates this when the form opens. #}
+            </summary> {# Closing tag: I finish the disclosure control. #}
+
+            <div class="create-strategy-body"> {# Container: I hold the complete strategy form. #}
+
+                <p class="create-strategy-intro"> {# Paragraph: I explain the same-page workflow. #}
+                    Define your strategy here. When the form is valid,
+                    MarketPulse saves the strategy and its rules to your
+                    account and returns you to My Strategies.
+                </p> {# Closing tag: I finish the introduction. #}
+
+                {% if strategy_form %} {# Condition: I render the form when the view supplied StrategyCreateForm. #}
+
+                    <form method="post" action="{% url 'strategy_builder:list' %}#createStrategySection"> {# POST form: I submit directly to /strategy/ and remain on this workspace. #}
+                        {% csrf_token %} {# Django template tag: I protect the POST request from CSRF attacks. #}
+
+                        <input type="hidden" name="action" value="create_strategy"> {# Hidden input: I tell strategy_list() that this POST should create a strategy. #}
+
+                        {% if strategy_form.non_field_errors %} {# Condition: I check for validation errors involving multiple fields. #}
+                            <div class="alert alert-danger mb-3"> {# Alert: I display form-wide validation feedback. #}
+                                {{ strategy_form.non_field_errors }} {# Variable: I display Django's non-field errors. #}
+                            </div> {# Closing tag: I finish the validation alert. #}
+                        {% endif %} {# Conditional boundary: I finish the non-field-error check. #}
+
+                        <div class="create-strategy-grid"> {# Grid: I arrange strategy inputs responsively. #}
+
+                            {% for field in strategy_form %} {# Iteration: I create a field group for every Django form field. #}
+                                <div class="create-strategy-field"> {# Container: I group one label, input, help text and errors. #}
+
+                                    <label for="{{ field.id_for_label }}"> {# Attribute interpolation: I connect the label to the generated field ID. #}
+                                        {{ field.label }} {# Variable lookup: I display the form field's readable label. #}
+                                    </label> {# Closing tag: I finish the field label. #}
+
+                                    {{ field }} {# Django form rendering: I output the configured input widget. #}
+
+                                    {% if field.help_text %} {# Condition: I display help text only when the field defines it. #}
+                                        <div class="form-text"> {# Bootstrap helper class: I style supporting guidance. #}
+                                            {{ field.help_text }} {# Variable lookup: I display the configured help text. #}
+                                        </div> {# Closing tag: I finish the help text. #}
+                                    {% endif %} {# Conditional boundary: I finish the help-text check. #}
+
+                                    {% if field.errors %} {# Condition: I check whether this field failed validation. #}
+                                        <div class="create-strategy-errors"> {# Container: I group field-specific validation errors. #}
+                                            {% for error in field.errors %} {# Nested loop: I display every validation error belonging to this field. #}
+                                                <div>{{ error }}</div> {# Variable: I display one Django validation message. #}
+                                            {% endfor %} {# Loop boundary: I finish this field's errors. #}
+                                        </div> {# Closing tag: I finish the error container. #}
+                                    {% endif %} {# Conditional boundary: I finish field-error display. #}
+
+                                </div> {# Closing tag: I finish this form field. #}
+                            {% endfor %} {# Loop boundary: I finish rendering strategy fields. #}
+
+                        </div> {# Closing tag: I finish the form-field grid. #}
+
+                        <div class="create-strategy-actions"> {# Flex container: I hold the form action. #}
+                            <button type="submit" class="btn btn-primary"> {# Submit button: I send this same-page creation request to strategy_list(). #}
+                                <i class="fa-solid fa-plus me-1"></i> {# Icon: I represent creation. #}
+                                Create Strategy {# Text: I label the save action. #}
+                            </button> {# Closing tag: I finish the creation button. #}
+                        </div> {# Closing tag: I finish the action group. #}
+
+                    </form> {# Closing tag: I finish the same-page strategy form. #}
+
+                {% else %} {# Fallback branch: I handle a view that has not yet supplied strategy_form. #}
+
+                    <div class="alert alert-info mb-0"> {# Message: I explain why the form cannot currently display. #}
+                        The strategy creation form is not available in
+                        this template context. Add
+                        <strong>strategy_form</strong> to
+                        <strong>strategy_list()</strong> in
+                        <strong>strategy_builder/views.py</strong>.
+                    </div> {# Closing tag: I finish the guidance. #}
+
+                {% endif %} {# Conditional boundary: I finish the strategy-form check. #}
+
+            </div> {# Closing tag: I finish the form body. #}
+        </details> {# Closing tag: I finish the inline creation disclosure. #}
+
     </section> {# Closing tag: I finish My Strategies. #}
 
     {# ======================================================== #}
-    {# 29. SAME-PAGE STRATEGY ROBUSTNESS                         #}
-    {# ======================================================== #}
-    <section class="strategy-panel" id="strategyRobustnessSection"> {# Section ID: I provide the robustness anchor target. #}
-        <div class="strategy-section-header"> {# Container: I introduce robustness. #}
-            <div> {# Container: I group introduction text. #}
-                <div class="strategy-eyebrow">Strategy Validation</div> {# Label: I identify validation. #}
-                <h2>Strategy Robustness</h2> {# Heading: I identify the analysis tool. #}
-                <p> {# Paragraph: I explain the intended analysis. #}
-                    Investigate whether historical strategy {# Text: I introduce historical stability. #}
-                    performance remains reasonably stable when {# Text: I describe the research question. #}
-                    MarketPulse compares in-sample and {# Text: I identify the data split. #}
-                    out-of-sample behaviour. {# Text: I finish the explanation. #}
-                </p> {# Closing tag: I finish the description. #}
-            </div> {# Closing tag: I finish introduction text. #}
-        </div> {# Closing tag: I finish the header. #}
-        {% if strategies %} {# Condition: I require strategies before displaying testing controls. #}
-            {% if available_symbols %} {# Nested condition: I also require historical asset choices. #}
-                <form method="post" action="{% url 'strategy_builder:list' %}#strategyRobustnessSection" class="strategy-analysis-form"> {# POST form: I submit to the workspace route with a browser section anchor. #}
-                    {% csrf_token %} {# Security tag: I include the CSRF token for server validation. #}
-                    <input type="hidden" name="action" value="robustness"> {# Hidden field: I tell the view which analysis action to process. #}
-                    <div class="row g-3"> {# Bootstrap grid: I arrange form controls. #}
-                        <div class="col-12 col-lg-5"> {# Responsive column: I allocate space for the strategy selector. #}
-                            <label for="robustnessStrategy" class="form-label">Strategy</label> {# Label association: I identify the strategy dropdown. #}
-                            <select id="robustnessStrategy" name="strategy" class="form-select" required> {# Attributes: I submit the selected strategy ID and expose this element to JavaScript. #}
-                                <option value="">Select a strategy...</option> {# Empty value: I provide a prompt that does not satisfy required validation. #}
-                                {% for strategy in strategies %} {# Loop: I create strategy choices. #}
-                                    <option value="{{ strategy.id }}" {% if selected_validation_strategy == strategy.id|stringformat:"s" %}selected{% endif %}> {# String-format filter: I compare the ID as text to preserve the selected strategy. #}
-                                        {{ strategy.name }} {# Variable: I display the strategy name. #}
-                                    </option> {# Closing tag: I finish this choice. #}
-                                {% endfor %} {# Loop boundary: I finish choices. #}
-                            </select> {# Closing tag: I finish the strategy dropdown. #}
-                        </div> {# Closing tag: I finish the strategy column. #}
-                        <div class="col-12 col-lg-5"> {# Responsive column: I allocate space for historical assets. #}
-                            <label for="robustnessSymbol" class="form-label">Historical Asset</label> {# Label association: I identify the asset dropdown. #}
-                            <select id="robustnessSymbol" name="symbol" class="form-select" required> {# Dropdown: I submit the selected historical symbol. #}
-                                <option value="">Select historical data...</option> {# Prompt: I require an actual asset choice. #}
-                                {% for symbol in available_symbols %} {# Loop: I create choices from stored-data symbols. #}
-                                    <option value="{{ symbol }}" {% if selected_validation_symbol == symbol %}selected{% endif %}> {# Conditional attribute: I preserve the selected symbol. #}
-                                        {{ symbol }} {# Variable: I display the ticker. #}
-                                    </option> {# Closing tag: I finish the asset choice. #}
-                                {% endfor %} {# Loop boundary: I finish symbols. #}
-                            </select> {# Closing tag: I finish the asset dropdown. #}
-                        </div> {# Closing tag: I finish the asset column. #}
-                        <div class="col-12 col-lg-2 d-flex align-items-end"> {# Grid and flex classes: I align the submission button at the bottom. #}
-                            <button type="submit" class="btn btn-primary w-100"> {# Submit button: I send the robustness request to the view. #}
-                                <i class="fa-solid fa-shield-halved me-1"></i> {# Icon: I represent robustness. #}
-                                Check Robustness {# Text: I label the action. #}
-                            </button> {# Closing tag: I finish the button. #}
-                        </div> {# Closing tag: I finish the action column. #}
-                    </div> {# Closing tag: I finish the form grid. #}
-                    <div class="small text-muted mt-2"> {# Supporting text: I explain historical-data requirements. #}
-                        Strategy Robustness requires stored {# Text: I identify the data source. #}
-                        historical MarketPulse data and at least {# Text: I introduce the minimum-data requirement. #}
-                        the minimum number of observations required {# Text: I defer the exact requirement to the backend. #}
-                        by the backend analysis. {# Text: I finish the guidance. #}
-                    </div> {# Closing tag: I finish guidance. #}
-                </form> {# Closing tag: I finish the robustness form. #}
-            {% else %} {# Fallback branch: I handle missing historical assets. #}
-                <div class="alert border mb-0"> {# Message container: I display the data requirement. #}
-                    <div class="fw-semibold mb-1">Historical data is required</div> {# Label: I identify the missing prerequisite. #}
-                    <div class="small text-muted mb-3"> {# Explanation: I describe the next step. #}
-                        Import historical market data before {# Text: I request historical data. #}
-                        running Strategy Robustness. {# Text: I finish the instruction. #}
-                    </div> {# Closing tag: I finish the explanation. #}
-                    <a href="{% url 'data_management:import' %}" class="btn btn-sm btn-outline-primary">Open Data</a> {# Named URL: I link to historical-data import. #}
-                </div> {# Closing tag: I finish the data empty state. #}
-            {% endif %} {# Conditional boundary: I finish the historical-assets check. #}
-        {% else %} {# Fallback branch: I handle missing strategies. #}
-            <div class="alert border mb-0"> {# Message container: I display the strategy requirement. #}
-                <div class="fw-semibold mb-1">Create a strategy first</div> {# Label: I identify the missing prerequisite. #}
-                <div class="small text-muted mb-3"> {# Explanation: I describe the requirement. #}
-                    Strategy Robustness analyses one of your {# Text: I explain the analysed object. #}
-                    saved MarketPulse strategies. {# Text: I finish the explanation. #}
-                </div> {# Closing tag: I finish the explanation. #}
-                <a href="{% url 'strategy_builder:create' %}" class="btn btn-sm btn-primary">Create Strategy</a> {# Named URL: I link to strategy creation. #}
-            </div> {# Closing tag: I finish the strategy empty state. #}
-        {% endif %} {# Conditional boundary: I finish prerequisite checks. #}
-
-        {# -------------------------------------------------------- #}
-        {# 29.1 LATEST ROBUSTNESS RESULT                             #}
-        {# -------------------------------------------------------- #}
-        {% if latest_user_robustness_test %} {# Condition: I display the latest result supplied by the view. #}
-            <div class="strategy-result-panel"> {# Panel: I group robustness results. #}
-                <div class="strategy-section-header mb-2"> {# Header: I arrange result title and status. #}
-                    <div> {# Container: I group result heading text. #}
-                        <div class="strategy-eyebrow">Latest Robustness Result</div> {# Label: I identify the result context. #}
-                        <h2>Historical Stability Summary</h2> {# Heading: I identify the summary. #}
-                    </div> {# Closing tag: I finish heading text. #}
-                    {% if latest_user_robustness_test.is_overfitted %} {# Boolean condition: I check the stored overfitting flag. #}
-                        <span class="badge bg-warning">Possible Overfitting</span> {# Badge: I display the warning label. #}
-                    {% else %} {# Alternative branch: I handle a false flag. #}
-                        <span class="badge bg-success">Lower Overfitting Risk</span> {# Badge: I display the lower-risk label. #}
-                    {% endif %} {# Conditional boundary: I finish status display. #}
-                </div> {# Closing tag: I finish the result header. #}
-                <div class="strategy-result-grid"> {# Grid: I arrange result statistics. #}
-                    <div class="strategy-result-stat"> {# Statistic box: I display the asset. #}
-                        <span>Asset</span> {# Label: I identify the symbol. #}
-                        <strong>{{ latest_user_robustness_test.symbol }}</strong> {# Variable: I display the tested symbol. #}
-                    </div> {# Closing tag: I finish the asset statistic. #}
-                    <div class="strategy-result-stat"> {# Statistic box: I display in-sample return. #}
-                        <span>In-Sample Return</span> {# Label: I identify the statistic. #}
-                        <strong>{{ latest_user_robustness_test.in_sample_return|floatformat:4 }}</strong> {# Filter: I format the return to four decimal places. #}
-                    </div> {# Closing tag: I finish in-sample return. #}
-                    <div class="strategy-result-stat"> {# Statistic box: I display out-of-sample return. #}
-                        <span>Out-of-Sample Return</span> {# Label: I identify the statistic. #}
-                        <strong>{{ latest_user_robustness_test.out_sample_return|floatformat:4 }}</strong> {# Filter: I format the return to four decimal places. #}
-                    </div> {# Closing tag: I finish out-of-sample return. #}
-                    <div class="strategy-result-stat"> {# Statistic box: I display the score. #}
-                        <span>Overfitting Score</span> {# Label: I identify the statistic. #}
-                        <strong>{{ latest_user_robustness_test.overfitting_score|floatformat:4 }}</strong> {# Filter: I format the score to four decimal places. #}
-                    </div> {# Closing tag: I finish the score. #}
-                </div> {# Closing tag: I finish statistics. #}
-                {% if latest_user_robustness_label %} {# Condition: I prefer the interpretation prepared by the view. #}
-                    <div class="strategy-result-note"> {# Note: I contain the interpretation. #}
-                        <strong class="d-block text-light mb-1">{{ latest_user_robustness_label }}</strong> {# Variable: I display the interpretation label. #}
-                        {% if latest_user_robustness_explanation %} {# Nested condition: I check for explanatory text. #}
-                            {{ latest_user_robustness_explanation }} {# Variable: I display the explanation. #}
-                        {% endif %} {# Conditional boundary: I finish the explanation check. #}
-                    </div> {# Closing tag: I finish the interpretation note. #}
-                {% elif latest_user_robustness_test.recommendations %} {# Fallback condition: I use stored recommendations when no label is supplied. #}
-                    <div class="strategy-result-note"> {# Note: I contain recommendations. #}
-                        <strong class="d-block text-light mb-1">Interpretation / Recommendations</strong> {# Heading: I identify the note. #}
-                        {{ latest_user_robustness_test.recommendations|linebreaksbr }} {# Filter: I convert text line breaks into HTML breaks. #}
-                    </div> {# Closing tag: I finish recommendations. #}
-                {% endif %} {# Conditional boundary: I finish interpretation selection. #}
-            </div> {# Closing tag: I finish the robustness result panel. #}
-        {% endif %} {# Conditional boundary: I finish latest-result display. #}
-    </section> {# Closing tag: I finish robustness. #}
-
-    {# ======================================================== #}
-    {# 30. SAME-PAGE STRESS TESTING                             #}
-    {# ======================================================== #}
-    <section class="strategy-panel" id="stressTestingSection"> {# Section ID: I provide the stress-testing anchor. #}
-        <div class="strategy-section-header"> {# Header: I introduce stress testing. #}
-            <div> {# Container: I group heading text. #}
-                <div class="strategy-eyebrow strategy-eyebrow-danger">Strategy Risk</div> {# Modifier class: I display a risk-coloured label. #}
-                <h2>Stress Testing</h2> {# Heading: I identify the analysis tool. #}
-                <p> {# Paragraph: I explain the tool. #}
-                    Test one of your strategies against severe {# Text: I introduce severe conditions. #}
-                    hypothetical market conditions without leaving {# Text: I explain the same-page workflow. #}
-                    the Strategies workspace. {# Text: I finish the explanation. #}
-                </p> {# Closing tag: I finish the description. #}
-            </div> {# Closing tag: I finish heading text. #}
-        </div> {# Closing tag: I finish the header. #}
-        {% if strategies %} {# Condition: I require a strategy collection. #}
-            {% if available_symbols %} {# Nested condition: I require stored-data symbols. #}
-                <form method="post" action="{% url 'strategy_builder:list' %}#stressTestingSection" class="strategy-analysis-form"> {# POST form: I send analysis inputs to the workspace view. #}
-                    {% csrf_token %} {# Security tag: I include the CSRF token. #}
-                    <input type="hidden" name="action" value="stress_test"> {# Hidden field: I select the view's stress-test action branch. #}
-                    <div class="row g-3"> {# Grid: I arrange the selectors and action. #}
-                        <div class="col-12 col-xl-4"> {# Responsive column: I allocate space for strategy selection. #}
-                            <label for="stressStrategy" class="form-label">Strategy</label> {# Label association: I identify the strategy dropdown. #}
-                            <select id="stressStrategy" name="strategy" class="form-select" required> {# Dropdown: I submit the selected strategy ID. #}
-                                <option value="">Select a strategy...</option> {# Prompt: I require a non-empty selection. #}
-                                {% for strategy in strategies %} {# Loop: I create strategy choices. #}
-                                    <option value="{{ strategy.id }}" {% if selected_validation_strategy == strategy.id|stringformat:"s" %}selected{% endif %}> {# Filter and condition: I preserve the selected strategy using a string ID comparison. #}
-                                        {{ strategy.name }} {# Variable: I display the strategy name. #}
-                                    </option> {# Closing tag: I finish this option. #}
-                                {% endfor %} {# Loop boundary: I finish strategy choices. #}
-                            </select> {# Closing tag: I finish the strategy dropdown. #}
-                        </div> {# Closing tag: I finish the strategy column. #}
-                        <div class="col-12 col-xl-3"> {# Responsive column: I allocate space for historical assets. #}
-                            <label for="stressSymbol" class="form-label">Historical Asset</label> {# Label association: I identify the asset dropdown. #}
-                            <select id="stressSymbol" name="symbol" class="form-select" required> {# Dropdown: I submit the historical symbol. #}
-                                <option value="">Select historical data...</option> {# Prompt: I require an asset choice. #}
-                                {% for symbol in available_symbols %} {# Loop: I create historical-asset choices. #}
-                                    <option value="{{ symbol }}" {% if selected_validation_symbol == symbol %}selected{% endif %}> {# Conditional attribute: I preserve the selected symbol. #}
-                                        {{ symbol }} {# Variable: I display the symbol. #}
-                                    </option> {# Closing tag: I finish the asset option. #}
-                                {% endfor %} {# Loop boundary: I finish asset choices. #}
-                            </select> {# Closing tag: I finish the asset dropdown. #}
-                        </div> {# Closing tag: I finish the asset column. #}
-                        <div class="col-12 col-xl-3"> {# Responsive column: I allocate space for scenario selection. #}
-                            <label for="stressScenario" class="form-label">Stress Scenario</label> {# Label association: I identify the scenario dropdown. #}
-                            <select id="stressScenario" name="scenario" class="form-select" required> {# Dropdown: I submit a scenario code to the view. #}
-                                <option value="crash" {% if selected_stress_scenario == "crash" %}selected{% endif %}>Severe Market Decline</option> {# Conditional attribute: I preserve the crash scenario selection. #}
-                                <option value="volatility_spike" {% if selected_stress_scenario == "volatility_spike" %}selected{% endif %}>Volatility Spike</option> {# Conditional attribute: I preserve the volatility scenario selection. #}
-                                <option value="liquidity_crisis" {% if selected_stress_scenario == "liquidity_crisis" %}selected{% endif %}>Liquidity Shock</option> {# Conditional attribute: I preserve the liquidity scenario selection. #}
-                                <option value="regime_change" {% if selected_stress_scenario == "regime_change" %}selected{% endif %}>Market Condition Change</option> {# Conditional attribute: I preserve the regime-change scenario selection. #}
-                            </select> {# Closing tag: I finish the scenario dropdown. #}
-                        </div> {# Closing tag: I finish the scenario column. #}
-                        <div class="col-12 col-xl-2 d-flex align-items-end"> {# Grid and flexbox: I align the submission button at the bottom. #}
-                            <button type="submit" class="btn btn-outline-danger w-100"> {# Submit button: I request backend stress analysis. #}
-                                <i class="fa-solid fa-triangle-exclamation me-1"></i> {# Icon: I represent severe conditions. #}
-                                Run Stress Test {# Text: I label the action. #}
-                            </button> {# Closing tag: I finish the button. #}
-                        </div> {# Closing tag: I finish the action column. #}
-                    </div> {# Closing tag: I finish the form grid. #}
-                    <div class="small text-muted mt-2"> {# Guidance: I explain the data and scenario source. #}
-                        Stress Testing uses stored historical {# Text: I identify historical data. #}
-                        MarketPulse data and applies a predefined {# Text: I identify predefined scenarios. #}
-                        severe hypothetical scenario through the {# Text: I describe backend processing. #}
-                        internal analytics engine. {# Text: I finish the guidance. #}
-                    </div> {# Closing tag: I finish guidance. #}
-                </form> {# Closing tag: I finish the stress-test form. #}
-
-                {# -------------------------------------------------------- #}
-                {# 30.1 SCENARIO EXPLANATIONS                               #}
-                {# -------------------------------------------------------- #}
-                <div class="row g-3 mt-1"> {# Grid: I arrange scenario descriptions. #}
-                    <div class="col-12 col-md-6 col-xl-3"> {# Responsive column: I use one, two or four columns by screen size. #}
-                        <div class="validation-box h-100"> {# Card: I contain the decline scenario explanation. #}
-                            <div class="strategy-eyebrow strategy-eyebrow-danger">Scenario</div> {# Label: I identify this as scenario guidance. #}
-                            <h3>Severe Market Decline</h3> {# Heading: I name the scenario. #}
-                            <p class="mb-0"> {# Paragraph: I explain the intended shock. #}
-                                Applies a substantial downward {# Text: I describe the shock direction. #}
-                                price shock during the later part {# Text: I describe its timing. #}
-                                of the historical dataset. {# Text: I finish the description. #}
-                            </p> {# Closing tag: I finish the explanation. #}
-                        </div> {# Closing tag: I finish the scenario card. #}
-                    </div> {# Closing tag: I finish the column. #}
-                    <div class="col-12 col-md-6 col-xl-3"> {# Responsive column: I contain the volatility scenario. #}
-                        <div class="validation-box h-100"> {# Card: I group the explanation. #}
-                            <div class="strategy-eyebrow strategy-eyebrow-danger">Scenario</div> {# Label: I identify scenario guidance. #}
-                            <h3>Volatility Spike</h3> {# Heading: I name the scenario. #}
-                            <p class="mb-0"> {# Paragraph: I explain the intended volatility change. #}
-                                Simulates a period where historical {# Text: I introduce the affected period. #}
-                                price movement becomes substantially {# Text: I describe the change. #}
-                                more volatile. {# Text: I finish the description. #}
-                            </p> {# Closing tag: I finish the explanation. #}
-                        </div> {# Closing tag: I finish the card. #}
-                    </div> {# Closing tag: I finish the column. #}
-                    <div class="col-12 col-md-6 col-xl-3"> {# Responsive column: I contain the liquidity scenario. #}
-                        <div class="validation-box h-100"> {# Card: I group the explanation. #}
-                            <div class="strategy-eyebrow strategy-eyebrow-danger">Scenario</div> {# Label: I identify scenario guidance. #}
-                            <h3>Liquidity Shock</h3> {# Heading: I name the scenario. #}
-                            <p class="mb-0"> {# Paragraph: I explain the intended liquidity change. #}
-                                Simulates reduced market activity {# Text: I describe reduced activity. #}
-                                and difficult liquidity conditions {# Text: I describe liquidity pressure. #}
-                                during part of the dataset. {# Text: I finish the description. #}
-                            </p> {# Closing tag: I finish the explanation. #}
-                        </div> {# Closing tag: I finish the card. #}
-                    </div> {# Closing tag: I finish the column. #}
-                    <div class="col-12 col-md-6 col-xl-3"> {# Responsive column: I contain the regime-change scenario. #}
-                        <div class="validation-box h-100"> {# Card: I group the explanation. #}
-                            <div class="strategy-eyebrow strategy-eyebrow-danger">Scenario</div> {# Label: I identify scenario guidance. #}
-                            <h3>Market Condition Change</h3> {# Heading: I name the scenario. #}
-                            <p class="mb-0"> {# Paragraph: I explain the intended regime change. #}
-                                Investigates behaviour after a {# Text: I introduce the research question. #}
-                                simulated change in the underlying {# Text: I describe the simulated change. #}
-                                market trend or regime. {# Text: I finish the description. #}
-                            </p> {# Closing tag: I finish the explanation. #}
-                        </div> {# Closing tag: I finish the card. #}
-                    </div> {# Closing tag: I finish the column. #}
-                </div> {# Closing tag: I finish scenario descriptions. #}
-            {% else %} {# Fallback branch: I handle missing historical assets. #}
-                <div class="alert border mb-0"> {# Message: I explain the missing prerequisite. #}
-                    <div class="fw-semibold mb-1">Historical data is required</div> {# Label: I identify the requirement. #}
-                    <div class="small text-muted mb-3"> {# Container: I explain the next step. #}
-                        Import historical market data before {# Text: I request data import. #}
-                        running a strategy stress test. {# Text: I finish the instruction. #}
-                    </div> {# Closing tag: I finish the explanation. #}
-                    <a href="{% url 'data_management:import' %}" class="btn btn-sm btn-outline-primary">Open Data</a> {# Named URL: I link to data import. #}
-                </div> {# Closing tag: I finish the data empty state. #}
-            {% endif %} {# Conditional boundary: I finish the historical-assets check. #}
-        {% else %} {# Fallback branch: I handle missing strategies. #}
-            <div class="alert border mb-0"> {# Message: I explain the strategy requirement. #}
-                <div class="fw-semibold mb-1">Create a strategy first</div> {# Label: I identify the missing prerequisite. #}
-                <div class="small text-muted mb-3"> {# Container: I explain the requirement. #}
-                    Stress Testing requires one of your saved {# Text: I identify the analysed object. #}
-                    MarketPulse strategies. {# Text: I finish the explanation. #}
-                </div> {# Closing tag: I finish the explanation. #}
-                <a href="{% url 'strategy_builder:create' %}" class="btn btn-sm btn-primary">Create Strategy</a> {# Named URL: I link to creation. #}
-            </div> {# Closing tag: I finish the strategy empty state. #}
-        {% endif %} {# Conditional boundary: I finish prerequisite checks. #}
-
-        {# -------------------------------------------------------- #}
-        {# 30.2 LATEST STRESS-TEST RESULT                            #}
-        {# -------------------------------------------------------- #}
-        {% if latest_strategy_stress_test %} {# Condition: I display the latest result supplied by the view. #}
-            <div class="strategy-result-panel"> {# Panel: I group stress-test results. #}
-                <div class="strategy-section-header mb-2"> {# Header: I arrange title and pass/fail status. #}
-                    <div> {# Container: I group heading text. #}
-                        <div class="strategy-eyebrow strategy-eyebrow-danger">Latest Stress Result</div> {# Label: I identify the result context. #}
-                        <h2>Severe Scenario Summary</h2> {# Heading: I identify the summary. #}
-                    </div> {# Closing tag: I finish heading text. #}
-                    {% if latest_strategy_stress_test.passed_test %} {# Boolean condition: I check the stored pass flag. #}
-                        <span class="badge bg-success">Passed Stress Test</span> {# Badge: I display the passed status. #}
-                    {% else %} {# Alternative branch: I handle a false pass flag. #}
-                        <span class="badge border strategy-status-danger">Failed Stress Test</span> {# Badge: I display the failed status. #}
-                    {% endif %} {# Conditional boundary: I finish status display. #}
-                </div> {# Closing tag: I finish the result header. #}
-                <div class="strategy-result-grid"> {# Grid: I arrange stress statistics. #}
-                    <div class="strategy-result-stat"> {# Statistic box: I contain the scenario name. #}
-                        <span>Scenario</span> {# Label: I identify the statistic. #}
-                        <strong>{{ latest_strategy_stress_test.get_test_type_display }}</strong> {# Display method lookup: I show the readable scenario label. #}
-                    </div> {# Closing tag: I finish the scenario statistic. #}
-                    <div class="strategy-result-stat"> {# Statistic box: I contain drawdown. #}
-                        <span>Maximum Drawdown</span> {# Label: I identify the statistic. #}
-                        <strong>{{ latest_strategy_stress_test.max_drawdown|floatformat:4 }}</strong> {# Filter: I display four decimal places. #}
-                    </div> {# Closing tag: I finish drawdown. #}
-                    <div class="strategy-result-stat"> {# Statistic box: I contain recovery time. #}
-                        <span>Recovery Time</span> {# Label: I identify the statistic. #}
-                        <strong> {# Emphasis: I display the recovery value and unit. #}
-                            {{ latest_strategy_stress_test.recovery_time }} {# Variable: I display the stored recovery time. #}
-                            day{{ latest_strategy_stress_test.recovery_time|pluralize }} {# Filter: I pluralise the day label. #}
-                        </strong> {# Closing tag: I finish recovery time. #}
-                    </div> {# Closing tag: I finish the recovery statistic. #}
-                    <div class="strategy-result-stat"> {# Statistic box: I contain robustness score. #}
-                        <span>Robustness Score</span> {# Label: I identify the statistic. #}
-                        <strong>{{ latest_strategy_stress_test.robustness_score|floatformat:4 }}</strong> {# Filter: I display four decimal places. #}
-                    </div> {# Closing tag: I finish the score. #}
-                </div> {# Closing tag: I finish statistics. #}
-                {% if latest_strategy_stress_test.notes %} {# Condition: I check for stored notes. #}
-                    <div class="strategy-result-note"> {# Note container: I display supporting analysis text. #}
-                        <strong class="d-block text-light mb-1">Stress Test Notes</strong> {# Heading: I identify the notes. #}
-                        {{ latest_strategy_stress_test.notes|linebreaksbr }} {# Filter: I preserve visible line breaks in the notes. #}
-                    </div> {# Closing tag: I finish the notes. #}
-                {% endif %} {# Conditional boundary: I finish notes display. #}
-            </div> {# Closing tag: I finish the stress result panel. #}
-        {% endif %} {# Conditional boundary: I finish latest stress-result display. #}
-    </section> {# Closing tag: I finish stress testing. #}
-
-    {# ======================================================== #}
-    {# 31. RELATED MARKET-CONDITION TOOL                        #}
+    {# 28. RELATED MARKET-CONDITION TOOL                        #}
     {# ======================================================== #}
     <section class="strategy-panel"> {# Section: I group related research tools. #}
+
         <div class="strategy-section-header"> {# Header: I introduce continued analysis. #}
             <div> {# Container: I group heading text. #}
                 <div class="strategy-eyebrow">Related Research</div> {# Label: I identify related tools. #}
                 <h2>Continue Your Analysis</h2> {# Heading: I introduce the next action. #}
-                <p> {# Paragraph: I explain tool locations. #}
-                    Market Condition remains available through {# Text: I identify the Data workspace. #}
-                    the Data workspace. Strategy Robustness and {# Text: I connect related analytics. #}
-                    Stress Testing are already available directly {# Text: I identify same-page tools. #}
-                    on this Strategies page. {# Text: I finish the explanation. #}
+
+                <p> {# Paragraph: I explain the remaining related workspace. #}
+                    Market Condition remains available through
+                    the Data workspace and can provide historical
+                    context for your strategy research.
                 </p> {# Closing tag: I finish the description. #}
             </div> {# Closing tag: I finish heading text. #}
         </div> {# Closing tag: I finish the header. #}
+
         <div class="related-tools-grid"> {# Grid: I arrange related tool cards. #}
+
             <div class="related-tool"> {# Card: I contain the market-condition tool. #}
                 <div class="strategy-eyebrow">Data</div> {# Label: I identify its workspace. #}
                 <h3>Market Condition</h3> {# Heading: I identify the tool. #}
+
                 <p> {# Paragraph: I describe market-condition analysis. #}
-                    Understand whether stored historical data {# Text: I identify the data source. #}
-                    shows an Uptrend, Downtrend, Sideways market {# Text: I list market-condition labels. #}
-                    or High Volatility. {# Text: I finish the description. #}
+                    Understand whether stored historical data
+                    shows an Uptrend, Downtrend, Sideways market
+                    or High Volatility.
                 </p> {# Closing tag: I finish the explanation. #}
-                <a href="{% url 'data_management:market_condition' %}" class="btn btn-sm btn-outline-primary">Open Market Condition</a> {# Named URL: I link to the market-condition workspace. #}
+
+                <a href="{% url 'data_management:market_condition' %}" class="btn btn-sm btn-outline-primary"> {# Named URL: I link to the market-condition workspace. #}
+                    Open Market Condition {# Text: I label the navigation action. #}
+                </a> {# Closing tag: I finish the link. #}
             </div> {# Closing tag: I finish the tool card. #}
+
         </div> {# Closing tag: I finish the tool grid. #}
     </section> {# Closing tag: I finish related tools. #}
 
     {# ======================================================== #}
-    {# 32. BROWSER INTERACTIONS                                 #}
+    {# 29. BROWSER INTERACTIONS                                 #}
     {# ======================================================== #}
-    <script> // I begin JavaScript for filtering, comparison and strategy selection.
+    <script> // I begin JavaScript for filtering, comparison and same-page strategy creation.
     document.addEventListener("DOMContentLoaded", function () { // Event and callback: I initialise interactions after HTML parsing.
 
         // ----------------------------------------------------
-        // 32.1 ELEMENT REFERENCES
+        // 29.1 ELEMENT REFERENCES
         // ----------------------------------------------------
         const searchInput = document.getElementById("modelSearch"); // Constant and DOM lookup: I find the search input.
         const categoryFilter = document.getElementById("categoryFilter"); // DOM lookup: I find the category dropdown.
@@ -1244,50 +1130,60 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
         const compareButton = document.getElementById("compareButton"); // DOM lookup: I find the comparison submit button.
         const compareBar = document.getElementById("compareBar"); // DOM lookup: I find the comparison bar.
         const noResults = document.getElementById("noModelResults"); // DOM lookup: I find the no-match message.
-        const samePageStrategyActions = document.querySelectorAll(".same-page-strategy-action"); // Collection: I find robustness and stress action links.
+        const createStrategyDetails = document.getElementById("createStrategySection"); // DOM lookup: I find the inline strategy-creation disclosure.
+        const openCreateStrategyLinks = document.querySelectorAll(".open-create-strategy"); // Collection: I find buttons that should open the same-page creation form.
 
         // ----------------------------------------------------
-        // 32.2 FILTER THE EXISTING MODEL ROWS
+        // 29.2 FILTER THE EXISTING MODEL ROWS
         // ----------------------------------------------------
         function filterModels() { // Function: I define reusable browser-side filtering.
             const searchText = searchInput ? searchInput.value.trim().toLowerCase() : ""; // Ternary and string methods: I normalise search text or use an empty fallback.
             const selectedCategory = categoryFilter ? categoryFilter.value : ""; // Conditional expression: I read the category when its control exists.
             const selectedStatus = statusFilter ? statusFilter.value : ""; // Conditional expression: I read the status when its control exists.
             let totalVisibleRows = 0; // Mutable variable: I initialise the match counter.
+
             modelRows.forEach(function (row) { // Iteration and callback: I inspect every model row.
                 const modelName = row.dataset.name || ""; // Data attribute and fallback: I read the searchable text supplied by Django.
                 const modelCategory = row.dataset.category || ""; // Property access: I read the category code.
                 const modelStatus = row.dataset.status || ""; // Property access: I read the implementation code.
+
                 const matchesSearch = (!searchText || modelName.includes(searchText)); // Logical OR: Empty search accepts every row; otherwise I check for a text match.
                 const matchesCategory = (!selectedCategory || modelCategory === selectedCategory); // Strict equality: I check the chosen category, if any.
                 const matchesStatus = (!selectedStatus || modelStatus === selectedStatus); // Strict equality: I check the chosen status, if any.
                 const shouldShow = (matchesSearch && matchesCategory && matchesStatus); // Logical AND: I require every active filter to match.
+
                 row.classList.toggle("d-none", !shouldShow); // Class manipulation: I hide rows that do not match.
+
                 if (shouldShow) { // Conditional: I count matching rows.
                     totalVisibleRows += 1; // Augmented assignment: I increase the visible-row count.
                 } // I finish the counting condition.
             }); // I finish processing model rows.
+
             categoryItems.forEach(function (categoryItem) { // Iteration: I check each category after filtering.
                 const visibleRows = Array.from( // Conversion: I turn the category's row collection into an array.
                     categoryItem.querySelectorAll(".strategy-model-row") // Scoped selector: I find rows inside this category.
                 ).filter(function (row) { // Array method: I keep only visible rows.
                     return !row.classList.contains("d-none"); // Boolean return: I accept rows without the hiding class.
                 }); // I finish building the visible-row array.
+
                 categoryItem.classList.toggle("d-none", visibleRows.length === 0); // Comparison and class toggle: I hide categories with no matching rows.
             }); // I finish processing categories.
+
             if (noResults) { // Guard: I update the message only if its element exists.
                 noResults.classList.toggle("d-none", totalVisibleRows !== 0); // Inequality: I hide the no-match message when at least one row matches.
             } // I finish the message guard.
         } // I finish the filtering function.
 
         // ----------------------------------------------------
-        // 32.3 COMPARISON SELECTION STATE
+        // 29.3 COMPARISON SELECTION STATE
         // ----------------------------------------------------
         function updateCompareState() { // Function: I update comparison controls from checkbox state.
             const selected = Array.from(compareCheckboxes).filter(function (checkbox) { // Conversion and filtering: I collect checked boxes.
                 return checkbox.checked; // Boolean return: I include only selected checkboxes.
             }); // I finish collecting selections.
+
             const selectedCount = selected.length; // Property access: I count selected models.
+
             if (compareCounter) { // Guard: I check that the counter element exists.
                 if (selectedCount === 0) { // Conditional: I handle no selections.
                     compareCounter.textContent = "Select 2–4 models"; // Text assignment: I restore the initial guidance.
@@ -1295,82 +1191,90 @@ Strategies | MarketPulse {# Static text: I identify this page. #}
                     compareCounter.textContent = selectedCount + " model" + (selectedCount === 1 ? "" : "s") + " selected"; // Concatenation and ternary: I build a correctly pluralised count.
                 } // I finish counter-text selection.
             } // I finish the counter guard.
+
             if (compareBar) { // Guard: I check that the bar exists.
                 compareBar.classList.toggle("is-visible", selectedCount > 0); // Class toggle: I show the bar when any model is selected.
             } // I finish the bar guard.
+
             if (compareButton) { // Guard: I check that the button exists.
                 compareButton.disabled = selectedCount < 2; // Boolean assignment: I prevent submission with fewer than two selections.
             } // I finish the button guard.
+
             compareCheckboxes.forEach(function (checkbox) { // Iteration: I update each checkbox's availability.
                 checkbox.disabled = (selectedCount >= 4 && !checkbox.checked); // Logical condition: I disable unselected boxes at four choices while allowing deselection.
             }); // I finish updating checkbox availability.
         } // I finish the comparison-state function.
 
         // ----------------------------------------------------
-        // 32.4 SEARCH AND FILTER EVENTS
+        // 29.4 SEARCH AND FILTER EVENTS
         // ----------------------------------------------------
         if (searchInput) { // Guard: I check that the search control exists.
             searchInput.addEventListener("input", filterModels); // Function reference: I filter whenever search text changes.
         } // I finish the search guard.
+
         if (categoryFilter) { // Guard: I check that the category control exists.
             categoryFilter.addEventListener("change", filterModels); // Event listener: I filter when the category changes.
         } // I finish the category guard.
+
         if (statusFilter) { // Guard: I check that the status control exists.
             statusFilter.addEventListener("change", filterModels); // Event listener: I filter when implementation status changes.
         } // I finish the status guard.
+
         if (clearFilters) { // Guard: I check that the clear button exists.
             clearFilters.addEventListener("click", function () { // Callback: I reset filters when the button is clicked.
+
                 if (searchInput) { // Guard: I check for the search input.
                     searchInput.value = ""; // Property assignment: I clear the search text.
                 } // I finish the search reset.
+
                 if (categoryFilter) { // Guard: I check for the category control.
                     categoryFilter.value = ""; // Property assignment: I select all categories.
                 } // I finish the category reset.
+
                 if (statusFilter) { // Guard: I check for the status control.
                     statusFilter.value = ""; // Property assignment: I select all statuses.
                 } // I finish the status reset.
+
                 filterModels(); // Function call: I redraw visibility using the cleared filters.
             }); // I finish the clear-button callback.
         } // I finish the clear-button guard.
 
         // ----------------------------------------------------
-        // 32.5 COMPARISON CHECKBOX EVENTS
+        // 29.5 COMPARISON CHECKBOX EVENTS
         // ----------------------------------------------------
         compareCheckboxes.forEach(function (checkbox) { // Iteration: I attach an event listener to each checkbox.
             checkbox.addEventListener("change", updateCompareState); // Function reference: I update comparison controls when selection changes.
         }); // I finish registering comparison listeners.
 
         // ----------------------------------------------------
-        // 32.6 SAME-PAGE STRATEGY SELECTION
+        // 29.6 SAME-PAGE STRATEGY CREATION
         // ----------------------------------------------------
-        samePageStrategyActions.forEach(function (link) { // Iteration: I attach behaviour to each strategy action link.
-            link.addEventListener("click", function () { // Callback: I select the strategy before the normal anchor navigation.
-                const strategyId = link.dataset.strategyId || ""; // Data attribute: I read data-strategy-id using its camelCase property.
-                const targetSelectId = link.dataset.targetSelect || ""; // Data attribute: I read the intended dropdown ID.
-                if (!strategyId || !targetSelectId) { // Guard condition: I require both values.
-                    return; // Early return: I stop selection updates when required data is missing.
-                } // I finish the guard.
-                const targetSelect = document.getElementById(targetSelectId); // Dynamic DOM lookup: I find the intended dropdown.
-                if (targetSelect) { // Guard: I check that the dropdown exists.
-                    targetSelect.value = strategyId; // Property assignment: I select the clicked strategy.
-                } // I finish the target update.
-                const robustnessSelect = document.getElementById("robustnessStrategy"); // DOM lookup: I find the robustness selector.
-                const stressSelect = document.getElementById("stressStrategy"); // DOM lookup: I find the stress selector.
-                if (robustnessSelect) { // Guard: I check that the robustness selector exists.
-                    robustnessSelect.value = strategyId; // Assignment: I align its strategy selection.
-                } // I finish the robustness update.
-                if (stressSelect) { // Guard: I check that the stress selector exists.
-                    stressSelect.value = strategyId; // Assignment: I align its strategy selection.
-                } // I finish the stress update.
-            }); // I finish the click callback; the browser still follows the link's section anchor.
-        }); // I finish registering strategy-action listeners.
+        openCreateStrategyLinks.forEach(function (link) { // Iteration: I attach behaviour to every New Strategy / Create First Strategy link.
+            link.addEventListener("click", function () { // Callback: I run this before normal anchor navigation.
+                if (createStrategyDetails) { // Guard: I check that the inline creation form exists.
+                    createStrategyDetails.open = true; // Boolean property: I open the details element instead of navigating to another page.
+                } // I finish the form guard.
+            }); // I finish the click callback.
+        }); // I finish registering creation-link listeners.
 
         // ----------------------------------------------------
-        // 32.7 INITIAL BROWSER STATE
+        // 29.7 OPEN FORM WHEN URL TARGETS ITS ANCHOR
+        // ----------------------------------------------------
+        if (
+            window.location.hash === "#createStrategySection" &&
+            createStrategyDetails
+        ) { // Combined condition: I check whether the browser arrived at the creation anchor and the form exists.
+            createStrategyDetails.open = true; // Boolean assignment: I ensure the strategy form is visible.
+        } // I finish the anchor condition.
+
+        // ----------------------------------------------------
+        // 29.8 INITIAL BROWSER STATE
         // ----------------------------------------------------
         filterModels(); // Function call: I apply the initial search and filter values.
         updateCompareState(); // Function call: I initialise comparison controls from checked boxes.
+
     }); // I finish the DOMContentLoaded callback and listener.
     </script> {# Closing element: I finish browser-side JavaScript. #}
+
 </div> {# Closing container: I finish the complete workspace. #}
 {% endblock %} {# Block boundary: I finish page content. #}
