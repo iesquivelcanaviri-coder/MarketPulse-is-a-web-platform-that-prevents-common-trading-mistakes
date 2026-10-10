@@ -1133,9 +1133,6 @@ README.md
 
 TESTING.md
     → automated tests, manual test matrix and test evidence plan
-
-PROJECT_AUDIT.md
-    → detailed ZIP inspection, cleanup decisions and known issues
 ```
 
 ---
