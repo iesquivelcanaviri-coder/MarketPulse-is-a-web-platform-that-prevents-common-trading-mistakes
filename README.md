@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**MarketPulse** is an educational full-stack financial-analysis platform developed as part of a **Full Stack Software Development** project. It connects market-data retrieval, historical-data storage, quantitative model research, custom strategy creation, historical backtesting, risk planning, community messaging, REST APIs, and optional analytical services in one Django-based application.
+**MarketPulse** is an educational full-stack financial-analysis platform developed as part of a **Full Stack Software Development** project. It connects market-data retrieval, historical-data storage, quantitative model research, custom strategy creation, historical backtesting, risk planning, community messaging, REST APIs, and optional analytical services in Django-based application.
 
 MarketPulse is designed for research and learning. It does **not** place live trades, manage real money, or provide investment advice.
 
@@ -22,7 +22,6 @@ The application is organised around questions such as:
 - Which quantitative model should be researched?
 - How can a custom strategy be defined and saved?
 - How did the saved strategy behave historically?
-- How much capital is exposed under a defined risk budget?
 - How can hypothetical adverse conditions be explored?
 
 The objective is not to predict markets. The objective is to demonstrate a structured software workflow for financial research.
@@ -41,13 +40,7 @@ Dashboard
 Data
   ↓
 Strategies
-  ↓
-Risk
 
-Supporting areas:
-Accounts / Profile
-Community / Private Messaging
-REST API
 ```
 
 ### Home
@@ -70,7 +63,6 @@ The Dashboard is the current-market workspace. It includes:
 The dashboard deliberately routes external market-data requests through Django so Alpaca credentials remain server-side.
 
 Two chart selections are intentionally not implemented with the current equity feed:
-
 - **Volume Profile** requires a dedicated calculation that is not currently enabled;
 - **Futures Curve** requires futures contracts across expiries, which the current stock/ETF data source does not provide.
 
