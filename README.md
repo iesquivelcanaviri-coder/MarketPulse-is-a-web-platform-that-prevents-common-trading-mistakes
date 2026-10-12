@@ -1,4 +1,6 @@
-# MarketPulse: Smart Trading Analysis Platform
+# MarketPulse: https://marketpulse-is-a-web-platform-that.onrender.com
+
+Smart Trading Analysis Platform
 
 ## Project Overview
 
